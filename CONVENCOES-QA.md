@@ -35,7 +35,7 @@ qa-md: 1
 
 | Campo | Valores | Uso |
 |---|---|---|
-| `tipo` | `caso-de-teste`, `cenario-bdd`, `plano-de-teste`, `bug`, `relatorio-execucao`, `charter-exploratorio`, `checklist`, `resumo-testes`, `epico`, `historia` (requisitos da aplicação) — e, fora do testware, `documentacao` (documentação de aplicação, páginas importadas do Notion), `nota` (nota rápida), `visao` (consulta salva, em `visoes/`) e `ciclo-regressao` (ciclo de regressão, em `planos/`) | Obrigatório. Define o modelo e as validações. |
+| `tipo` | `caso-de-teste`, `cenario-bdd`, `plano-de-teste`, `bug`, `relatorio-execucao`, `charter-exploratorio`, `checklist`, `resumo-testes`, `epico`, `historia` (requisitos da aplicação) — e, fora do testware, `documentacao` (documentação de aplicação, páginas importadas do Notion), `nota` (nota rápida), `visao` (consulta salva, em `visoes/`), `ciclo-regressao` (ciclo de regressão) e `execucao` (uma execução/rodada), e os relatórios gerados no fim da execução — `relatorio-encerramento`, `relatorio-defeitos`, `relatorio-rastreabilidade`, `relatorio-log` (em `relatorios/<ID-da-execução>/`, ao lado da execução; não escreva à mão: o app e o MCP geram) | Obrigatório. Define o modelo e as validações. |
 | `id` | `TC-001` (caso), `CEN-001` (cenário), `BUG-001` ou chave do Jira, `PT-001` (plano), `EXE-001` (execução), `SES-001` (sessão exploratória) | Obrigatório no testware (opcional em `nota` e `documentacao`). Único no projeto. |
 | `titulo` | texto | Obrigatório. |
 | `app` | nome da aplicação: `Portal`, `Backoffice`… | Define a pasta do documento: `aplicacoes/<app>/<casos, bugs, planos, sessoes, relatorios, docs>` (pelo `tipo`). Sem `app`, o documento vai para `_entrada/`. |

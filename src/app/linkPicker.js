@@ -14,7 +14,7 @@ import { docIndex, els, menu } from './shared.js';
 
 const ICONS = /** @type {Record<string, string>} */ ({
   'caso-de-teste': '🧪', 'cenario-bdd': '🧪', checklist: '☑', bug: '🐞', 'plano-de-teste': '🗺', 'charter-exploratorio': '⏱',
-  'relatorio-execucao': '📊', 'resumo-testes': '📊', epico: '📚', historia: '📖', visao: '🔎', 'ciclo-regressao': '🔁', execucao: '▶',
+  'relatorio-execucao': '📊', 'resumo-testes': '📊', epico: '📚', historia: '📖', visao: '🔎', 'ciclo-regressao': '🔁', execucao: '▶', 'relatorio-encerramento': '🏁', 'relatorio-defeitos': '🐞', 'relatorio-rastreabilidade': '🧭', 'relatorio-log': '📜',
 });
 const COLL = new Intl.Collator('pt-BR', { numeric: true, sensitivity: 'base' });
 const stem = (/** @type {string} */ p) => p.replace(/\.(md|markdown)$/i, '');

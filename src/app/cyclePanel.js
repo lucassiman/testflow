@@ -86,6 +86,7 @@ export function refreshCyclePanel() {
       ${data.ciclo ? `<button type="button" class="cp-btn" data-cp="def" title="Abrir o ciclo &quot;${esc(data.ciclo.titulo)}&quot; (definição e histórico das execuções)">📋 Ciclo</button>` : ''}
       ${data.closed && data.ciclo ? '<button type="button" class="cp-btn primary" data-cp="again" title="Cria a próxima execução com os mesmos casos">🔁 Executar de novo</button>' : ''}
       <button type="button" class="cp-btn" data-cp="summary" title="Totais, % de sucesso, duração e falhas da rodada">📊 ${data.closed ? 'Como foi' : 'Como está'}</button>
+      <button type="button" class="cp-btn" data-cp="reports" title="Encerramento e Go/No-Go, Defeitos, Rastreabilidade e Log + comparativo — em relatorios/ ao lado da execução (regerar mantém seus comentários)">📑 Relatórios</button>
       ${!data.closed ? '<button type="button" class="cp-btn" data-cp="finish" title="Marca SKIP nos não executados, encerra a rodada e mostra o resumo">🏁 Finalizar execução</button>' : ''}
     </div>`;
   // mantém o caso aberto à vista
@@ -103,6 +104,7 @@ el.addEventListener('click', (event) => {
   else if (act === 'cycle') openCycle();
   else if (act === 'finish') finishCycle();
   else if (act === 'summary') showRoundSummary();
+  else if (act === 'reports') import('./reports.js').then((m) => m.generateReports({ execPath: data0()?.path }));
   else if (act === 'def') openCycleDef();
   else if (act === 'auto') attachAutomation();
   else if (act === 'device') editDevice();

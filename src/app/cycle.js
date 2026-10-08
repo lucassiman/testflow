@@ -51,7 +51,7 @@ function textAt(path) {
 }
 
 /** O ciclo que vale agora: o documento aberto (se for um ciclo) ou o ciclo ativo. @returns {{ path: string, text: string } | null} */
-function currentCycle() {
+export function currentCycle() {
   const rel = currentWorkspacePath();
   if (rel && isCycle(app.store.source)) return { path: rel, text: app.store.source };
   const path = activePath();
@@ -499,9 +499,14 @@ export async function finishCycle() {
   if (!ok) return;
   app.store.history.breakGroup();
   app.store.setSource(closeCycle(skipPending(synced)), { origin: 'command' });
-  if (activePath() === currentWorkspacePath()) setActive('');
+  const execPath = currentWorkspacePath();
+  if (activePath() === execPath) setActive('');
   await app.doSave(false);
   import('./docState.js').then((m) => m.refreshDocState());
+  // os 4 relatórios de fim de execução (Encerramento/Go-No-Go, Defeitos, Rastreabilidade, Log + comparativo)
+  if (!app.store.dirty && execPath) {
+    try { await (await import('./reports.js')).generateReports({ execPath }); } catch (err) { app.toast(`Os relatórios não foram gerados: ${err instanceof Error ? err.message : err}`, 'error'); }
+  }
   await showRoundSummary();
 }
 

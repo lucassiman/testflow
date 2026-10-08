@@ -8,6 +8,14 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.20.0', date: '08/10/2026',
+    items: [
+      { icon: '📑', text: '**Relatórios de fim de execução**: ao 🏁 Finalizar, a execução ganha 4 documentos em `relatorios/<ID>/`: **Encerramento e Go/No-Go** (critérios de saída do plano, sugestão e aceite), **Defeitos da rodada**, **Rastreabilidade e cobertura** e **Log + comparativo** com a execução anterior.', manual: '7.8 Ciclo de regressão' },
+      { icon: '🔁', text: '**📑 Relatórios** no painel da rodada (ou na paleta) gera de novo quando quiser, mantendo o que você escreveu nos comentários e no aceite.', manual: '7.8 Ciclo de regressão' },
+      { icon: '🧭', text: 'Novo vínculo **Plano de teste** (`plano: PT-001`) na execução: os critérios de saída dele entram no relatório de encerramento.', manual: '7.8 Ciclo de regressão' },
+    ],
+  },
+  {
     version: '1.19.1', date: '08/10/2026',
     items: [
       { icon: '🥒', text: '**Cenário BDD na rodada** agora executa pela tabela *Cenário | Status* (antes dava "Nenhuma tabela com coluna Status para executar" depois de arquivar a rodada antiga).', manual: '7.8 Ciclo de regressão' },

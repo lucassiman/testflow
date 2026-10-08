@@ -25,6 +25,7 @@ export const LINK_TYPES: LinkType[] = [
   { key: 'jira', label: 'Ticket do Jira', icon: '🎫', placeholder: 'QA-123, PORTAL-45', list: true, docLink: false, jira: true },
   { key: 'epico', label: 'Épico', icon: '📚', placeholder: 'PORTAL-10 ou o ID do documento do épico', list: true, docLink: true, jira: true },
   { key: 'sprint', label: 'Sprint', icon: '🏃', placeholder: 'Sprint 42', list: false, docLink: false, jira: false },
+  { key: 'plano', label: 'Plano de teste', icon: '🧭', placeholder: 'PT-001 (os critérios de saída dele entram no relatório de encerramento)', list: false, docLink: true, jira: false },
 ];
 export const LINK_BY_KEY: Record<string, LinkType> = Object.fromEntries(LINK_TYPES.map((t) => [t.key, t]));
 

@@ -47,6 +47,10 @@ export const TYPE_LABELS: Record<string, string> = {
   historia: 'História de usuário',
   'ciclo-regressao': 'Ciclo de regressão',
   execucao: 'Execução',
+  'relatorio-encerramento': 'Relatório de encerramento (Go/No-Go)',
+  'relatorio-defeitos': 'Relatório de defeitos',
+  'relatorio-rastreabilidade': 'Relatório de rastreabilidade',
+  'relatorio-log': 'Log da execução',
 };
 
 export const FIELDS: FieldDef[] = [
@@ -68,6 +72,11 @@ export const FIELDS: FieldDef[] = [
   { key: 'automacao', label: 'Automação' },
 ];
 export const FIELD_BY_KEY: Record<string, FieldDef> = Object.fromEntries(FIELDS.map((f) => [f.key, f]));
+/** Rótulos no cartão do cabeçalho para campos que não estão no formulário (execuções e relatórios). */
+const CARD_LABELS: Record<string, string> = {
+  execucao: 'Execução', recomendacao: 'Recomendação', gerado: 'Gerado em', inicio: 'Início', fim: 'Fim', ciclo: 'Ciclo', numero: 'Nº',
+  plano: 'Plano', epico: 'Épico', sprint: 'Sprint', origem: 'Origem',
+};
 
 /** Front-matter no início do texto? → { end } (linhas [0, end) ), senão null. */
 export function detectFrontMatter(source: string): { end: number } | null {
@@ -226,7 +235,7 @@ export function renderFrontMatterCard(text: string, opts: { jiraBase?: string } 
   const grid = Object.entries(data)
     .filter(([k, v]) => !skip.has(k) && !(Array.isArray(v) ? v.length === 0 : String(v).trim() === ''))
     .map(([k, v]) => {
-      const label = FIELD_BY_KEY[k]?.label || k;
+      const label = FIELD_BY_KEY[k]?.label || CARD_LABELS[k] || k;
       const val = Array.isArray(v) ? v.join(', ') : k === 'data' ? isoToBr(v) : v;
       if (k === 'jira') {
         // ticket no Jira: chave vira link (endereço do Jira em branding.json → jiraBaseUrl)

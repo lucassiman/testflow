@@ -37,6 +37,10 @@ export const TYPE_FOLDER: Record<string, string> = {
   'relatorio-execucao': 'relatorios',
   'relatorio-automacao': 'relatorios',
   'resumo-testes': 'relatorios',
+  'relatorio-encerramento': 'relatorios',
+  'relatorio-defeitos': 'relatorios',
+  'relatorio-rastreabilidade': 'relatorios',
+  'relatorio-log': 'relatorios',
   documentacao: 'docs',
 };
 

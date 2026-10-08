@@ -172,6 +172,8 @@ Ida e volta pela área de transferência (sem chave de API, nada sai do editor s
 
 ✅ **Feito na 1.12.0 — Dispositivo/ambiente:** substituir/expandir o campo atual *Browser* por **Dispositivo/Ambiente**: WEB, Mobile iOS, Mobile Android, Mobile — Todos; para mobile informar a versão (ex.: Mobile iOS — iOS 18, Mobile Android — Android 15). Deve aparecer nas tags, no cabeçalho do caso, nos modelos de criação de casos e nas informações da execução, para rastrear em que dispositivo/plataforma cada caso foi validado.
 
+**1.20.0 (08/10) — Fase 10.2: relatórios de fim de execução.** `src/markdown/reports.ts` (puro, para o app e o MCP): `buildReports(execPath, docs)` monta os 4 documentos (`relatorio-encerramento`, `-defeitos`, `-rastreabilidade`, `-log`) em `<pasta da execução>/relatorios/<EXEC-ID>/`; `linkReports` põe a seção *Relatórios* na execução; `keepManual` preserva os trechos `<!-- qa:manual:nome -->` ao regerar (lidos do disco). Critérios de saída em texto livre avaliados por `evalCriterion` (bugs por severidade, % executado, % sucesso, BLOCKED); plano pelo vínculo novo `plano:` ou pelo que cita mais casos. App: `src/app/reports.js` (🏁 Finalizar gera; **📑 Relatórios** no painel e na paleta regera).
+
 **1.19.1 (08/10) — Fase 10.1.** Cenário BDD executável na rodada (`collectStatusTables` aceita a tabela *Cenário | Status* vazia); "em andamento" só para caso que começou nesta rodada (`cycleStarted` ou rodada antiga arquivada num dia da rodada) e **último resultado** em cinza nos pendentes (`lastResultBefore`); rodada/ciclo nascem junto das execuções existentes ou numa `execucoes/` (`runDestination`, também no `qa_criar` do MCP).
 
 **1.19.0 (08/10) — novo nome: TestFlow.** Nome visível (`branding.json`: name/shortName/description, manifesto do PWA, título, manual, documentos, skill, extensão do Claude `testflow.mcpb` com display_name *TestFlow*) e ícone novo (✓ que vira seta, `public/icons/`, logo do topo em SVG). Identificadores internos mantidos de propósito (dados e extensão não se perdem): `mdqa:*`, IndexedDB `md-qa-editor`, ids `mdqa-*` dos seletores de pasta, id do MCP `markdown-qa`, skill `qa-markdown`, formato QA-MD. Repositório: `testflow` (privado).
@@ -382,7 +384,7 @@ Levantada numa revisão das telas com a pasta `exemplos/` (como um QA novo usari
 | **"Em andamento" na rodada recém-criada** | Casos que só têm resultado de execuções antigas aparecem como *em andamento*. Mostrar **pendente nesta rodada** + *último: PASS* em cinza. | P |
 | **Onde a rodada nasce** | Rodada criada em `_entrada/` mesmo com a pasta `execucoes/` existindo: usar a pasta de execuções da aplicação/projeto. | P |
 
-#### 10.2 — Relatórios de fim de execução *(G)* — escolhidos em 08/10: os 4, como documentos separados
+#### 10.2 — Relatórios de fim de execução *(G)* — escolhidos em 08/10: os 4, como documentos separados — ✅ feito na 1.20.0
 
 Ao **🏁 Finalizar execução**, o TestFlow gera 4 documentos em `relatorios/<EXEC-ID>/` (ao lado da execução), ligados a ela (seção *Relatórios* com `[[links]]`), cada um com cabeçalho QA-MD próprio — dá para publicar, exportar PDF e copiar para o Jira um por um. Nomes adaptados da norma de documentação de teste ISO/IEC/IEEE 29119-3. **Regerar** a qualquer momento (ex.: depois de corrigir um status); o que o QA escreveu à mão nas seções de comentário é preservado.
 
