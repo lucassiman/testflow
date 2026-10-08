@@ -1,5 +1,5 @@
 # dependências e saídas geradas (recriadas com npm install / npm run app / npm run skill / npm run mcp:build)
-node_modules/
+node_modules
 dist/
 dist-single/
 mcp-dist/
