@@ -33,6 +33,7 @@ import type { CaseLookup } from '../src/markdown/cycle.ts';
 import { buildReports, linkReports, REPORT_TYPES } from '../src/markdown/reports.ts';
 import { readLinks } from '../src/markdown/linkTypes.ts';
 import { findBrokenLinks } from '../src/markdown/brokenLinks.ts';
+import { sweepLinks, applySweep, sweepReport } from '../src/markdown/sweep.ts';
 import { setFrontMatterFields, readPublishMeta, PUBLISH_KEYS } from '../src/markdown/publish.ts';
 import { addJiraKey } from '../src/markdown/jiraCsv.ts';
 import { buildJiraCopy } from '../src/markdown/jira.ts';
@@ -1025,6 +1026,59 @@ export class QaWorkspace {
     }
     if (!total) return `Nenhum aviso em ${list.length} documento(s).`;
     return [`${total} aviso(s) em ${out.length}${out.length >= (o.limite || 60) ? '+' : ''} documento(s) (de ${list.length} verificados):`, '', ...out].join('\n');
+  }
+
+  /**
+   * Varredura de vínculos (documentos antigos): o que falta de app:, jira:, epico:, tags, sprint, caso do bug e pasta.
+   * `aplicar`: preenche os campos vazios e soma tags até a confiança pedida ("certo" ou "provavel"); "confirmar" nunca.
+   */
+  sweep(o: { pasta?: string; app?: string; aplicar?: string; limite?: number }): Promise<string> {
+    return this.exclusive(async () => {
+      await this.refresh(true);
+      const scope = o.pasta ? o.pasta.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '') : o.app ? `aplicacoes/${o.app}` : '';
+      const docs = this.docTexts();
+      const found = sweepLinks(docs, this.dirs, scope);
+      const total = docs.filter((d) => (scope ? d.path.toLowerCase().startsWith(`${scope.toLowerCase()}/`) : d.path.startsWith('aplicacoes/'))).length;
+      const level = o.aplicar === 'provavel' || o.aplicar === 'provável' ? 'provavel' : o.aplicar === 'certo' ? 'certo' : '';
+      if (o.aplicar && !level) throw new Error('aplicar: "certo" (só o que sai da pasta/do pai sem dúvida) ou "provavel" (também tags e sprint herdadas)');
+      let applied: number | undefined;
+      if (level) {
+        applied = 0;
+        for (const f of found) {
+          if (!f.fixes.some((x) => x.field)) continue;
+          const doc = await this.readDoc(f.path);
+          const r = applySweep(doc.text, f.fixes, level as 'certo' | 'provavel');
+          if (r.applied.length && await this.writeDoc(f.path, r.text, doc)) applied += r.applied.length;
+        }
+        await this.refresh(true);
+      }
+      const shown = found.slice(0, o.limite || 80);
+      return sweepReport(shown, { total, applied, level }) + (found.length > shown.length ? `\n\n… e mais ${found.length - shown.length} documento(s) (use pasta/app para dividir).` : '');
+    });
+  }
+
+  /**
+   * Liga dois documentos: põe o [[link]] para `alvo` em `doc` (num bug ligado a um caso: "Encontrado em [[TC-…]]" no
+   * Resumo; nos outros: "🔗 Relacionado: [[…]]" no fim). Não duplica se já cita.
+   */
+  link(o: { doc: string; alvo: string }): Promise<string> {
+    return this.exclusive(async () => {
+      const e = await this.find(o.doc);
+      const t = await this.find(o.alvo);
+      if (e.path === t.path) throw new Error('um documento não se liga a ele mesmo');
+      const key = t.id || t.name.replace(/\.(md|markdown)$/i, '');
+      const doc = await this.readDoc(e.path);
+      const cited = new Set([...doc.text.matchAll(/\[\[([^\]|#]+)/g)].map((m) => m[1].trim().toLowerCase()));
+      if (cited.has(key.toLowerCase())) return `${e.path} já cita [[${key}]] — nada mudou.`;
+      const lines = doc.text.split('\n');
+      const bugToCase = e.tipo === 'bug' && CASE_TYPES.includes(t.tipo);
+      const sec = bugToCase ? findSection(lines, /^resumo\b/i) : null;
+      let at = sec ? sec.end : lines.length;
+      while (at > (sec ? sec.start : 0) && !lines[at - 1].trim()) at--;
+      insertBlock(lines, at, [bugToCase ? `Encontrado em [[${key}]]${t.titulo ? ` — ${t.titulo}` : ''}.` : linkLine(t.tipo, key, t.titulo || '')]);
+      await this.writeDoc(e.path, lines.join('\n'), doc);
+      return `${e.path} agora cita [[${key}]]${bugToCase ? ' (Resumo: "Encontrado em…")' : ''}.`;
+    });
   }
 
   /** Rastreabilidade: requisito (ticket/épico) → casos → último resultado → bugs; com segmento, só o dele. */

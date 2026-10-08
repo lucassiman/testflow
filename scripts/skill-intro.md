@@ -113,10 +113,49 @@ Sempre em tabela, com estas colunas nesta ordem:
 - [ ] Status só com as 5 palavras, entre crases
 - [ ] Nada inventado (Jira, versões, evidências, resultados)
 
+## 6.0 Nível, tipo e profundidade — decida ANTES de escrever casos
+
+Todo pedido de casos tem três eixos. Leia o pedido procurando cada um; o que não estiver dito vira **premissa declarada** no topo da resposta (uma linha) — não escreva casos fora do escopo "para garantir".
+
+**1. Nível (onde o teste olha)**
+
+| Nível | O que cobre | Pistas no pedido | Quem costuma fazer |
+| --- | --- | --- | --- |
+| **E2E / UI (sistema)** | O usuário na tela, do começo ao fim de uma jornada | "e2e", "ponta a ponta", "fluxo", "tela", "jornada", "como o usuário" | **QA** |
+| **API / integração** | Contrato e regras expostas pelo serviço (status HTTP, payload, erros), integração entre sistemas | "API", "endpoint", "contrato", "Postman", "integração", "serviço" | QA (quando pedido) |
+| **Unitário / componente** | Função, classe, regra interna, validação de campo no código | "unitário", "função", "método", "cobertura de código" | **Dev** — só gere se pedirem explicitamente |
+| **Aceite / negócio (UAT)** | Critérios de aceite e regra de negócio do ponto de vista do PO/usuário, linguagem do negócio | "negócio", "aceite", "PO", "homologação", "UAT", "critério de aceite" | QA + PO |
+
+**Regra padrão (pedido sem nível):** o QA testa **caixa-preta, pelo que o usuário ou o sistema vizinho enxerga** — E2E/UI e regras de negócio. **Não** gere casos de validação interna, banco, log, fila ou lógica que só o código vê (isso é unitário/integração do dev), nem repita o que já tem teste automatizado (`automacao:` no caso, ou o usuário disse que existe). Se achar um risco que só se testa por baixo, cite em **Observações** como sugestão para o dev — não vire caso.
+
+**2. Tipo (o objetivo do teste)**
+
+| Tipo | Objetivo | Quantidade/forma |
+| --- | --- | --- |
+| **Smoke** | O sistema sobe e as funções críticas respondem (vale seguir testando?) | 1 caminho feliz por funcionalidade crítica; poucos passos; 5–15 casos no total; tag `smoke` |
+| **Sanity** | A correção/mudança pontual funciona (depois de um fix) | Só o que mudou + vizinhança imediata |
+| **Regressão** | O que já funcionava continua funcionando | Casos estáveis e reaproveitáveis; priorize por risco/uso; tag `regressao` |
+| **Funcional** | Cada regra e critério da funcionalidade | Positivos, negativos, limites (ver técnicas) |
+| **Exploratório** | Achar o que os roteiros não pegam | Charter (`charter-exploratorio`), não casos com passos |
+| **Não funcional** | Performance, carga, segurança, usabilidade, acessibilidade, compatibilidade (browsers/dispositivos) | Só quando pedido; diga a ferramenta/critério (ex.: "carrega em < 3 s", WCAG AA) |
+
+**3. Profundidade**
+
+- **Enxuto / focado** ("só o principal", "rápido", "smoke"): caminho feliz + o erro mais provável por critério.
+- **Padrão** (sem indicação): todo critério com positivo; negativos e limites onde há regra; sem combinatória exaustiva.
+- **Completo** ("completo", "exaustivo", "cobertura total"): aplique as técnicas abaixo de forma sistemática e mostre a matriz.
+
+**Técnicas (ISTQB) — use e cite qual gerou o caso quando for completo:** partição de equivalência · análise de valor limite · tabela de decisão (regras combinadas) · transição de estados (status de pedido, login bloqueado) · pairwise (combinação de browsers/perfis/opções) · caso de uso/jornada · error guessing (erros comuns: duplo clique, voltar, sessão expirada, campo com espaço).
+
+**Como o usuário pode pedir** (e você deve entender): *"casos e2e, sem backend"* · *"só smoke do checkout"* · *"regressão do épico PORTAL-10"* · *"casos de API do endpoint /pedidos"* · *"completo, com valor limite e tabela de decisão"* · *"foco em negócio, para o PO validar"* · *"acessibilidade da tela de login"*.
+
+**Registre no cabeçalho** para dar para filtrar e montar rodadas: tags com o nível e o tipo — `e2e`, `api`, `negocio`, `smoke`, `regressao`, `acessibilidade`… (ex.: `tags: [pix, e2e, smoke]`). Na resposta, comece com uma linha: **Escopo: E2E/UI · funcional · padrão — sem casos de backend/unitário (já cobertos pelo time de dev).** Pedido ambíguo e caro (muitos casos)? Pergunte uma coisa só antes ("e2e de tela ou também API?").
+
 ## 6.1 Do requisito ao caso
 
 Quando o usuário trouxer uma história, critérios de aceite, um ticket do Jira ou um épico:
 
+0. **Escopo primeiro** (6.0): nível, tipo e profundidade pedidos — ou a premissa declarada.
 1. **Entenda antes de escrever.** Liste os critérios de aceite numerados (se vierem em texto corrido, extraia-os) e as regras de negócio implícitas. Pergunte o que faltar e for decisivo (perfis de usuário, limites, mensagens exatas); o resto vira **Observações**/premissas no caso, não invenção.
 2. **Cubra cada critério** com pelo menos um caso **positivo**; acrescente **negativos** (dado inválido, permissão, estado errado), **limites** (mínimo, máximo, vazio, um a mais/menos), e quando couber **alternativos** (outro caminho que leva ao mesmo resultado) e **regressão** do que o ticket pode quebrar. Um comportamento verificável por caso; prefira vários casos curtos a um longo.
 3. **Rastreabilidade no cabeçalho:** `jira:` com a chave do ticket da história, `epico:` com o épico, `app:`, tags do domínio (as do ticket/épico se houver) e `prioridade` pelo risco (crítico para o negócio = Alta). Cite a história no corpo: `Origem: [[PORTAL-120]] — critério 2`.
@@ -137,6 +176,7 @@ Para "revise estes casos", "estão bons?" ou antes de uma regressão, avalie cad
 - [ ] **Rastreabilidade**: `jira:`/`epico:` preenchidos; o critério de aceite que cobre
 - [ ] **Prioridade** coerente com o risco; `automacao:` se já existe teste automatizado
 - [ ] **Sem duplicidade** com outro caso do mesmo ticket (sugira juntar ou diferenciar)
+- [ ] **No nível certo** (6.0): caso de regra interna/backend que já tem teste unitário ou de API → sugira remover ou mover para o dev; tags de nível/tipo presentes
 - [ ] Formato QA-MD (seção 6)
 
 ## 6.3 Analisar a rodada

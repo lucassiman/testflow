@@ -1,6 +1,7 @@
 // Gera a skill do Claude "qa-markdown" a partir da introdução (scripts/skill-intro.md)
 // e dos MESMOS modelos usados pelo editor (src/templates/*.md).
 // Uso: npm run skill   →  claude-skill/qa-markdown/SKILL.md  +  claude-skill/qa-markdown.zip
+//                       claude-skill/qa-varredura/SKILL.md +  claude-skill/qa-varredura.zip
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { zip } from './zip.mjs';
 
@@ -33,3 +34,10 @@ writeFileSync(new URL('claude-skill/qa-markdown/SKILL.md', root), skill);
 
 writeFileSync(new URL('claude-skill/qa-markdown.zip', root), zip([['qa-markdown/SKILL.md', skill]]));
 console.log(`Skill gerada: claude-skill/qa-markdown/SKILL.md (${skill.length} caracteres) + claude-skill/qa-markdown.zip`);
+
+// skill de varredura dos vínculos (documentos antigos)
+const sweep = `${read('scripts/skill-varredura.md').trimEnd()}\n`;
+mkdirSync(new URL('claude-skill/qa-varredura/', root), { recursive: true });
+writeFileSync(new URL('claude-skill/qa-varredura/SKILL.md', root), sweep);
+writeFileSync(new URL('claude-skill/qa-varredura.zip', root), zip([['qa-varredura/SKILL.md', sweep]]));
+console.log(`Skill gerada: claude-skill/qa-varredura/SKILL.md (${sweep.length} caracteres) + claude-skill/qa-varredura.zip`);

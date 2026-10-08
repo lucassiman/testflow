@@ -65,6 +65,7 @@ A versão aparece no canto direito da barra de status (ex.: `v0.11.0`).
 A skill **QA Markdown** faz o Claude gerar os documentos já no formato do editor (mesmos modelos e regras).
 
 - Arquivo: `claude-skill/qa-markdown.zip` — envie nas configurações do Claude, área **Skills**. Alternativa: anexe `claude-skill/qa-markdown/SKILL.md` numa conversa e peça para criar a skill.
+- Segunda skill (opcional): `claude-skill/qa-varredura.zip` — arruma os vínculos de documentos antigos (12.6).
 - Depois é só pedir: *"gera o caso de teste do login com usuário bloqueado"*, *"escreve o bug report desse erro"*.
 - Mexeu num modelo em `src/templates/`? Rode `npm run skill` para atualizar a skill.
 
@@ -829,16 +830,37 @@ No `claude_desktop_config.json`: `"markdown-qa": { "command": "node", "args": ["
 | `qa_rodada_criar` · `qa_rodada_registrar` · `qa_rodada_status` · `qa_rodada_finalizar` | A rodada inteira pelo Claude: criar pelos casos de um **segmento** (épico, ticket, `#tag`), de uma consulta, de uma lista ou de um **ciclo salvo** (vira a execução #N); registrar cada caso (passos ou o caso inteiro); ver como está; finalizar (SKIP nos pendentes + os 4 relatórios) |
 | `qa_relatorios` | Gera/regera os relatórios de fim de execução (7.8) — os mesmos do app, mantendo o que você escreveu |
 | `qa_validar` · `qa_rastreabilidade` | Avisos de QA, links quebrados e evidências faltando (documento, segmento, pasta ou tudo); matriz ticket/épico → casos → resultado → bugs |
+| `qa_varredura` · `qa_ligar` | Documentos antigos sem os vínculos (app, ticket, épico, tags/sprint herdadas, bug sem caso, caso sem requisito, pasta errada), cada achado com ✅ certo / 🟡 provável / ❓ confirmar; `aplicar` preenche só campos vazios e soma tags. `qa_ligar` liga o bug órfão ao caso |
 | `qa_marcar_passos` · `qa_nova_rodada` | Status/obtido por passo (o resumo e o status geral se atualizam); `concluir` registra a rodada |
 | `qa_anexar_evidencia` | Copia um arquivo do computador (print, vídeo, HAR, log) para `evidencias/` e liga no documento |
 | `qa_atualizar_cabecalho` · `qa_comentar` | Campos do cabeçalho (ex.: a chave do Jira; trocar o `id` atualiza o documento e os `[[links]]` da pasta, como no editor); comentário de revisão (6.7) |
 | `qa_para_jira` | O bug pronto para o ticket: resumo `[BUG-12] título`, prioridade, descrição e os anexos |
+
+**Escopo dos casos — diga o nível, o tipo e a profundidade.** A skill lê três coisas no pedido:
+- **nível**: E2E/UI, API/integração, unitário ou negócio/aceite;
+- **tipo**: smoke, sanity, regressão, funcional, exploratório ou não funcional (performance, segurança, acessibilidade…);
+- **profundidade**: enxuto, padrão ou completo, este com as técnicas valor limite, partição de equivalência, tabela de decisão, transição de estados e pairwise.
+
+**Sem indicação**, o padrão é o do QA: caixa-preta, E2E/UI e regras de negócio. Ele **não** gera casos de lógica interna ou backend que são do teste unitário do dev, nem repete o que já tem `automacao:`. A premissa vem numa linha no topo da resposta (*"Escopo: E2E/UI · funcional · padrão — sem casos de backend"*), e as tags de nível e tipo (`e2e`, `smoke`, `api`, `negocio`…) vão no cabeçalho, para filtrar e montar rodadas. Exemplos de pedido:
+- *"casos e2e do checkout, sem backend"*;
+- *"só smoke do login"*;
+- *"casos de API do /pedidos"*;
+- *"completo, com valor limite e tabela de decisão"*;
+- *"foco em negócio para o PO validar"*;
+- *"acessibilidade da tela de login"*.
 
 **Pedidos que funcionam bem** (a skill `qa-markdown` traz os roteiros):
 - *"escreva os casos desta história"*, colando os critérios de aceite. O Claude cria positivos, negativos e limites, com `jira:`/`epico:`, e mostra a matriz critério → casos.
 - *"revise os casos do PORTAL-120"*. Ele usa o checklist de qualidade (passo atômico, esperado verificável, massa de dados…) e deixa as sugestões como comentário.
 - *"monte a regressão do épico PORTAL-10"* → *"TC-3 passou, TC-4 falhou no passo 2 com erro 500"* → *"finalize"*.
 - *"analise a rodada"*. Vem um resumo executivo, as falhas agrupadas por causa provável, os bugs a abrir ou reincidências e o comparativo com a anterior.
+
+**Skill `qa-varredura` — arrumar documentos antigos.** Instale também o `claude-skill/qa-varredura.zip` (gerado por `npm run skill`). Peça *"varra a pasta do Portal e arrume os vínculos"*. Com o MCP, o Claude roda `qa_varredura` por aplicação e mostra o resumo, com os achados classificados assim:
+- ✅ **certo**: sai da pasta do épico/ticket ou do pai;
+- 🟡 **provável**: tags e sprint herdadas;
+- ❓ **confirmar**: bug sem caso, caso sem requisito.
+
+Ele aplica só o que você aprovar e, para os "confirmar", propõe a resposta: liga bug órfão ao caso com `qa_ligar` e preenche o ticket com `qa_atualizar_cabecalho`. Mover arquivos fica para o **🎫 Organizar por épico e ticket** do app, que leva links e prints junto. Relatórios de execuções corrigidas: gere de novo. Sem o MCP, a skill faz a mesma checagem lendo os arquivos.
 
 **Jira pelo Claude:** com o conector da Atlassian ligado no Claude, peça *"abra no Jira o BUG-012 e grave a chave"*: o Claude lê o bug com `qa_para_jira`, cria o ticket pelo conector e grava a chave com `qa_atualizar_cabecalho`. Os prints: se o conector não anexar arquivos, o Claude informa os caminhos para você anexar.
 

@@ -58,7 +58,8 @@ Como trabalhar:
 - Rodada de regressão: qa_rodada_criar (por segmento — épico, ticket, #tag —, consulta, lista de casos ou ciclo salvo) → qa_rodada_registrar por caso → qa_rodada_status para ver como está → qa_rodada_finalizar (SKIP nos pendentes e os 4 relatórios: encerramento/Go-No-Go, defeitos, rastreabilidade, log + comparativo). qa_relatorios regera.
 - Bug de um caso que já tem bug ligado: qa_bug_do_caso devolve os bugs; pergunte ao usuário se é reincidência (reincidencia: "BUG-…") ou bug novo (novo: true).
 - Segmento = tudo o que nasceu de um épico/ticket/execução/ciclo/#tag (filtro segmento em qa_listar/qa_consultar/qa_validar/qa_rastreabilidade).
-- Qualidade: qa_validar (avisos de QA, links quebrados, evidências faltando) antes de entregar ou publicar.`;
+- Qualidade: qa_validar (avisos de QA, links quebrados, evidências faltando) antes de entregar ou publicar; qa_varredura acha documentos antigos sem os vínculos (relate primeiro, aplique só com o OK do usuário).
+- Escopo dos casos: siga a seção "Nível, tipo e profundidade" de qa_convencoes — gere só o nível pedido (ex.: e2e/UI sem casos de backend/unitários) e diga a premissa quando o pedido não especificar.`;
 
 const text = (t: string) => ({ content: [{ type: 'text' as const, text: t }] });
 const fail = (err: unknown) => ({ content: [{ type: 'text' as const, text: `Erro: ${(err as Error)?.message || String(err)}` }], isError: true });
@@ -235,6 +236,17 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
     inputSchema: { doc: z.string().optional(), segmento: z.string().optional(), pasta: z.string().optional(), limite: z.number().int().min(1).max(500).optional() },
     annotations: RO,
   }, async (a) => run(() => ws.validate(a), text));
+
+  server.registerTool('qa_varredura', {
+    title: 'Varredura de vínculos', description: 'Procura em aplicacoes/ (ou na pasta/app informada) documentos antigos sem os vínculos: app:, jira:/epico: (pela pasta do ticket/épico ou pela história), tags e sprint herdadas do pai, bug sem caso ligado, caso sem requisito, execução sem o épico/tags dos casos, relatório desatualizado, arquivo fora da pasta de épico/ticket. Cada achado vem com a confiança (certo / provável / confirmar). Sem aplicar, só relata; aplicar: "certo" ou "provavel" preenche campos vazios e soma tags (versão anterior em .versoes/). Mover arquivos e os "confirmar" ficam com o usuário.',
+    inputSchema: { pasta: z.string().optional(), app: z.string().optional(), aplicar: z.enum(['certo', 'provavel']).optional(), limite: z.number().int().min(1).max(1000).optional() },
+    annotations: RW,
+  }, async (a) => run(() => ws.sweep(a), text));
+
+  server.registerTool('qa_ligar', {
+    title: 'Ligar documentos', description: 'Põe em um documento o [[link]] para outro — ex.: o bug órfão ao caso onde foi achado ("Encontrado em [[TC-…]]" no Resumo) ou um caso à história. Não duplica e não mexe no resto do texto.',
+    inputSchema: { doc: docArg, alvo: docArg }, annotations: RW,
+  }, async (a) => run(() => ws.link(a), text));
 
   server.registerTool('qa_rastreabilidade', {
     title: 'Rastreabilidade', description: 'Matriz requisito (ticket/épico) → casos → último resultado → bugs. Com segmento, só o do épico/ticket/execução.',

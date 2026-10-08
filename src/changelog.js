@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.23.0', date: '08/10/2026',
+    items: [
+      { icon: '🎯', text: '**Escopo dos casos no Claude**: diga o nível (e2e, API, unitário, negócio), o tipo (smoke, regressão, funcional, acessibilidade…) e a profundidade (enxuto, padrão, completo). Sem indicação, ele fica no que é do QA (caixa-preta, sem casos de backend/unitário) e diz a premissa.', manual: '12.6' },
+      { icon: '🧹', text: '**Skill qa-varredura** + `qa_varredura`/`qa_ligar` no MCP: acha documentos antigos sem os vínculos (ticket, épico, tags, bug sem caso, pasta errada), classifica (certo / provável / confirmar) e corrige só o que você aprovar.', manual: '12.6' },
+    ],
+  },
+  {
     version: '1.22.0', date: '08/10/2026',
     items: [
       { icon: '🤖', text: '**Claude conduz a rodada**: pelo MCP ele cria a rodada por épico, ticket, `#tag` ou ciclo salvo, registra cada caso, mostra como está e finaliza com os 4 relatórios (`qa_rodada_*`, `qa_relatorios`). Reinstale a extensão `testflow.mcpb`.', manual: '12.6' },

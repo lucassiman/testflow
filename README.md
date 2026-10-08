@@ -165,7 +165,7 @@ A skill faz o Claude gerar os documentos já no formato do editor (mesmos modelo
 
 Depois de `npm run skill`, atualize onde você usa:
 
-- **Claude (app desktop / web):** *Customize → Skills* → na skill `qa-markdown`, `…` → **Delete**; depois `+` → **Create skill** → **Upload a skill** → `claude-skill/qa-markdown.zip`. Precisa da execução de código ligada. Alternativa: numa conversa, peça "atualize a minha skill qa-markdown com este arquivo" anexando `claude-skill/qa-markdown/SKILL.md` e salve pelo cartão.
+- **Claude (app desktop / web):** *Customize → Skills* → na skill `qa-markdown`, `…` → **Delete**; depois `+` → **Create skill** → **Upload a skill** → `claude-skill/qa-markdown.zip` (e, do mesmo jeito, `claude-skill/qa-varredura.zip`). Precisa da execução de código ligada. Alternativa: numa conversa, peça "atualize a minha skill qa-markdown com este arquivo" anexando `claude-skill/qa-markdown/SKILL.md` e salve pelo cartão.
 - **Claude Code (terminal e extensão do VS Code), logado com a conta claude.ai:** as skills da conta são sincronizadas sozinhas (`~/.claude/skills/synced/`, conferidas a cada ~10 min durante a sessão) — atualizou no app, chega no Claude Code.
 - **Claude Code sem conta claude.ai** (ex.: chave de API da empresa): copie a pasta `claude-skill/qa-markdown/` para `~/.claude/skills/qa-markdown/` (Windows: `C:\Users\<você>\.claude\skills\qa-markdown\`). Mudanças no `SKILL.md` valem na hora, sem reiniciar.
 
