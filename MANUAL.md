@@ -825,11 +825,20 @@ No `claude_desktop_config.json`: `"markdown-qa": { "command": "node", "args": ["
 | `qa_consultar` | Consulta na **mesma sintaxe das visões** (11.1), inclusive as prontas: *"tickets em teste da versão 2.14"* |
 | `qa_ler` · `qa_resumo_execucao` · `qa_ver_evidencia` · `qa_versoes` | Ler com o cabeçalho interpretado (execução, rodada, Jira, comentários, quem cita); falhas para análise; ver um print; histórico |
 | `qa_criar` | Documento novo do modelo (ou texto completo) com o **próximo ID** e na **pasta certa** pelo `app:`; devolve os avisos da validação |
-| `qa_bug_do_caso` | Bug ligado a partir do passo que falhou, com passos, esperado, obtido e os prints; o caso ganha o link |
+| `qa_bug_do_caso` | Bug ligado a partir do passo que falhou, com passos, esperado, obtido e os prints; o caso ganha o link. Se o caso **já tem bug ligado**, ele não duplica: mostra os bugs e o Claude pergunta se é **reincidência** (registra no bug e reabre, como o app) ou bug novo. Achado numa rodada, o bug guarda `execucao:`/`ciclo:` |
+| `qa_rodada_criar` · `qa_rodada_registrar` · `qa_rodada_status` · `qa_rodada_finalizar` | A rodada inteira pelo Claude: criar pelos casos de um **segmento** (épico, ticket, `#tag`), de uma consulta, de uma lista ou de um **ciclo salvo** (vira a execução #N); registrar cada caso (passos ou o caso inteiro); ver como está; finalizar (SKIP nos pendentes + os 4 relatórios) |
+| `qa_relatorios` | Gera/regera os relatórios de fim de execução (7.8) — os mesmos do app, mantendo o que você escreveu |
+| `qa_validar` · `qa_rastreabilidade` | Avisos de QA, links quebrados e evidências faltando (documento, segmento, pasta ou tudo); matriz ticket/épico → casos → resultado → bugs |
 | `qa_marcar_passos` · `qa_nova_rodada` | Status/obtido por passo (o resumo e o status geral se atualizam); `concluir` registra a rodada |
 | `qa_anexar_evidencia` | Copia um arquivo do computador (print, vídeo, HAR, log) para `evidencias/` e liga no documento |
 | `qa_atualizar_cabecalho` · `qa_comentar` | Campos do cabeçalho (ex.: a chave do Jira; trocar o `id` atualiza o documento e os `[[links]]` da pasta, como no editor); comentário de revisão (6.7) |
 | `qa_para_jira` | O bug pronto para o ticket: resumo `[BUG-12] título`, prioridade, descrição e os anexos |
+
+**Pedidos que funcionam bem** (a skill `qa-markdown` traz os roteiros):
+- *"escreva os casos desta história"*, colando os critérios de aceite. O Claude cria positivos, negativos e limites, com `jira:`/`epico:`, e mostra a matriz critério → casos.
+- *"revise os casos do PORTAL-120"*. Ele usa o checklist de qualidade (passo atômico, esperado verificável, massa de dados…) e deixa as sugestões como comentário.
+- *"monte a regressão do épico PORTAL-10"* → *"TC-3 passou, TC-4 falhou no passo 2 com erro 500"* → *"finalize"*.
+- *"analise a rodada"*. Vem um resumo executivo, as falhas agrupadas por causa provável, os bugs a abrir ou reincidências e o comparativo com a anterior.
 
 **Jira pelo Claude:** com o conector da Atlassian ligado no Claude, peça *"abra no Jira o BUG-012 e grave a chave"*: o Claude lê o bug com `qa_para_jira`, cria o ticket pelo conector e grava a chave com `qa_atualizar_cabecalho`. Os prints: se o conector não anexar arquivos, o Claude informa os caminhos para você anexar.
 

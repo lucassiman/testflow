@@ -54,7 +54,11 @@ Como trabalhar:
 - Para escrever, prefira as ferramentas específicas (qa_criar, qa_bug_do_caso, qa_marcar_passos, qa_anexar_evidencia, qa_atualizar_cabecalho, qa_comentar) em vez de reescrever arquivos: elas seguem as regras do formato, dão o próximo ID, põem no lugar certo pelo app: e guardam a versão anterior em .versoes/.
 - Antes de escrever testware do zero, leia qa_convencoes. Não invente dados, resultados, IDs do Jira nem evidências.
 - Nada é publicado na pasta oficial nem apagado por aqui; o editor aberto percebe a mudança e oferece recarregar.
-- Jira: qa_para_jira devolve o bug pronto (resumo, prioridade, descrição, anexos); depois de criar o ticket com o conector do Jira, grave a chave com qa_atualizar_cabecalho { jira: "CHAVE-123" }.`;
+- Jira: qa_para_jira devolve o bug pronto (resumo, prioridade, descrição, anexos); depois de criar o ticket com o conector do Jira, grave a chave com qa_atualizar_cabecalho { jira: "CHAVE-123" }.
+- Rodada de regressão: qa_rodada_criar (por segmento — épico, ticket, #tag —, consulta, lista de casos ou ciclo salvo) → qa_rodada_registrar por caso → qa_rodada_status para ver como está → qa_rodada_finalizar (SKIP nos pendentes e os 4 relatórios: encerramento/Go-No-Go, defeitos, rastreabilidade, log + comparativo). qa_relatorios regera.
+- Bug de um caso que já tem bug ligado: qa_bug_do_caso devolve os bugs; pergunte ao usuário se é reincidência (reincidencia: "BUG-…") ou bug novo (novo: true).
+- Segmento = tudo o que nasceu de um épico/ticket/execução/ciclo/#tag (filtro segmento em qa_listar/qa_consultar/qa_validar/qa_rastreabilidade).
+- Qualidade: qa_validar (avisos de QA, links quebrados, evidências faltando) antes de entregar ou publicar.`;
 
 const text = (t: string) => ({ content: [{ type: 'text' as const, text: t }] });
 const fail = (err: unknown) => ({ content: [{ type: 'text' as const, text: `Erro: ${(err as Error)?.message || String(err)}` }], isError: true });
@@ -142,7 +146,12 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
 
   server.registerTool('qa_bug_do_caso', {
     title: 'Bug a partir de um caso', description: 'Cria o bug ligado a um caso de teste a partir do passo que falhou (o primeiro FAIL/BLOCKED, ou o informado): passos até ele, esperado, obtido, ambiente e os prints do passo. O caso ganha o link para o bug.',
-    inputSchema: { caso: docArg, passo: z.string().optional().describe('número/ID do passo; sem ele, o primeiro com FAIL'), titulo: z.string().optional(), obtido: z.string().optional().describe('resultado obtido, se quiser detalhar') },
+    inputSchema: {
+      caso: docArg, passo: z.string().optional().describe('número/ID do passo; sem ele, o primeiro com FAIL'), titulo: z.string().optional(), obtido: z.string().optional().describe('resultado obtido, se quiser detalhar'),
+      reincidencia: z.string().optional().describe('ID de um bug já ligado ao caso: registra a reincidência nele (data, passo, obtido, print; reabre se estava fechado) em vez de criar outro'),
+      novo: z.boolean().optional().describe('true = cria um bug novo mesmo que o caso já tenha bug ligado'),
+      execucao: z.string().optional().describe('execução (rodada) onde o defeito foi achado: o bug guarda execucao:/ciclo:'),
+    },
     annotations: RW,
   }, async (a) => run(() => ws.bugFromCase(a), text));
 
@@ -182,6 +191,55 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
     title: 'Bug pronto para o Jira', description: 'Devolve o bug pronto para criar/atualizar o ticket no Jira: resumo "[BUG-12] título", tipo, prioridade, descrição (Markdown e wiki markup, sem comentários de revisão) e os caminhos dos anexos. Depois de criar o ticket, grave a chave com qa_atualizar_cabecalho.',
     inputSchema: { doc: docArg }, annotations: RO,
   }, async (a) => run(() => ws.forJira(a.doc), (r) => text(r.text)));
+
+  // ---------------------------------------------------------------- rodadas e relatórios (Fase 10.4)
+  server.registerTool('qa_rodada_status', {
+    title: 'Como está a rodada', description: 'Rodada (execução) em andamento — ou a informada: progresso, PASS/FAIL/BLOCKED/SKIP, % de sucesso, pendentes, falhas com os bugs ligados, duração e vínculos.',
+    inputSchema: { execucao: z.string().optional().describe('ID/caminho da execução; sem ele, a última em andamento') }, annotations: RO,
+  }, async (a) => run(() => ws.roundStatus(a.execucao || ''), text));
+
+  server.registerTool('qa_rodada_criar', {
+    title: 'Nova rodada de execução', description: 'Cria a execução (rodada) com os casos de um segmento (épico, ticket, #tag, execução anterior), de uma consulta (sintaxe das visões), de uma lista de IDs — combinados, vale a interseção — ou de um ciclo salvo (vira a execução #N dele). A execução herda as tags/épico/ticket/sprint que todos os casos têm (ou os do ciclo) e nasce junto das outras execuções.',
+    inputSchema: {
+      nome: z.string().optional(), casos: z.array(z.string()).optional().describe('IDs dos casos'),
+      segmento: z.string().optional().describe('ex.: PORTAL-10, PORTAL-120, #pix, EXEC-20261001-0900'),
+      consulta: z.string().optional().describe('ex.: "tags: regressao\napp: Portal\nprioridade: Alta"'),
+      ciclo: z.string().optional().describe('ID do ciclo salvo (tipo ciclo-regressao) para executar de novo'),
+      app: z.string().optional(), vinculos: z.record(z.string(), z.string()).optional().describe('jira, epico, sprint, plano'),
+    }, annotations: RW,
+  }, async (a) => run(() => ws.roundCreate(a), text));
+
+  server.registerTool('qa_rodada_registrar', {
+    title: 'Registrar caso na rodada', description: 'Registra o resultado de um caso na rodada. Com passos: marca no caso (arquiva a rodada antiga se as marcas eram de antes) e, com todos marcados, conclui a rodada do caso. Sem passos: status do caso inteiro (checklist, ou "não deu para executar") na execução. A execução se atualiza (status, executado em, bugs abertos).',
+    inputSchema: {
+      execucao: z.string().optional().describe('sem ela, a última em andamento'), caso: docArg,
+      passos: z.array(z.object({ passo: z.string(), status: z.string().optional(), obtido: z.string().optional() })).optional(),
+      status: z.string().optional().describe('PASS, FAIL, BLOCKED ou SKIP do caso inteiro (quando não há passos)'),
+      observacao: z.string().optional().describe('comentário de revisão no caso, com o ID da rodada'),
+    }, annotations: RW,
+  }, async (a) => run(() => ws.roundRecord(a), text));
+
+  server.registerTool('qa_rodada_finalizar', {
+    title: 'Finalizar rodada', description: 'Finaliza a execução: SKIP nos casos não executados, fim:, seção Encerramento, atualiza o ciclo de origem e (padrão) gera os 4 relatórios de fim de execução. Depois de finalizada, a execução não muda mais — confirme com o usuário antes.',
+    inputSchema: { execucao: z.string().optional(), relatorios: z.boolean().optional().describe('false = não gera os relatórios') },
+    annotations: { ...RW, destructiveHint: true },
+  }, async (a) => run(() => ws.roundFinish(a), text));
+
+  server.registerTool('qa_relatorios', {
+    title: 'Relatórios de fim de execução', description: 'Gera ou regera os 4 relatórios da execução em relatorios/<ID>/ (Encerramento e Go/No-Go com os critérios de saída do plano; Defeitos da rodada; Rastreabilidade e cobertura; Log + comparativo com a execução anterior), ligados na seção Relatórios dela. O que o QA escreveu nos trechos de comentário e aceite é mantido.',
+    inputSchema: { execucao: z.string().optional() }, annotations: RW,
+  }, async (a) => run(() => ws.reports(a.execucao || ''), text));
+
+  server.registerTool('qa_validar', {
+    title: 'Validar (avisos de QA)', description: 'Os avisos do app: passo sem resultado esperado, status incoerente, cabeçalho incompleto, links [[…]] quebrados e evidências que não existem. Um documento, um segmento (épico/ticket/execução/#tag), uma pasta ou a pasta inteira.',
+    inputSchema: { doc: z.string().optional(), segmento: z.string().optional(), pasta: z.string().optional(), limite: z.number().int().min(1).max(500).optional() },
+    annotations: RO,
+  }, async (a) => run(() => ws.validate(a), text));
+
+  server.registerTool('qa_rastreabilidade', {
+    title: 'Rastreabilidade', description: 'Matriz requisito (ticket/épico) → casos → último resultado → bugs. Com segmento, só o do épico/ticket/execução.',
+    inputSchema: { segmento: z.string().optional(), app: z.string().optional() }, annotations: RO,
+  }, async (a) => run(() => ws.traceability(a), text));
 
   return server;
 }

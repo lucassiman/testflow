@@ -172,6 +172,8 @@ Ida e volta pela área de transferência (sem chave de API, nada sai do editor s
 
 ✅ **Feito na 1.12.0 — Dispositivo/ambiente:** substituir/expandir o campo atual *Browser* por **Dispositivo/Ambiente**: WEB, Mobile iOS, Mobile Android, Mobile — Todos; para mobile informar a versão (ex.: Mobile iOS — iOS 18, Mobile Android — Android 15). Deve aparecer nas tags, no cabeçalho do caso, nos modelos de criação de casos e nas informações da execução, para rastrear em que dispositivo/plataforma cada caso foi validado.
 
+**1.22.0 (08/10) — Fase 10.4: Claude no fluxo do QA.** MCP (`mcp/qa.ts`, `mcp/server.ts`): `qa_rodada_status`, `qa_rodada_criar` (segmento/consulta/casos — interseção — ou ciclo salvo → execução #N; herança via `commonHeader`/`headerOf`; `runDestination`), `qa_rodada_registrar` (passos no caso com `needsFreshRound`→`newRound` e `logRun` quando todos marcados; ou status do caso inteiro na execução; observação vira comentário), `qa_rodada_finalizar` (`skipPending`+`closeCycle`, atualiza a tabela Execuções do ciclo, relatórios), `qa_relatorios` (`buildReports`/`linkReports`, aceite lido do disco), `qa_validar` (lint + `findBrokenLinks` + evidência faltando + cabeçalho), `qa_rastreabilidade` (visão `formato: rastreabilidade` + `segmento:`); `qa_bug_do_caso` com `reincidencia`/`novo`/`execucao`. Skill: §6.1 do requisito ao caso, §6.2 checklist de revisão, §6.3 analisar a rodada; herança na §Como entregar.
+
 **1.21.0 (08/10) — segmentos, herança e pasta do épico** (pedido do Lucas depois da 1.20.0). `src/markdown/segment.ts`: `segmentMembers(chave, docs)` (direto por ID/campo/tag/pasta → tickets das histórias do épico → o que a raiz cita → quem cita ou nasceu de um membro), `commonHeader` (o que todos os casos escolhidos têm), `inheritHeader` (soma tags, preenche campos vazios). Busca/visões/MCP: filtro `segmento:` (`seg:`); árvore: 🧩 Reunir o segmento. Estrutura: épico em `casos/<ÉPICO>/`, ticket com épico em `casos/<ÉPICO>/<TICKET>/` (`ticketDir`, `segmentOfDir`, `epicKey`), `ticketMoves` → *Organizar por épico e ticket*. Herança: pasta → caso novo (app e MCP), casos → execução/ciclo, ciclo → execução (tags), execução → relatórios, caso → bug (`origin` execução/ciclo; sem jira). `describe` ganhou `origem` (ciclo/execucao/plano).
 
 **1.20.0 (08/10) — Fase 10.2: relatórios de fim de execução.** `src/markdown/reports.ts` (puro, para o app e o MCP): `buildReports(execPath, docs)` monta os 4 documentos (`relatorio-encerramento`, `-defeitos`, `-rastreabilidade`, `-log`) em `<pasta da execução>/relatorios/<EXEC-ID>/`; `linkReports` põe a seção *Relatórios* na execução; `keepManual` preserva os trechos `<!-- qa:manual:nome -->` ao regerar (lidos do disco). Critérios de saída em texto livre avaliados por `evalCriterion` (bugs por severidade, % executado, % sucesso, BLOCKED); plano pelo vínculo novo `plano:` ou pelo que cita mais casos. App: `src/app/reports.js` (🏁 Finalizar gera; **📑 Relatórios** no painel e na paleta regera).
@@ -411,7 +413,7 @@ Ao **🏁 Finalizar execução**, o TestFlow gera 4 documentos em `relatorios/<E
 | **Cartão do cabeçalho recolhível** | Linha compacta (ID · status · prioridade · ambiente · Jira) com "▾ mais". | P |
 | **Revisão de acessibilidade** | Foco visível, contraste, atalhos visíveis nos botões, navegação só por teclado na rodada. | M |
 
-#### 10.4 — Claude no fluxo do QA (skill + MCP) *(M–G)*
+#### 10.4 — Claude no fluxo do QA (skill + MCP) *(M–G)* — ✅ feito na 1.22.0
 
 | Item | Detalhe | Esforço |
 |---|---|---|

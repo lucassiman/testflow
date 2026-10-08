@@ -16,15 +16,23 @@ import { readText, writeText, writeBytes, namesIn, hasName, kindAt } from '../sr
 import { snapshotBeforeSave, listVersions } from '../src/io/versions.js';
 import { IGNORE } from '../src/io/workspace.js';
 import { detectFrontMatter, parseFrontMatter, TYPE_LABELS } from '../src/markdown/frontmatter.ts';
-import { parseView, runView, viewMarkdown, VIEW_PRESETS, findViewBlocks } from '../src/markdown/views.ts';
+import { parseView, runView, viewMarkdown, VIEW_PRESETS, findViewBlocks, viewMatches, bugsFor, bugOpen } from '../src/markdown/views.ts';
 import type { ViewDoc } from '../src/markdown/views.ts';
 import { lastRound } from '../src/markdown/linkInfo.ts';
 import { stepTable, setActual, setStepStatus, logRun, newRound, addEvidenceToSection, cellToText, findSection } from '../src/markdown/runs.ts';
-import { syncExecution, countStatuses, deriveOverall, cellStatus, updateSummaryBlocks } from '../src/markdown/status.ts';
-import { sourceInfo, failedStep, nextId, idPrefix, buildLinkedDoc, linkLine } from '../src/markdown/linkedDoc.ts';
+import { syncExecution, countStatuses, deriveOverall, cellStatus, updateSummaryBlocks, setCell } from '../src/markdown/status.ts';
+import { sourceInfo, failedStep, nextId, idPrefix, buildLinkedDoc, linkLine, addRecurrence, bugClosed } from '../src/markdown/linkedDoc.ts';
 import type { FailedStep } from '../src/markdown/linkedDoc.ts';
-import { suggestDestination, runDestination, INBOX_DIR, fillApp, fillJira, fillField, appOfDir, segmentOfDir, ticketKey } from '../src/markdown/structure.ts';
-import { inheritHeader } from '../src/markdown/segment.ts';
+import { suggestDestination, runDestination, INBOX_DIR, fillApp, fillJira, fillField, appOfDir, segmentOfDir, ticketKey, CASE_TYPES } from '../src/markdown/structure.ts';
+import { inheritHeader, segmentMembers, commonHeader, headerOf } from '../src/markdown/segment.ts';
+import {
+  cycleDoc, cycleTable, isCycle, isCycleDef, cycleStart, cycleClosed, syncCycle, caseResult, needsFreshRound, closeCycle, skipPending, cycleSummary,
+  defCases, execNumber, cicloOf, nextExecNumber, cycleProgress, unexecuted, nextCase, execInfo, syncDefExecutions,
+} from '../src/markdown/cycle.ts';
+import type { CaseLookup } from '../src/markdown/cycle.ts';
+import { buildReports, linkReports, REPORT_TYPES } from '../src/markdown/reports.ts';
+import { readLinks } from '../src/markdown/linkTypes.ts';
+import { findBrokenLinks } from '../src/markdown/brokenLinks.ts';
 import { setFrontMatterFields, readPublishMeta, PUBLISH_KEYS } from '../src/markdown/publish.ts';
 import { addJiraKey } from '../src/markdown/jiraCsv.ts';
 import { buildJiraCopy } from '../src/markdown/jira.ts';
@@ -420,11 +428,40 @@ export class QaWorkspace {
   }
 
   /** Bug ligado a um caso: passos até o que falhou, esperado, obtido, prints do passo; o caso ganha o link. */
-  bugFromCase(o: { caso: string; passo?: string; titulo?: string; obtido?: string }): Promise<string> {
+  bugFromCase(o: { caso: string; passo?: string; titulo?: string; obtido?: string; reincidencia?: string; novo?: boolean; execucao?: string }): Promise<string> {
     return this.exclusive(() => this.bugFromCaseNow(o));
   }
 
-  private async bugFromCaseNow(o: { caso: string; passo?: string; titulo?: string; obtido?: string }): Promise<string> {
+  /** Bugs ligados ao caso: citados por ele ou que citam ele. Abertos primeiro. */
+  private linkedBugs(e: DocEntry, src: string): DocEntry[] {
+    const me = [e.id, e.name.replace(/\.(md|markdown)$/i, '')].filter(Boolean).map((x) => x.toLowerCase());
+    const here = new Set([...src.matchAll(/\[\[([^\]|#]+)/g)].map((m) => m[1].trim().toLowerCase()));
+    return this.index.all()
+      .filter((b) => b.tipo === 'bug' && ((b.id && here.has(b.id.toLowerCase())) || b.targets.some((t) => me.includes(t.split('#')[0].trim().toLowerCase().replace(/\.(md|markdown)$/i, '')))))
+      .sort((a, b) => Number(bugClosed(a.status || '')) - Number(bugClosed(b.status || '')) || (a.id || '').localeCompare(b.id || '', 'pt-BR', { numeric: true }));
+  }
+
+  /** Prints do passo ("![Passo 3 — …](…)") copiados para evidencias/ da pasta `dest`. */
+  private async copyStepPrints(casePath: string, src: string, step: FailedStep | null, dest: string): Promise<string[]> {
+    const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const stepPrints = step ? [...src.matchAll(new RegExp(`!\\[Passo ${esc(step.label)}\\b[^\\]]*\\]\\(\\s*<?([^)\\s>]+)`, 'g'))].map((m) => m[1]).filter(isRelativeHref) : [];
+    const prints: string[] = [];
+    const used = await namesIn(this.h, `${dest}/${EVIDENCE_DIR}`);
+    for (const p of stepPrints) {
+      const from = resolveHref(casePath, p);
+      if (!from) continue;
+      try {
+        const data = await fs.readFile(await this.safeFull(from));
+        const name = uniqueName(baseOf(from), (n) => hasName(used, n));
+        used.add(name);
+        await writeBytes(this.h, `${dest}/${EVIDENCE_DIR}/${name}`, new Uint8Array(data));
+        prints.push(`${EVIDENCE_DIR}/${encodePath(name)}`);
+      } catch { /* print sumiu: segue sem ele */ }
+    }
+    return prints;
+  }
+
+  private async bugFromCaseNow(o: { caso: string; passo?: string; titulo?: string; obtido?: string; reincidencia?: string; novo?: boolean; execucao?: string }): Promise<string> {
     await this.refresh(true);
     const e = await this.find(o.caso);
     const doc = await this.readDoc(e.path);
@@ -440,27 +477,42 @@ export class QaWorkspace {
     }
     if (step && o.obtido) step = { ...step, actual: o.obtido };
     const me = sourceInfo(src, e.name);
+    const sourceTarget = me.id || e.name.replace(/\.(md|markdown)$/i, '');
+    // o caso já tem bug ligado: o defeito pode ser o mesmo (como o app, 1.18.0)
+    const known = this.linkedBugs(e, src);
+    if (o.reincidencia) {
+      const bug = await this.find(o.reincidencia);
+      if (bug.tipo !== 'bug') throw new Error(`${bug.path} não é um bug`);
+      const prints = await this.copyStepPrints(e.path, src, step, dirOf(bug.path));
+      const bdoc = await this.readDoc(bug.path);
+      const res = addRecurrence(bdoc.text, { when: new Date(), sourceTarget, step, prints, versao: me.versao, ambiente: me.ambiente });
+      await this.writeDoc(bug.path, res.text, bdoc);
+      const cited = new Set([...src.matchAll(/\[\[([^\]|#]+)/g)].map((m) => m[1].trim().toLowerCase()));
+      if (!cited.has((bug.id || '').toLowerCase())) {
+        const t = stepTable(src);
+        const lines = src.split('\n');
+        const at = t ? (t.rows.at(-1)?.line ?? t.header + 1) + 1 : lines.length;
+        insertBlock(lines, at, [linkLine('bug', bug.id || bug.name, bug.titulo || '')]);
+        await this.writeDoc(e.path, lines.join('\n'), doc);
+      }
+      return `Reincidência registrada em ${bug.id || bug.path} (${res.count}ª)${res.reopened ? ` — bug reaberto: status ${res.previous} → FAIL` : ''}${prints.length ? `, com ${prints.length} print(s)` : ''}.`;
+    }
+    if (known.length && !o.novo) {
+      return [
+        `${sourceTarget} já tem bug ligado — o defeito pode ser o mesmo. Nada foi criado.`,
+        ...known.map((b) => `- ${b.id || b.name} — ${b.titulo || ''} · ${bugClosed(b.status || '') ? `fechado (${b.status})` : `aberto${b.status ? ` (${b.status})` : ''}`}`),
+        'Pergunte ao usuário: registrar a reincidência num deles (qa_bug_do_caso com reincidencia: "BUG-…": entra em "Reincidências" com data, passo, obtido e print, e reabre se estava fechado) ou criar um bug novo (novo: true).',
+      ].join('\n');
+    }
     const tpl = await this.templateText('bug');
     const id = nextId(idPrefix(tpl.text) || 'BUG-', this.allIds());
     const title = (o.titulo || step?.actual || step?.action || 'Defeito encontrado').slice(0, 120);
     const dest = suggestDestination({ tipo: 'bug', app: me.app }, this.dirs).dir;
-    // prints do passo ("![Passo 3 — …](…)") vão junto para evidencias/ do bug
-    const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const stepPrints = step ? [...src.matchAll(new RegExp(`!\\[Passo ${esc(step.label)}\\b[^\\]]*\\]\\(\\s*<?([^)\\s>]+)`, 'g'))].map((m) => m[1]).filter(isRelativeHref) : [];
-    const prints: string[] = [];
-    const used = await namesIn(this.h, `${dest}/${EVIDENCE_DIR}`);
-    for (const p of stepPrints) {
-      const from = resolveHref(e.path, p);
-      if (!from) continue;
-      try {
-        const data = await fs.readFile(await this.safeFull(from));
-        const name = uniqueName(baseOf(from), (n) => hasName(used, n));
-        used.add(name);
-        await writeBytes(this.h, `${dest}/${EVIDENCE_DIR}/${name}`, new Uint8Array(data));
-        prints.push(`${EVIDENCE_DIR}/${encodePath(name)}`);
-      } catch { /* print sumiu: segue sem ele */ }
-    }
-    const text = buildLinkedDoc(fillTemplate(tpl.text), { id, title, sourceTarget: me.id || e.name.replace(/\.(md|markdown)$/i, ''), source: me, step, prints });
+    const prints = await this.copyStepPrints(e.path, src, step, dest);
+    // achado numa rodada: o bug guarda a execução e o ciclo de onde veio (herança)
+    let origin: { execucao?: string; ciclo?: string; plano?: string } | undefined;
+    if (o.execucao) { const ex = await this.find(o.execucao); const h = headerOf(ex.text || ''); origin = { execucao: h.id || ex.id, ciclo: h.ciclo, plano: h.plano }; }
+    const text = buildLinkedDoc(fillTemplate(tpl.text), { id, title, sourceTarget, source: me, step, prints, origin });
     const path = await this.createDoc(dest, suggestedFileName(text, title), text);
     // o caso ganha o link para o bug, logo depois da tabela de passos
     const t = stepTable(src);
@@ -649,6 +701,338 @@ export class QaWorkspace {
         '', '----- descrição (wiki markup do Jira, se o campo não aceitar Markdown) -----', copy.wiki,
       ].join('\n'),
     };
+  }
+
+  // ---------------------------------------------------------------- rodadas (execuções), relatórios, validação
+  /** Documentos como o app vê (caminho + texto) — para as funções puras (relatórios, segmentos). */
+  private docTexts(): Array<{ path: string; text: string }> {
+    return this.index.all().map((e) => ({ path: e.path, text: e.text || '' }));
+  }
+
+  /** A execução pedida (ID/caminho) ou a última em andamento. */
+  private async execOf(ref = ''): Promise<DocEntry> {
+    await this.refresh(true);
+    if (ref) {
+      const e = await this.find(ref);
+      if (!isCycle(e.text || '')) throw new Error(`${e.path} não é uma execução (rodada) — use o ID de uma execução (EXEC-…) ou de um documento tipo execucao`);
+      return e;
+    }
+    const open = this.index.all().filter((e) => isCycle(e.text || '') && !cycleClosed(e.text || ''))
+      .sort((a, b) => (cycleStart(b.text || '')?.getTime() || 0) - (cycleStart(a.text || '')?.getTime() || 0));
+    if (!open.length) throw new Error('nenhuma execução em andamento na pasta — crie com qa_rodada_criar ou informe a execução');
+    return open[0];
+  }
+
+  /** Resultado de cada caso na rodada (como o app: rodada concluída depois do início; bugs abertos ligados). */
+  private lookup(since: Date): (key: string) => CaseLookup | null {
+    const docs = this.viewDocs();
+    return (key) => {
+      const e = this.index.resolve(key);
+      if (!e) return null;
+      const counts = e.counts;
+      const row = docs.find((d) => d.path === e.path);
+      const bugs = row ? bugsFor(row, docs).filter(bugOpen).map((b) => b.id || b.name.replace(/\.(md|markdown)$/i, '')) : [];
+      return { result: caseResult(e.text || '', since, counts, e.lastModified || 0), bugs };
+    };
+  }
+
+  /** Texto da execução com o resultado dos casos em dia. */
+  private synced(text: string): string {
+    const since = cycleStart(text);
+    return since ? syncCycle(text, this.lookup(since)) : text;
+  }
+
+  /** Como está a rodada: progresso, pendentes, falhas com bugs, tempo. */
+  async roundStatus(ref = ''): Promise<string> {
+    const e = await this.execOf(ref);
+    const text = this.synced(e.text || '');
+    const s = cycleSummary(text);
+    const t = cycleTable(text);
+    if (!s || !t) throw new Error(`${e.path} não tem a tabela "Casos do ciclo"`);
+    const since = cycleStart(text);
+    const ms = s.duracaoMs ?? 0;
+    const pend = t.rows.filter((r) => !r.status || r.status === 'PENDING').map((r) => {
+      const c = this.index.resolve(r.key);
+      const res = c && since ? caseResult(c.text || '', since, c.counts, c.lastModified || 0) : null;
+      return `${r.key}${res?.state === 'andamento' ? ' (em andamento)' : ''}${c && c.counts.total === 0 ? ' (como um todo)' : ''}`;
+    });
+    return [
+      `**${s.titulo}** — ${e.path}${cycleClosed(text) ? ' · ENCERRADA' : ' · em andamento'}`,
+      `Início ${since ? since.toLocaleString('pt-BR') : '?'} · duração ${Math.round(ms / 60000)} min`,
+      `Casos: ${s.total} — ${s.pass} PASS · ${s.fail} FAIL · ${s.blocked} BLOCKED · ${s.skip} SKIP · ${s.pendente} pendente(s) · sucesso ${s.sucessoPct == null ? '—' : `${s.sucessoPct}%`}`,
+      s.problemas.length ? `Falhas/bloqueios: ${s.problemas.map((p) => `${p.key} ${p.status}${p.bugs.length ? ` (${p.bugs.join(', ')})` : ' (sem bug ligado)'}`).join('; ')}` : 'Sem falhas.',
+      pend.length ? `Pendentes: ${pend.join(', ')}` : 'Nenhum pendente.',
+      s.auto ? `Automatizados (${s.auto.tool}): ${s.auto.total} — ${s.auto.pass} PASS · ${s.auto.fail} FAIL` : '',
+      `Vínculos: ${Object.entries(readLinks(text)).map(([k, v]) => `${k}: ${v.join(', ')}`).join(' · ') || 'nenhum'}`,
+    ].filter(Boolean).join('\n');
+  }
+
+  /**
+   * Nova rodada: os casos vêm da lista, de um segmento (épico, ticket, #tag, execução…), de uma consulta (sintaxe das
+   * visões) ou de um ciclo salvo (vira a execução #N dele). A execução herda o que os casos têm em comum.
+   */
+  roundCreate(o: { nome?: string; casos?: string[]; segmento?: string; consulta?: string; ciclo?: string; app?: string; vinculos?: Record<string, string> }): Promise<string> {
+    return this.exclusive(() => this.roundCreateNow(o));
+  }
+
+  private async roundCreateNow(o: { nome?: string; casos?: string[]; segmento?: string; consulta?: string; ciclo?: string; app?: string; vinculos?: Record<string, string> }): Promise<string> {
+    await this.refresh(true);
+    const all = this.index.all();
+    const isCaseDoc = (e: DocEntry) => CASE_TYPES.includes(e.tipo);
+    let picked: DocEntry[] = [];
+    let origem = '';
+    let link: { ciclo: string; numero: number } | null = null;
+    let defText = '';
+    if (o.ciclo) {
+      const def = await this.find(o.ciclo);
+      defText = def.text || '';
+      if (!isCycleDef(defText)) throw new Error(`${def.path} não é um ciclo salvo (tipo: ciclo-regressao sem inicio:)`);
+      picked = defCases(defText).map((c) => this.index.resolve(c.key)).filter((x): x is DocEntry => !!x);
+      const key = def.id || def.name.replace(/\.(md|markdown)$/i, '');
+      const execs = all.filter((x) => isCycle(x.text || '') && cicloOf(x.text || '').toLowerCase() === key.toLowerCase()).map((x) => ({ numero: execNumber(x.text || '') }));
+      link = { ciclo: key, numero: nextExecNumber(execs) };
+      origem = `ciclo ${def.titulo || def.name}`;
+    } else {
+      const sets: DocEntry[][] = [];
+      if (o.casos?.length) {
+        const list: DocEntry[] = [];
+        for (const c of o.casos) list.push(await this.find(c));
+        sets.push(list);
+      }
+      if (o.segmento) sets.push(segmentMembers(o.segmento, all).filter(isCaseDoc));
+      if (o.consulta) {
+        const { spec, errors } = parseView(o.consulta);
+        if (errors.length) throw new Error(`consulta: ${errors.join(' · ')}`);
+        const docs = this.viewDocs();
+        const ok = new Set(docs.filter((d) => viewMatches(d, spec, docs)).map((d) => d.path));
+        sets.push(all.filter((e) => ok.has(e.path) && isCaseDoc(e)));
+      }
+      if (!sets.length) throw new Error('informe os casos: casos (IDs), segmento (épico/ticket/#tag/execução) ou consulta — ou um ciclo salvo');
+      // mais de um critério: os casos que estão em todos
+      picked = sets.reduce((acc, s) => acc.filter((x) => s.some((y) => y.path === x.path)));
+      origem = [o.segmento && `segmento ${o.segmento}`, o.consulta && 'consulta', o.casos?.length && `${o.casos.length} caso(s) escolhido(s)`].filter(Boolean).join(' + ');
+    }
+    picked = [...new Map(picked.map((e) => [e.path, e])).values()].sort((a, b) => (a.id || a.name).localeCompare(b.id || b.name, 'pt-BR', { numeric: true }));
+    if (!picked.length) throw new Error('nenhum caso de teste encontrado com esse critério');
+    const apps = [...new Set(picked.map((e) => e.app).filter(Boolean))];
+    const appName = o.app || (apps.length === 1 ? apps[0] : '');
+    // herança: do ciclo (vínculos, tags) ou o que todos os casos têm em comum; vínculos informados valem mais
+    const common = commonHeader(picked);
+    const fromDef = defText ? headerOf(defText) : null;
+    const links: Record<string, string[]> = defText ? readLinks(defText) : { ...(common.jira.length ? { jira: common.jira } : {}), ...(common.epico.length ? { epico: common.epico } : {}), ...(common.sprint.length ? { sprint: common.sprint } : {}) };
+    for (const [k, v] of Object.entries(o.vinculos || {})) links[k] = String(v).split(/[,;]+/).map((x) => x.trim()).filter(Boolean);
+    const now = new Date();
+    const titulo = o.nome || (link ? `${String(meta(defText).titulo || link.ciclo)} — Execução #${link.numero}` : `Rodada${appName ? ` ${appName}` : ''} — ${now.toLocaleDateString('pt-BR')}`);
+    const start = link && link.numero > 1 ? new Date(Math.ceil((now.getTime() + 1) / 60000) * 60000) : now;
+    let text = cycleDoc({
+      titulo, app: appName, origem, cases: picked.map((e) => ({ key: e.id || e.name.replace(/\.(md|markdown)$/i, ''), titulo: e.titulo || e.heading || e.name })),
+      start, responsavel: this.opts.who || '', links, tags: fromDef ? fromDef.tags : common.tags, ...(link ? { ciclo: link.ciclo, numero: link.numero } : {}),
+    });
+    const dispositivo = defText ? String(meta(defText).dispositivo || '') : '';
+    if (dispositivo) text = setFrontMatterFields(text, { dispositivo });
+    const sibs = all.filter((e) => (e.tipo === 'execucao' || e.tipo === 'relatorio-execucao') && (!appName || (e.app || '').toLowerCase() === appName.toLowerCase())).map((e) => e.path);
+    const dir = runDestination({ tipo: 'execucao', app: appName }, this.dirs, sibs).dir;
+    const slug = titulo.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'rodada';
+    const path = await this.createDoc(dir, `${slug}.md`, text);
+    const id = String(meta(text).id || '');
+    return `Criada: ${path} (${id}) com ${picked.length} caso(s): ${picked.map((e) => e.id || e.name).join(', ')}.${Object.keys(links).length ? ` Vínculos: ${Object.entries(links).map(([k, v]) => `${k}: ${v.join(', ')}`).join(' · ')}.` : ''} Registre cada caso com qa_rodada_registrar; no fim, qa_rodada_finalizar.`;
+  }
+
+  /**
+   * Registra o resultado de um caso na rodada: com `passos`, marca os passos no caso (arquivando a rodada antiga se as
+   * marcas eram de antes) e conclui a rodada do caso; sem passos, grava o status do caso inteiro na execução.
+   */
+  roundRecord(o: { execucao?: string; caso: string; status?: string; passos?: Array<{ passo: string; status?: string; obtido?: string }>; observacao?: string }): Promise<string> {
+    return this.exclusive(() => this.roundRecordNow(o));
+  }
+
+  private async roundRecordNow(o: { execucao?: string; caso: string; status?: string; passos?: Array<{ passo: string; status?: string; obtido?: string }>; observacao?: string }): Promise<string> {
+    const ex = await this.execOf(o.execucao || '');
+    const exDoc = await this.readDoc(ex.path);
+    if (cycleClosed(exDoc.text)) throw new Error(`${ex.path} já foi finalizada — não muda mais`);
+    const t = cycleTable(exDoc.text);
+    const c = await this.find(o.caso);
+    const keys = [c.id, c.name.replace(/\.(md|markdown)$/i, '')].filter(Boolean).map((k) => k.toLowerCase());
+    const row = t?.rows.find((r) => keys.includes(r.key.toLowerCase()) || this.index.resolve(r.key)?.path === c.path);
+    if (!t || !row) throw new Error(`${o.caso} não está na execução ${ex.path}`);
+    const since = cycleStart(exDoc.text) || new Date();
+    let detail = '';
+    if (o.passos?.length) {
+      const cdoc = await this.readDoc(c.path);
+      let text = cdoc.text;
+      // marcas de antes desta rodada: vão para o Histórico antes (como o ▶ Próximo caso do app)
+      if (needsFreshRound(text, since, countStatuses(text))) { const nr = newRound(text); if (nr) { text = nr.source; detail += ` Rodada antiga ${nr.round} (${nr.overall}) arquivada.`; } }
+      for (const p of o.passos) {
+        const st = stepTable(text);
+        if (!st) throw new Error(`${c.path} não tem tabela de passos com coluna Status`);
+        const rows = st.rows.filter((r) => !r.blank);
+        const label = (r: typeof rows[number], n: number) => (st.id >= 0 ? cellToText(r.cells[st.id]).trim() : String(n + 1));
+        const r = rows.find((x, n) => label(x, n) === String(p.passo).trim());
+        if (!r) throw new Error(`passo "${p.passo}" não encontrado em ${c.path} — os passos são: ${rows.map(label).join(', ')}`);
+        if (p.obtido !== undefined && st.actual >= 0) text = setActual(text, r.line, st.actual, p.obtido);
+        if (p.status !== undefined) {
+          const w = p.status.trim().toUpperCase();
+          if (w && !['PASS', 'FAIL', 'BLOCKED', 'SKIP', 'PENDING'].includes(w)) throw new Error(`status "${p.status}" inválido`);
+          text = setStepStatus(text, r.line, st.status, w || null);
+        }
+      }
+      text = syncExecution(text, { onlyExecuted: true });
+      const counts = countStatuses(text);
+      if (counts.pending === 0) {
+        const now = new Date();
+        const res = logRun(text, { start: now, end: now, elapsed: 0 });
+        text = res.source;
+        detail += ` Rodada ${res.round} do caso concluída (${res.overall}).`;
+      } else detail += ` ${counts.total - counts.pending}/${counts.total} passos marcados (falta concluir os outros).`;
+      await this.writeDoc(c.path, text, cdoc);
+      await this.refresh(true);
+    } else {
+      const w = String(o.status || '').trim().toUpperCase();
+      if (!['PASS', 'FAIL', 'BLOCKED', 'SKIP'].includes(w)) throw new Error('informe passos (para marcar no caso) ou status (PASS, FAIL, BLOCKED, SKIP) do caso inteiro');
+      const d = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const when = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      const lines = exDoc.text.split('\n');
+      let line = setCell(lines[row.line], t.cols.status, `\`${w}\``);
+      if (t.cols.when >= 0) line = setCell(line, t.cols.when, when);
+      lines[row.line] = line;
+      exDoc.text = lines.join('\n');
+      detail += ` Status ${w} gravado na execução (o caso inteiro).`;
+    }
+    if (o.observacao) {
+      const cdoc = await this.readDoc(c.path);
+      const block = commentBlock(this.opts.who || 'Claude', `Rodada ${String(meta(exDoc.text).id || '')}: ${o.observacao}`).split('\n');
+      const lines = cdoc.text.split('\n');
+      let at = lines.length;
+      while (at > 0 && !lines[at - 1].trim()) at--;
+      insertBlock(lines, at, block);
+      await this.writeDoc(c.path, lines.join('\n'), cdoc);
+      await this.refresh(true);
+    }
+    const next = updateSummaryBlocks(this.synced(exDoc.text));
+    await this.writeDoc(ex.path, next, { ...exDoc, text: exDoc.text });
+    const p = cycleProgress(next);
+    return `${c.id || c.name} registrado em ${ex.path}.${detail}${p ? ` Progresso: ${p.done}/${p.total}${p.failed ? `, ${p.failed} com falha` : ''}${p.next ? ` · próximo pendente: ${nextCase(next, row.key) || p.next}` : ' · todos com resultado'}.` : ''}`;
+  }
+
+  /** Finaliza: SKIP nos não executados, fim:, Encerramento e (padrão) os 4 relatórios. */
+  roundFinish(o: { execucao?: string; relatorios?: boolean }): Promise<string> {
+    return this.exclusive(async () => {
+      const ex = await this.execOf(o.execucao || '');
+      const doc = await this.readDoc(ex.path);
+      if (cycleClosed(doc.text)) throw new Error(`${ex.path} já foi finalizada (use qa_relatorios para gerar os relatórios de novo)`);
+      const synced = this.synced(doc.text);
+      const skipped = unexecuted(synced);
+      const closed = closeCycle(skipPending(synced));
+      await this.writeDoc(ex.path, closed, doc);
+      await this.refresh(true);
+      const s = cycleSummary(closed);
+      let out = `${ex.path} finalizada: ${s ? `${s.pass} PASS · ${s.fail} FAIL · ${s.blocked} BLOCKED · ${s.skip} SKIP · sucesso ${s.sucessoPct ?? '—'}%` : ''}${skipped.length ? ` (marcados SKIP: ${skipped.join(', ')})` : ''}.`;
+      out += await this.syncDefinition(closed);
+      if (o.relatorios !== false) out += `\n${await this.reportsNow(ex.path)}`;
+      return out;
+    });
+  }
+
+  /** Atualiza a tabela "Execuções" do ciclo salvo de onde a execução veio. */
+  private async syncDefinition(execText: string): Promise<string> {
+    const ref = cicloOf(execText);
+    const def = ref ? this.index.resolve(ref) : null;
+    if (!def || !isCycleDef(def.text || '')) return '';
+    const key = def.id || def.name.replace(/\.(md|markdown)$/i, '');
+    const infos = this.index.all().flatMap((e) => {
+      if (!isCycle(e.text || '') || this.index.resolve(cicloOf(e.text || ''))?.path !== def.path) return [];
+      const info = execInfo(e.text || '', e.id || e.name.replace(/\.(md|markdown)$/i, ''));
+      return info ? [info] : [];
+    });
+    const doc = await this.readDoc(def.path);
+    const next = syncDefExecutions(doc.text, infos);
+    return (await this.writeDoc(def.path, next, doc)) ? ` Ciclo ${key} atualizado (tabela Execuções).` : '';
+  }
+
+  /** Gera/regera os 4 relatórios (mesma lógica do app), preservando o que o QA escreveu. */
+  reports(ref = ''): Promise<string> {
+    return this.exclusive(async () => { const e = await this.execOf(ref); return this.reportsNow(e.path); });
+  }
+
+  private async reportsNow(execPath: string): Promise<string> {
+    await this.refresh(true);
+    const docs = this.docTexts();
+    const existing: Record<string, string> = {};
+    for (const d of docs) existing[d.path] = d.text;
+    const res = buildReports(execPath, docs, { existing });
+    if (!res) throw new Error(`não deu para montar os relatórios de ${execPath} (sem a tabela "Casos do ciclo"?)`);
+    await fs.mkdir(await this.safeFull(`${res.dir}/x.md`).then((p) => nodePath.dirname(p)), { recursive: true });
+    const written: string[] = [];
+    for (const f of res.files) {
+      if (await kindAt(this.h, f.path)) {
+        const doc = await this.readDoc(f.path);
+        // o que está no disco vale (o QA pode ter escrito o aceite agora)
+        const next = buildReports(execPath, docs, { existing: { ...existing, [f.path]: doc.text } })?.files.find((x) => x.path === f.path)?.text || f.text;
+        await this.writeDoc(f.path, next, doc);
+      } else {
+        await writeText(this.h, f.path, ensureUid(f.text));
+      }
+      written.push(f.path);
+    }
+    const exDoc = await this.readDoc(execPath);
+    await this.writeDoc(execPath, linkReports(exDoc.text, res.files), exDoc);
+    this.scannedAt = 0;
+    await this.refresh(true);
+    const d = res.data;
+    const enc = res.files[0].text;
+    const rec = /^recomendacao: (.+)$/m.exec(enc)?.[1] || '';
+    const failed = d.criteria.filter((c) => c.ok === false).map((c) => c.texto);
+    const manual = d.criteria.filter((c) => c.ok === null).map((c) => c.texto);
+    return [
+      `Relatórios${d.closed ? '' : ' (parciais: execução não finalizada)'} em ${res.dir}/: ${written.map((p) => p.split('/').pop()).join(', ')} — ligados na seção Relatórios de ${execPath}.`,
+      `Sugestão Go/No-Go: ${rec}${d.plan ? ` (critérios do plano ${d.plan.key})` : ' (critérios padrão: nenhum plano ligado)'}.`,
+      failed.length ? `Critérios não atingidos: ${failed.join('; ')}.` : '',
+      manual.length ? `Para o QA avaliar: ${manual.join('; ')}.` : '',
+      `Bugs: ${d.bugs.filter((b) => b.nova).length} novo(s), ${d.bugs.filter((b) => b.reaberta && !b.nova).length} reaberto(s), ${d.bugs.filter((b) => b.open).length} aberto(s).`,
+      d.previous ? `Comparado com ${d.previous.key}.` : '',
+    ].filter(Boolean).join('\n');
+  }
+
+  /** Avisos de QA (os do app): passo sem esperado, status incoerente, link quebrado, evidência faltando, cabeçalho. */
+  async validate(o: { doc?: string; segmento?: string; pasta?: string; limite?: number }): Promise<string> {
+    await this.refresh(true);
+    let list: DocEntry[];
+    if (o.doc) list = [await this.find(o.doc)];
+    else {
+      list = this.index.all().filter((e) => e.tipo && e.tipo !== 'visao' && !REPORT_TYPES.includes(e.tipo));
+      if (o.segmento) { const seg = new Set(segmentMembers(o.segmento, list).map((e) => e.path)); list = list.filter((e) => seg.has(e.path)); }
+      if (o.pasta) list = list.filter((e) => e.path.toLowerCase().startsWith(`${o.pasta!.replace(/\/$/, '').toLowerCase()}/`));
+    }
+    const exists = (t: string) => !!this.index.resolve(t);
+    const out: string[] = [];
+    let total = 0;
+    for (const e of list) {
+      const text = e.text || '';
+      const warns = this.lint(text).map((m) => `aviso: ${m}`);
+      const docDir = dirOf(e.path);
+      for (const b of findBrokenLinks(text, { wikiExists: exists, mdExists: (p) => !!this.index.get(p), docDir })) warns.push(`link quebrado (linha ${b.line + 1}): ${b.kind === 'wiki' ? `[[${b.target}]]` : b.target}`);
+      for (const r of findRefs(text).filter((x) => x.image && isRelativeHref(x.href))) {
+        const p = resolveHref(e.path, r.href);
+        if (p && !(await kindAt(this.h, p))) warns.push(`evidência faltando: ${r.href}`);
+      }
+      const d = meta(text);
+      if (!String(d.id || '').trim() && CASE_TYPES.concat(['bug']).includes(e.tipo)) warns.push('cabeçalho sem id:');
+      if (CASE_TYPES.includes(e.tipo) && !String(d.app || '').trim()) warns.push('cabeçalho sem app:');
+      if (!warns.length) continue;
+      total += warns.length;
+      if (out.length < (o.limite || 60)) out.push(`**${e.id || e.name}** (${e.path})\n${warns.map((w) => `- ${w}`).join('\n')}`);
+    }
+    if (!total) return `Nenhum aviso em ${list.length} documento(s).`;
+    return [`${total} aviso(s) em ${out.length}${out.length >= (o.limite || 60) ? '+' : ''} documento(s) (de ${list.length} verificados):`, '', ...out].join('\n');
+  }
+
+  /** Rastreabilidade: requisito (ticket/épico) → casos → último resultado → bugs; com segmento, só o dele. */
+  async traceability(o: { segmento?: string; app?: string }): Promise<string> {
+    const lines = ['titulo: Rastreabilidade', 'formato: rastreabilidade'];
+    if (o.segmento) lines.push(`segmento: ${o.segmento}`);
+    if (o.app) lines.push(`app: ${o.app}`);
+    return this.query(lines.join('\n'));
   }
 
   /** Histórico de versões de um documento (.versoes/). */

@@ -52,6 +52,13 @@ const TOOLS = [
   ['qa_atualizar_cabecalho', 'Mudar campos do cabeçalho (ex.: chave do Jira)'],
   ['qa_comentar', 'Comentário de revisão'],
   ['qa_para_jira', 'Bug pronto para criar o ticket no Jira'],
+  ['qa_rodada_status', 'Como está a rodada: progresso, falhas, pendentes'],
+  ['qa_rodada_criar', 'Nova rodada por épico, ticket, #tag, consulta ou ciclo salvo'],
+  ['qa_rodada_registrar', 'Registrar o resultado de um caso na rodada'],
+  ['qa_rodada_finalizar', 'Finalizar a rodada e gerar os relatórios'],
+  ['qa_relatorios', 'Relatórios de fim de execução (Go/No-Go, defeitos, rastreabilidade, log)'],
+  ['qa_validar', 'Avisos de QA, links quebrados e evidências faltando'],
+  ['qa_rastreabilidade', 'Ticket/épico → casos → resultado → bugs'],
 ];
 
 const manifest = {

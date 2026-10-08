@@ -8,6 +8,14 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.22.0', date: '08/10/2026',
+    items: [
+      { icon: '🤖', text: '**Claude conduz a rodada**: pelo MCP ele cria a rodada por épico, ticket, `#tag` ou ciclo salvo, registra cada caso, mostra como está e finaliza com os 4 relatórios (`qa_rodada_*`, `qa_relatorios`). Reinstale a extensão `testflow.mcpb`.', manual: '12.6' },
+      { icon: '🐞', text: 'No Claude, bug de um caso que já tem bug ligado vira **reincidência** (pergunta antes), e o bug achado numa rodada guarda a execução.', manual: '12.6' },
+      { icon: '🔎', text: '`qa_validar` (avisos, links quebrados, evidências faltando) e `qa_rastreabilidade` por segmento. A skill ganhou roteiros: **casos a partir da história**, **revisão de casos** com checklist e **análise da rodada**.', manual: '12.6' },
+    ],
+  },
+  {
     version: '1.21.0', date: '08/10/2026',
     items: [
       { icon: '🧩', text: '**Segmentos**: clique direito numa pasta ou documento (épico, ticket, execução, ciclo…) → **🧩 Reunir o segmento** lista tudo o que nasceu dele — casos, bugs, execuções, relatórios. Na busca: `seg:PORTAL-10`, `seg:#pix`.', manual: '10.5' },
