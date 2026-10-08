@@ -335,7 +335,8 @@ function searchWorkspace(query, opts = {}) {
   /** @type {((e: import('./types').DocEntry) => boolean) | undefined} */
   let filter;
   if (spec) {
-    const ok = new Set(viewDocs().filter((d) => viewMatches(d, spec)).map((d) => d.path));
+    const all = viewDocs();
+    const ok = new Set(all.filter((d) => viewMatches(d, spec, all)).map((d) => d.path));
     filter = (e) => ok.has(e.path);
   }
   const res = docIndex.search(q.text, { ...opts, overrides: openDocOverrides(), filter });
@@ -1150,7 +1151,7 @@ async function doSave(asNew = false, { auto = false } = {}) {
 async function pickPlaceInWorkspace(ws) {
   if (!(await ensurePermission(ws, 'readwrite'))) return 'native';
   const info = describeDoc(store.source);
-  const dest = suggestDestination({ tipo: info.tipo, app: info.app, jira: info.jira }, workspaceDirs);
+  const dest = suggestDestination({ tipo: info.tipo, app: info.app, jira: info.jira, epico: info.epico, id: info.id }, workspaceDirs);
   const defaultName = store.fileName && store.fileName !== 'sem título.md' ? store.fileName : suggestedFileName(store.source, info.titulo || info.heading || 'documento');
   const isNew = (/** @type {string} */ d) => !workspaceDirs.some((x) => x.toLowerCase() === d.toLowerCase());
   const options = [
@@ -1419,7 +1420,7 @@ const PALETTE_ACTIONS = [
   ['Inserir bloco de código', 'codeblock', null, 'Ctrl+Alt+K'],
   ['Abrir o manual (todas as funcionalidades)', 'manual', null, 'F1'], ['O que mudou (novidades desta versão)', 'whatsNew', null, ''], ['Nova visão (consulta salva: não executados, tickets, cobertura…)', 'newView', null, ''],
   ['Próximo caso da pasta (salva e abre o próximo não executado)', 'nextCase', null, 'Alt+Shift+→'], ['Próximo caso da pasta e já executar', 'nextCase', 'run', ''],
-  ['Organizar casos por ticket (casos/<TICKET>/, pelo campo jira:)…', 'byTicket', null, ''],
+  ['Organizar por épico e ticket (casos/<ÉPICO>/<TICKET>/, pelos campos epico: e jira:)…', 'byTicket', null, ''],
   ['Ciclo de regressão: novo (salvar os casos)…', 'newCycle', null, ''], ['Rodada de execução: nova (avulsa, escolher os casos)…', 'newRun', null, ''], ['Ciclo de regressão: executar um ciclo salvo (nova execução)…', 'runCycle', null, ''], ['Execução: anexar relatório de testes automatizados (Playwright, JUnit, Newman)…', 'attachAutomation', null, ''], ['Execução só automatizada: criar a partir de um relatório…', 'newAutoRun', null, ''], ['Ciclo de regressão: próximo caso', 'nextCycleCase', null, ''], ['Ciclo de regressão: voltar ao ciclo', 'openCycle', null, ''], ['Vínculos: Jira, Épico, Sprint deste documento…', 'editLinks', null, ''], ['Dispositivo / ambiente: WEB, Mobile iOS, Mobile Android… deste documento', 'editDevice', null, ''], ['Ciclo de regressão: finalizar execução…', 'finishCycle', null, ''], ['Ciclo de regressão: como está / como foi a rodada', 'roundSummary', null, ''], ['Relatórios da execução: gerar / regerar (Encerramento e Go/No-Go, Defeitos, Rastreabilidade, Log)', 'execReports', null, ''],
   ['Comentar (comentário de revisão no documento)', 'comment', null, 'Alt+M'], ['Comentários do documento (pendentes e resolvidos)…', 'listComments', null, ''],
   ['Exportar bugs para o Jira (CSV do importador do Jira Cloud)…', 'jiraCsv', null, ''], ['Trazer chaves do Jira (CSV exportado do Jira)…', 'jiraKeys', null, ''],

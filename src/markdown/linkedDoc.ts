@@ -2,6 +2,8 @@ import { detectFrontMatter, parseFrontMatter } from './frontmatter.ts';
 import { findSection, stepTable, cellToText } from './runs.ts';
 import { cellStatus, splitRow, setCell } from './status.ts';
 import { setFrontMatterFields } from './publish.ts';
+import { inheritHeader } from './segment.ts';
+import { jiraValues, jiraLabel } from './jiraLink.ts';
 
 /**
  * Criar um documento ligado a partir do documento aberto (funções puras) — ex.: no caso de teste,
@@ -21,6 +23,11 @@ export interface SourceInfo {
   dispositivo: string;
   versao: string;
   tags: string[];
+  /** vínculos herdados pelo filho (jira só para o que não é bug: o bug ganha a chave dele no Jira) */
+  jira?: string[];
+  epico?: string[];
+  sprint?: string;
+  plano?: string;
 }
 
 export interface FailedStep {
@@ -52,6 +59,10 @@ export function sourceInfo(text: string, fallbackName = ''): SourceInfo {
     dispositivo: str(data.dispositivo),
     versao: str(data.versao),
     tags: tags.map((t) => t.trim()).filter(Boolean),
+    jira: jiraValues(data.jira).map(jiraLabel),
+    epico: (Array.isArray(data.epico) ? data.epico.map(String) : str(data.epico).split(/[,;]+/)).map((x) => x.replace(/^\[\[|\]\]$/g, '').trim()).filter(Boolean),
+    sprint: str(data.sprint),
+    plano: str(data.plano).replace(/^\[\[|\]\]$/g, ''),
   };
 }
 
@@ -129,6 +140,8 @@ export interface LinkedOptions {
   step?: FailedStep | null;
   /** caminhos dos prints (relativos ao documento novo) */
   prints?: string[];
+  /** de onde veio (achado numa rodada): execução e ciclo */
+  origin?: { execucao?: string; ciclo?: string; plano?: string };
 }
 
 /**
@@ -145,6 +158,15 @@ export function buildLinkedDoc(template: string, o: LinkedOptions): string {
   if (s.versao) fields.versao = s.versao;
   let text = setFrontMatterFields(template, fields);
   if (s.tags.length) text = text.replace(/^tags[ \t]*:.*$/m, `tags: [${s.tags.join(', ')}]`);
+  // herança: épico, sprint, plano e a rodada onde foi achado; o ticket (jira) só para o que não é bug
+  const newTipo = /^tipo[ \t]*:[ \t]*(\S+)/m.exec(text)?.[1] || '';
+  text = inheritHeader(text, {
+    fields: {
+      ...(newTipo !== 'bug' ? { jira: s.jira || [] } : {}),
+      epico: s.epico || [], sprint: s.sprint, plano: o.origin?.plano || s.plano,
+      execucao: o.origin?.execucao, ciclo: o.origin?.ciclo,
+    },
+  });
   const lines = text.split('\n');
   setTitle(lines, o.id, o.title);
   const tipo = /^tipo[ \t]*:[ \t]*(\S+)/m.exec(text)?.[1] || '';

@@ -42,7 +42,7 @@ export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada —
         <div class="review-head"><strong>🔁 ${esc(title)}</strong><span class="review-steps" data-cpk="count"></span>
           <button type="button" class="review-x" data-act="close" title="Fechar (Esc)">×</button></div>
         <div class="cpk-bar">
-          <input type="search" class="review-extra cpk-search" placeholder="Filtrar por ID, título, aplicação, pasta, tag, Jira…" spellcheck="false">
+          <input type="search" class="review-extra cpk-search" placeholder="Filtrar por ID, título, aplicação, pasta, #tag, Jira, épico, sprint…" spellcheck="false">
           <button type="button" class="cpk-btn" data-act="all" title="Marca os casos que estão na lista (respeita o filtro)">Selecionar visíveis</button>
           <button type="button" class="cpk-btn" data-act="none">Limpar</button>
         </div>
@@ -79,7 +79,7 @@ export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada —
     function renderList() {
       const f = norm(search.value).split(/\s+/).filter(Boolean);
       visible = list.filter((e) => {
-        const hay = norm([keyOf(e), e.titulo, e.heading, e.app, folderOf(e.path), e.tags.join(' '), e.jira, e.prioridade, e.overall].join(' '));
+        const hay = norm([keyOf(e), e.titulo, e.heading, e.app, folderOf(e.path), e.tags.join(' '), e.tags.map((t) => `#${t}`).join(' '), e.jira, e.epico || '', e.sprint || '', e.prioridade, e.overall].join(' '));
         return f.every((w) => hay.includes(w));
       });
       if (!visible.length) { listEl.innerHTML = '<div class="cpk-empty">Nenhum caso com esse filtro.</div>'; refreshCount(); return; }

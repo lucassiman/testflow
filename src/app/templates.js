@@ -15,7 +15,8 @@ import { addComment } from './comments.js';
 import { findRefs, uniqueName } from '../markdown/relink.ts';
 import { findSensitive } from '../markdown/sensitive.ts';
 import { ensureUid } from '../markdown/idRename.ts';
-import { INBOX_DIR, appOfDir, fillApp, fillJira, ticketOfDir, quickNoteName, quickNoteText, suggestDestination } from '../markdown/structure.ts';
+import { INBOX_DIR, appOfDir, fillApp, fillJira, fillField, segmentOfDir, ticketKey, quickNoteName, quickNoteText, suggestDestination } from '../markdown/structure.ts';
+import { inheritHeader } from '../markdown/segment.ts';
 import { suggestTemplateLabel, templateFileName, toTemplate } from '../markdown/template.ts';
 import { BUILTIN_TEMPLATES, fillTemplate, loadCustomTemplates, saveCustomTemplate, suggestedFileName, templateFolder, withoutFrontMatter } from '../templates/index.js';
 import { caretPosition } from '../ui/commandMenu.js';
@@ -320,7 +321,7 @@ export async function createDocIn(dir, text, name) {
     const appName = appOfDir(dir);
     // dentro de casos/<TICKET>/: jira: também já vem preenchido
     // identidade fixa (uid:) desde o nascimento: os links acompanham se o ID mudar
-    const body = ensureUid(fillJira(appName ? fillApp(text, appName) : text, ticketOfDir(dir)));
+    const body = ensureUid(inheritFromFolder(appName ? fillApp(text, appName) : text, dir));
     const folder = await wsGetDir(ws, dir, { create: true });
     const names = await wsNamesIn(ws, dir);
     const file = uniqueName(/\.(md|markdown)$/i.test(name) ? name : `${name}.md`, (n) => hasName(names, n));
@@ -335,6 +336,25 @@ export async function createDocIn(dir, text, name) {
     app.toast(`Não foi possível criar o documento: ${errMsg(err)}`, 'error');
     return null;
   }
+}
+
+/**
+ * Documento novo dentro de casos/<ÉPICO>/<TICKET>/: jira: e epico: vêm da pasta, e as tags (e a sprint) do épico e da
+ * história do ticket entram também (herança do pai). Campo já preenchido não muda.
+ * @param {string} text @param {string} dir
+ */
+function inheritFromFolder(text, dir) {
+  const all = docIndex.all();
+  const dirOf = (/** @type {string} */ p) => p.split('/').slice(0, -1).join('/');
+  const epicDirs = all.filter((e) => e.tipo === 'epico').map((e) => dirOf(e.path));
+  const { epic, ticket } = segmentOfDir(dir, app.workspaceDirs, epicDirs);
+  const tipo = /^tipo[ \t]*:[ \t]*(\S+)/m.exec(text)?.[1] || '';
+  let out = fillJira(text, tipo === 'epico' ? '' : ticket);
+  if (epic && tipo !== 'epico') out = fillField(out, 'epico', epic);
+  const is = (/** @type {import('../types').DocEntry} */ e, /** @type {string} */ k) => [ticketKey(e.jira), e.id].some((x) => (x || '').toUpperCase() === k);
+  const parents = all.filter((e) => (epic && e.tipo === 'epico' && is(e, epic)) || (ticket && e.tipo === 'historia' && is(e, ticket)));
+  if (!parents.length) return out;
+  return inheritHeader(out, { tags: parents.flatMap((p) => p.tags), fields: { sprint: parents.map((p) => p.sprint || '').find(Boolean) } });
 }
 
 /** Nota rápida (Alt+Q): documento com data já gravado em _entrada/, aberto para escrever. */
@@ -423,7 +443,9 @@ export async function createLinkedDoc(template, { where = app.target(), nearLine
   if (dest !== null && app.workspaceDir && printSrc.length) {
     try { newPrints.push(...(await copyPrintsTo(dest, printSrc))); } catch (err) { app.toast(`Os prints não foram copiados (${errMsg(err)}) — o bug é criado mesmo assim.`, 'error'); }
   }
-  const text = buildLinkedDoc(fillTemplate(template.text), { id, title, sourceTarget, source: me, step: res.checks.fill === false ? null : step, prints: newPrints });
+  // achado numa rodada: o bug guarda a execução e o ciclo de onde veio
+  const origin = await import('./cycle.js').then((m) => m.roundOfOpenCase()).catch(() => null);
+  const text = buildLinkedDoc(fillTemplate(template.text), { id, title, sourceTarget, source: me, step: res.checks.fill === false ? null : step, prints: newPrints, origin: origin || undefined });
   const fileName = suggestedFileName(text, template.label);
   // link neste documento (onde o comando foi dado)
   placeEvidence(linkLine(tipo, id || fileName.replace(/\.md$/, ''), title), ctx);

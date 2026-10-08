@@ -9,6 +9,7 @@ import { createOrganizer } from '../io/organizer.js';
 import { ensurePermission, relocateRecents, saveSession } from '../io/recents.js';
 import { baseOf, dirOf, isInside, rebase } from '../markdown/relink.ts';
 import { ticketMoves, triageSuggestion } from '../markdown/structure.ts';
+import { segmentKeyOfFolder } from '../markdown/segment.ts';
 import { showDialog } from '../ui/dialog.js';
 import { currentWorkspacePath, wsRelative } from './links.js';
 import { importNotion } from './notion.js';
@@ -136,6 +137,7 @@ export async function organizeAction(action, entry) {
   else if (action === 'quickNote') await quickNote();
   else if (action === 'importNotion') await importNotion();
   else if (action === 'byTicket') await organizeCasesByTicket(entry.path);
+  else if (action === 'segment') gatherSegment(entry);
   else if (action === 'moveSuggested') {
     const dest = suggestionFor(entry.path);
     if (dest !== null) { await organizer.move(entry, dest); app.sidebar.expandFolder(dest); }
@@ -161,37 +163,51 @@ export async function sameWorkspaceFile(handle, paths) {
 /** Sugestão de pasta para um documento da pasta de trabalho (pelo app: e tipo: do cabeçalho). @param {string} path */
 export function suggestionFor(path) {
   const e = docIndex.all().find((x) => x.path === path);
-  return e ? triageSuggestion({ tipo: e.tipo, app: e.app, jira: e.jira }, dirOf(path), app.workspaceDirs) : null;
+  return e ? triageSuggestion({ tipo: e.tipo, app: e.app, jira: e.jira, epico: e.epico, id: e.id }, dirOf(path), app.workspaceDirs) : null;
 }
 
 /**
- * "Organizar casos por ticket": casos soltos em aplicacoes/<App>/casos/ com chave no jira: vão para casos/<TICKET>/.
- * Links, prints e anexos acompanham; um "Desfazer" para tudo.
+ * 🧩 Reunir o segmento: a busca com `seg:<chave>` — tudo o que nasceu da pasta (épico/ticket) ou do documento
+ * (épico, história, execução, ciclo, plano…): filhos pelos campos herdados, pela pasta e por quem cita.
+ * @param {import('../io/organizer.js').Entry} entry
+ */
+export function gatherSegment(entry) {
+  const e = entry.kind === 'file' ? docIndex.get(entry.path) : null;
+  const key = e ? (e.id || baseOf(e.path).replace(/\.(md|markdown)$/i, '')) : segmentKeyOfFolder(entry.path);
+  if (!key) return;
+  app.sidebar.focusSearch(`seg:${/\s/.test(key) ? `"${key}"` : key}`);
+}
+
+/**
+ * "Organizar por épico e ticket": casos com chave no jira: vão para casos/<TICKET>/ — dentro de casos/<ÉPICO>/ quando
+ * têm épico (campo epico:, ou o da história do ticket); o documento do épico vai para casos/<ÉPICO>/ e a história com
+ * épico para a pasta do ticket dela. Links, prints e anexos acompanham; um "Desfazer" para tudo.
  * @param {string} [scope] só dentro desta pasta (ex.: aplicacoes/Portal/casos)
  */
 export async function organizeCasesByTicket(scope = '') {
   if (!app.workspaceDir) { app.toast('Abra uma pasta de trabalho primeiro (☰ → Arquivos → Abrir…).', 'error'); return; }
   await docIndex.settled();
-  const entries = docIndex.all().filter((e) => !scope || isInside(e.path, scope));
-  const plan = ticketMoves(entries, app.workspaceDirs);
+  // todos entram no cálculo (a história em requisitos/ diz o épico do ticket); só move o que é da aplicação da pasta clicada
+  const appDir = scope ? scope.split('/').slice(0, 2).join('/') : '';
+  const plan = ticketMoves(docIndex.all(), app.workspaceDirs).filter((m) => !appDir || isInside(m.path, appDir));
   if (!plan.length) {
-    app.toast('Nenhum caso solto em casos/ com chave do Jira no cabeçalho (jira: PROJ-123). Os que já estão numa pasta de ticket ficam onde estão.', 'info', { duration: 7000 });
+    app.toast('Nada a organizar: os casos com jira:/epico: no cabeçalho já estão na pasta do ticket (e do épico). Os sem chave ficam onde estão.', 'info', { duration: 7000 });
     return;
   }
   /** @type {Map<string, number>} */
   const byDir = new Map();
   for (const m of plan) byDir.set(m.dir, (byDir.get(m.dir) || 0) + 1);
   const isNew = (/** @type {string} */ d) => !app.workspaceDirs.some((x) => x.toLowerCase() === d.toLowerCase());
-  const lines = [...byDir].map(([d, n]) => `• ${d}/ — ${n} caso(s)${isNew(d) ? ' (pasta nova)' : ''}`);
+  const lines = [...byDir].map(([d, n]) => `• ${d}/ — ${n} documento(s)${isNew(d) ? ' (pasta nova)' : ''}`);
   const res = await showDialog({
-    title: 'Organizar casos por ticket', icon: '🎫',
-    message: `${plan.length} caso(s) vão para uma pasta por ticket (pela chave do campo jira:):`,
-    detail: [...lines.slice(0, 12), ...(lines.length > 12 ? [`… e mais ${lines.length - 12} pasta(s)`] : []), '', 'Links, prints e anexos acompanham. Casos sem jira: ficam onde estão. Dá para desfazer.'].join('\n'),
+    title: 'Organizar por épico e ticket', icon: '🎫',
+    message: `${plan.length} documento(s) vão para a pasta do ticket — dentro da pasta do épico quando têm épico (campos jira: e epico:):`,
+    detail: [...lines.slice(0, 12), ...(lines.length > 12 ? [`… e mais ${lines.length - 12} pasta(s)`] : []), '', 'Links, prints e anexos acompanham. Casos sem jira:/epico: ficam onde estão. Dá para desfazer.'].join('\n'),
     buttons: [{ id: 'cancel', label: 'Cancelar' }, { id: 'go', label: 'Organizar', kind: 'primary' }],
     defaultId: 'go', cancelId: 'cancel',
   });
   if (res?.id !== 'go') return;
-  await organizer.moveEach(plan.map((m) => ({ entry: { kind: /** @type {const} */ ('file'), path: m.path }, dir: m.dir })), `${plan.length} caso(s) organizados em ${byDir.size} pasta(s) de ticket`);
+  await organizer.moveEach(plan.map((m) => ({ entry: { kind: /** @type {const} */ ('file'), path: m.path }, dir: m.dir })), `${plan.length} documento(s) organizados em ${byDir.size} pasta(s) de épico/ticket`);
 }
 
 /**

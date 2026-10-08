@@ -30,6 +30,9 @@ const hm = (d: Date): string => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 const iso = (d: Date): string => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${hm(d)}`;
 const cellEsc = (s: string): string => s.replace(/(^|[^\\])\|/g, '$1\\|').replace(/\n/g, ' ');
 
+/** tags: [regressao, …herdadas] (sem repetir). */
+const tagsField = (extra: string[] = []): string => formatValue([...new Map(['regressao', ...extra].map((t) => t.replace(/^#/, '').trim()).filter(Boolean).map((t) => [t.toLowerCase(), t])).values()]);
+
 function meta(text: string): Record<string, unknown> {
   const fm = detectFrontMatter(text);
   return fm ? parseFrontMatter(text.split('\n').slice(0, fm.end).join('\n')).data : {};
@@ -72,7 +75,7 @@ export const cycleClosed = (text: string): boolean => !!String(meta(text).fim ||
 export interface CycleCase { key: string; titulo: string }
 
 /** O documento de um ciclo novo. */
-export function cycleDoc(o: { titulo: string; app?: string; versao?: string; origem?: string; cases: CycleCase[]; start?: Date; responsavel?: string; ciclo?: string; numero?: number; links?: Record<string, string[]>; dispositivo?: string }): string {
+export function cycleDoc(o: { titulo: string; app?: string; versao?: string; origem?: string; cases: CycleCase[]; start?: Date; responsavel?: string; ciclo?: string; numero?: number; links?: Record<string, string[]>; dispositivo?: string; tags?: string[] }): string {
   const start = o.start || new Date();
   const id = `EXEC-${start.getFullYear()}${pad(start.getMonth() + 1)}${pad(start.getDate())}-${pad(start.getHours())}${pad(start.getMinutes())}${pad(start.getSeconds())}`;
   const fm = [
@@ -83,7 +86,7 @@ export function cycleDoc(o: { titulo: string; app?: string; versao?: string; ori
     ...(o.dispositivo ? [`dispositivo: ${formatValue(o.dispositivo)}`] : []),
     ...(o.responsavel ? [`responsavel: ${formatValue(o.responsavel)}`] : []),
     ...linksHeader(o.links || {}),
-    `inicio: ${iso(start)}`, 'status: PENDING', 'tags: [regressao]', 'qa-md: 1', '---',
+    `inicio: ${iso(start)}`, 'status: PENDING', `tags: ${tagsField(o.tags)}`, 'qa-md: 1', '---',
   ];
   const rows = o.cases.map((c, i) => `| ${i + 1} | [[${c.key}]] | ${cellEsc(c.titulo)} |  |  |  |`);
   return [
@@ -397,7 +400,7 @@ export function cycleSummary(text: string, now = new Date()): CycleSummary | nul
 const EXECS_TITLE = /^execu[cç][oõ]es\b/i;
 
 /** O documento de um ciclo (definição): os casos que fazem parte da regressão e a lista das execuções. Sem estado de execução. */
-export function cycleDefDoc(o: { titulo: string; app?: string; versao?: string; origem?: string; cases: CycleCase[]; now?: Date; responsavel?: string; links?: Record<string, string[]> }): string {
+export function cycleDefDoc(o: { titulo: string; app?: string; versao?: string; origem?: string; cases: CycleCase[]; now?: Date; responsavel?: string; links?: Record<string, string[]>; tags?: string[] }): string {
   const now = o.now || new Date();
   const id = `CICLO-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
   const fm = [
@@ -406,7 +409,7 @@ export function cycleDefDoc(o: { titulo: string; app?: string; versao?: string; 
     `versao: ${o.versao ? formatValue(o.versao) : ''}`,
     ...(o.responsavel ? [`responsavel: ${formatValue(o.responsavel)}`] : []),
     ...linksHeader(o.links || {}),
-    'tags: [regressao]', 'qa-md: 1', '---',
+    `tags: ${tagsField(o.tags)}`, 'qa-md: 1', '---',
   ];
   return [
     ...fm, '', `# ${o.titulo}`, '',

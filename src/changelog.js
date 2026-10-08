@@ -8,6 +8,14 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.21.0', date: '08/10/2026',
+    items: [
+      { icon: '🧩', text: '**Segmentos**: clique direito numa pasta ou documento (épico, ticket, execução, ciclo…) → **🧩 Reunir o segmento** lista tudo o que nasceu dele — casos, bugs, execuções, relatórios. Na busca: `seg:PORTAL-10`, `seg:#pix`.', manual: '10.5' },
+      { icon: '🧬', text: '**Herança do pai**: caso novo na pasta do ticket/épico ganha `jira:`, `epico:`, tags e sprint; a execução herda o que os casos têm em comum (tag, épico) e do ciclo; os relatórios herdam da execução; o bug herda do caso (e a rodada onde foi achado).', manual: '10.5' },
+      { icon: '📁', text: '**Pasta do épico**: o épico fica em `casos/<ÉPICO>/` com as pastas dos tickets dele dentro. **🎫 Organizar por épico e ticket** (clique direito em `casos/`) arruma o que já existe.', manual: '10.2' },
+    ],
+  },
+  {
     version: '1.20.0', date: '08/10/2026',
     items: [
       { icon: '📑', text: '**Relatórios de fim de execução**: ao 🏁 Finalizar, a execução ganha 4 documentos em `relatorios/<ID>/`: **Encerramento e Go/No-Go** (critérios de saída do plano, sugestão e aceite), **Defeitos da rodada**, **Rastreabilidade e cobertura** e **Log + comparativo** com a execução anterior.', manual: '7.8 Ciclo de regressão' },

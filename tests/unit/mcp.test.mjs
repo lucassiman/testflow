@@ -140,12 +140,14 @@ test('MCP: pasta aberta por outro nome (Windows: LUCASS~1 na Temp; aqui: link) c
   assert.match(await ws.create({ tipo: 'bug', titulo: 'Pelo atalho', app: 'Portal' }), /Criado: aplicacoes\/Portal\/bugs\/BUG-001-pelo-atalho\.md/);
 });
 
-test('MCP: épico colado (com histórias) vai para requisitos/ da aplicação', async () => {
+test('MCP: épico vai para casos/<ÉPICO>/; história do épico para a pasta dela dentro dele', async () => {
   const { dir, ws } = setup();
   const epic = '---\ntipo: epico\nid: PORTAL-120\ntitulo: Pagamento com Pix\napp: Portal\njira: PORTAL-120\n---\n\n# PORTAL-120 — Pagamento com Pix\n\n## Histórias\n\n### HU-001 — Gerar QR Code\n\n- [ ] Dado um pedido quando escolho Pix então vejo o QR Code\n';
-  assert.match(await ws.create({ tipo: 'epico', titulo: 'Pagamento com Pix', conteudo: epic }), /Criado: aplicacoes\/Portal\/requisitos\/PORTAL-120-pagamento-com-pix\.md \(PORTAL-120\)\nValidação: sem avisos\./);
-  assert.match(await ws.create({ tipo: 'historia', titulo: 'Gerar QR Code', app: 'Portal', campos: { epico: 'PORTAL-120' } }), /Criado: aplicacoes\/Portal\/requisitos\/HU-001-gerar-qr-code\.md \(HU-001\)/);
-  assert.match(readFileSync(join(dir, 'aplicacoes/Portal/requisitos/HU-001-gerar-qr-code.md'), 'utf8'), /^epico: PORTAL-120$/m);
+  assert.match(await ws.create({ tipo: 'epico', titulo: 'Pagamento com Pix', conteudo: epic }), /Criado: aplicacoes\/Portal\/casos\/PORTAL-120\/PORTAL-120-pagamento-com-pix\.md \(PORTAL-120\)\nValidação: sem avisos\./);
+  assert.match(await ws.create({ tipo: 'historia', titulo: 'Gerar QR Code', app: 'Portal', campos: { epico: 'PORTAL-120' } }), /Criado: aplicacoes\/Portal\/casos\/PORTAL-120\/HU-001\/HU-001-gerar-qr-code\.md \(HU-001\)/);
+  assert.match(readFileSync(join(dir, 'aplicacoes/Portal/casos/PORTAL-120/HU-001/HU-001-gerar-qr-code.md'), 'utf8'), /^epico: PORTAL-120$/m);
+  // história sem épico continua em requisitos/
+  assert.match(await ws.create({ tipo: 'historia', titulo: 'Solta', app: 'Portal' }), /Criado: aplicacoes\/Portal\/requisitos\//);
 });
 
 test('MCP: caso com ticket no jira vai para casos/<TICKET>/; pasta do ticket preenche jira:', async () => {

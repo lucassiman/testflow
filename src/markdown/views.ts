@@ -1,3 +1,4 @@
+import { segmentMembers } from './segment.ts';
 import { parseDevice } from './device.ts';
 import type { StatusCounts, TaskCounts } from '../types';
 import { TYPE_LABELS, formatValue } from './frontmatter.ts';
@@ -57,6 +58,7 @@ export interface ViewDoc {
   sprint?: string;
   dispositivo?: string;
   tags: string[];
+  origem?: string[];
   automacao?: string;
   ambiente?: string;
   comments?: { open: number; resolved: number };
@@ -69,7 +71,7 @@ export interface ViewDoc {
   last?: { round: number; date: string; overall: string } | null;
 }
 
-const FILTER_KEYS = ['tipo', 'app', 'status', 'tags', 'jira', 'epico', 'sprint', 'dispositivo', 'versao', 'pasta', 'responsavel', 'prioridade', 'execucao', 'automacao', 'comentarios'];
+const FILTER_KEYS = ['segmento', 'tipo', 'app', 'status', 'tags', 'jira', 'epico', 'sprint', 'dispositivo', 'versao', 'pasta', 'responsavel', 'prioridade', 'execucao', 'automacao', 'comentarios'];
 const FORMATS: ViewFormat[] = ['lista', 'quadro', 'cobertura', 'jira', 'rastreabilidade'];
 export const VIEW_COLUMNS: Record<string, string> = {
   id: 'ID', titulo: 'Título', tipo: 'Tipo', status: 'Status', app: 'App', prioridade: 'Prioridade', responsavel: 'Responsável',
@@ -196,8 +198,24 @@ function fieldValues(d: ViewDoc, key: string): string[] {
   }
 }
 
-function matches(d: ViewDoc, spec: ViewSpec): boolean {
+/** Membros de cada segmento por lista de documentos (calculado uma vez por busca). */
+const segCache = new WeakMap<ViewDoc[], Map<string, Set<string>>>();
+function inSegment(d: ViewDoc, key: string, docs: ViewDoc[]): boolean {
+  let byKey = segCache.get(docs);
+  if (!byKey) { byKey = new Map(); segCache.set(docs, byKey); }
+  let set = byKey.get(key);
+  if (!set) { set = new Set(segmentMembers(key, docs).map((x) => x.path)); byKey.set(key, set); }
+  return set.has(d.path);
+}
+
+function matches(d: ViewDoc, spec: ViewSpec, docs: ViewDoc[] = []): boolean {
   for (const [key, f] of Object.entries(spec.filters)) {
+    if (key === 'segmento') {
+      // seg:PORTAL-10 — tudo o que nasceu do épico/ticket/execução/ciclo/tag (ver segment.ts)
+      if (f.include.length && !f.include.some((k) => inSegment(d, k, docs))) return false;
+      if (f.exclude.some((k) => inSegment(d, k, docs))) return false;
+      continue;
+    }
     const vals = fieldValues(d, key).map(norm);
     // pasta e versão: por começo (pasta: aplicacoes/Portal pega as subpastas; versao: 2.14 pega 2.14.1)
     const hit = (want: string) => (key === 'pasta' || key === 'versao' ? vals.some((v) => v === want || v.startsWith(`${want}${key === 'pasta' ? '/' : '.'}`)) : vals.includes(want));
@@ -213,12 +231,12 @@ function matches(d: ViewDoc, spec: ViewSpec): boolean {
 }
 
 /** O documento passa nos filtros da visão (mesma regra das visões e da busca com filtros). */
-export const viewMatches = (d: ViewDoc, spec: ViewSpec): boolean => matches(d, spec);
+export const viewMatches = (d: ViewDoc, spec: ViewSpec, docs: ViewDoc[] = []): boolean => matches(d, spec, docs);
 
 // ---------------------------------------------------------------- busca com filtros (Ctrl+Shift+F)
 /** Nome do filtro na busca → chave da visão (singular, sem acento, em inglês…). */
 const SEARCH_ALIASES: Record<string, string> = {
-  tag: 'tags', tags: 'tags', status: 'status', tipo: 'tipo', type: 'tipo', app: 'app', aplicacao: 'app', jira: 'jira', ticket: 'jira',
+  seg: 'segmento', segmento: 'segmento', tag: 'tags', tags: 'tags', status: 'status', tipo: 'tipo', type: 'tipo', app: 'app', aplicacao: 'app', jira: 'jira', ticket: 'jira',
   epico: 'epico', sprint: 'sprint', dispositivo: 'dispositivo', device: 'dispositivo', versao: 'versao', pasta: 'pasta',
   responsavel: 'responsavel', resp: 'responsavel', prioridade: 'prioridade', prio: 'prioridade', execucao: 'execucao',
   automacao: 'automacao', comentarios: 'comentarios', comentario: 'comentarios',
@@ -348,7 +366,7 @@ const groupLabel = (by: string, k: string): string => (by === 'execucao' ? EXEC_
 /** Roda a visão sobre os documentos da pasta. */
 export function runView(spec: ViewSpec, all: ViewDoc[], errors: string[] = []): ViewResult {
   const docs = all.filter((d) => !isView(d));
-  let rows = docs.filter((d) => matches(d, spec));
+  let rows = docs.filter((d) => matches(d, spec, all));
   const by = spec.ordenar || (spec.formato === 'lista' ? 'id' : '');
   if (by) rows = [...rows].sort((a, b) => { const x = sortValue(a, by); const y = sortValue(b, by); const r = typeof x === 'number' && typeof y === 'number' ? x - y : COLL.compare(String(x), String(y)); return (spec.desc ? -r : r) || COLL.compare(a.id || a.name, b.id || b.name); });
   const title = spec.titulo || 'Visão';

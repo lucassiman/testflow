@@ -15,6 +15,7 @@ import { pickAutomationFile, readAutomation } from './automation.js';
 import { describe as describeDoc } from '../io/docIndex.ts';
 import { parseView, runView, findViewBlocks, bugsFor, bugOpen } from '../markdown/views.ts';
 import { runDestination } from '../markdown/structure.ts';
+import { commonHeader, headerOf, segmentMembers } from '../markdown/segment.ts';
 import { viewDocs } from './views.js';
 import { createDocIn } from './templates.js';
 import { openDocOverrides, currentWorkspacePath, openWikiTarget } from './links.js';
@@ -539,6 +540,18 @@ export function cycleMenu() {
   });
 }
 
+/**
+ * A rodada do caso aberto (para o bug achado nela herdar a origem): ID da execução, do ciclo e do plano. null fora de rodada.
+ * @returns {{ execucao: string, ciclo: string, plano: string } | null}
+ */
+export function roundOfOpenCase() {
+  if (!inCycleCase()) return null;
+  const c = /** @type {{ path: string, text: string }} */ (currentCycle());
+  const e = docIndex.get(c.path);
+  const h = headerOf(c.text);
+  return { execucao: h.id || e?.id || '', ciclo: h.ciclo, plano: h.plano };
+}
+
 /** O documento aberto é um caso do ciclo ativo? (aí "próximo caso" segue o ciclo, não a pasta) */
 export function inCycleCase() {
   const c = currentCycle();
@@ -608,6 +621,16 @@ function pickerShortcuts(cases) {
     const list = cases.filter((e) => e.app.toLowerCase() === a.toLowerCase());
     shortcuts.push({ label: `🧩 ${a}`, hint: `${list.length}`, paths: list.map((e) => e.path), origem: `todos os casos de ${a}` });
   }
+  // épicos: os casos do segmento (campo epico:, pasta do épico, tickets das histórias dele)
+  const all = docIndex.all();
+  const epicKeys = new Map();
+  for (const e of all.filter((x) => x.tipo === 'epico')) { const k = (e.id || '').toUpperCase(); if (k) epicKeys.set(k, e.titulo || ''); }
+  for (const c of cases) for (const k of String(c.epico || '').split(/[,;]+/).map((x) => x.replace(/^\[\[|\]\]$/g, '').trim().toUpperCase()).filter(Boolean)) if (!epicKeys.has(k)) epicKeys.set(k, '');
+  const casePaths = new Set(cases.map((e) => e.path));
+  for (const [k, titulo] of [...epicKeys].slice(0, 12)) {
+    const list = segmentMembers(k, all).filter((e) => casePaths.has(e.path));
+    if (list.length) shortcuts.push({ label: `📚 ${k}${titulo ? ` ${titulo}` : ''}`, hint: `${list.length}`, paths: list.map((e) => e.path), origem: `épico ${k}` });
+  }
   // visões da pasta: os casos que elas mostram
   const docs = viewDocs();
   for (const v of docIndex.all().filter((e) => e.tipo === 'visao')) {
@@ -664,7 +687,7 @@ export function newCycle() {
   pickCases({
     title: 'Novo ciclo de regressão — quais casos?', confirmLabel: 'Salvar ciclo',
     defaultName: `Regressão${onlyAppName() ? ` ${onlyAppName()}` : ''} — ${new Date().toLocaleDateString('pt-BR')}`,
-    onPick: (picked, name, origem, appName, links) => createDefinition(picked, appName, origem, name, links),
+    onPick: (picked, name, origem, appName, links) => { const h = inherited(picked, links); return createDefinition(picked, appName, origem, name, h.links, h.tags); },
   });
 }
 
@@ -673,14 +696,26 @@ export function newRun() {
   pickCases({
     title: 'Nova rodada de execução — quais casos?', confirmLabel: 'Criar e começar',
     defaultName: `Rodada${onlyAppName() ? ` ${onlyAppName()}` : ''} — ${new Date().toLocaleDateString('pt-BR')}`,
-    onPick: (picked, name, origem, appName, links) => createExecution(picked.map(caseRef), appName, origem, name, null, links),
+    onPick: (picked, name, origem, appName, links) => { const h = inherited(picked, links); return createExecution(picked.map(caseRef), appName, origem, name, null, h.links, undefined, h.tags); },
   });
 }
 
-/** @param {DocEntry[]} pick @param {string} appName @param {string} origem @param {string} titulo @param {Record<string, string[]>} [links] */
-async function createDefinition(pick, appName, origem, titulo, links = {}) {
+/**
+ * O que a rodada/ciclo herda dos casos escolhidos: as tags, o épico, o ticket e a sprint que TODOS têm (montou pela tag
+ * #pix ou pelo épico PORTAL-10 → a execução fica com eles). Vínculo preenchido na janela vale mais.
+ * @param {DocEntry[]} picked @param {Record<string, string[]>} links
+ */
+function inherited(picked, links) {
+  const c = commonHeader(picked);
+  const out = { ...links };
+  for (const k of /** @type {const} */ (['jira', 'epico', 'sprint'])) if (!(out[k] || []).length && c[k].length) out[k] = c[k];
+  return { links: out, tags: c.tags };
+}
+
+/** @param {DocEntry[]} pick @param {string} appName @param {string} origem @param {string} titulo @param {Record<string, string[]>} [links] @param {string[]} [tags] */
+async function createDefinition(pick, appName, origem, titulo, links = {}, tags = []) {
   const list = [...pick].sort((a, b) => COLL.compare(keyOf(a), keyOf(b)));
-  const text = cycleDefDoc({ titulo, app: appName, origem, cases: list.map(caseRef), responsavel: loadPrefs().publisherName || '', links });
+  const text = cycleDefDoc({ titulo, app: appName, origem, cases: list.map(caseRef), responsavel: loadPrefs().publisherName || '', links, tags });
   const dir = runDir(CYCLE_TYPE, appName, (e) => !!e.text && isCycleDef(e.text));
   const path = await createDocIn(dir, text, `${slugOf(titulo)}.md`);
   if (!path) return;
@@ -693,12 +728,13 @@ async function createDefinition(pick, appName, origem, titulo, links = {}) {
  * @param {{ ciclo: string, numero: number } | null} link ciclo (id da definição) e número da execução; null = avulsa
  * @param {Record<string, string[]>} [links] vínculos (Jira, Épico, Sprint…); a execução de um ciclo herda os do ciclo
  * @param {(text: string) => string} [transform] ajuste final do texto (ex.: já anexar o relatório automatizado)
+ * @param {string[]} [tags] tags herdadas (dos casos em comum ou do ciclo), além de regressao
  */
-async function createExecution(cases, appName, origem, titulo, link, links = {}, transform = (/** @type {string} */ t) => t) {
+async function createExecution(cases, appName, origem, titulo, link, links = {}, transform = (/** @type {string} */ t) => t, tags = /** @type {string[]} */ ([])) {
   let d = new Date();
   // nova execução de um ciclo que já rodou: começa no minuto seguinte, para as rodadas das execuções anteriores (gravadas só com hora e minuto) não contarem nela
   if (link && link.numero > 1) d = new Date(Math.ceil((d.getTime() + 1) / 60000) * 60000);
-  const text = transform(cycleDoc({ titulo, app: appName, origem, cases, start: d, responsavel: loadPrefs().publisherName || '', links, ...(link ? { ciclo: link.ciclo, numero: link.numero } : {}) }));
+  const text = transform(cycleDoc({ titulo, app: appName, origem, cases, start: d, responsavel: loadPrefs().publisherName || '', links, tags, ...(link ? { ciclo: link.ciclo, numero: link.numero } : {}) }));
   const dir = runDir(EXEC_TYPE, appName, (e) => e.tipo === EXEC_TYPE || e.tipo === 'relatorio-execucao');
   const path = await createDocIn(dir, text, `${slugOf(titulo)}.md`);
   if (!path) return;
@@ -756,7 +792,8 @@ export async function runCycle(defPath = '') {
   const numero = nextExecNumber(execs);
   const titulo = `${def.titulo || def.name.replace(/\.(md|markdown)$/i, '')} — Execução #${numero}`;
   const dispositivo = readDevice(text);
-  await createExecution(cases, def.app || '', `ciclo ${def.titulo || def.name}`, titulo, { ciclo: keyOf(def), numero }, readLinks(text), (t) => (dispositivo ? setDevice(t, dispositivo) : t));
+  // a execução herda do ciclo: vínculos, dispositivo e tags
+  await createExecution(cases, def.app || '', `ciclo ${def.titulo || def.name}`, titulo, { ciclo: keyOf(def), numero }, readLinks(text), (t) => (dispositivo ? setDevice(t, dispositivo) : t), headerOf(text).tags);
 }
 
 /** Abre o ciclo (definição) a que esta execução pertence. */

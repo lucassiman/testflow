@@ -82,11 +82,11 @@ test('pasta por ticket: Ctrl+S sugere casos/<TICKET>/, organizar os soltos, novo
   // organizar os soltos (clique direito em casos/)
   await tree.locator('[data-folder="aplicacoes/Portal/casos/"]').click({ button: 'right' });
   await page.locator('.side-menu [data-menu-act="byTicket"]').click();
-  await expect(dlg).toContainText('2 caso(s)');
-  await expect(dlg).toContainText('aplicacoes/Portal/casos/PORTAL-9/ — 1 caso(s) (pasta nova)');
-  await expect(dlg).toContainText('aplicacoes/Portal/casos/PORTAL-120 Pagamento Pix/ — 1 caso(s)');
+  await expect(dlg).toContainText('2 documento(s)');
+  await expect(dlg).toContainText('aplicacoes/Portal/casos/PORTAL-9/ — 1 documento(s) (pasta nova)');
+  await expect(dlg).toContainText('aplicacoes/Portal/casos/PORTAL-120 Pagamento Pix/ — 1 documento(s)');
   await dlg.locator('button', { hasText: 'Organizar' }).click();
-  await expect(page.locator('#toast')).toContainText('2 caso(s) organizados em 2 pasta(s) de ticket');
+  await expect(page.locator('#toast')).toContainText('2 documento(s) organizados em 2 pasta(s) de épico/ticket');
   await expect.poll(() => page.evaluate(() => window.__read('aplicacoes/Portal/casos/PORTAL-9/TC-5.md'))).toContain('# TC-5');
   expect(await page.evaluate(() => window.__read('aplicacoes/Portal/casos/PORTAL-9/evidencias/p-TC-5.png'))).toBe('PNG5');
   expect(await page.evaluate(() => window.__read('aplicacoes/Portal/casos/PORTAL-120 Pagamento Pix/TC-6.md'))).toContain('# TC-6');

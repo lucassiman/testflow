@@ -94,7 +94,7 @@ interface Criterion { texto: string; esperado: string; obtido: string; ok: boole
 
 export interface ReportData {
   execPath: string; execId: string; titulo: string; numero: number; ciclo: string; app: string; versao: string; ambiente: string; dispositivo: string;
-  responsavel: string; inicio: Date | null; fim: Date | null; closed: boolean; overall: string; links: Record<string, string[]>;
+  responsavel: string; inicio: Date | null; fim: Date | null; closed: boolean; overall: string; links: Record<string, string[]>; tags: string[];
   summary: CycleSummary; casos: CaseRun[]; log: LogRow[]; bugs: BugInfo[];
   plan: { key: string; titulo: string; how: string } | null; criteria: Criterion[];
   previous: { key: string; titulo: string; numero: number; casos: Map<string, StatusWord | null>; pct: number | null } | null;
@@ -304,7 +304,7 @@ export function reportData(execPath: string, input: RDoc[], now = new Date()): R
 
   return {
     execPath, execId: str(m.id) || baseName(execPath), titulo: summary.titulo, numero, ciclo, app: str(m.app), versao: str(m.versao), ambiente: str(m.ambiente),
-    dispositivo: str(m.dispositivo), responsavel: str(m.responsavel), inicio, fim, closed: !!fim, overall: str(m.status) || 'PENDING', links,
+    dispositivo: str(m.dispositivo), responsavel: str(m.responsavel), inicio, fim, closed: !!fim, overall: str(m.status) || 'PENDING', links, tags: list(m.tags),
     summary, casos, log, bugs, plan, criteria, previous, now,
   };
 }
@@ -316,13 +316,20 @@ export interface ReportFile { kind: ReportKind; path: string; id: string; titulo
 export const reportsDir = (execPath: string, execId: string): string => [dirOf(execPath), REPORTS_DIR, execId.replace(/[\\/:*?"<>|]+/g, '-')].filter(Boolean).join('/');
 
 function header(d: ReportData, r: (typeof REPORTS)[number], extra: Record<string, string> = {}): string[] {
-  const f: Array<[string, string]> = [
+  // herança da execução (que herdou do ciclo e dos casos): tags, ticket, épico, sprint, ciclo e plano
+  const tags = [...new Map(['relatorio', ...d.tags].map((t) => [t.toLowerCase(), t])).values()];
+  const f: Array<[string, string | string[]]> = [
     ['tipo', r.tipo], ['id', `${d.execId}-${r.suffix}`], ['titulo', `${r.titulo} — ${d.titulo}`], ['execucao', d.execId],
+    ...(d.ciclo ? [['ciclo', d.ciclo] as [string, string]] : []),
+    ...(d.plan ? [['plano', d.plan.key] as [string, string]] : []),
     ...(d.app ? [['app', d.app] as [string, string]] : []), ...(d.versao ? [['versao', d.versao] as [string, string]] : []),
+    ...((d.links.jira || []).length ? [['jira', d.links.jira] as [string, string[]]] : []),
+    ...((d.links.epico || []).length ? [['epico', d.links.epico] as [string, string[]]] : []),
+    ...((d.links.sprint || []).length ? [['sprint', d.links.sprint[0]] as [string, string]] : []),
     ...Object.entries(extra),
-    ['gerado', iso(d.now)], ['tags', '[relatorio]'], ['qa-md', '1'],
+    ['gerado', iso(d.now)], ['tags', tags], ['qa-md', '1'],
   ];
-  return ['---', ...f.map(([k, v]) => `${k}: ${k === 'tags' || k === 'qa-md' ? v : formatValue(v)}`), '---', ''];
+  return ['---', ...f.map(([k, v]) => `${k}: ${k === 'qa-md' ? v : formatValue(v)}`), '---', ''];
 }
 
 function intro(d: ReportData, r: (typeof REPORTS)[number]): string[] {

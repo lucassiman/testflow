@@ -16,7 +16,7 @@
 /** @typedef {{ name: string, path: string, dirs: Map<string, TreeNode>, files: WorkspaceFile[] }} TreeNode */
 /** @typedef {import('../io/fsOps.js').TrashItem} TrashItem */
 /** @typedef {{ kind: 'file' | 'dir', path: string }} Entry */
-/** @typedef {'open' | 'rename' | 'move' | 'trash' | 'newFolder' | 'structure' | 'newApp' | 'newHere' | 'quickNote' | 'moveSuggested' | 'importNotion' | 'openSide' | 'byTicket' | 'pin' | 'unpin'} EntryAction */
+/** @typedef {'open' | 'rename' | 'move' | 'trash' | 'newFolder' | 'structure' | 'newApp' | 'newHere' | 'quickNote' | 'moveSuggested' | 'importNotion' | 'openSide' | 'byTicket' | 'pin' | 'unpin' | 'segment'} EntryAction */
 
 const DRAG_TYPE = 'application/x-mdqa-entry';
 
@@ -125,7 +125,7 @@ export function createSidebar({ root, onOpenFile, onOpenRecent, onRemoveRecent, 
     </div>
     <div class="side-panel" data-panel="search" hidden>
       <section class="side-section side-search">
-        <input type="search" class="side-filter" data-side="searchInput" placeholder="Buscar… (ou status:FAIL tag:regressao jira:ABC-1)" spellcheck="false">
+        <input type="search" class="side-filter" data-side="searchInput" placeholder="Buscar… (ou status:FAIL tag:regressao jira:ABC-1 seg:PORTAL-10)" spellcheck="false">
         <div class="side-search-presets" data-side="searchPresets">${SEARCH_PRESETS.map((p, i) => `<button type="button" class="side-chip" data-preset="${i}" title="${esc(p.hint)} — ${esc(p.query)}">${esc(p.label)}</button>`).join('')}</div>
         <div class="side-search-opts">
           <button type="button" data-side="searchCase" aria-pressed="false" title="Diferenciar maiúsculas e acentos">Aa</button>
@@ -622,10 +622,11 @@ export function createSidebar({ root, onOpenFile, onOpenRecent, onRemoveRecent, 
       : entry.kind === 'dir'
         ? [['newHere', '📄 Novo documento aqui…', ''], ['newFolder', '📁 Nova subpasta…', ''],
           .../** @type {Array<[EntryAction, string, string]>} */ (entry.path === 'aplicacoes' ? [['newApp', '🧩 Nova aplicação…', '']] : []),
-          .../** @type {Array<[EntryAction, string, string]>} */ (/^aplicacoes\/[^/]+\/casos$/.test(entry.path) ? [['byTicket', '🎫 Organizar casos por ticket…', '']] : []),
+          .../** @type {Array<[EntryAction, string, string]>} */ (/^aplicacoes\/[^/]+\/casos$/.test(entry.path) ? [['byTicket', '🎫 Organizar por épico e ticket…', '']] : []),
+          ['segment', '🧩 Reunir o segmento (tudo o que nasceu dele)', ''],
           ['rename', '✎ Renomear…', 'F2'], ['move', '↪ Mover para…', ''], ['trash', '🗑 Mover para a lixeira', 'Delete']]
         : [...(() => { const s = suggest?.(entry.path); return s ? [/** @type {[EntryAction, string, string]} */ (['moveSuggested', `✨ Mover para ${s}/`, ''])] : []; })(),
-          ['open', '📄 Abrir', 'Enter'], isPinned(entry.path) ? ['unpin', '☆ Desafixar do topo', ''] : ['pin', '★ Fixar no topo', ''], ['openSide', '◫ Abrir ao lado (para consultar)', ''], ['rename', '✎ Renomear…', 'F2'], ['move', '↪ Mover para…', ''], ['trash', '🗑 Mover para a lixeira', 'Delete']];
+          ['open', '📄 Abrir', 'Enter'], isPinned(entry.path) ? ['unpin', '☆ Desafixar do topo', ''] : ['pin', '★ Fixar no topo', ''], ['openSide', '◫ Abrir ao lado (para consultar)', ''], ['segment', '🧩 Reunir o segmento (tudo o que nasceu dele)', ''], ['rename', '✎ Renomear…', 'F2'], ['move', '↪ Mover para…', ''], ['trash', '🗑 Mover para a lixeira', 'Delete']];
     menuEl.innerHTML = `<div class="side-menu-title">${esc(entry.path ? entry.path.split('/').pop() : wsName || 'Pasta de trabalho')}</div>`
       + items.map(([a, l, k]) => `<button type="button" role="menuitem" data-menu-act="${a}"${a === 'trash' ? ' class="danger"' : ''}><span>${l}</span><kbd>${k}</kbd></button>`).join('');
     menuEl.hidden = false;

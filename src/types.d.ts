@@ -53,6 +53,8 @@ export interface DocInfo {
   /** spec do teste automatizado (campo automacao:) */
   automacao?: string;
   tags: string[];
+  /** origem: campos ciclo:, execucao: e plano: do cabeçalho (IDs dos documentos de onde este veio) */
+  origem?: string[];
   counts: StatusCounts;
   tasks: TaskCounts;
   /** comentários de revisão (> [!COMMENT]) pendentes e resolvidos */

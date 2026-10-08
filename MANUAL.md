@@ -586,9 +586,14 @@ A ideia: **escrever sem parar para decidir onde guardar**, e ainda assim cada do
 _entrada/                  ← o que chega sem destino (nota rápida, importados) — triar depois
 aplicacoes/<App>/
   casos/                   ← um caso por arquivo…
-    PORTAL-120/            ← …e uma pasta por ticket (casos com jira: PORTAL-120)
+    PORTAL-10 Pagamentos/  ← …uma pasta por épico (o documento do épico fica nela)…
+      PORTAL-10.md
+      PORTAL-120 Pix/      ← …com uma pasta por ticket dentro (casos com jira: PORTAL-120)
+        PORTAL-120.md      ← a história do ticket (se houver)
+        TC-001.md
+    PORTAL-200/            ← ticket sem épico: direto em casos/
   bugs/ planos/ sessoes/ relatorios/ docs/
-  requisitos/              ← épicos e histórias de usuário da aplicação
+  requisitos/              ← épicos e histórias que ainda não têm pasta (sem chave/épico)
 processos/                 ← como o time trabalha
 modelos/                   ← seus modelos (Salvar como modelo)
 visoes/                    ← visões: consultas salvas (ver 11.1)
@@ -603,8 +608,8 @@ visoes/                    ← visões: consultas salvas (ver 11.1)
 | **Salvar um documento novo** | Com a pasta de trabalho aberta, o primeiro `Ctrl+S` abre **Salvar na pasta de trabalho**: nome sugerido (`<id>-<titulo>.md`) e a pasta sugerida pelo cabeçalho — com `app:` e `tipo:`, vai para `aplicacoes/<App>/<casos, bugs…>/` (a pasta é criada se faltar); sem `app:`, para `_entrada/`. Dá para escolher outra pasta na lista, ou **Outro lugar…** (janela do sistema, fora da pasta de trabalho). *Salvar como* (`Ctrl+Shift+S`) continua abrindo a janela do sistema. |
 | **Novo documento aqui** | Clique direito numa pasta → *📄 Novo documento aqui…* → escolha o modelo (ou *em branco*). O arquivo já nasce salvo nessa pasta e, dentro de `aplicacoes/<App>/`, com o `app:` preenchido. |
 | **Triagem** | A pasta **📥 _entrada** fica no topo da árvore com o número de itens em destaque. No **📊 Painel**, o botão **📥 Entrada** mostra só o que está lá, com a coluna **Organizar**: **→ aplicacoes/…** move com um clique (sugestão pelo `app:` e `tipo:`), **Mover…** escolhe a pasta. Na árvore, o clique direito num documento com `app:` mostra *✨ Mover para <sugestão>*, e *Mover para…* traz a sugestão no topo. |
-| **Épicos e histórias** | Vão para `aplicacoes/<App>/requisitos/` (`tipo: epico` ou `tipo: historia`). **Já tem o `.md`** (do Jira, do Notion, escrito por você)? Com a pasta de trabalho aberta, crie um documento novo (`Alt+N`), cole o conteúdo, ponha o cabeçalho (`/` → *Cabeçalho de metadados*, ou cole `tipo: epico`, `id:` — pode ser a chave do Jira, ex.: `PORTAL-120` —, `titulo:` e `app:`) e salve: o `Ctrl+S` sugere `aplicacoes/<App>/requisitos/`. (Um arquivo aberto de fora da pasta de trabalho salva onde ele está.) Se ele já estiver na pasta de trabalho, o Painel (📥 Entrada) ou o clique direito → *✨ Mover para…* leva para lá. Épico e histórias podem ficar num arquivo só (cada história como `### HU-001 — …`) ou em arquivos separados, com `epico:` no cabeçalho da história. Nos casos de teste, cite a história (`jira:` com a chave, ou `[[HU-001]]`): o épico/história mostra quem o cita, e as visões *Tickets em teste* e *Rastreabilidade* juntam tudo. Pelo Claude (12.6): *"salve este épico do Portal"* — ele grava no lugar certo. |
-| **Casos por ticket** | Cada ticket costuma ter vários casos: com a chave no cabeçalho (`jira: PORTAL-120`), o caso vai para **`aplicacoes/<App>/casos/PORTAL-120/`** — o `Ctrl+S` sugere essa pasta (criada se faltar) e a triagem também. Se já existir uma pasta que **começa com a chave** (`PORTAL-120 Pagamento Pix`), ela é usada — dá para dar um nome mais claro à pasta. **Novo documento aqui** numa pasta de ticket já preenche o `jira:`. Casos que já estão soltos em `casos/`: clique direito em `casos/` → **🎫 Organizar casos por ticket…** (ou `Ctrl+Shift+P`) mostra quantos vão para cada pasta e move tudo de uma vez — links e prints acompanham, **Desfazer** no aviso. Casos sem `jira:` ficam em `casos/`. Bugs, planos e relatórios continuam nas pastas deles. |
+| **Épicos e histórias** | O **épico** (`tipo: epico` com a chave no `id:` ou no `jira:`) vai para **`aplicacoes/<App>/casos/<ÉPICO>/`**, junto das pastas dos tickets dele; a **história** com `epico:` vai para a pasta do ticket dela dentro do épico (`casos/<ÉPICO>/<TICKET>/`). Sem chave/épico, continuam em `aplicacoes/<App>/requisitos/`. **Já tem o `.md`** (do Jira, do Notion, escrito por você)? Com a pasta de trabalho aberta, crie um documento novo (`Alt+N`), cole o conteúdo, ponha o cabeçalho (`/` → *Cabeçalho de metadados*, ou cole `tipo: epico`, `id:` — pode ser a chave do Jira, ex.: `PORTAL-120` —, `titulo:` e `app:`) e salve: o `Ctrl+S` sugere `aplicacoes/<App>/requisitos/`. (Um arquivo aberto de fora da pasta de trabalho salva onde ele está.) Se ele já estiver na pasta de trabalho, o Painel (📥 Entrada) ou o clique direito → *✨ Mover para…* leva para lá. Épico e histórias podem ficar num arquivo só (cada história como `### HU-001 — …`) ou em arquivos separados, com `epico:` no cabeçalho da história. Nos casos de teste, cite a história (`jira:` com a chave, ou `[[HU-001]]`): o épico/história mostra quem o cita, e as visões *Tickets em teste* e *Rastreabilidade* juntam tudo. Pelo Claude (12.6): *"salve este épico do Portal"* — ele grava no lugar certo. |
+| **Casos por épico e ticket** | Cada ticket costuma ter vários casos: com a chave no cabeçalho (`jira: PORTAL-120`), o caso vai para a pasta do ticket — **dentro da pasta do épico** quando tem `epico: PORTAL-10` (ou a história do ticket tem): **`aplicacoes/<App>/casos/PORTAL-10/PORTAL-120/`**; sem épico, `casos/PORTAL-120/`. O `Ctrl+S` sugere essa pasta (criada se faltar), a triagem também, e uma pasta de ticket que já existe (solta ou dentro de um épico) é achada só pelo `jira:`. Pasta que **começa com a chave** (`PORTAL-10 Pagamentos`, `PORTAL-120 Pix`) vale — dá para dar nomes mais claros. **Novo documento aqui** numa pasta de ticket/épico já preenche `jira:` e `epico:` e **herda as tags e a sprint** do épico e da história (ver 10.5). Para arrumar o que já existe: clique direito em `casos/` → **🎫 Organizar por épico e ticket…** (ou `Ctrl+Shift+P`) mostra quantos vão para cada pasta e move tudo de uma vez — o épico, as histórias com épico e os casos; links e prints acompanham, **Desfazer** no aviso. Casos sem `jira:`/`epico:` ficam onde estão. Bugs, execuções e relatórios continuam nas pastas deles (o vínculo vem pelos campos herdados e pelo segmento, 10.5). |
 | **Filtrar por aplicação** | No Painel, a lista **Todas as aplicações** filtra pelo `app:`; a aplicação aparece embaixo do tipo. |
 
 ### 10.3 Importar do Notion
@@ -651,12 +656,42 @@ O modelo é: **a pasta de trabalho é sua** (rascunho, execução, notas) e **a 
 
 **Por que `app:` e não só a pasta?** O cabeçalho viaja com o arquivo (Claude, hub, e-mail). Com ele, o editor sabe onde o documento deve ficar, e a skill do Claude também salva direto no lugar certo.
 
+
+### 10.5 Segmentos: tudo o que nasceu de um épico, ticket, execução ou ciclo
+
+Um **segmento** é o conjunto de documentos que nasceram de um "pai": um épico, um ticket do Jira, uma execução, um ciclo de regressão, um plano, uma sprint ou uma tag.
+
+**🧩 Reunir o segmento**: clique direito numa pasta (`PORTAL-10 Pagamentos`, `PORTAL-120`) ou num documento (o épico, a história, a execução, o ciclo…) → **🧩 Reunir o segmento**. A aba Buscar abre com `seg:PORTAL-10` e lista tudo o que é dele. Dá para escrever na busca também, e combinar com outros filtros:
+- `seg:PORTAL-10 tipo:bug` — os bugs do épico;
+- `seg:EXEC-20261008-0900 status:FAIL` — as falhas da execução;
+- `seg:#pix` — tudo com a tag pix.
+
+**O que entra num segmento:**
+- os documentos ligados diretamente à chave: pelo ID, pelos campos `jira:`, `epico:`, `sprint:`, `ciclo:`, `execucao:` ou `plano:`, pela tag ou por estar dentro da pasta dela;
+- os filhos dos tickets do épico: a história `PORTAL-120` tem `epico: PORTAL-10`, então os casos com `jira: PORTAL-120` também entram;
+- o que a raiz cita: os casos de uma execução, de um ciclo ou de um plano;
+- quem cita um membro ou nasceu dele: o bug que cita o caso, os relatórios da execução.
+
+Visões e outros documentos "pai" que só citam não entram. Nas visões (11.1) e no Claude (`qa_listar` / `qa_consultar` com `segmento:`), o filtro é o mesmo.
+
+**Herança do pai para o filho** (o filho soma as tags e preenche os campos vazios; o que ele já tem não muda):
+
+| Pai → filho | O que passa |
+| --- | --- |
+| Épico / história → caso novo na pasta deles | `jira:` (ticket da pasta), `epico:`, tags e sprint |
+| Casos escolhidos → execução / ciclo | As tags, o épico, o ticket e a sprint que **todos** os casos têm. Montou a rodada pelo atalho **📚 PORTAL-10** ou filtrando `#pix`: a execução fica com `epico: PORTAL-10` ou a tag `pix`. |
+| Ciclo → execução | Vínculos, dispositivo e tags |
+| Execução → relatórios | Tags, `jira:`, `epico:`, `sprint:`, `ciclo:` e `plano:` |
+| Caso → bug | Tags, `epico:`, `sprint:`, `plano:` e, se achado numa rodada, `execucao:` e `ciclo:`. O `jira:` **não** passa: é a chave do próprio bug no Jira. |
+
+Na janela de casos da rodada, os atalhos **📚 <épico>** juntam os casos de cada épico do segmento. O filtro também aceita `#tag`, épico e sprint.
+
 ## 11. Encontrar
 
 | Recurso | Como usar |
 | --- | --- |
 | **Buscar em todos os arquivos** | `Ctrl+Shift+F` ou aba **Buscar**: procura no texto de todos os `.md` da pasta, sem diferenciar acentos nem maiúsculas (**Aa** diferencia, **ab\|** só palavra inteira). Resultado por arquivo com a linha; clique abre o documento na linha, com as ocorrências destacadas (`Enter` vai para a próxima). Inclui o que não foi salvo nas abas abertas. |
-| **Busca com filtros** | Na mesma busca, escreva filtros junto do texto: `status:FAIL`, `tag:regressao`, `jira:ABC-123`, `tipo:bug`, `app:Portal`, `execucao:nunca`, `dispositivo:ios`, `responsavel:`, `prioridade:`, `sprint:`, `pasta:`… (os mesmos das visões, 11.1). `-tag:x` (ou `tag:!x`) exclui; `status:FAIL,BLOCKED` = um ou outro; aspas para valor com espaço. **Só filtros** lista os documentos (clique abre); **filtro + texto** procura o texto só neles. Os **atalhos prontos** embaixo do campo (❌ Falharam, ⛔ Bloqueados, ⏳ Não executados, 🐞 Bugs, 🔁 Regressão, 💬 Comentários pendentes) ligam/desligam o filtro no campo. |
+| **Busca com filtros** | Na mesma busca, escreva filtros junto do texto: `status:FAIL`, `tag:regressao`, `jira:ABC-123`, `tipo:bug`, `app:Portal`, `execucao:nunca`, `dispositivo:ios`, `responsavel:`, `prioridade:`, `sprint:`, `pasta:`, `seg:PORTAL-10` (tudo o que nasceu do épico/ticket/execução, 10.5)… (os mesmos das visões, 11.1). `-tag:x` (ou `tag:!x`) exclui; `status:FAIL,BLOCKED` = um ou outro; aspas para valor com espaço. **Só filtros** lista os documentos (clique abre); **filtro + texto** procura o texto só neles. Os **atalhos prontos** embaixo do campo (❌ Falharam, ⛔ Bloqueados, ⏳ Não executados, 🐞 Bugs, 🔁 Regressão, 💬 Comentários pendentes) ligam/desligam o filtro no campo. |
 | **Painel da pasta** | Aba Arquivos → **📊 Painel**: todos os documentos numa tabela — status (do cabeçalho, ou calculado pelos passos), ID, título, tipo, prioridade/severidade, **progresso** (barra PASS/FAIL/… ou checklist ☑), tags, responsável, quando foi alterado. Clique em **FAIL 3**, **BLOCKED 1**… para filtrar; filtros por texto, tipo, tag e pasta; clique no cabeçalho da coluna para ordenar; clique na linha para abrir. **Copiar como Markdown** / **Abrir como documento** gera um relatório com resumo, gráfico e `[[links]]`. |
 | **Paleta de comandos** | `Ctrl+Shift+P`: ações, arquivos da pasta, recentes, abas, títulos do documento, blocos e modelos — digite parte do nome. |
 | **Sumário** | Aba **Sumário**: títulos do documento; clique para ir (abre a seção se estiver recolhida). |
@@ -682,7 +717,7 @@ Uma **visão** é o equivalente às bases de dados do Notion: uma tabela (ou qua
 | Chave | Valores |
 | --- | --- |
 | `titulo` | Nome da visão. |
-| **Filtros** `tipo`, `app`, `status`, `tags`, `jira`, `epico`, `sprint`, `dispositivo` (`web`, `mobile`, `ios`, `android`), `responsavel`, `prioridade` | Lista separada por vírgula (qualquer um serve); `!` na frente exclui: `status: !PASS`. |
+| **Filtros** `segmento` (tudo o que nasceu de um épico/ticket/execução/ciclo/#tag, 10.5), `tipo`, `app`, `status`, `tags`, `jira`, `epico`, `sprint`, `dispositivo` (`web`, `mobile`, `ios`, `android`), `responsavel`, `prioridade` | Lista separada por vírgula (qualquer um serve); `!` na frente exclui: `status: !PASS`. |
 | `versao`, `pasta` | Começa com: `versao: 2.14` pega 2.14.1; `pasta: aplicacoes/Portal`. |
 | `execucao` | `nunca`, `andamento`, `executado`, `com-falha`. |
 | `automacao` | `sim` / `nao` (campo `automacao:` preenchido). |

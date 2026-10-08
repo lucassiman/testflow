@@ -23,7 +23,8 @@ import { stepTable, setActual, setStepStatus, logRun, newRound, addEvidenceToSec
 import { syncExecution, countStatuses, deriveOverall, cellStatus, updateSummaryBlocks } from '../src/markdown/status.ts';
 import { sourceInfo, failedStep, nextId, idPrefix, buildLinkedDoc, linkLine } from '../src/markdown/linkedDoc.ts';
 import type { FailedStep } from '../src/markdown/linkedDoc.ts';
-import { suggestDestination, runDestination, INBOX_DIR, fillApp, fillJira, appOfDir, ticketOfDir } from '../src/markdown/structure.ts';
+import { suggestDestination, runDestination, INBOX_DIR, fillApp, fillJira, fillField, appOfDir, segmentOfDir, ticketKey } from '../src/markdown/structure.ts';
+import { inheritHeader } from '../src/markdown/segment.ts';
 import { setFrontMatterFields, readPublishMeta, PUBLISH_KEYS } from '../src/markdown/publish.ts';
 import { addJiraKey } from '../src/markdown/jiraCsv.ts';
 import { buildJiraCopy } from '../src/markdown/jira.ts';
@@ -273,9 +274,9 @@ export class QaWorkspace {
   }
 
   /** Lista (filtros simples, na sintaxe das visões). */
-  async list(f: { tipo?: string; app?: string; status?: string; tags?: string; pasta?: string; texto?: string; execucao?: string; limite?: number }): Promise<string> {
+  async list(f: { tipo?: string; app?: string; status?: string; tags?: string; pasta?: string; texto?: string; execucao?: string; segmento?: string; limite?: number }): Promise<string> {
     const lines = ['titulo: Documentos', 'colunas: id, titulo, tipo, status, app, progresso, pasta'];
-    for (const k of ['tipo', 'app', 'status', 'tags', 'pasta', 'texto', 'execucao'] as const) if (f[k]) lines.push(`${k}: ${f[k]}`);
+    for (const k of ['segmento', 'tipo', 'app', 'status', 'tags', 'pasta', 'texto', 'execucao'] as const) if (f[k]) lines.push(`${k}: ${f[k]}`);
     lines.push(`limite: ${f.limite || 200}`);
     return this.query(lines.join('\n'));
   }
@@ -397,13 +398,25 @@ export class QaWorkspace {
     const appName = String(dm.app || '');
     // execução/ciclo: junto dos do mesmo tipo (ou numa execucoes/ que já existe), como no app
     const sibs = RUN_TYPES.includes(tipo) ? this.index.all().filter((e) => RUN_TYPES.includes(e.tipo) && (!appName || (e.app || '').toLowerCase() === appName.toLowerCase())).map((e) => e.path) : [];
-    const dir = o.pasta ? o.pasta.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '') : RUN_TYPES.includes(tipo) ? runDestination({ tipo, app: appName }, this.dirs, sibs).dir : suggestDestination({ tipo, app: appName, jira: dm.jira }, this.dirs).dir;
-    // pasta informada dentro de aplicacoes/<App>/casos/<TICKET>/: app: e jira: vazios vêm da pasta
-    text = fillJira(fillApp(text, appOfDir(dir)), ticketOfDir(dir));
+    const dir = o.pasta ? o.pasta.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '') : RUN_TYPES.includes(tipo) ? runDestination({ tipo, app: appName }, this.dirs, sibs).dir : suggestDestination({ tipo, app: appName, jira: dm.jira, epico: dm.epico, id: String(dm.id || '') }, this.dirs).dir;
+    // dentro de aplicacoes/<App>/casos/<ÉPICO>/<TICKET>/: app:, jira: e epico: vazios vêm da pasta; tags e sprint do épico e da história (herança)
+    text = this.inheritFromFolder(fillApp(text, appOfDir(dir)), dir, tipo);
     text = updateSummaryBlocks(text); // resumo automático já calculado
     const path = await this.createDoc(dir, suggestedFileName(text, o.titulo || tipo), text);
     const warnings = this.lint(text);
     return [`Criado: ${path}${id ? ` (${id})` : ''}`, warnings.length ? `Avisos da validação: ${warnings.join(' | ')}` : 'Validação: sem avisos.'].join('\n');
+  }
+
+  /** Herança pela pasta (como o app): jira:/epico: da pasta casos/<ÉPICO>/<TICKET>/ e tags/sprint dos documentos pais. */
+  private inheritFromFolder(text: string, dir: string, tipo: string): string {
+    const all = this.index.all();
+    const dirOf = (p: string) => p.split('/').slice(0, -1).join('/');
+    const { epic, ticket } = segmentOfDir(dir, this.dirs, all.filter((e) => e.tipo === 'epico').map((e) => dirOf(e.path)));
+    let out = fillJira(text, tipo === 'epico' ? '' : ticket);
+    if (epic && tipo !== 'epico') out = fillField(out, 'epico', epic);
+    const is = (e: { jira: string; id: string }, k: string) => [ticketKey(e.jira), e.id].some((x) => (x || '').toUpperCase() === k);
+    const parents = all.filter((e) => (epic && e.tipo === 'epico' && is(e, epic)) || (ticket && e.tipo === 'historia' && is(e, ticket)));
+    return parents.length ? inheritHeader(out, { tags: parents.flatMap((p) => p.tags), fields: { sprint: parents.map((p) => p.sprint || '').find(Boolean) } }) : out;
   }
 
   /** Bug ligado a um caso: passos até o que falhou, esperado, obtido, prints do passo; o caso ganha o link. */

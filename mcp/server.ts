@@ -85,12 +85,13 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
       tags: z.string().optional(), pasta: z.string().optional().describe('começo do caminho, ex.: aplicacoes/Portal'),
       texto: z.string().optional().describe('palavra no ID, título, caminho, tags, responsável…'),
       execucao: z.string().optional().describe('nunca, andamento, executado, com-falha'),
+      segmento: z.string().optional().describe('tudo o que nasceu de um pai: épico (PORTAL-10), ticket, execução (EXEC-…), ciclo, plano, sprint ou #tag — pelos campos herdados, pela pasta e por quem cita'),
       limite: z.number().int().min(1).max(2000).optional(),
     }, annotations: RO,
   }, async (a) => run(() => ws.list(a), text));
 
   server.registerTool('qa_consultar', {
-    title: 'Consultar (como as visões)', description: `Consulta na sintaxe do bloco qa-visao do app (uma linha "chave: valor" por item): filtros tipo, app, status, tags, jira, versao, pasta, responsavel, prioridade, execucao, automacao, comentarios, texto; formato: lista | quadro | cobertura (medida: execucao|automacao) | jira | rastreabilidade; agrupar, colunas, ordenar (-desc), limite. Ou uma visão pronta: nao-executados, tickets, regressao, automacao, rastreabilidade (a consulta completa o filtro, ex.: "versao: 2.14").`,
+    title: 'Consultar (como as visões)', description: `Consulta na sintaxe do bloco qa-visao do app (uma linha "chave: valor" por item): filtros segmento (épico/ticket/execução/ciclo/#tag: tudo o que nasceu dele), tipo, app, status, tags, jira, versao, pasta, responsavel, prioridade, execucao, automacao, comentarios, texto; formato: lista | quadro | cobertura (medida: execucao|automacao) | jira | rastreabilidade; agrupar, colunas, ordenar (-desc), limite. Ou uma visão pronta: nao-executados, tickets, regressao, automacao, rastreabilidade (a consulta completa o filtro, ex.: "versao: 2.14").`,
     inputSchema: { consulta: z.string().optional().describe('ex.: "tipo: caso-de-teste\\napp: Portal\\nexecucao: com-falha\\ncolunas: id, titulo, status, rodada, bugs"'), pronta: z.string().optional() },
     annotations: RO,
   }, async (a) => run(() => ws.query(a.consulta || '', a.pronta || ''), text));

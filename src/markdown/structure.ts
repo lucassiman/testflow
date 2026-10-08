@@ -103,14 +103,75 @@ export function ticketFolder(key: string, parent: string, dirs: string[]): strin
   return found ? found.slice(prefix.length) : key;
 }
 
-/** Chave do ticket pela pasta (aplicacoes/Portal/casos/PORTAL-120 Pix → PORTAL-120), ou ''. */
-export function ticketOfDir(dir: string): string {
-  const parts = dir.split('/');
-  if (parts[0] !== APPS_DIR || parts[2] !== 'casos' || !parts[3]) return '';
-  return /^([A-Za-z][A-Za-z0-9_]*-\d+)(?=$|[\s_.—–-])/.exec(parts[3])?.[1]?.toUpperCase() || '';
+const keyOfName = (name: string): string => /^([A-Za-z][A-Za-z0-9_]*-\d+)(?=$|[\s_.—–-])/.exec(name || '')?.[1]?.toUpperCase() || '';
+
+/** Chave do épico (campo epico: — chave do Jira, link do Jira ou ID de documento como EPI-3), ou ''. */
+export function epicKey(epico: unknown): string {
+  const list = Array.isArray(epico) ? epico.map(String) : String(epico ?? '').split(/[,;]+/);
+  const v = list.map((x) => x.replace(/^\[\[|\]\]$/g, '').trim()).find(Boolean) || '';
+  const k = jiraLabel(v) || v;
+  return KEY_RE.test(k.toUpperCase()) ? k.toUpperCase() : '';
 }
 
-export function suggestDestination(info: { tipo?: string; app?: string; jira?: unknown }, dirs: string[]): Destination {
+/**
+ * Épico e ticket de uma pasta de casos:
+ *   casos/PORTAL-10 Pagamentos/PORTAL-120 Pix → { epic: PORTAL-10, ticket: PORTAL-120 }
+ *   casos/PORTAL-200                          → { epic: '', ticket: PORTAL-200 }
+ *   casos/PORTAL-10 Pagamentos                → { epic: PORTAL-10, ticket: '' } quando ela é pasta de épico (tem
+ *                                               pastas de ticket dentro, ou está em `epicDirs`)
+ */
+export function segmentOfDir(dir: string, dirs: string[] = [], epicDirs: string[] = []): { epic: string; ticket: string } {
+  const parts = dir.split('/');
+  if (parts[0] !== APPS_DIR || parts[2] !== 'casos' || !parts[3]) return { epic: '', ticket: '' };
+  const first = keyOfName(parts[3]);
+  const second = keyOfName(parts[4] || '');
+  if (first && second) return { epic: first, ticket: second };
+  if (!first) return { epic: '', ticket: '' };
+  const here = parts.slice(0, 4).join('/').toLowerCase();
+  const isEpic = epicDirs.some((d) => d.toLowerCase() === here)
+    || dirs.some((d) => { const l = d.toLowerCase(); return l.startsWith(`${here}/`) && !l.slice(here.length + 1).includes('/') && !!keyOfName(d.split('/').pop() || ''); });
+  return isEpic ? { epic: first, ticket: '' } : { epic: '', ticket: first };
+}
+
+/** Chave do ticket pela pasta (aplicacoes/Portal/casos/PORTAL-120 Pix → PORTAL-120; também dentro da pasta do épico), ou ''. */
+export function ticketOfDir(dir: string, dirs: string[] = [], epicDirs: string[] = []): string {
+  return segmentOfDir(dir, dirs, epicDirs).ticket;
+}
+
+/** Chave do épico pela pasta (aplicacoes/Portal/casos/PORTAL-10 Pagamentos/… → PORTAL-10), ou ''. */
+export function epicOfDir(dir: string, dirs: string[] = [], epicDirs: string[] = []): string {
+  return segmentOfDir(dir, dirs, epicDirs).epic;
+}
+
+/**
+ * Pasta de um ticket em casos/: a que já existe (direto em casos/ ou dentro da pasta de um épico) ou, se não existe,
+ * dentro do épico informado (casos/<ÉPICO>/<TICKET>) ou direto em casos/.
+ */
+export function ticketDir(key: string, casos: string, dirs: string[], epic = ''): string {
+  const k = key.toLowerCase();
+  const isKeyName = (name: string) => name === k || (name.startsWith(k) && /^[\s_.—–-]/.test(name.slice(k.length)));
+  const prefix = `${casos}/`.toLowerCase();
+  const found = dirs.filter((d) => {
+    const l = d.toLowerCase();
+    if (!l.startsWith(prefix)) return false;
+    const rest = l.slice(prefix.length).split('/');
+    return rest.length <= 2 && isKeyName(rest[rest.length - 1]) && (rest.length === 1 || !!keyOfName(rest[0]));
+  });
+  if (epic) {
+    const ep = `${casos}/${ticketFolder(epic, casos, dirs)}`;
+    const inside = found.find((d) => d.toLowerCase().startsWith(`${ep.toLowerCase()}/`));
+    return inside || `${ep}/${ticketFolder(key, ep, dirs)}`;
+  }
+  // o mais fundo (dentro de um épico) ganha de uma pasta solta antiga
+  return found.sort((a, b) => b.split('/').length - a.split('/').length)[0] || `${casos}/${key}`;
+}
+
+/** Preenche um campo vazio do cabeçalho (ou cria). */
+export function fillField(text: string, field: string, value: string): string {
+  return fillEmpty(text, field, value);
+}
+
+export function suggestDestination(info: { tipo?: string; app?: string; jira?: unknown; epico?: unknown; id?: string }, dirs: string[]): Destination {
   const app = (info.app || '').trim();
   const tipo = (info.tipo || '').trim();
   const has = (d: string) => dirs.some((x) => x.toLowerCase() === d.toLowerCase());
@@ -119,10 +180,24 @@ export function suggestDestination(info: { tipo?: string; app?: string; jira?: u
     const folder = matchApp(app, listApps(dirs));
     const sub = TYPE_FOLDER[tipo] || 'docs';
     let dir = `${APPS_DIR}/${folder}/${sub}`;
-    // casos com ticket: uma pasta por ticket (cada ticket tem vários casos)
-    const key = CASE_TYPES.includes(tipo) ? ticketKey(info.jira) : '';
-    if (key) dir = `${dir}/${ticketFolder(key, dir, dirs)}`;
-    return { dir, reason: `app: ${app}${tipo ? ` · tipo: ${tipo}` : ''}${key ? ` · jira: ${key}` : ''}`, creates: !has(dir) };
+    const casos = `${APPS_DIR}/${folder}/casos`;
+    const epic = epicKey(info.epico);
+    const own = ticketKey(info.jira) || (KEY_RE.test(String(info.id || '').toUpperCase()) ? String(info.id).toUpperCase() : '');
+    let why = '';
+    if (tipo === 'epico' && own) {
+      // o épico mora em casos/<ÉPICO>/, junto das pastas dos tickets dele
+      dir = `${casos}/${ticketFolder(own, casos, dirs)}`;
+      why = ` · épico ${own}`;
+    } else if (tipo === 'historia' && own && epic) {
+      dir = ticketDir(own, casos, dirs, epic);
+      why = ` · épico ${epic} · ticket ${own}`;
+    } else if (CASE_TYPES.includes(tipo)) {
+      // casos com ticket: uma pasta por ticket (cada ticket tem vários casos), dentro da pasta do épico quando há épico
+      const key = ticketKey(info.jira);
+      if (key) { dir = ticketDir(key, casos, dirs, epic); why = `${epic ? ` · épico ${epic}` : ''} · jira: ${key}`; }
+      else if (epic) { dir = `${casos}/${ticketFolder(epic, casos, dirs)}`; why = ` · épico ${epic}`; }
+    }
+    return { dir, reason: `app: ${app}${tipo ? ` · tipo: ${tipo}` : ''}${why}`, creates: !has(dir) };
   }
   return { dir: INBOX_DIR, reason: tipo ? `sem app: no cabeçalho — fica na entrada para triar (tipo: ${tipo})` : 'sem app: no cabeçalho — fica na entrada para triar', creates: !has(INBOX_DIR) };
 }
@@ -162,16 +237,34 @@ export function runDestination(info: { tipo?: string; app?: string }, dirs: stri
  * vão para casos/<TICKET>/ (pasta existente que começa com a chave, ou nova).
  * @returns movimentos { path, dir } (dir = pasta de destino)
  */
-export function ticketMoves(entries: Array<{ path: string; tipo?: string; jira?: unknown }>, dirs: string[]): Array<{ path: string; dir: string; key: string }> {
+export function ticketMoves(entries: Array<{ path: string; tipo?: string; jira?: unknown; epico?: unknown; id?: string }>, dirs: string[]): Array<{ path: string; dir: string; key: string }> {
   const out: Array<{ path: string; dir: string; key: string }> = [];
+  // épico de um ticket pela história dele (tipo historia com epico:), para casos que só têm o jira:
+  const epicOfTicket = new Map<string, string>();
+  for (const e of entries) {
+    if ((e.tipo || '').trim() !== 'historia') continue;
+    const own = ticketKey(e.jira) || String(e.id || '').toUpperCase();
+    const ep = epicKey(e.epico);
+    if (own && ep) epicOfTicket.set(own, ep);
+  }
   for (const e of entries) {
     const parts = e.path.split('/');
-    if (parts.length !== 4 || parts[0] !== APPS_DIR || parts[2] !== 'casos') continue;
-    if (!CASE_TYPES.includes((e.tipo || '').trim())) continue;
+    if (parts[0] !== APPS_DIR || parts.length < 4 || !['casos', 'requisitos'].includes(parts[2])) continue;
+    if (parts.includes(TRASH_DIR) || parts.some((p) => /^evid[eê]ncias$/i.test(p))) continue;
+    const tipo = (e.tipo || '').trim();
+    const isCase = CASE_TYPES.includes(tipo);
+    if (!isCase && tipo !== 'epico' && tipo !== 'historia') continue;
     const key = ticketKey(e.jira);
-    if (!key) continue;
-    const parent = parts.slice(0, 3).join('/');
-    out.push({ path: e.path, dir: `${parent}/${ticketFolder(key, parent, dirs)}`, key });
+    const epico = epicKey(e.epico) || (key ? epicOfTicket.get(key) || '' : '');
+    if (isCase && !key && !epico) continue;
+    if (!isCase && parts[2] === 'casos' && tipo === 'historia' && !epico) continue;
+    const want = suggestDestination({ tipo, app: parts[1], jira: e.jira, epico, id: e.id }, dirs).dir;
+    if (!want.startsWith(`${APPS_DIR}/${parts[1]}/casos`)) continue;
+    const here = parts.slice(0, -1).join('/');
+    if (want.toLowerCase() === here.toLowerCase()) continue;
+    // já está numa pasta do mesmo ticket (ex.: subpasta de rascunhos dentro dele): fica
+    if (isCase && key && here.toLowerCase().startsWith(`${want.toLowerCase()}/`)) continue;
+    out.push({ path: e.path, dir: want, key: key || epico || String(e.id || '') });
   }
   return out;
 }
@@ -183,7 +276,7 @@ export const inInbox = (path: string): boolean => path === INBOX_DIR || path.sta
  * Sugestão para triar um documento que está na entrada (ou solto): só quando o cabeçalho diz a aplicação.
  * @returns pasta ou null (sem app: — escolha manual)
  */
-export function triageSuggestion(info: { tipo?: string; app?: string; jira?: unknown }, currentDir: string, dirs: string[]): string | null {
+export function triageSuggestion(info: { tipo?: string; app?: string; jira?: unknown; epico?: unknown; id?: string }, currentDir: string, dirs: string[]): string | null {
   if (!(info.app || '').trim()) return null;
   const { dir } = suggestDestination(info, dirs);
   return dir === currentDir ? null : dir;
