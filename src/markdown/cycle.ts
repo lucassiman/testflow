@@ -164,14 +164,56 @@ export function runsOf(text: string): Array<{ round: number; at: Date; status: S
   return out;
 }
 
-/** Resultado do caso neste ciclo. `counts`: passos da tabela atual; `modified`: data do arquivo. */
-export function caseResult(text: string, since: Date, counts: StatusCounts, modified = 0): CaseResult {
+/** Rodadas arquivadas (🔁 Nova rodada: "### Rodada N — dd/mm/aaaa — `STATUS`" no Histórico de execuções). */
+export function archivedRounds(text: string): Array<{ round: number; day: Date; status: StatusWord | null }> {
+  const lines = text.split('\n');
+  const sec = findSection(lines, HISTORY_TITLE);
+  if (!sec) return [];
+  const out: Array<{ round: number; day: Date; status: StatusWord | null }> = [];
+  for (let i = sec.start; i < sec.end; i++) {
+    const m = /^#{3,6}\s+Rodada\s+(\d+)\s*[—–-]\s*(\d{2})\/(\d{2})\/(\d{4})(.*)$/.exec(lines[i]);
+    if (!m) continue;
+    const kind = cellStatus(/`[^`]+`/.exec(m[5])?.[0] || '');
+    out.push({ round: Number(m[1]), day: new Date(Number(m[4]), Number(m[3]) - 1, Number(m[2])), status: kind ? (kind.toUpperCase() as StatusWord) : null });
+  }
+  return out;
+}
+
+/**
+ * Resultado do caso neste ciclo. `counts`: passos da tabela atual; `modified`: data do arquivo; `started`: a execução
+ * deste caso começou neste ciclo (neste computador).
+ * Passos marcados sem rodada concluída só contam como "em andamento" se começaram neste ciclo (aqui, ou arquivando a
+ * rodada antiga num dia do ciclo — outro QA ou o Claude); marcas de antes são o **último resultado**, não andamento.
+ */
+export function caseResult(text: string, since: Date, counts: StatusCounts, modified = 0, started = false): CaseResult {
   const from = new Date(since.getFullYear(), since.getMonth(), since.getDate(), since.getHours(), since.getMinutes()).getTime();
   const runs = runsOf(text).filter((r) => r.at.getTime() >= from).sort((a, b) => a.at.getTime() - b.at.getTime() || a.round - b.round);
   const last = runs.at(-1);
   if (last) return { state: 'feito', status: last.status, when: `${dmy(last.at)} ${hm(last.at)}` };
-  if (counts.total && counts.pending < counts.total && modified >= from) return { state: 'andamento', status: null, when: '' };
+  const marked = counts.total > 0 && counts.pending < counts.total;
+  const day0 = new Date(since.getFullYear(), since.getMonth(), since.getDate()).getTime();
+  const freshArchive = () => archivedRounds(text).some((r) => r.day.getTime() >= day0);
+  if (marked && (started || (modified >= from && freshArchive()))) return { state: 'andamento', status: null, when: '' };
   return { state: 'pendente', status: null, when: '' };
+}
+
+/**
+ * Último resultado do caso ANTES deste ciclo (para mostrar em cinza ao lado de "pendente"): a rodada concluída mais
+ * recente antes do início, os passos marcados de antes (ainda não arquivados) ou a última rodada arquivada.
+ */
+export function lastResultBefore(text: string, since: Date, counts: StatusCounts): { status: StatusWord; when: string } | null {
+  const from = new Date(since.getFullYear(), since.getMonth(), since.getDate(), since.getHours(), since.getMinutes()).getTime();
+  const marked = counts.total > 0 && counts.pending < counts.total;
+  if (marked) {
+    const overall = deriveOverall(counts);
+    if (overall && overall !== 'PENDING') return { status: overall, when: '' };
+  }
+  const before = runsOf(text).filter((r) => r.at.getTime() < from && r.status && r.status !== 'PENDING')
+    .sort((a, b) => a.at.getTime() - b.at.getTime() || a.round - b.round).at(-1);
+  if (before?.status) return { status: before.status, when: dmy(before.at) };
+  const arch = archivedRounds(text).filter((r) => r.day.getTime() < from && r.status && r.status !== 'PENDING')
+    .sort((a, b) => a.day.getTime() - b.day.getTime() || a.round - b.round).at(-1);
+  return arch?.status ? { status: arch.status, when: dmy(arch.day) } : null;
 }
 
 /**

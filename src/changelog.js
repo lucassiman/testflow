@@ -8,6 +8,14 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.19.1', date: '08/10/2026',
+    items: [
+      { icon: '🥒', text: '**Cenário BDD na rodada** agora executa pela tabela *Cenário | Status* (antes dava "Nenhuma tabela com coluna Status para executar" depois de arquivar a rodada antiga).', manual: '7.8 Ciclo de regressão' },
+      { icon: '⏳', text: 'Rodada nova: casos com resultado de execuções antigas aparecem como **pendente**, com o **último resultado em cinza** — não mais como "em andamento".', manual: '7.8 Ciclo de regressão' },
+      { icon: '📁', text: 'A rodada (e o ciclo) nasce **junto das execuções que já existem** ou numa pasta `execucoes/` existente, em vez da `_entrada/`. Vale também para o Claude (MCP).', manual: '7.8 Ciclo de regressão' },
+    ],
+  },
+  {
     version: '1.19.0', date: '08/10/2026',
     items: [
       { icon: '✨', text: '**Novo nome: TestFlow** — com ícone novo (✓ que vira seta). Suas preferências, abas, fixados e recentes continuam os mesmos. No app instalado, o Chrome pode pedir para confirmar o nome e o ícone novos.', manual: '1.' },

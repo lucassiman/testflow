@@ -123,6 +123,36 @@ export function suggestDestination(info: { tipo?: string; app?: string; jira?: u
   return { dir: INBOX_DIR, reason: tipo ? `sem app: no cabeçalho — fica na entrada para triar (tipo: ${tipo})` : 'sem app: no cabeçalho — fica na entrada para triar', creates: !has(INBOX_DIR) };
 }
 
+const EXEC_FOLDERS = ['execucoes', 'execuções', 'execucao', 'rodadas'];
+
+/**
+ * Onde criar uma execução/rodada ou um ciclo: junto dos documentos do mesmo tipo que já existem (a pasta mais usada
+ * por eles; da mesma aplicação, se houver), ou numa pasta "execucoes/" que já existe (na aplicação ou na raiz), e só
+ * então o lugar padrão (suggestDestination — que, sem app:, é a _entrada/).
+ * @param siblings caminhos dos documentos do mesmo tipo (já filtrados pela aplicação, quando houver)
+ */
+export function runDestination(info: { tipo?: string; app?: string }, dirs: string[], siblings: string[]): Destination {
+  const count = new Map<string, number>();
+  for (const p of siblings) {
+    const d = p.includes('/') ? p.slice(0, p.lastIndexOf('/')) : '';
+    if (d.split('/').includes(TRASH_DIR) || d === INBOX_DIR || d.startsWith(`${INBOX_DIR}/`)) continue;
+    count.set(d, (count.get(d) || 0) + 1);
+  }
+  const best = [...count.entries()].sort((a, b) => b[1] - a[1] || a[0].length - b[0].length)[0];
+  if (best) return { dir: best[0], reason: `junto das outras execuções (${best[0] || 'raiz'})`, creates: false };
+  const base = suggestDestination(info, dirs);
+  const app = (info.app || '').trim();
+  const parents = app && base.dir.startsWith(`${APPS_DIR}/`) ? [base.dir.split('/').slice(0, 2).join('/'), ''] : [''];
+  for (const parent of parents) {
+    for (const name of EXEC_FOLDERS) {
+      const want = parent ? `${parent}/${name}` : name;
+      const found = dirs.find((d) => norm(d) === norm(want));
+      if (found) return { dir: found, reason: `pasta de execuções que já existe (${found})`, creates: false };
+    }
+  }
+  return base;
+}
+
 /**
  * "Organizar casos por ticket": casos soltos em aplicacoes/<App>/casos/ (direto na pasta) com chave no jira:
  * vão para casos/<TICKET>/ (pasta existente que começa com a chave, ou nova).

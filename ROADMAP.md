@@ -172,6 +172,8 @@ Ida e volta pela área de transferência (sem chave de API, nada sai do editor s
 
 ✅ **Feito na 1.12.0 — Dispositivo/ambiente:** substituir/expandir o campo atual *Browser* por **Dispositivo/Ambiente**: WEB, Mobile iOS, Mobile Android, Mobile — Todos; para mobile informar a versão (ex.: Mobile iOS — iOS 18, Mobile Android — Android 15). Deve aparecer nas tags, no cabeçalho do caso, nos modelos de criação de casos e nas informações da execução, para rastrear em que dispositivo/plataforma cada caso foi validado.
 
+**1.19.1 (08/10) — Fase 10.1.** Cenário BDD executável na rodada (`collectStatusTables` aceita a tabela *Cenário | Status* vazia); "em andamento" só para caso que começou nesta rodada (`cycleStarted` ou rodada antiga arquivada num dia da rodada) e **último resultado** em cinza nos pendentes (`lastResultBefore`); rodada/ciclo nascem junto das execuções existentes ou numa `execucoes/` (`runDestination`, também no `qa_criar` do MCP).
+
 **1.19.0 (08/10) — novo nome: TestFlow.** Nome visível (`branding.json`: name/shortName/description, manifesto do PWA, título, manual, documentos, skill, extensão do Claude `testflow.mcpb` com display_name *TestFlow*) e ícone novo (✓ que vira seta, `public/icons/`, logo do topo em SVG). Identificadores internos mantidos de propósito (dados e extensão não se perdem): `mdqa:*`, IndexedDB `md-qa-editor`, ids `mdqa-*` dos seletores de pasta, id do MCP `markdown-qa`, skill `qa-markdown`, formato QA-MD. Repositório: `testflow` (privado).
 
 **1.18.3 (07/10) — rodada com casos que já têm histórico:** o ✓ Concluir rolava até o *Histórico de execuções* e, na rodada, a aba fechava ali — a posição lembrada (1.16) ficava no histórico e era restaurada por cima da execução do próximo caso. Agora: `finishExec` só rola ao histórico se ninguém tratou o fim (`onFinish` devolve true no ciclo), `applyPos` não mexe na tela se a execução já começou, e o primeiro destaque do passo centraliza (`centerNext`, de novo depois de 2 frames). Teste: `rodadaHistorico.spec.mjs`.
@@ -372,7 +374,7 @@ Ideias de uso diário, por área. Esforço: **P** / **M** / **G** como nas fases
 
 Levantada numa revisão das telas com a pasta `exemplos/` (como um QA novo usaria) e no que o Claude ainda não faz pelo MCP. Esforço: **P** / **M** / **G**. Ordem sugerida: 10.1 → 10.2 → 10.4 (o MCP gera os mesmos relatórios) → 10.3 em versões pequenas.
 
-#### 10.1 — Correções achadas na revisão *(P)*
+#### 10.1 — Correções achadas na revisão *(P)* — ✅ feito na 1.19.1
 
 | Item | Detalhe | Esforço |
 |---|---|---|

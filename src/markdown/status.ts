@@ -155,7 +155,8 @@ export function collectStatusTables(source: string): StatusTable[] {
       const col = bugTable ? -1 : head.findIndex(isStatusHeader);
       if (col >= 0) {
         // passos ainda não executados ("Resultado esperado") ou a tabela de um ciclo de regressão ("Executado em")
-        const expected = head.some((h) => ['resultado esperado', 'esperado', 'expected', 'expected result', 'executado em'].includes(normHeader(h)));
+        // ou a tabela de execução de um cenário BDD ("Cenário | Status"), que fica sem nenhum status depois de 🔁 Nova rodada
+        const expected = head.some((h) => ['resultado esperado', 'esperado', 'expected', 'expected result', 'executado em', 'cenario', 'scenario'].includes(normHeader(h)));
         current = { header: prev.index, col, rows: [], last: i, expected };
         prev = null;
         return;

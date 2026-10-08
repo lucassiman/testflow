@@ -53,11 +53,13 @@ export function refreshCyclePanel() {
   const rows = data.items.map((i) => {
     const icon = i.state === 'feito' ? (ICON[i.status || ''] || '✔') : i.state === 'atual' ? '▶' : i.state === 'andamento' ? '◐' : '⏳';
     const tail = i.whole && i.state !== 'feito' && i.state !== 'atual' ? 'como um todo' : i.state === 'feito' ? LABEL[i.status || ''] || i.status || '' : i.state === 'atual' ? 'em execução' : i.state === 'andamento' ? 'em andamento' : 'pendente';
+    // ainda não executado nesta rodada: o resultado de antes aparece em cinza (não conta como andamento)
+    const last = i.last && i.state !== 'feito' ? `<small class="cp-last" title="Último resultado, de antes desta rodada${i.last.when ? ` (${esc(i.last.when)})` : ''}">último: ${esc(i.last.status)}</small>` : '';
     const cls = `cp-item cp-${i.state}${i.status ? ` cp-st-${i.status.toLowerCase()}` : ''}${i.aberto ? ' open' : ''}`;
-    const tip = `${i.key}${i.titulo ? ` — ${i.titulo}` : ''}${i.when ? ` · ${i.when}` : ''}${i.state === 'feito' ? ' (clique para revisar)' : ''}`;
+    const tip = `${i.key}${i.titulo ? ` — ${i.titulo}` : ''}${i.when ? ` · ${i.when}` : ''}${i.state === 'feito' ? ' (clique para revisar)' : i.last ? ` · pendente nesta rodada (último: ${i.last.status}${i.last.when ? ` em ${i.last.when}` : ''})` : ''}`;
     const skip = !data.closed && i.state !== 'feito' ? `<button type="button" class="cp-skip" data-cp="skip" data-key="${esc(i.key)}" title="Pular ${esc(i.key)}: marca SKIP sem abrir o caso" aria-label="Pular ${esc(i.key)}">⏭</button>` : '';
     return `<li class="cp-li"><button type="button" class="${cls}" data-cp="case" data-key="${esc(i.key)}" title="${esc(tip)}"${i.aberto ? ' aria-current="true"' : ''}>`
-      + `<span class="cp-ic">${icon}</span><span class="cp-name"><b>${esc(i.key)}</b>${i.titulo ? ` <small>${esc(i.titulo)}</small>` : ''}</span><span class="cp-tail">${esc(tail)}</span></button>${skip}</li>`;
+      + `<span class="cp-ic">${icon}</span><span class="cp-name"><b>${esc(i.key)}</b>${i.titulo ? ` <small>${esc(i.titulo)}</small>` : ''}</span><span class="cp-tail">${esc(tail)}${last}</span></button>${skip}</li>`;
   }).join('');
   el.innerHTML = `
     <div class="cp-head">

@@ -71,7 +71,9 @@ test('ciclo: resultado do caso pela rodada concluída depois do início; manual 
   assert.equal(caseResult(old, start, countStatuses(old)).state, 'pendente');
   assert.equal(needsFreshRound(old, start, countStatuses(old)), true);
   assert.equal(needsFreshRound(tcText('TC-3'), start, countStatuses(tcText('TC-3'))), false);
-  assert.equal(caseResult(tcText('TC-3', { steps: ['PASS', ''] }), start, countStatuses(tcText('TC-3', { steps: ['PASS', ''] })), start.getTime() + 1000).state, 'andamento');
+  // passos marcados: em andamento só se a execução começou nesta rodada (1.19.1); senão são marcas de antes
+  assert.equal(caseResult(tcText('TC-3', { steps: ['PASS', ''] }), start, countStatuses(tcText('TC-3', { steps: ['PASS', ''] })), start.getTime() + 1000, true).state, 'andamento');
+  assert.equal(caseResult(tcText('TC-3', { steps: ['PASS', ''] }), start, countStatuses(tcText('TC-3', { steps: ['PASS', ''] })), start.getTime() + 1000).state, 'pendente');
 
   let doc = cycleDoc({ titulo: 'R', cases: [{ key: 'TC-1', titulo: 'a' }, { key: 'TC-2', titulo: 'b' }, { key: 'TC-3', titulo: 'c' }], start });
   // TC-3 marcado à mão como SKIP

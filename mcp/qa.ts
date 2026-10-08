@@ -23,7 +23,7 @@ import { stepTable, setActual, setStepStatus, logRun, newRound, addEvidenceToSec
 import { syncExecution, countStatuses, deriveOverall, cellStatus, updateSummaryBlocks } from '../src/markdown/status.ts';
 import { sourceInfo, failedStep, nextId, idPrefix, buildLinkedDoc, linkLine } from '../src/markdown/linkedDoc.ts';
 import type { FailedStep } from '../src/markdown/linkedDoc.ts';
-import { suggestDestination, INBOX_DIR, fillApp, fillJira, appOfDir, ticketOfDir } from '../src/markdown/structure.ts';
+import { suggestDestination, runDestination, INBOX_DIR, fillApp, fillJira, appOfDir, ticketOfDir } from '../src/markdown/structure.ts';
 import { setFrontMatterFields, readPublishMeta, PUBLISH_KEYS } from '../src/markdown/publish.ts';
 import { addJiraKey } from '../src/markdown/jiraCsv.ts';
 import { buildJiraCopy } from '../src/markdown/jira.ts';
@@ -393,7 +393,11 @@ export class QaWorkspace {
     // título "# XXX-000 — Título do modelo" → o novo
     text = text.replace(/^#\s+[A-Z][A-Z0-9]*-0+\s*[—–-]\s*.*$/m, `# ${[id, o.titulo || String(meta(text).titulo || '')].filter(Boolean).join(' — ')}`);
     const dm = meta(text);
-    const dir = o.pasta ? o.pasta.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '') : suggestDestination({ tipo, app: String(dm.app || ''), jira: dm.jira }, this.dirs).dir;
+    const RUN_TYPES = ['execucao', 'relatorio-execucao', 'ciclo-regressao'];
+    const appName = String(dm.app || '');
+    // execução/ciclo: junto dos do mesmo tipo (ou numa execucoes/ que já existe), como no app
+    const sibs = RUN_TYPES.includes(tipo) ? this.index.all().filter((e) => RUN_TYPES.includes(e.tipo) && (!appName || (e.app || '').toLowerCase() === appName.toLowerCase())).map((e) => e.path) : [];
+    const dir = o.pasta ? o.pasta.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '') : RUN_TYPES.includes(tipo) ? runDestination({ tipo, app: appName }, this.dirs, sibs).dir : suggestDestination({ tipo, app: appName, jira: dm.jira }, this.dirs).dir;
     // pasta informada dentro de aplicacoes/<App>/casos/<TICKET>/: app: e jira: vazios vêm da pasta
     text = fillJira(fillApp(text, appOfDir(dir)), ticketOfDir(dir));
     text = updateSummaryBlocks(text); // resumo automático já calculado

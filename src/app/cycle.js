@@ -6,7 +6,7 @@
  */
 import { app } from './context.js';
 import {
-  CYCLE_TYPE, cycleDoc, cycleStart, cycleClosed, cycleProgress, nextCase, syncCycle, closeCycle, caseResult, needsFreshRound, cycleTable, isCycle, unexecuted, skipPending, cycleSummary,
+  CYCLE_TYPE, cycleDoc, cycleStart, cycleClosed, cycleProgress, nextCase, syncCycle, closeCycle, caseResult, lastResultBefore, needsFreshRound, cycleTable, isCycle, unexecuted, skipPending, cycleSummary,
   EXEC_TYPE, isCycleDef, cycleDefDoc, defCases, execInfo, nextExecNumber, syncDefExecutions, applySkipped, applyWhole, cicloOf, execNumber, attachAutomation as attachAutoToText,
 } from '../markdown/cycle.ts';
 import { autoSummary } from '../markdown/cycleAuto.ts';
@@ -14,7 +14,7 @@ import { buildAutomationBlock } from '../markdown/automationReport.js';
 import { pickAutomationFile, readAutomation } from './automation.js';
 import { describe as describeDoc } from '../io/docIndex.ts';
 import { parseView, runView, findViewBlocks, bugsFor, bugOpen } from '../markdown/views.ts';
-import { suggestDestination } from '../markdown/structure.ts';
+import { runDestination } from '../markdown/structure.ts';
 import { viewDocs } from './views.js';
 import { createDocIn } from './templates.js';
 import { openDocOverrides, currentWorkspacePath, openWikiTarget } from './links.js';
@@ -81,8 +81,9 @@ export function cycleMark() {
 }
 
 // ---------------------------------------------------------------- resultado de cada caso
-/** @param {Date} since @returns {(key: string) => import('../markdown/cycle.ts').CaseLookup | null} */
-function lookupFor(since) {
+/** @param {Date} since @param {string} [cyclePath] execução (para saber quais casos começaram nela) @returns {(key: string) => import('../markdown/cycle.ts').CaseLookup | null} */
+function lookupFor(since, cyclePath = '') {
+  const started = cyclePath ? startedIn(cyclePath) : [];
   const docs = viewDocs();
   const open = openDocOverrides();
   const active = currentWorkspacePath();
@@ -95,7 +96,7 @@ function lookupFor(since) {
     const modified = e.path === active && app.store.dirty ? Date.now() : open.has(e.path) && text !== e.text ? Date.now() : e.lastModified || 0;
     const row = docs.find((d) => d.path === e.path);
     const bugs = row ? bugsFor(row, docs).filter(bugOpen).map((b) => b.id || b.name.replace(/\.(md|markdown)$/i, '')) : [];
-    return { result: caseResult(text, since, counts, modified), bugs };
+    return { result: caseResult(text, since, counts, modified, started.includes(key.toLowerCase()) || started.includes((e.id || '').toLowerCase())), bugs };
   };
 }
 
@@ -106,7 +107,7 @@ export function syncedCycle(text) {
   if (!isCycle(text)) return text;
   const since = cycleStart(text);
   if (!since) return text;
-  const synced = syncCycle(text, lookupFor(since));
+  const synced = syncCycle(text, lookupFor(since, currentCycleKey(text)));
   return cycleClosed(synced) ? synced : applyMarks(synced, currentCycleKey(text));
 }
 
@@ -231,7 +232,7 @@ export async function skipCycleCase(key) {
 }
 
 // ---------------------------------------------------------------- checklist da rodada (painel lateral)
-/** @typedef {{ key: string, titulo: string, state: 'feito' | 'atual' | 'andamento' | 'pendente', status: string | null, when: string, aberto: boolean, whole: boolean }} ChecklistItem */
+/** @typedef {{ key: string, titulo: string, state: 'feito' | 'atual' | 'andamento' | 'pendente', status: string | null, when: string, aberto: boolean, whole: boolean, last: { status: string, when: string } | null }} ChecklistItem */
 
 /**
  * Dados do painel da rodada: um item por caso, na ordem do ciclo (null = não há ciclo a mostrar).
@@ -250,6 +251,7 @@ export function cycleChecklist() {
   const cursor = cursorOf(c.path);
   const open = openDocOverrides();
   const active = currentWorkspacePath();
+  const started = startedIn(c.path);
   /** @type {ChecklistItem[]} */
   const items = t.rows.map((r) => {
     const titulo = (t.cols.caso + 1 < r.cells.length ? r.cells[t.cols.caso + 1] : '').replace(/\[\[|\]\]/g, '').replace(/\\\|/g, '|').trim() || docIndex.resolve(r.key)?.titulo || '';
@@ -258,19 +260,22 @@ export function cycleChecklist() {
     let when = status && t.cols.when >= 0 ? (r.cells[t.cols.when] || '').trim() : '';
     /** @type {ChecklistItem['state']} */
     let state = status ? 'feito' : 'pendente';
+    /** @type {ChecklistItem['last']} */
+    let last = null;
     if (!status) {
       const e = docIndex.resolve(r.key);
       if (e && since) {
         const text = open.get(e.path) ?? e.text ?? '';
         const counts = text === e.text ? e.counts : describeDoc(text).counts;
         const modified = e.path === active && app.store.dirty ? Date.now() : open.has(e.path) && text !== e.text ? Date.now() : e.lastModified || 0;
-        const res = caseResult(text, since, counts, modified);
+        const res = caseResult(text, since, counts, modified, started.includes(r.key.toLowerCase()) || started.includes((e.id || '').toLowerCase()));
         if (res.state === 'feito' && res.status) { status = res.status; when = res.when; state = 'feito'; }
         else if (res.state === 'andamento') state = 'andamento';
+        else last = lastResultBefore(text, since, counts);
       }
       if (state !== 'feito' && sameKey(r.key, cursor)) state = 'atual';
     }
-    return { key: r.key, titulo, state, status, when, aberto: sameKey(r.key, openKey), whole: isWhole(docIndex.resolve(r.key)) };
+    return { key: r.key, titulo, state, status, when, aberto: sameKey(r.key, openKey), whole: isWhole(docIndex.resolve(r.key)), last };
   });
   const doneItems = items.filter((i) => i.state === 'feito');
   const next = items.find((i) => i.state !== 'feito')?.key || null;
@@ -636,6 +641,19 @@ const onlyAppName = () => {
 const caseRef = (/** @type {DocEntry} */ e) => ({ key: keyOf(e), titulo: e.titulo || e.heading || e.name });
 const slugOf = (/** @type {string} */ titulo) => titulo.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || `ciclo-${todayIso()}`;
 
+/**
+ * Pasta de uma execução/ciclo novo: junto dos do mesmo tipo (da aplicação, se houver), numa execucoes/ que já existe,
+ * ou o lugar padrão. Um ciclo sem outros ciclos vai para junto das execuções.
+ * @param {string} tipo @param {string} appName @param {(e: DocEntry) => boolean} same
+ */
+function runDir(tipo, appName, same) {
+  const all = docIndex.all();
+  const ofApp = (/** @type {DocEntry} */ e) => !appName || (e.app || '').toLowerCase() === appName.toLowerCase();
+  let sibs = all.filter((e) => same(e) && ofApp(e));
+  if (!sibs.length && tipo === CYCLE_TYPE) sibs = all.filter((e) => (e.tipo === EXEC_TYPE || e.tipo === 'relatorio-execucao') && ofApp(e));
+  return runDestination({ tipo, app: appName }, app.workspaceDirs, sibs.map((e) => e.path)).dir;
+}
+
 /** Novo ▾ → 🔁 Ciclo de regressão…: escolhe os casos e SALVA o ciclo (definição), sem executar; dá para executar depois, várias vezes. */
 export function newCycle() {
   pickCases({
@@ -658,7 +676,7 @@ export function newRun() {
 async function createDefinition(pick, appName, origem, titulo, links = {}) {
   const list = [...pick].sort((a, b) => COLL.compare(keyOf(a), keyOf(b)));
   const text = cycleDefDoc({ titulo, app: appName, origem, cases: list.map(caseRef), responsavel: loadPrefs().publisherName || '', links });
-  const dir = suggestDestination({ tipo: CYCLE_TYPE, app: appName }, app.workspaceDirs).dir;
+  const dir = runDir(CYCLE_TYPE, appName, (e) => !!e.text && isCycleDef(e.text));
   const path = await createDocIn(dir, text, `${slugOf(titulo)}.md`);
   if (!path) return;
   app.toast(`🔁 Ciclo "${titulo}" salvo em ${path} com ${list.length} caso(s). Execute quando quiser: ▶ Executar este ciclo (no topo do documento).`, 'info', { duration: 9000, action: { label: '▶ Executar agora', run: () => runCycle(path) } });
@@ -676,7 +694,7 @@ async function createExecution(cases, appName, origem, titulo, link, links = {},
   // nova execução de um ciclo que já rodou: começa no minuto seguinte, para as rodadas das execuções anteriores (gravadas só com hora e minuto) não contarem nela
   if (link && link.numero > 1) d = new Date(Math.ceil((d.getTime() + 1) / 60000) * 60000);
   const text = transform(cycleDoc({ titulo, app: appName, origem, cases, start: d, responsavel: loadPrefs().publisherName || '', links, ...(link ? { ciclo: link.ciclo, numero: link.numero } : {}) }));
-  const dir = suggestDestination({ tipo: EXEC_TYPE, app: appName }, app.workspaceDirs).dir;
+  const dir = runDir(EXEC_TYPE, appName, (e) => e.tipo === EXEC_TYPE || e.tipo === 'relatorio-execucao');
   const path = await createDocIn(dir, text, `${slugOf(titulo)}.md`);
   if (!path) return;
   setActive(path);

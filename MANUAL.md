@@ -393,7 +393,7 @@ Em documentos *Sessão exploratória* aparece **⏱ Sessão**: cronômetro (⏸ 
 
 ### 7.8 Ciclo de regressão e execuções
 
-Dois conceitos, dois tipos de documento (em `aplicacoes/<App>/planos/`):
+Dois conceitos, dois tipos de documento. Onde nascem: **junto das execuções que já existem** (a pasta mais usada por elas); sem nenhuma, numa pasta `execucoes/` que já exista (na aplicação ou na raiz); senão em `aplicacoes/<App>/planos/` (ou na `_entrada/`, sem aplicação):
 
 | Conceito | O que é | Como criar |
 | --- | --- | --- |
@@ -415,7 +415,7 @@ Na janela de seleção dos casos:
 
 **🔗 Vínculos (Jira, Épico, Sprint)**: o ciclo, a execução ou a rodada avulsa podem ser ligados a um ticket do Jira, a um épico e a uma sprint. Preencha na janela de seleção dos casos (🔗 Vínculos, opcional), no botão **🔗 Vínculos** do painel ou em `Ctrl+Shift+P` → *Vínculos…* (vale para o documento aberto). Ficam no cabeçalho — `jira: [QA-123]`, `epico: PORTAL-10`, `sprint: Sprint 42` —, a **execução herda os vínculos do ciclo** e dá para ajustá-los depois. Eles aparecem como chips no painel e no resumo da rodada (o Jira abre o ticket; um épico que é documento da pasta abre o documento) e entram no resumo copiado. As visões filtram por eles (`sprint: Sprint 42`, `epico: PORTAL-10`).
 
-O **painel lateral da rodada** (à direita, no ciclo e em qualquer caso dele; `⟩` recolhe) lista todos os casos: ✅ PASS, ❌ FAIL, ⛔ BLOCKED, ⏭ SKIP, ▶ em execução, ◐ em andamento, ⏳ pendente, com a barra de progresso. Clique num caso para ir até ele; `↑`/`↓` andam pela lista. O **⏭** que aparece ao lado de um caso pendente **pula o caso** (SKIP, sem abrir; se ele estava em foco, abre o próximo); clicar depois num caso pulado abre para executá-lo normalmente. No fim, **📋 Ciclo** abre o ciclo de origem e **🔁 Executar de novo** cria a próxima execução.
+O **painel lateral da rodada** (à direita, no ciclo e em qualquer caso dele; `⟩` recolhe) lista todos os casos: ✅ PASS, ❌ FAIL, ⛔ BLOCKED, ⏭ SKIP, ▶ em execução, ◐ em andamento (começou nesta rodada e ainda não foi concluído), ⏳ pendente, com a barra de progresso. Um caso pendente que já tinha resultado de antes mostra **último: PASS/FAIL…** em cinza — é só referência, não conta nesta rodada. **Cenários BDD** executam pela tabela *Cenário | Status* da seção Execução (um cenário por passo). Clique num caso para ir até ele; `↑`/`↓` andam pela lista. O **⏭** que aparece ao lado de um caso pendente **pula o caso** (SKIP, sem abrir; se ele estava em foco, abre o próximo); clicar depois num caso pulado abre para executá-lo normalmente. No fim, **📋 Ciclo** abre o ciclo de origem e **🔁 Executar de novo** cria a próxima execução.
 
 | Passo | O que acontece |
 | --- | --- |
