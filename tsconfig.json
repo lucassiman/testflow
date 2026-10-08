@@ -1,0 +1,24 @@
+{
+  // TypeScript (fases 1–4 concluídas): todo o src passa pela verificação rigorosa (strict completo).
+  //  • módulos de regras em .ts (src/markdown/*.ts, src/io/docIndex.ts);
+  //  • interface e editor em .js com tipos em JSDoc (checkJs: arquivo novo já entra na verificação).
+  // Tipos do domínio em src/types.d.ts, do ambiente em src/env.d.ts.
+  // O Vite compila os .ts no build; o `tsc` só verifica (noEmit). Rode: npm run check
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "types": []
+  },
+  "include": ["src/**/*.js", "src/**/*.ts", "src/**/*.d.ts"]
+}

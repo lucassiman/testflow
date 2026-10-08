@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites id="" name="" tests="4" failures="1" skipped="1" errors="0" time="12.5">
+<testsuite name="login.spec.ts" timestamp="2026-09-24T14:30:00.000Z" hostname="chromium" tests="4" failures="1" skipped="1" time="12.5" errors="0">
+<testcase name="TC-001 login com usuário válido" classname="login.spec.ts" time="1.2">
+</testcase>
+<testcase name="login com senha inválida @TC-002" classname="login.spec.ts" time="3.4">
+<failure message="login.spec.ts:25:5 expect(received).toHaveText(expected)" type="FAILURE">
+<![CDATA[  Error: expect(received).toHaveText(expected)
+    Expected: "Senha inválida"
+    Received: "Erro 500"
+      at tests/login.spec.ts:25:5
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|test-results/login-senha/test-failed-1.png]]
+]]>
+</system-out>
+</testcase>
+<testcase name="logout | sessão expirada" classname="login.spec.ts" time="0.8"></testcase>
+<testcase name="recuperar senha" classname="login.spec.ts" time="0"><skipped/></testcase>
+</testsuite>
+</testsuites>

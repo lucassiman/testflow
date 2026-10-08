@@ -1,0 +1,4 @@
+{"collection":{"info":{"name":"API Usuários"}},"run":{"timings":{"started":1790260200000,"completed":1790260203500},"executions":[
+ {"item":{"name":"GET usuário"},"request":{"method":"GET","url":{"raw":"https://api.hml/usuarios/1"}},"response":{"code":200,"status":"OK","responseTime":120},"assertions":[{"assertion":"status 200"},{"assertion":"tem nome"}]},
+ {"item":{"name":"POST usuário duplicado"},"request":{"method":"POST","url":{"raw":"https://api.hml/usuarios"}},"response":{"code":500,"status":"Internal Server Error","responseTime":340},"assertions":[{"assertion":"status 409","error":{"message":"expected 500 to equal 409"}}]}
+]}}

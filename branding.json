@@ -1,0 +1,7 @@
+{
+  "name": "TestFlow",
+  "shortName": "TestFlow",
+  "description": "QA local em Markdown: casos de teste, execuções, bugs e evidências.",
+  "color": "#b91c47",
+  "jiraBaseUrl": "https://ngosolucoes.atlassian.net"
+}

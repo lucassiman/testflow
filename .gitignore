@@ -1,0 +1,17 @@
+# dependências e saídas geradas (recriadas com npm install / npm run app / npm run skill / npm run mcp:build)
+node_modules/
+dist/
+dist-single/
+mcp-dist/
+claude-skill/
+test-results/
+playwright-report/
+/*.zip
+
+# coisas só desta máquina (testes pessoais, rascunhos) — nunca sobem
+_local/
+.versoes/
+_lixeira/
+.DS_Store
+Thumbs.db
+desktop.ini

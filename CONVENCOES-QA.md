@@ -1,0 +1,179 @@
+# Convenção QA-MD
+
+> Formato comum dos documentos de QA entre o **Claude** (que gera) e o **TestFlow** (que exibe, edita e executa).
+> Tudo aqui é **Markdown padrão (GFM)**: o arquivo continua legível no GitHub, Azure DevOps, VS Code, Quick Look e no hub da empresa.
+> O editor apenas reconhece estas convenções e as mostra de forma visual.
+
+Versão da convenção: **1.0** (24/09/2026)
+
+---
+
+## 1. Cabeçalho de metadados (front-matter)
+
+Todo documento de testware começa com um bloco YAML entre `---`. No editor ele vira um **cartão** com badges, editável por formulário.
+
+```yaml
+---
+tipo: caso-de-teste
+id: TC-042
+titulo: Login com usuário bloqueado
+app: Portal
+status: FAIL
+prioridade: Alta
+severidade: Crítica
+ambiente: HML
+browser: Chrome 128
+versao: 2.14.0
+responsavel: Lucas
+data: 2026-09-24
+jira: QA-123
+tags: [login, regressao]
+automacao: tests/e2e/login.spec.ts
+qa-md: 1
+---
+```
+
+| Campo | Valores | Uso |
+|---|---|---|
+| `tipo` | `caso-de-teste`, `cenario-bdd`, `plano-de-teste`, `bug`, `relatorio-execucao`, `charter-exploratorio`, `checklist`, `resumo-testes`, `epico`, `historia` (requisitos da aplicação) — e, fora do testware, `documentacao` (documentação de aplicação, páginas importadas do Notion), `nota` (nota rápida), `visao` (consulta salva, em `visoes/`) e `ciclo-regressao` (ciclo de regressão, em `planos/`) | Obrigatório. Define o modelo e as validações. |
+| `id` | `TC-001` (caso), `CEN-001` (cenário), `BUG-001` ou chave do Jira, `PT-001` (plano), `EXE-001` (execução), `SES-001` (sessão exploratória) | Obrigatório no testware (opcional em `nota` e `documentacao`). Único no projeto. |
+| `titulo` | texto | Obrigatório. |
+| `app` | nome da aplicação: `Portal`, `Backoffice`… | Define a pasta do documento: `aplicacoes/<app>/<casos, bugs, planos, sessoes, relatorios, docs>` (pelo `tipo`). Sem `app`, o documento vai para `_entrada/`. |
+| `status` | `PASS`, `FAIL`, `BLOCKED`, `SKIP`, `PENDING` | Situação atual. |
+| `prioridade` | `Crítica`, `Alta`, `Média`, `Baixa` | Casos, bugs, planos. |
+| `severidade` | `Crítica`, `Alta`, `Média`, `Baixa` | Bugs (impacto técnico). |
+| `ambiente` | `DEV`, `HML`, `STG`, `PRD`… | |
+| `browser` / `dispositivo` | texto | |
+| `versao` | versão da aplicação testada | |
+| `responsavel` | nome | |
+| `data` | `AAAA-MM-DD` | Datas do cabeçalho sempre em ISO. |
+| `jira` | chave(s) do Jira: `QA-123` ou `[QA-123, QA-124]` | No editor, cada chave vira link para o ticket (`jiraBaseUrl` no `branding.json`). |
+| `tags` | lista: `[login, regressao]` | |
+| `automacao` | caminho do teste automatizado (spec) | Liga o caso manual ao automatizado. |
+| `qa-md` | `1` | Versão do formato QA-MD (esta convenção). Vem nos modelos; o editor avisa se o documento for de uma versão mais nova que a dele. |
+| `uid` | 8 letras/números (ex.: `k3x9p2m4`) | **Identidade fixa** do documento, gerada pelo editor (ou pelo MCP) ao criar/salvar. Não muda quando o `id`, o título, o nome do arquivo ou a pasta mudam — é por ela que o editor atualiza os `[[links]]` quando o código muda. Não crie, não copie e não altere à mão (documento novo escrito fora do editor: deixe sem `uid`). |
+| `revisao`, `publicado_em`, `publicado_por`, `publicado_hash` | número, `AAAA-MM-DD HH:MM`, nome, código | Preenchidos pelo editor ao **publicar** na pasta oficial. Não edite à mão. |
+
+Regras: uma chave por linha (`chave: valor`); listas curtas no formato `[a, b]`; valores com `:` ou `#` entre aspas. Campos extras são permitidos e preservados.
+
+## 2. Status
+
+Status é sempre **código inline com a palavra exata** — o editor mostra como etiqueta colorida:
+
+| Markdown | Significado | Sinônimos aceitos |
+|---|---|---|
+| `` `PASS` `` | passou | `OK`, `PASSED`, `APROVADO`, `SUCESSO` |
+| `` `FAIL` `` | falhou | `NOK`, `FAILED`, `FALHOU`, `REPROVADO`, `ERRO` |
+| `` `BLOCKED` `` | bloqueado / impedido | `BLOQUEADO`, `IMPEDIDO` |
+| `` `SKIP` `` | não executado / não se aplica | `N/A`, `SKIPPED`, `IGNORADO` |
+| `` `PENDING` `` | pendente / reteste | `PENDENTE`, `WIP`, `RETESTE`, `TODO` |
+
+Prefira as formas em inglês (`PASS`, `FAIL`…) — são as que ferramentas de automação e o Jira usam.
+
+## 3. Passos de teste
+
+Passos sempre em **tabela**, com estas colunas (nesta ordem):
+
+```markdown
+| # | Ação | Resultado esperado | Resultado obtido | Status |
+| --- | --- | --- | --- | --- |
+| 1 | Acessar /login | Tela de login exibida | Tela exibida | `PASS` |
+| 2 | Informar usuário bloqueado e senha válida | Mensagem "Usuário bloqueado" | Erro 500 | `FAIL` |
+```
+
+- `Resultado esperado` é obrigatório em todo passo.
+- `Resultado obtido` e `Status` ficam **vazios** até a execução (nunca invente resultado).
+- Dados de teste específicos vão na seção **Massa de dados**, não dentro da ação.
+
+### Status geral e resumo automático
+
+- O `status:` do cabeçalho resume os passos: algum `FAIL` → `FAIL`; senão algum `BLOCKED` → `BLOCKED`; senão algum passo vazio/`PENDING` → `PENDING`; senão `PASS` (todos `SKIP` → `SKIP`). O editor recalcula ao marcar status e ao salvar.
+- Contam como passos as tabelas com coluna `Status` (ou `Situação`) — exceto tabelas de defeitos (com coluna `Severidade`).
+- Relatórios podem ter um **resumo automático** (contagem + gráfico `pie`) entre os marcadores abaixo. O conteúdo entre eles é gerado pelo editor — não edite à mão; se gerar pelo Claude, deixe os marcadores vazios:
+
+```markdown
+<!-- qa:resumo -->
+<!-- /qa:resumo -->
+```
+
+### Histórico de execuções
+
+Rodadas registradas pelo editor ficam no fim do documento — não conte com elas como execução atual:
+
+```markdown
+## Histórico de execuções
+
+| Rodada | Data | Início | Fim | Duração | Ambiente | Resultado | Responsável |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 24/09/2026 | 14:30 | 14:48 | 18 min | HML | `FAIL` | Lucas |
+
+### Rodada 1 — 24/09/2026 — `FAIL`
+
+(cópia da tabela de passos daquela rodada)
+```
+
+### Notas de sessão exploratória
+
+Uma nota por item, com horário e etiqueta opcional: `- 14:32 — **BUG:** botão salvar não responde` (etiquetas: `BUG`, `DÚVIDA`, `IDEIA`; sem etiqueta = nota comum).
+
+### Automação
+
+- No caso manual, `automacao:` aponta o spec (caminho relativo à raiz do projeto de testes), ex.: `automacao: tests/e2e/login.spec.ts`.
+- Nos testes automatizados, cite o ID do caso no nome (`test('TC-042 login bloqueado', …)` ou a tag `@TC-042`) para o relatório cruzar os dois.
+- Relatórios importados usam `tipo: relatorio-execucao` com `tags: [automacao, <ferramenta>]` e `origem:` (arquivo de resultados).
+
+### Links entre documentos
+
+- Cite outro documento com `[[ID]]` (ex.: `[[TC-042]]`, `[[BUG-7]]`) ou `[[ID|texto]]`. No GitHub aparece como texto; no editor vira link e alimenta o "Citado em".
+- Bug aponta para o caso que o encontrou (`Encontrado ao executar [[TC-042]]`); relatório aponta para os casos e bugs.
+
+## 4. Evidências
+
+- Ficam na pasta `evidencias/` **ao lado do `.md`**, com link relativo:
+  `![Evidência passo 2](evidencias/2026-09-24_15-30-12.png)`
+- Nome: `AAAA-MM-DD_HH-MM-SS.ext` (o editor gera ao colar um print).
+- Arquivos não-imagem (HAR, PDF, vídeo, log): `[📎 console.log](evidencias/console.log)`.
+- Trechos de log/resposta de API vão em bloco de código; logs longos com `collapsed`:
+  ```` ```log collapsed ````, ```` ```json ````, ```` ```xml ````.
+
+## 5. Caixas de destaque
+
+| Sintaxe | Uso em QA |
+|---|---|
+| `> [!NOTE]` | contexto, informação de ambiente |
+| `> [!TIP]` | boa prática, atalho, dica de reprodução |
+| `> [!IMPORTANT]` | pré-condição crítica, dependência |
+| `> [!WARNING]` | risco, limitação, dado sensível |
+| `> [!CAUTION]` | defeito encontrado, bloqueio |
+
+## 6. Estrutura por tipo de documento
+
+| `tipo` | Seções (títulos `##`, nesta ordem) |
+|---|---|
+| `caso-de-teste` | Objetivo · Pré-condições · Massa de dados · Passos · Evidências · Observações |
+| `cenario-bdd` | Contexto · Cenários (bloco ```` ```gherkin ````) · Massa de dados · Observações |
+| `plano-de-teste` | Objetivo · Escopo · Fora de escopo · Estratégia · Ambientes · Critérios de entrada · Critérios de saída · Riscos · Cronograma · Responsáveis |
+| `bug` | Resumo · Ambiente · Passos para reproduzir · Resultado esperado · Resultado obtido · Evidências · Impacto · Observações |
+| `relatorio-execucao` | Resumo · Resultados (tabela com Status) · Defeitos encontrados · Bloqueios · Observações |
+| `charter-exploratorio` | Missão · Áreas · Duração · Notas da sessão (`BUG:`, `DÚVIDA:`, `IDEIA:`) · Bugs · Resumo |
+| `checklist` | itens `- [ ]` agrupados por `##` |
+| `resumo-testes` | Visão geral · Métricas · Qualidade por funcionalidade · Riscos · Recomendação |
+| `epico` | Objetivo · Escopo · Fora de escopo · Histórias (cada uma `### HU-001 — título`, com Como/quero/para e critérios de aceite `- [ ]`) · Critérios de aceite do épico · Dúvidas e riscos para o QA · Referências |
+| `historia` | História (Como/quero/para) · Critérios de aceite (`- [ ] Dado… quando… então…`) · Regras de negócio · Casos de teste (tabela Caso · Critério coberto) · Dúvidas para o time — campo `epico:` com o ID/chave do épico |
+
+Título do documento: `# <id> — <titulo>` logo após o front-matter.
+
+## 7. Regras gerais
+
+1. Português do Brasil; termos técnicos consagrados podem ficar em inglês.
+2. Um documento por artefato (um caso de teste por arquivo; relatórios podem agregar vários casos).
+3. Nome do arquivo: `<id>-<titulo-em-kebab-case>.md` (ex.: `TC-042-login-usuario-bloqueado.md`).
+4. Sem HTML, exceto cor de texto (`<span style="color:…">`) quando realmente necessário — o significado deve estar no texto/badge, não só na cor.
+5. Não inventar dados, resultados, IDs do Jira ou evidências: deixar em branco ou marcar `PENDING`.
+5a. Links entre documentos por ID: `[[TC-042]]` (ou `[[TC-042|texto]]`). Para trocar o código de um documento, mude o `id:` do cabeçalho (no editor ou pelo MCP): o título, as menções no próprio documento e os `[[links]]` dos outros documentos acompanham. Não renomeie à mão em cada arquivo.
+6. Datas: ISO (`2026-09-24`) no front-matter; `24/09/2026` no texto.
+7. Diagramas de fluxo em ```` ```mermaid ````.
+8. Onde salvar (quando há pasta de trabalho organizada): `aplicacoes/<app>/<subpasta do tipo>/` — `casos` (caso-de-teste, cenario-bdd, checklist — com chave do Jira no `jira:`, numa pasta por ticket: `casos/PORTAL-120/`, ou a pasta que já existe começando com a chave), `bugs`, `planos`, `sessoes` (charter-exploratorio), `relatorios` (relatorio-execucao, resumo-testes), `requisitos` (epico, historia), `docs` (o resto). Sem aplicação definida: `_entrada/`. Visões (`tipo: visao`): `visoes/`. Nunca solto na raiz.
+9. Visões: a consulta fica num bloco ```` ```qa-visao ```` (`chave: valor` por linha — `titulo`, filtros `tipo`, `app`, `status`, `tags`, `jira`, `versao`, `pasta`, `responsavel`, `prioridade`, `execucao`, `automacao`, `texto`; `formato`, `agrupar`, `colunas`, `ordenar`, `limite`). Logo abaixo, o editor grava uma cópia em Markdown entre `<!-- qa:visao -->` e `<!-- /qa:visao -->` — não editar à mão.
+10. Comentários de revisão: citação que começa com `> [!COMMENT] @nome · DD/MM/AAAA HH:MM`, texto nas linhas seguintes (`> …`), respostas `> ↳ **@nome** · data — texto`; resolvido: `[!RESOLVED]` e a linha `> ✓ Resolvido por @nome · data`. São notas internas (não entram no Jira/Notion). Não gerar comentários ao escrever testware.
+11. Ciclo de regressão (`tipo: ciclo-regressao`, com `inicio:` e, ao encerrar, `fim:`): seção `## Casos do ciclo` com a tabela `| # | Caso | Título | Status | Executado em | Bugs |` (uma linha por `[[caso]]`) e, no fim, `## Encerramento`. O editor preenche Status/Executado em/Bugs pelo resultado dos casos.

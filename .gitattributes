@@ -1,0 +1,11 @@
+# texto sempre com LF no repositório (Windows e Mac iguais)
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webm binary
+*.ico binary
+*.mcpb binary
+*.zip binary
+*.xlsx binary

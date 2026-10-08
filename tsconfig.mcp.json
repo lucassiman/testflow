@@ -1,0 +1,6 @@
+{
+  // Servidor MCP (Node): mcp/*.ts + os módulos do app que ele reaproveita. Rode: npm run check
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "types": ["node"] },
+  "include": ["mcp/**/*.ts", "src/**/*.d.ts"]
+}

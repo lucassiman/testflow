@@ -1,0 +1,122 @@
+// @ts-check
+/**
+ * Painel lateral da rodada (ciclo de regressão): a checklist dos casos — feito (com o resultado), em foco,
+ * em andamento e pendente. Clicar num caso abre ele (um concluído abre para revisão e volta para o caso em foco
+ * ao concluir). Aparece no ciclo e em qualquer caso dele; recolhe para uma faixa estreita.
+ */
+import { cycleChecklist, attachAutomation, editDevice, markWhole, goToCycleCase, nextCycleCase, openCycle, finishCycle, showRoundSummary, skipCycleCase, runCycle, openCycleDef, editLinks } from './cycle.js';
+import { loadPrefs, savePrefs } from '../io/drafts.js';
+import { $ } from './shared.js';
+import { openWikiTarget } from './links.js';
+
+const el = $('cyclePanel');
+
+/** @param {unknown} s */
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => /** @type {Record<string, string>} */ ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+const ICON = /** @type {Record<string, string>} */ ({ PASS: '✅', FAIL: '❌', BLOCKED: '⛔', SKIP: '⏭' });
+const LABEL = /** @type {Record<string, string>} */ ({ PASS: 'PASS', FAIL: 'FAIL', BLOCKED: 'BLOCKED', SKIP: 'SKIP' });
+
+/** @type {ReturnType<typeof setTimeout> | undefined} */
+let timer;
+let lastSig = '';
+
+/** Redesenha o painel logo depois das mudanças (junta várias numa só). */
+export function scheduleCyclePanel() {
+  clearTimeout(timer);
+  timer = setTimeout(refreshCyclePanel, 120);
+}
+
+const collapsed = () => !!loadPrefs().cyclePanelCollapsed;
+
+export function refreshCyclePanel() {
+  const data = cycleChecklist();
+  if (!data) {
+    if (!el.hidden) { el.hidden = true; el.innerHTML = ''; lastSig = ''; }
+    document.body.classList.remove('cp-open', 'cp-mini');
+    return;
+  }
+  const isCollapsed = collapsed();
+  const sig = JSON.stringify([data, isCollapsed]);
+  if (sig === lastSig && !el.hidden) return;
+  lastSig = sig;
+  el.hidden = false;
+  el.classList.toggle('collapsed', isCollapsed);
+  // o painel flutuante de execução sai da frente da checklist
+  document.body.classList.toggle('cp-open', !isCollapsed);
+  document.body.classList.toggle('cp-mini', isCollapsed);
+  if (isCollapsed) {
+    el.innerHTML = `<button type="button" class="cp-toggle" data-cp="toggle" title="Mostrar a checklist da rodada">🔁<span class="cp-mini">${data.done}/${data.total}</span></button>`;
+    return;
+  }
+  const pct = data.total ? Math.round((data.done / data.total) * 100) : 0;
+  const rows = data.items.map((i) => {
+    const icon = i.state === 'feito' ? (ICON[i.status || ''] || '✔') : i.state === 'atual' ? '▶' : i.state === 'andamento' ? '◐' : '⏳';
+    const tail = i.whole && i.state !== 'feito' && i.state !== 'atual' ? 'como um todo' : i.state === 'feito' ? LABEL[i.status || ''] || i.status || '' : i.state === 'atual' ? 'em execução' : i.state === 'andamento' ? 'em andamento' : 'pendente';
+    const cls = `cp-item cp-${i.state}${i.status ? ` cp-st-${i.status.toLowerCase()}` : ''}${i.aberto ? ' open' : ''}`;
+    const tip = `${i.key}${i.titulo ? ` — ${i.titulo}` : ''}${i.when ? ` · ${i.when}` : ''}${i.state === 'feito' ? ' (clique para revisar)' : ''}`;
+    const skip = !data.closed && i.state !== 'feito' ? `<button type="button" class="cp-skip" data-cp="skip" data-key="${esc(i.key)}" title="Pular ${esc(i.key)}: marca SKIP sem abrir o caso" aria-label="Pular ${esc(i.key)}">⏭</button>` : '';
+    return `<li class="cp-li"><button type="button" class="${cls}" data-cp="case" data-key="${esc(i.key)}" title="${esc(tip)}"${i.aberto ? ' aria-current="true"' : ''}>`
+      + `<span class="cp-ic">${icon}</span><span class="cp-name"><b>${esc(i.key)}</b>${i.titulo ? ` <small>${esc(i.titulo)}</small>` : ''}</span><span class="cp-tail">${esc(tail)}</span></button>${skip}</li>`;
+  }).join('');
+  el.innerHTML = `
+    <div class="cp-head">
+      <strong class="cp-title" title="${esc(data.title)}">${data.ciclo ? '🔁' : '▶'} ${esc(data.title)}</strong>
+      <button type="button" class="cp-x" data-cp="toggle" title="Recolher a checklist" aria-label="Recolher">⟩</button>
+    </div>
+    ${data.links.length ? `<div class="cp-links">${data.links.map((l, i) => (l.url ? `<a class="cp-chip" href="${esc(l.url)}" target="_blank" rel="noopener" title="${esc(l.typeLabel)}: abrir no Jira">${l.icon} ${esc(l.label)}</a>` : l.doc ? `<button type="button" class="cp-chip" data-cp="linkdoc" data-i="${i}" title="${esc(l.typeLabel)}: abrir o documento">${l.icon} ${esc(l.label)}</button>` : `<span class="cp-chip" title="${esc(l.typeLabel)}">${l.icon} ${esc(l.label)}</span>`)).join('')}</div>` : ''}
+    <div class="cp-progress" title="${data.done} de ${data.total} concluídos${data.failed ? ` · ${data.failed} com falha` : ''}">
+      <div class="cp-bar"><span style="width:${pct}%"></span></div>
+      <div class="cp-count">${data.done}/${data.total}${data.failed ? ` · <span class="cp-fail">${data.failed} com falha</span>` : ''}${data.closed ? ' · encerrado' : ''}</div>
+    </div>
+    ${data.auto ? `<div class="cp-auto" title="${esc(`${data.auto.tool}${data.auto.fonte ? ` — ${data.auto.fonte}` : ''}: resultado separado dos casos manuais`)}">🤖 <b>${data.auto.total}</b> automatizado${data.auto.total > 1 ? 's' : ''}: <span class="cp-ok">${data.auto.pass} PASS</span>${data.auto.fail ? ` · <span class="cp-fail">${data.auto.fail} FAIL</span>` : ''}${data.auto.skip ? ` · ${data.auto.skip} SKIP` : ''}${data.auto.sucessoPct == null ? '' : ` · ${data.auto.sucessoPct}%`}</div>` : ''}
+    ${data.total ? '' : '<p class="cp-empty">Sem casos manuais nesta execução.</p>'}
+    <ul class="cp-list">${rows}</ul>
+    ${data.whole && !data.closed ? `<div class="cp-whole" title="Este documento não tem passos para executar: marque os itens e registre o resultado dele como um todo">
+      <div>🗒 <b>${esc(data.whole.key)}</b> é avaliado como um todo${data.whole.total ? ` — ${data.whole.done}/${data.whole.total} itens marcados` : ''}</div>
+      <div class="cp-whole-btns"><button type="button" class="cp-btn${data.whole.total && data.whole.done === data.whole.total ? ' primary' : ''}" data-cp="whole" data-st="PASS">✅ Passou</button><button type="button" class="cp-btn" data-cp="whole" data-st="FAIL">❌ Falhou</button><button type="button" class="cp-btn" data-cp="whole" data-st="BLOCKED">⛔ Bloqueado</button></div></div>` : ''}
+    <div class="cp-foot">
+      ${!data.closed && data.next ? `<button type="button" class="cp-btn primary" data-cp="next" title="Abre o próximo caso pendente e já começa a execução">▶ Próximo caso</button>` : ''}
+      ${!data.onCycle ? '<button type="button" class="cp-btn" data-cp="cycle" title="Voltar ao documento da execução">↩ Execução</button>' : ''}
+      ${data.onCycle ? `<button type="button" class="cp-btn" data-cp="auto" title="JUnit XML, Playwright JSON ou Newman JSON: entra como Testes automatizados, separado dos manuais">🤖 ${data.auto ? 'Trocar relatório' : 'Relatório automatizado'}</button>` : ''}
+      ${data.onCycle ? '<button type="button" class="cp-btn" data-cp="device" title="WEB, Mobile iOS/Android (com a versão) ou Mobile — Todos">📱 Dispositivo</button>' : ''}
+      <button type="button" class="cp-btn" data-cp="links" title="Jira, Épico, Sprint… desta execução">🔗 Vínculos</button>
+      ${data.ciclo ? `<button type="button" class="cp-btn" data-cp="def" title="Abrir o ciclo &quot;${esc(data.ciclo.titulo)}&quot; (definição e histórico das execuções)">📋 Ciclo</button>` : ''}
+      ${data.closed && data.ciclo ? '<button type="button" class="cp-btn primary" data-cp="again" title="Cria a próxima execução com os mesmos casos">🔁 Executar de novo</button>' : ''}
+      <button type="button" class="cp-btn" data-cp="summary" title="Totais, % de sucesso, duração e falhas da rodada">📊 ${data.closed ? 'Como foi' : 'Como está'}</button>
+      ${!data.closed ? '<button type="button" class="cp-btn" data-cp="finish" title="Marca SKIP nos não executados, encerra a rodada e mostra o resumo">🏁 Finalizar execução</button>' : ''}
+    </div>`;
+  // mantém o caso aberto à vista
+  el.querySelector('.cp-item.open')?.scrollIntoView({ block: 'nearest' });
+}
+
+const data0 = () => cycleChecklist();
+el.addEventListener('click', (event) => {
+  const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (event.target).closest('[data-cp]'));
+  if (!b) return;
+  const act = b.dataset.cp;
+  if (act === 'toggle') { savePrefs({ cyclePanelCollapsed: !collapsed() }); lastSig = ''; refreshCyclePanel(); return; }
+  if (act === 'case' && b.dataset.key) { goToCycleCase(b.dataset.key); return; }
+  if (act === 'next') nextCycleCase();
+  else if (act === 'cycle') openCycle();
+  else if (act === 'finish') finishCycle();
+  else if (act === 'summary') showRoundSummary();
+  else if (act === 'def') openCycleDef();
+  else if (act === 'auto') attachAutomation();
+  else if (act === 'device') editDevice();
+  else if (act === 'whole') markWhole(/** @type {'PASS' | 'FAIL' | 'BLOCKED'} */ (b.dataset.st));
+  else if (act === 'links') editLinks({ fromCase: true });
+  else if (act === 'linkdoc') { const l = data0()?.links[Number(b.dataset.i)]; if (l?.doc) openWikiTarget(l.doc.path); }
+  else if (act === 'again') { const ciclo = data0()?.ciclo; if (ciclo) runCycle(ciclo.path); }
+  else if (act === 'skip' && b.dataset.key) skipCycleCase(b.dataset.key);
+});
+
+// ↑/↓ entre os casos quando o foco está na lista
+el.addEventListener('keydown', (event) => {
+  if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+  const items = [...el.querySelectorAll('.cp-item')];
+  const at = items.indexOf(/** @type {Element} */ (document.activeElement));
+  if (at < 0) return;
+  event.preventDefault();
+  /** @type {HTMLElement | undefined} */ (items[Math.max(0, Math.min(items.length - 1, at + (event.key === 'ArrowDown' ? 1 : -1)))])?.focus();
+});
