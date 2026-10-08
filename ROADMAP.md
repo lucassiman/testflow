@@ -368,6 +368,54 @@ Ideias de uso diário, por área. Esforço: **P** / **M** / **G** como nas fases
 | Confiança | ✅ (07/10, 1.18.0) *Salvar ▾ → 💾 Backup (.zip)* (`app/backup.js`, `listAllFiles`) + lembrete a cada 7/14/30 dias se mudou (`backupDue` em `markdown/backup.ts`) — **Lembrete de backup** quando a pasta de trabalho não tem cópia recente (tudo é local). | P |
 | Aparência | ~~Descartado em 07/10 (não precisa)~~ — **Tema claro/escuro** pelo horário ou pelo sistema, se ainda não existir. | P |
 
+### Fase 10 — TestFlow: relatórios de fim de execução, interface limpa e Claude no fluxo do QA *(planejada em 08/10/2026)*
+
+Levantada numa revisão das telas com a pasta `exemplos/` (como um QA novo usaria) e no que o Claude ainda não faz pelo MCP. Esforço: **P** / **M** / **G**. Ordem sugerida: 10.1 → 10.2 → 10.4 (o MCP gera os mesmos relatórios) → 10.3 em versões pequenas.
+
+#### 10.1 — Correções achadas na revisão *(P)*
+
+| Item | Detalhe | Esforço |
+|---|---|---|
+| **Cenário BDD na rodada** | Hoje o CEN-001 entra na rodada como "em andamento", mas ao abrir dá *"Nenhuma tabela com coluna Status para executar"*. Executar por cenário (a tabela de execução do BDD) ou tratar como "🗒 como um todo". | P |
+| **"Em andamento" na rodada recém-criada** | Casos que só têm resultado de execuções antigas aparecem como *em andamento*. Mostrar **pendente nesta rodada** + *último: PASS* em cinza. | P |
+| **Onde a rodada nasce** | Rodada criada em `_entrada/` mesmo com a pasta `execucoes/` existindo: usar a pasta de execuções da aplicação/projeto. | P |
+
+#### 10.2 — Relatórios de fim de execução *(G)* — escolhidos em 08/10: os 4, como documentos separados
+
+Ao **🏁 Finalizar execução**, o TestFlow gera 4 documentos em `relatorios/<EXEC-ID>/` (ao lado da execução), ligados a ela (seção *Relatórios* com `[[links]]`), cada um com cabeçalho QA-MD próprio — dá para publicar, exportar PDF e copiar para o Jira um por um. Nomes adaptados da norma de documentação de teste ISO/IEC/IEEE 29119-3. **Regerar** a qualquer momento (ex.: depois de corrigir um status); o que o QA escreveu à mão nas seções de comentário é preservado.
+
+| Relatório | Conteúdo | Esforço |
+|---|---|---|
+| **Encerramento + Go/No-Go** | Resultado geral e %, critérios de saída do **plano de teste ligado** (% mínima de sucesso, nenhum bug crítico/alto aberto, sem BLOCKED) — atingido ou não, item a item —, riscos e pendências (SKIP/BLOCKED com motivo), **recomendação** (liberar / liberar com ressalvas / não liberar) e bloco de **aceite** (aprovado por, data). | M |
+| **Defeitos da rodada** | Bugs **novos**, **reabertos** (reincidências, 1.18.0) e **ainda abertos**, por severidade e por caso, com chave/link do Jira; densidade (bugs por caso executado). | M |
+| **Rastreabilidade e cobertura** | História/épico/ticket (`jira:`, `epico:`) → casos → resultado nesta rodada → bugs; o que ficou **sem caso**, **sem executar** ou **só automatizado**; cobertura de automação. | M |
+| **Log + comparativo** | Log cronológico (caso, início, fim, duração, quem, dispositivo) e **comparação com a execução anterior do mesmo ciclo**: passou a falhar (regressão), foi corrigido, continua falhando, novo. | M |
+
+#### 10.3 — Interface e navegação *(M–G, em versões pequenas)*
+
+| Item | Detalhe | Esforço |
+|---|---|---|
+| **Tela inicial** | No lugar do exemplo "Test Case: Login": rodada em andamento (com **Continuar**), fixados e recentes, pendências da pasta (falhas, bloqueios, não executados) e atalhos (novo caso, nova rodada, nota rápida). | M |
+| **Menos barras no topo** | Hoje são 3–4 faixas antes do conteúdo (topo, abas, formatação, execução). Barra de formatação só ao editar no Preview (ou ao selecionar texto, como no Notion); barra de execução compacta (só os status que existem; ações principais) e **modo foco**. Em notebook 1280×720 o conteúdo fica com metade da tela. | M |
+| **Árvore mais útil** | Mostrar **ID · título** e uma bolinha de status em vez do nome do arquivo cortado (`TC-002-login-usuario-blo…`); esconder pastas que só têm evidências; *Recentes* recolhido quando há pasta aberta; cabeçalho "PASTA …" sem cortar. | M |
+| **Avisos só quando importam** | Tirar avisos de rotina ("Aberto: …"), dicas da barra de status só nas primeiras vezes, dica de primeira vez sem cobrir o painel de execução. | P |
+| **Menu Novo e paleta** | Menu **Novo** agrupado (Documento · Execução · Importar); paleta com categorias, ícones e **usados recentemente** primeiro (hoje começa por "Renomear arquivo"). | P–M |
+| **Painel da rodada** | "Nesta rodada" × "último resultado", tempo por caso, filtro (pendentes / falhas), barra de progresso com as cores dos status. | M |
+| **Painel de execução encaixado** | Hoje flutua por cima da tabela de passos; encaixar à direita (como o painel da rodada) quando houver espaço. | M |
+| **Cartão do cabeçalho recolhível** | Linha compacta (ID · status · prioridade · ambiente · Jira) com "▾ mais". | P |
+| **Revisão de acessibilidade** | Foco visível, contraste, atalhos visíveis nos botões, navegação só por teclado na rodada. | M |
+
+#### 10.4 — Claude no fluxo do QA (skill + MCP) *(M–G)*
+
+| Item | Detalhe | Esforço |
+|---|---|---|
+| **MCP: rodada** | `qa_rodada_status` (rodada ativa: pendentes, falhas, tempo), `qa_rodada_criar` (por tag, visão, ticket ou épico), `qa_rodada_registrar` (resultado de um caso) e `qa_rodada_finalizar` (SKIP nos pendentes + relatórios). | M |
+| **MCP: relatórios** | `qa_relatorios` gera/regera os 4 relatórios da 10.2 com a mesma lógica do app. | P (depois da 10.2) |
+| **MCP: reincidência** | `qa_bug_do_caso` oferece registrar a reincidência no bug já ligado (como o app, 1.18.0). | P |
+| **MCP: validar e rastrear** | `qa_validar` (os avisos de QA do app: passo sem esperado, status incoerente, link quebrado, evidência faltando) e `qa_rastreabilidade` (ticket/épico → casos → resultado → bugs). | M |
+| **Skill: do requisito ao caso** | Gerar casos a partir de uma história/critérios de aceite (positivos, negativos, limites), já com `jira:`/`epico:` para a rastreabilidade, e revisar casos existentes com um checklist de qualidade (passo atômico, esperado verificável, massa de dados). | M |
+| **Skill: analisar a rodada** | Resumo executivo, falhas agrupadas por causa provável, sugestão de bugs (com reincidência) e de regressão a partir dos tickets da sprint. | M |
+
 ## 4. Ordem sugerida
 
 1. ~~**Colar imagem** (Fase 1)~~ ✅ feito em 24/09 (junto com soltar arquivos de evidência). Pendente na época: redimensionar/miniatura e lembrar a pasta entre sessões (ambos feitos depois: tamanho do print P/M/G e pasta de evidências lembrada por arquivo) (vai junto com "Lembrar arquivos e recentes", Fase 0).
