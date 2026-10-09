@@ -85,6 +85,16 @@ Passos sempre em **tabela**, com estas colunas (nesta ordem):
 - `Resultado obtido` e `Status` ficam **vazios** até a execução (nunca invente resultado).
 - Dados de teste específicos vão na seção **Massa de dados**, não dentro da ação.
 
+### Passos e dados compartilhados (`tipo: compartilhado`)
+
+Login, URL do ambiente e preparação que se repetem em vários casos ficam **uma vez** num documento `compartilhado`, com **escopo** — como o `beforeEach`/`beforeAll` da automação:
+
+- `escopo: pasta` (os documentos da pasta onde ele está e das de dentro — ex.: na pasta do épico) · `app` (a aplicação toda) · `global` (tudo); `aplica-a: [tag, ID, ticket ou épico]` restringe. O mais perto do caso ganha quando o nome se repete.
+- `## Dados`: tabela `Nome | Valor | Senha | Observação` (colunas a mais viram campos). No caso: `{{admin}}` (o valor), `{{admin.senha}}`, `{{admin.perfil}}`.
+- `## Antes da rodada` / `## Antes de cada caso`: tabelas `# | Ação | Resultado esperado` — o app mostra uma vez no painel da rodada / antes do 1º passo de cada caso. **Não repita esses passos nos casos.**
+- `## Passos: Fazer login` + `Parâmetros: usuario` + tabela de passos com `{{usuario}}` / `{{usuario.senha}}`. No caso, **um** passo com a ação `↪ Fazer login (admin)` (vários parâmetros: `↪ Transferir (origem=admin, destino=cliente)`) — vale um status; no painel de execução aparecem os passos do bloco com os dados para copiar. Dois logins no mesmo caso = duas linhas `↪`.
+- **Nunca escreva senha num caso**: use `{{nome.senha}}`. A senha fica só no compartilhado (o app mostra `••••` e não a exporta).
+
 ### Status geral e resumo automático
 
 - O `status:` do cabeçalho resume os passos: algum `FAIL` → `FAIL`; senão algum `BLOCKED` → `BLOCKED`; senão algum passo vazio/`PENDING` → `PENDING`; senão `PASS` (todos `SKIP` → `SKIP`). O editor recalcula ao marcar status e ao salvar.
@@ -159,6 +169,7 @@ Uma nota por item, com horário e etiqueta opcional: `- 14:32 — **BUG:** botã
 | `checklist` | itens `- [ ]` agrupados por `##` |
 | `resumo-testes` | Visão geral · Métricas · Qualidade por funcionalidade · Riscos · Recomendação |
 | `epico` | Objetivo · Escopo · Fora de escopo · Histórias (cada uma `### HU-001 — título`, com Como/quero/para e critérios de aceite `- [ ]`) · Critérios de aceite do épico · Dúvidas e riscos para o QA · Referências |
+| `compartilhado` | Dados (tabela Nome · Valor · Senha · Observação) · Antes da rodada · Antes de cada caso · `Passos: <nome>` (com `Parâmetros:`) — campos `escopo:` (pasta · app · global) e `aplica-a:` |
 | `historia` | História (Como/quero/para) · Critérios de aceite (`- [ ] Dado… quando… então…`) · Regras de negócio · Casos de teste (tabela Caso · Critério coberto) · Dúvidas para o time — campo `epico:` com o ID/chave do épico |
 
 Título do documento: `# <id> — <titulo>` logo após o front-matter.

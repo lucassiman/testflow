@@ -58,6 +58,7 @@ Como trabalhar:
 - Rodada de regressão: qa_rodada_criar (por segmento — épico, ticket, #tag —, consulta, lista de casos, ciclo salvo, ou reteste: EXEC-… só com as falhas) → qa_rodada_registrar por caso → qa_rodada_status para ver como está → qa_rodada_finalizar (SKIP nos pendentes e os 4 relatórios: encerramento/Go-No-Go, defeitos, rastreabilidade, log + comparativo). qa_relatorios regera.
 - Bug de um caso que já tem bug ligado: qa_bug_do_caso devolve os bugs; pergunte ao usuário se é reincidência (reincidencia: "BUG-…") ou bug novo (novo: true).
 - Evolução da qualidade (sprint, % de sucesso no tempo, casos que mais falham): qa_tendencia.
+- Login, URLs e preparação repetidos em vários casos: veja qa_compartilhados (pasta ou documento) antes de escrever casos — use "↪ Bloco (param)" como um passo e {{dado}} / {{dado.senha}} em vez de repetir passos ou escrever senhas; se não houver, sugira criar um compartilhado (qa_criar tipo compartilhado, escopo pasta | app | global).
 - Segmento = tudo o que nasceu de um épico/ticket/execução/ciclo/#tag (filtro segmento em qa_listar/qa_consultar/qa_validar/qa_rastreabilidade).
 - Qualidade: qa_validar (avisos de QA, links quebrados, evidências faltando) antes de entregar ou publicar; qa_varredura acha documentos antigos sem os vínculos (relate primeiro, aplique só com o OK do usuário).
 - Escopo dos casos: siga a seção "Nível, tipo e profundidade" de qa_convencoes — gere só o nível pedido (ex.: e2e/UI sem casos de backend/unitários) e diga a premissa quando o pedido não especificar.`;
@@ -255,6 +256,11 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
     title: 'Rastreabilidade', description: 'Matriz requisito (ticket/épico) → casos → último resultado → bugs. Com segmento, só o do épico/ticket/execução.',
     inputSchema: { segmento: z.string().optional(), app: z.string().optional() }, annotations: RO,
   }, async (a) => run(() => ws.traceability(a), text));
+
+  server.registerTool('qa_compartilhados', {
+    title: 'Passos e dados compartilhados', description: 'O que vale para um documento ou uma pasta (escopo, como beforeEach/beforeAll): dados (logins, URLs — sem as senhas) para usar como {{nome}} / {{nome.campo}}, blocos de passos para incluir como UM passo "↪ Nome (parâmetro)", e os "antes de cada caso" / "antes da rodada". Sem argumentos, lista os compartilhados da pasta. Use ANTES de escrever casos para não repetir login/setup.',
+    inputSchema: { documento: z.string().optional().describe('caso/bug/etc. (ID ou caminho)'), pasta: z.string().optional().describe('pasta onde o caso vai ficar, ex.: aplicacoes/Portal/casos/PORTAL-10') }, annotations: RO,
+  }, async (a) => run(() => ws.shared(a), text));
 
   server.registerTool('qa_tendencia', {
     title: 'Tendência entre rodadas', description: 'Como a qualidade evolui: % de sucesso por rodada (e a variação para a anterior) e por sprint, casos que mais falham no histórico (com o tempo médio) e bugs por mês de abertura (ainda abertos × fechados). Use para o resumo da sprint ou para achar casos instáveis.',

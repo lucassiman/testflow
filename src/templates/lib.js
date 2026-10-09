@@ -9,7 +9,7 @@ import { TYPE_LABELS, detectFrontMatter, parseFrontMatter } from '../markdown/fr
  * Variáveis: {{data}} (AAAA-MM-DD), {{data_br}} (DD/MM/AAAA), {{hora}} (HH:MM)
  */
 
-const ORDER = ['caso-de-teste', 'bug', 'relatorio-execucao', 'cenario-bdd', 'plano-de-teste', 'charter-exploratorio', 'checklist', 'resumo-testes', 'epico', 'historia'];
+const ORDER = ['caso-de-teste', 'bug', 'relatorio-execucao', 'cenario-bdd', 'plano-de-teste', 'charter-exploratorio', 'checklist', 'resumo-testes', 'epico', 'historia', 'compartilhado'];
 /** @type {Record<string, string>} */
 const HINTS = {
   'caso-de-teste': 'passos com esperado/obtido/status',
@@ -22,6 +22,7 @@ const HINTS = {
   'resumo-testes': 'métricas e recomendação de release',
   epico: 'objetivo, escopo, histórias com critérios de aceite',
   historia: 'como/quero/para, critérios de aceite, casos que cobrem',
+  compartilhado: 'logins, URLs e passos usados por vários casos, com escopo (como beforeEach)',
 };
 
 /** @typedef {{ id: string, key: string, label: string, hint: string, text: string, custom?: boolean }} Template */

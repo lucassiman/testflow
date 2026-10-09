@@ -49,6 +49,7 @@ import { formatCommand, insertBlockAfterActive } from './app/editing.js';
 import { backupWorkspace, backupSetting, checkBackupReminder } from './app/backup.js';
 import { addEvidence, annotateExisting, bigPrintSetting, cleanOrphanPrints, openImageViewer, clipboardImages, pastePrintFromClipboard, requestFolder, reuseEvidence, saveEvidenceFiles, updateFolderStatus } from './app/evidence.js';
 import { bindStatusKeys, execBar, refreshSummary, statusPop } from './app/execution.js';
+import { decorateShared, renderSharedPanel, sharedLintWarnings, showSharedPanel, includeMenu, stepShared, scopeVars, scopeOf, copyShared } from './app/sharedData.js';
 import { brokenLinkWarnings, currentWorkspacePath, linkCardFor, markMissingLinks, openDocLink, openDocOverrides, openWikiTarget, updateLinks } from './app/links.js';
 import { createLinkPreview } from './ui/linkPreview.js';
 import { closeLightbox } from './ui/lightbox.js';
@@ -175,7 +176,7 @@ const preview = createPreview({
   store,
   getTheme: effectiveTheme,
   toast,
-  onLint: (list) => { baseWarnings = list; linkWarnings = brokenLinkWarnings(); updateLint(); scheduleEvidenceCheck(); },
+  onLint: (list) => { baseWarnings = list; linkWarnings = [...brokenLinkWarnings(), ...sharedLintWarnings()]; updateLint(); scheduleEvidenceCheck(); renderSharedPanel(); },
   onJumpToLine: (line) => {
     if (mode === 'preview') setMode('split');
     raw.goToLine(line);
@@ -188,7 +189,7 @@ const preview = createPreview({
   onOpenVSCode: (path) => openInVSCode(path),
   onOpenLink: (href) => openDocLink(href),
   onImageClick: (img) => openImageViewer(img),
-  onDrawViews: (root, force) => drawViews(root, force),
+  onDrawViews: (root, force) => { drawViews(root, force); decorateShared(root); },
   onComment: (act, line, head) => commentAction(act, line, head),
   snapshotRanges: (source) => snapshotRanges(source),
   onWikiLink: (target, { side }) => {
@@ -216,6 +217,8 @@ blockSelect = createBlockSelection({ pane: els.previewPane, root: els.preview, s
 runner = createRunner({
   store, preview, toast, root: els.preview, prefs: { load: loadPrefs, save: savePrefs },
   docKey: () => currentWorkspacePath() || store.fileName,
+  // passos e dados compartilhados (11.1): inclusões ↪, {{dados}} com copiar, "antes de cada caso"
+  shared: { step: (cell) => stepShared(cell), vars: () => scopeVars(), beforeEach: () => scopeOf()?.beforeEach || [], copy: (v, l, s, w) => copyShared(v, l, s, w) },
   onPastePrint: (clipboard, opts) => pastePrintFromClipboard(clipboard, opts),
   onPasteFiles: (files, opts) => addEvidence(files, 'preview', opts),
   onSavePrints: (files, opts) => saveEvidenceFiles(files, opts),
@@ -318,7 +321,7 @@ const sidebar = createSidebar({
     if (mode === 'raw') raw.goToLine(h.line);
     else preview.scrollToLine(h.line, { align: 'start' });
   },
-  onTabChange: (tab) => { savePrefs({ sideTab: tab }); if (tab === 'outline') updateOutline(); if (tab === 'links') updateLinks(); },
+  onTabChange: (tab) => { savePrefs({ sideTab: tab }); if (tab === 'outline') updateOutline(); if (tab === 'links') updateLinks(); if (tab === 'dados') renderSharedPanel(true); },
   onOpenLink: (e) => { if (e?.missing) toast(`"${e.target}" não foi encontrado na pasta de trabalho.`, 'error'); else if (e) openWikiTarget(e.target || e.id || e.name, e); },
   onSearch: (query, opts) => searchWorkspace(query, opts),
   onOpenHit: (entry, hit, query, opts) => openSearchHit(entry, hit, query, opts),
@@ -548,8 +551,9 @@ async function readWorkspaceOnce() {
     drawViews(document); // visões abertas (aqui e ao lado) com a pasta lida
     refreshCycleDoc(); // ciclo aberto: linhas pelo resultado dos casos
     refreshDocState();
-    linkWarnings = brokenLinkWarnings();
+    linkWarnings = [...brokenLinkWarnings(), ...sharedLintWarnings()];
     updateLint();
+    renderSharedPanel(); // 🔑 Dados com os compartilhados da pasta
     if (files.length) hintTree();
     checkOutsideRenames(); // código trocado fora do editor (uid igual, ID outro): links acompanham
     paintOfficialButton(); // ⇅ Sincronizar: o que enviar depende dos documentos lidos
@@ -1446,7 +1450,7 @@ const PALETTE_ACTIONS = [
   ['Próximo caso da pasta (salva e abre o próximo não executado)', 'nextCase', null, 'Alt+Shift+→'], ['Próximo caso da pasta e já executar', 'nextCase', 'run', ''],
   ['Organizar por épico e ticket (casos/<ÉPICO>/<TICKET>/, pelos campos epico: e jira:)…', 'byTicket', null, ''],
   ['Ciclo de regressão: novo (salvar os casos)…', 'newCycle', null, ''], ['Rodada de execução: nova (avulsa, escolher os casos)…', 'newRun', null, ''], ['Ciclo de regressão: executar um ciclo salvo (nova execução)…', 'runCycle', null, ''], ['Execução: anexar relatório de testes automatizados (Playwright, JUnit, Newman)…', 'attachAutomation', null, ''], ['Execução só automatizada: criar a partir de um relatório…', 'newAutoRun', null, ''], ['Ciclo de regressão: próximo caso', 'nextCycleCase', null, ''], ['Ciclo de regressão: voltar ao ciclo', 'openCycle', null, ''], ['Vínculos: Jira, Épico, Sprint deste documento…', 'editLinks', null, ''], ['Dispositivo / ambiente: WEB, Mobile iOS, Mobile Android… deste documento', 'editDevice', null, ''], ['Ciclo de regressão: finalizar execução…', 'finishCycle', null, ''], ['Reteste das falhas: nova rodada só com os FAIL/BLOCKED desta execução', 'rerunFailed', null, ''], ['Tendência entre rodadas: % de sucesso, casos que mais falham, bugs no tempo', 'trend', null, ''], ['Ciclo de regressão: como está / como foi a rodada', 'roundSummary', null, ''], ['Relatórios da execução: gerar / regerar (Encerramento e Go/No-Go, Defeitos, Rastreabilidade, Log)', 'execReports', null, ''], ['Início: rodada em andamento, pendências, fixados e atalhos', 'home', null, ''], ['Árvore: mostrar ID · título ou o nome do arquivo', 'treeLabels', null, ''], ['Ao abrir documento: Preview ou o último modo usado', 'openMode', null, ''], ['Modo foco: só o documento (esconde topo, barras e barra lateral)', 'focusMode', 'Ctrl+Shift+.', ''], ['Barra de formatação no Preview: só ao editar / sempre', 'toolbarMode', null, ''],
-  ['Comentar (comentário de revisão no documento)', 'comment', null, 'Alt+M'], ['Comentários do documento (pendentes e resolvidos)…', 'listComments', null, ''],
+  ['Comentar (comentário de revisão no documento)', 'comment', null, 'Alt+M'], ['Dados compartilhados: logins, URLs e passos que valem para este documento (copiar)', 'sharedPanel', null, 'Alt+K'], ['Incluir passos compartilhados (↪ Fazer login…)', 'includeShared', null, ''], ['Comentários do documento (pendentes e resolvidos)…', 'listComments', null, ''],
   ['Exportar bugs para o Jira (CSV do importador do Jira Cloud)…', 'jiraCsv', null, ''], ['Trazer chaves do Jira (CSV exportado do Jira)…', 'jiraKeys', null, ''],
   ['Ver outro documento ao lado (consulta)…', 'sideOpen', null, ''], ['Fechar o documento ao lado', 'sideClose', null, ''],
   ['Capturar a tela (print da janela do sistema testado)', 'capture', null, 'Ctrl+Alt+P'], ['Capturar a tela: escolher outra janela', 'captureChoose', null, ''], ['Capturar a tela: parar', 'captureStop', null, ''],
@@ -1466,7 +1470,7 @@ const PALETTE_ACTIONS = [
 
 /** Categoria e ícone de cada ação da paleta (as que não estão aqui ficam em "Ações"). */
 const PALETTE_GROUPS = /** @type {Array<[string, string, string[]]>} */ ([
-  ['Documento', '📄', ['newCase', 'new', 'newFromTemplate', 'open', 'save', 'saveAs', 'rename', 'saveTemplate', 'history', 'toggleAutoSave', 'quickNote', 'newBug', 'newView', 'importSheet', 'pdf', 'exportHtml', 'sensitive']],
+  ['Documento', '📄', ['newCase', 'new', 'newFromTemplate', 'open', 'save', 'saveAs', 'rename', 'saveTemplate', 'history', 'toggleAutoSave', 'quickNote', 'newBug', 'sharedPanel', 'includeShared', 'newView', 'importSheet', 'pdf', 'exportHtml', 'sensitive']],
   ['Execução e rodadas', '▶', ['newRun', 'newCycle', 'runCycle', 'newAutoRun', 'attachAutomation', 'nextCycleCase', 'openCycle', 'finishCycle', 'rerunFailed', 'trend', 'roundSummary', 'execReports', 'nextCase', 'editLinks', 'editDevice']],
   ['Pasta de trabalho', '📂', ['pickWorkspace', 'home', 'dashboard', 'searchAll', 'structure', 'newApp', 'newFolder', 'moveDoc', 'byTicket', 'undoOrganize', 'importNotion', 'backup', 'backupPref', 'loadDiag', 'diskRoot', 'officialFolder', 'officialUpdate', 'publish']],
   ['Evidências e prints', '📸', ['capture', 'captureChoose', 'captureStop', 'record', 'evidencePanel', 'reuseEvidence', 'cleanPrints', 'bigPrint', 'pickFolder']],
@@ -1634,6 +1638,8 @@ function run(cmd, value, event) {
     case 'whatsNew': openWhatsNew(true); return true;
     case 'newView': newView(); return true;
     case 'comment': addComment(); return true;
+    case 'sharedPanel': if (els.sidebar.hidden) toggleSidebar(true); showSharedPanel(); return true;
+    case 'includeShared': includeMenu(); return true;
     case 'newCycle': newCycle(); return true;
     case 'newRun': newRun(); return true;
     case 'newAutoRun': newAutoRun(); return true;

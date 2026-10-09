@@ -89,7 +89,9 @@ export function createSidebar({ root, onOpenFile, onOpenRecent, onRemoveRecent, 
       <button type="button" role="tab" data-tab="outline" aria-selected="false">Sumário</button>
       <button type="button" role="tab" data-tab="links" aria-selected="false">Links</button>
       <button type="button" role="tab" data-tab="search" aria-selected="false" title="Buscar em todos os arquivos da pasta (Ctrl+Shift+F)">Buscar</button>
+      <button type="button" role="tab" data-tab="dados" aria-selected="false" aria-label="Dados compartilhados" title="🔑 Dados e passos compartilhados que valem para este documento — copiar e-mail, senha… (Alt+K)">🔑</button>
     </div>
+    <div class="side-panel" data-panel="dados" hidden><div class="side-shared" data-side="shared"></div></div>
     <div class="side-panel" data-panel="files">
     <section class="side-section side-ws">
       <div class="side-head">
@@ -871,6 +873,8 @@ export function createSidebar({ root, onOpenFile, onOpenRecent, onRemoveRecent, 
     setLinks(next) { links = { incoming: [], outgoing: [], note: '', ...next }; drawLinks(); },
     setTab,
     get tab() { return tab; },
+    /** Aba 🔑 Dados: o app desenha os compartilhados do escopo aqui. */
+    get sharedEl() { return q('shared'); },
     /** Abre a aba Buscar com o foco no campo (e o termo, se vier). */
     focusSearch(term = '') {
       setTab('search');

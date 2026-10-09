@@ -18,6 +18,7 @@ O TestFlow junta tudo o que nasceu de um épico, ticket, execução ou ciclo (**
 4. **Mover arquivos** (para a pasta do épico/ticket) é feito **no app**: clique direito em `casos/` → **🎫 Organizar por épico e ticket** — ele leva links, prints e anexos junto e tem Desfazer. Não mova à mão.
 5. **Relatórios antigos** (de execuções sem tags/vínculos): depois de corrigir a execução, gere de novo (`qa_relatorios` ou 📑 Relatórios no app) — o que o QA escreveu no aceite fica.
 6. Toda gravação pelo MCP guarda a versão anterior em `.versoes/`.
+7. **Passos e dados repetidos**: login/preparação copiados passo a passo em vários casos, ou senha/e-mail escritos no caso → relate como 🟡 e proponha um **compartilhado** (`qa_compartilhados { pasta }` mostra o que já existe; criar com `qa_criar { tipo: "compartilhado" }` e escopo `pasta`/`app`) e trocar nos casos por `↪ Bloco (dado)` e `{{dado}}` — só com o OK, caso a caso. Senha escrita num caso é sempre item a corrigir.
 
 ## Com o MCP do TestFlow (ferramentas `qa_*`)
 

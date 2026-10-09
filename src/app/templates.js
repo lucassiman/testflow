@@ -83,6 +83,8 @@ export function commandItems() {
     block('image', 'Imagem por URL', '🖼', 'line', { cmd: 'image', keywords: 'imagem link url figura' }),
     block('capture', 'Capturar a tela (print da janela)', '📸', 'capture', { hint: 'Ctrl+Alt+P', keywords: 'print captura tela screenshot' }),
     block('record', 'Gravar vídeo da tela (bug intermitente)', '⏺', 'record', { hint: 'Ctrl+Alt+G · para no rodapé', keywords: 'video vídeo gravar gravação tela intermitente webm' }),
+    { id: 'shared-include', group: 'Compartilhados', label: 'Incluir passos compartilhados…', icon: '↪', kind: 'sharedInclude', hint: 'ex.: Fazer login (admin) — um passo, um status', keywords: 'compartilhado reutilizar login before each beforeEach passos bloco incluir setup' },
+    { id: 'shared-var', group: 'Compartilhados', label: 'Dado compartilhado {{…}}…', icon: '🔑', kind: 'sharedVar', hint: 'e-mail, senha, URL do escopo', keywords: 'dado variavel variável login senha email url massa compartilhado' },
     { id: 'doc-link', group: 'Links', label: 'Link para documento da pasta…', icon: '🔗', kind: 'docLink', hint: 'ou digite [[ no texto', keywords: 'link ligar wikilink referencia referência documento caso bug [[' },
     { id: 'reuse-ev', group: 'Evidências', label: 'Reaproveitar print de outro documento…', icon: '🖼', kind: 'reuseEvidence', hint: 'galeria dos prints da pasta de trabalho', keywords: 'print evidencia evidência imagem reaproveitar reutilizar galeria screenshot' },
     { id: 'comment', group: 'Revisão', label: 'Comentário de revisão', icon: '💬', kind: 'comment', hint: 'Alt+M · @você + data; responder e resolver no bloco', keywords: 'comentario comentário revisão review nota observação' },
@@ -144,6 +146,8 @@ export function applyItem(item, where) {
   if (item.kind === 'capture') { captureToDocument(); return; }
   if (item.kind === 'record') { toggleRecording(); return; }
   if (item.kind === 'linked') { createLinkedDoc(item.template, { where }); return; }
+  if (item.kind === 'sharedInclude') { import('./sharedData.js').then((m) => m.includeMenu()); return; }
+  if (item.kind === 'sharedVar') { import('./sharedData.js').then((m) => m.pickVarToInsert((ph) => { if (where !== 'raw') { document.execCommand('insertText', false, ph); return; } const s0 = els.raw.selectionStart; const e0 = els.raw.selectionEnd; const src = app.store.source; setRaw.setSource(src.slice(0, s0) + ph + src.slice(e0), [s0 + ph.length, s0 + ph.length]); })); return; }
   // line / status: mesmos caminhos da toolbar
   if (where === 'raw') rawCommand(els.raw, item.kind === 'status' ? 'status' : item.cmd, item.value, setRaw);
   else formatCommand(item.kind === 'status' ? 'status' : item.cmd, item.value, 'preview');

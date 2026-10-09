@@ -20,6 +20,16 @@ import {
 /** @typedef {Timer & { ordinal: number, index: number, revisit?: boolean, autoPaused?: boolean }} ExecState */
 /** @typedef {Timer & { tag: NoteTag }} SessionState */
 /** @typedef {StepRow & { index: number }} RunRow */
+/** @typedef {import('../markdown/shared.ts').Segment} Segment */
+/**
+ * Passos e dados compartilhados (11.1), vindos do app.
+ * @typedef {{
+ *   step: (cell: string) => { include: import('../markdown/shared.ts').Expanded | null, segments: Segment[] | null } | null,
+ *   vars: () => import('../markdown/shared.ts').SharedVar[],
+ *   beforeEach: () => Array<{ acao: string, esperado: string, source: string }>,
+ *   copy: (value: string, label: string, secret: boolean, win: Window) => void,
+ * }} SharedDeps
+ */
 /** @typedef {{ floating: boolean }} PasteOpts */
 
 /**
@@ -39,11 +49,12 @@ import {
  *   onStateChange?: () => void,
  *   onFinish?: (res: { overall: string, round: number, revised?: boolean }) => boolean | void,
  *   onCancel?: (res: { reverted: boolean }) => void,
+ *   shared?: SharedDeps,
  *   docKey?: () => string,
  *   prefs: import('../types').PrefsApi,
  * }} deps
  */
-export function createRunner({ store, preview, toast: appToast, root, onPastePrint, onPasteFiles, onSavePrints, onReadClipboardImages, onNewBug, onCapture, onRecord, isRecording, onStateChange, onFinish, onCancel, docKey: docKeyDep, prefs }) {
+export function createRunner({ store, preview, toast: appToast, root, onPastePrint, onPasteFiles, onSavePrints, onReadClipboardImages, onNewBug, onCapture, onRecord, isRecording, onStateChange, onFinish, onCancel, docKey: docKeyDep, prefs, shared }) {
   const el = document.createElement('div');
   el.className = 'runner';
   el.setAttribute('role', 'region');
@@ -66,6 +77,12 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
   let compact = !!prefs.load().runnerCompact;
   /** Passo marcado FAIL/BLOCKED com o painel minimizado: oferece voltar a ele para escrever o obtido / abrir o bug. */
   let lastProblem = -1;
+  /** "Antes de cada caso" (compartilhado) à vista antes do 1º passo. */
+  let pre = false;
+  /** Lista 🔑 dos dados compartilhados aberta no painel. */
+  let showVars = false;
+  /** Valores com botão de copiar no painel desenhado agora (índice = data-copy). @type {Array<{ value: string, label: string, secret: boolean }>} */
+  let copyTargets = [];
   /** Documento como estava ao começar esta execução: ✕ Cancelar volta para ele (só nesta sessão do editor). @type {string | null} */
   let cancelBase = null;
   let confirmCancel = 0;
@@ -186,6 +203,8 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     cancelBase = base ?? store.source;
     confirmCancel = 0;
     lastProblem = -1;
+    // compartilhado "antes de cada caso" (beforeEach): aparece antes do 1º passo de uma execução nova
+    pre = !sameDoc && !revisit && !!shared && prefs.load().sharedBeforeEach !== false && shared.beforeEach().length > 0;
     // começa no primeiro passo ainda sem status
     const t = table();
     const rows = runnable(t);
@@ -351,6 +370,74 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     });
   }
 
+  // ---------------------------------------------------------------- passos e dados compartilhados (11.1)
+  /** Pedaços (texto + dados) em HTML; cada dado vira um botão que copia o valor. @param {Segment[]} segs */
+  function segHtml(segs) {
+    return segs.map((sg) => {
+      if (typeof sg === 'string') return esc(sg);
+      const src = `{{${sg.name}${sg.field ? `.${sg.field}` : ''}}}`;
+      if (sg.missing) return `<span class="run-var missing" title="Dado não encontrado nos compartilhados do escopo">${esc(src)}</span>`;
+      const label = sg.field ? `${sg.field} de ${sg.name}` : sg.name;
+      const i = copyTargets.push({ value: sg.value, label, secret: sg.secret }) - 1;
+      return `<button type="button" class="run-var${sg.secret ? ' secret' : ''}" data-copy="${i}" title="Copiar ${esc(label)}${sg.secret ? '' : `: ${esc(sg.value)}`}" aria-label="Copiar ${esc(label)}">${esc(sg.secret ? '••••••' : sg.value)}<span class="run-var-ic" aria-hidden="true">📋</span></button>`;
+    }).join('');
+  }
+  /** Texto com os {{dados}} trocados por botões de copiar. @param {string} text */
+  function textHtml(text) {
+    const sh = shared && text.includes('{{') ? shared.step(text) : null;
+    return sh?.segments ? segHtml(sh.segments) : esc(text);
+  }
+  /** Ação do passo: inclusão (↪ bloco com os passos dele) ou o texto com os dados. @param {string} action */
+  function actionHtml(action) {
+    const sh = shared && action ? shared.step(action) : null;
+    if (!sh?.include) return sh?.segments ? segHtml(sh.segments) : esc(action);
+    const inc = sh.include;
+    return `<div class="run-inc"><b>↪ ${esc(inc.label)}</b>${inc.block
+      ? `<ol>${inc.steps.map((st) => `<li>${segHtml(st.acao)}${st.esperado.length ? ` <span class="run-inc-exp">→ ${segHtml(st.esperado)}</span>` : ''}</li>`).join('')}</ol>`
+      : ' <em>— bloco não encontrado nos compartilhados deste caso</em>'}${inc.missing.length && inc.block ? `<div class="run-warn">⚠ falta ${esc(inc.missing.join(', '))}</div>` : ''}</div>`;
+  }
+  /** Lista 🔑 dos dados compartilhados do caso, com copiar. */
+  function varsHtml() {
+    const vs = shared ? shared.vars() : [];
+    if (!vs.length) return '<div class="run-vars"><em>Nenhum dado compartilhado vale para este documento.</em></div>';
+    return `<div class="run-vars" role="group" aria-label="Dados compartilhados">${vs.map((v) => {
+      const fields = Object.entries(v.fields).filter(([k, val]) => val && k !== 'valor' && !/^(observacao|obs|descricao)$/.test(k));
+      return `<div class="run-var-row"><b title="${esc(v.obs || v.name)}">${esc(v.name)}</b>${segHtml([{ name: v.name, field: '', value: v.value, secret: v.secret.includes('valor'), missing: false }])}${fields.map(([k, val]) => segHtml([{ name: v.name, field: k, value: val, secret: v.secret.includes(k), missing: false }])).join('')}</div>`;
+    }).join('')}</div>`;
+  }
+  const keysBtn = () => (shared && shared.vars().length
+    ? `<button type="button" data-act="vars" class="run-x run-keys${showVars ? ' on' : ''}" title="Dados compartilhados (e-mail, senha, URL…): clique para copiar" aria-label="Dados compartilhados" aria-pressed="${showVars}">🔑</button>`
+    : '');
+
+  /** "Antes de cada caso" (beforeEach compartilhado), antes do 1º passo. */
+  function renderPre() {
+    const list = shared ? shared.beforeEach() : [];
+    if (compact) {
+      el.innerHTML = `<div class="run-mini"><div class="run-mini-top"><button type="button" data-act="compact" class="run-mini-step" title="Expandir">🔁 Antes de cada caso <small>${list.length} passo(s)</small></button><span class="run-grow"></span>${keysBtn()}<button type="button" data-act="preDone" class="primary run-mini-done" title="Pronto: ir ao 1º passo (Enter)">✓</button></div>
+        <div class="run-mini-action">${list.map((st) => esc(st.acao)).join(' · ')}</div>${showVars ? varsHtml() : ''}</div>`;
+      return;
+    }
+    el.innerHTML = `
+      <div class="run-head">
+        <strong>▶ Execução</strong>
+        <span class="run-step">Antes de começar</span>
+        <span class="run-grow"></span>
+        ${keysBtn()}${floatBtn()}
+        <button type="button" data-act="compact" class="run-x run-min" title="Minimizar (M)" aria-label="Minimizar o painel">▁</button>
+        <button type="button" data-act="close" class="run-x" title="Fechar (a execução continua; ▶ Executar retoma)">×</button>
+      </div>
+      <div class="run-body">
+        ${showVars ? varsHtml() : ''}
+        <div class="run-pre-title">🔁 Antes de cada caso <small>(compartilhado — como o beforeEach)</small></div>
+        <ol class="run-pre">${list.map((st) => `<li>${textHtml(st.acao)}${st.esperado ? ` <span class="run-inc-exp">→ ${textHtml(st.esperado)}</span>` : ''} <small class="run-src">${esc(st.source)}</small></li>`).join('')}</ol>
+      </div>
+      <div class="run-foot">
+        <button type="button" data-act="preDone" class="run-link" title="Ir direto ao 1º passo">pular</button>
+        <span class="run-hint">Enter ou → vai ao 1º passo</span>
+        <button type="button" data-act="preDone" class="primary" title="Pronto: ir ao 1º passo (Enter)">✓ Pronto — 1º passo</button>
+      </div>`;
+  }
+
   /** Painel minimizado: passo, ação em uma linha, tempo, status 1–5, print e Concluir. @param {NonNullable<ReturnType<typeof current>>} c */
   function renderExecMini(c) {
     const { t, rows, row } = c;
@@ -374,9 +461,8 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
           <span class="run-clock${run.runningSince ? '' : ' paused'}" title="Tempo de execução (sem as pausas)">${clock(timerElapsed(run))}</span>
           <button type="button" data-act="compact" class="run-x run-expand" title="Expandir o painel (M)" aria-label="Expandir o painel">⤢</button>
         </div>
-        <div class="run-mini-action" title="${esc(action)}${expected ? `
-
-Esperado: ${esc(expected)}` : ''}">${esc(action) || '<em>—</em>'}</div>
+        <div class="run-mini-action" title="${esc(action)}${expected ? `\n\nEsperado: ${esc(expected)}` : ''}">${(shared && action && shared.step(action)?.include ? actionHtml(action).replace(/<\/?(ol|li|div)[^>]*>/g, ' ') : textHtml(action)) || '<em>—</em>'}</div>
+        ${showVars ? varsHtml() : ''}
         <div class="run-mini-bar">
           ${STATUS_ORDER.map((w, i) => `<button type="button" data-word="${w}" class="run-mini-st st-${KIND_OF[w]}${kind === KIND_OF[w] ? ' current' : ''}" aria-pressed="${kind === KIND_OF[w]}" title="${w} (${i + 1})" aria-label="${w}">${ICON[w] || ''}<kbd>${i + 1}</kbd></button>`).join('')}
           <span class="run-grow"></span>
@@ -385,6 +471,7 @@ Esperado: ${esc(expected)}` : ''}">${esc(action) || '<em>—</em>'}</div>
           ${onCapture
     ? '<button type="button" data-act="capture" class="run-mini-nav" title="Print da janela do sistema testado (Ctrl+Alt+P no editor)" aria-label="Capturar print">📸</button>'
     : '<button type="button" data-act="paste" class="run-mini-nav" title="Colar print do passo (Ctrl+V)" aria-label="Colar print do passo">📷</button>'}
+          ${keysBtn()}
           <button type="button" data-act="finish" class="primary run-mini-done" title="Concluir: registra a rodada no Histórico de execuções">✓</button>
         </div>
         ${prob ? `<button type="button" data-act="problem" class="run-mini-prob" title="Expande o painel no passo ${esc(probLabel)} para escrever o obtido ou abrir o bug">✎ Passo ${esc(probLabel)} ${esc(cellToText(prob.cells[t.status] || '').replace(/`/g, ''))}: escrever o obtido / abrir bug</button>` : ''}
@@ -395,7 +482,9 @@ Esperado: ${esc(expected)}` : ''}">${esc(action) || '<em>—</em>'}</div>
 
   function renderExec() {
     const c = current();
+    copyTargets = [];
     if (!c) { el.innerHTML = '<div class="run-empty">Tabela sem passos.</div>'; return; }
+    if (pre) { renderPre(); return; }
     if (compact) { renderExecMini(c); return; }
     const { t, rows, row } = c;
     /** @param {number} i */
@@ -412,7 +501,7 @@ Esperado: ${esc(expected)}` : ''}">${esc(action) || '<em>—</em>'}</div>
         <strong>▶ Execução</strong>
         <span class="run-step">Passo ${esc(label)} <small>(${run.index + 1} de ${rows.length})</small></span>
         <span class="run-progress" title="${done} de ${rows.length} com status"><span style="width:${Math.round((done / rows.length) * 100)}%"></span></span>
-        ${floatBtn()}
+        ${keysBtn()}${floatBtn()}
         <button type="button" data-act="compact" class="run-x run-min" title="Minimizar (M): fica só o passo, o tempo e os status — mais tela para o sistema testado" aria-label="Minimizar o painel">▁</button>
         <button type="button" data-act="close" class="run-x" title="Fechar (a execução continua; ▶ Executar retoma)">×</button>
       </div>
@@ -423,8 +512,9 @@ Esperado: ${esc(expected)}` : ''}">${esc(action) || '<em>—</em>'}</div>
         <button type="button" data-act="cancel" class="run-link run-cancel${confirmCancel > Date.now() ? ' confirm' : ''}" title="Começou sem querer? Esquece esta execução e desfaz o que ela mudou no documento (Ctrl+Z traz de volta)">${confirmCancel > Date.now() ? 'Cancelar mesmo?' : '✕ Cancelar execução'}</button>
       </div>
       <div class="run-body">
-        <div class="run-field"><span>Ação</span><div>${esc(action) || '<em>—</em>'}</div></div>
-        ${t.expected >= 0 ? `<div class="run-field"><span>Esperado</span><div>${esc(cell(t.expected)) || '<em>—</em>'}</div></div>` : ''}
+        ${showVars ? varsHtml() : ''}
+        <div class="run-field"><span>Ação</span><div>${actionHtml(action) || '<em>—</em>'}</div></div>
+        ${t.expected >= 0 ? `<div class="run-field"><span>Esperado</span><div>${textHtml(cell(t.expected)) || '<em>—</em>'}</div></div>` : ''}
         ${t.actual >= 0 ? `<label class="run-field"><span>Obtido</span><textarea class="run-actual" rows="2" data-line="${row.line}" placeholder="O que aconteceu (Ctrl+Enter salva e vai para o próximo)">${esc(cell(t.actual))}</textarea></label>` : ''}
         <div class="run-print">
           <button type="button" data-act="paste" class="run-btn" title="Lê a imagem da área de transferência (o mesmo que Ctrl+V)">📷 Colar print do passo</button>${onCapture ? '<button type="button" data-act="capture" class="run-btn" title="Print da janela do sistema testado (escolha a janela uma vez; depois é um clique) — Ctrl+Alt+P no editor">📸 Capturar</button>' : ''}${recBtn()}
@@ -548,6 +638,7 @@ Esperado: ${esc(expected)}` : ''}">${esc(action) || '<em>—</em>'}</div>
   }
 
   function renderSession() {
+    copyTargets = [];
     const c = countNotes(store.source);
     const cur = ses();
     const running = !!cur.runningSince;
@@ -570,7 +661,7 @@ Esperado: ${esc(expected)}` : ''}">${esc(action) || '<em>—</em>'}</div>
       <div class="run-head">
         <strong>⏱ Sessão exploratória</strong>
         <span class="run-grow"></span>
-        ${floatBtn()}
+        ${keysBtn()}${floatBtn()}
         <button type="button" data-act="compact" class="run-x run-min" title="Minimizar: fica só o tempo e o campo da nota" aria-label="Minimizar o painel">▁</button>
         <button type="button" data-act="close" class="run-x" title="Fechar (o cronômetro continua)">×</button>
       </div>
@@ -580,6 +671,7 @@ Esperado: ${esc(expected)}` : ''}">${esc(action) || '<em>—</em>'}</div>
         ${timerButtons(cur)}
       </div>
       <div class="run-body">
+        ${showVars ? varsHtml() : ''}
         <div class="run-tags">${Object.entries(NOTE_TAGS).map(([t, v]) => `<button type="button" data-tag="${t}" class="tag-${v.key}${cur.tag === t ? ' current' : ''}">${v.label}</button>`).join('')}</div>
         <input class="run-note" type="text" placeholder="${pendingPrints.length
           ? `Descreva o print (${NOTE_TAGS[cur.tag].label}) e Enter — ou Enter vazio grava só o print`
@@ -727,7 +819,10 @@ Esperado: ${esc(expected)}` : ''}">${esc(action) || '<em>—</em>'}</div>
     if (b.dataset.word) { setStatus(b.dataset.word); return; }
     if (b.dataset.tag) { ses().tag = /** @type {NoteTag} */ (b.dataset.tag); persistSession(); render(); /** @type {HTMLElement} */ (el.querySelector('.run-note'))?.focus(); return; }
     const act = b.dataset.act;
+    if (b.dataset.copy !== undefined) { const ct = copyTargets[Number(b.dataset.copy)]; if (ct && shared) shared.copy(ct.value, ct.label, ct.secret, win()); return; }
     if (act === 'close') close();
+    else if (act === 'vars') { showVars = !showVars; render(); fitPip(); }
+    else if (act === 'preDone') { pre = false; render(); fitPip(); }
     else if (act === 'compact') toggleCompact();
     else if (act === 'cancel') cancelExec();
     else if (act === 'problem') { saveActual(); if (exec && lastProblem >= 0) ex().index = lastProblem; lastProblem = -1; compact = false; prefs.save({ runnerCompact: false }); render(); fitPip(); /** @type {HTMLElement | null} */ (el.querySelector('.run-actual'))?.focus(); }
@@ -784,6 +879,14 @@ Esperado: ${esc(expected)}` : ''}">${esc(action) || '<em>—</em>'}</div>
     if (d === document && document.querySelector('.status-pop:not([hidden]), .annot-overlay, .cmd-menu:not([hidden]), .lightbox, .evp-overlay, .app-dialog-overlay')) return;
     const i = '12345'.indexOf(event.key);
     let handled = true;
+    if (pre) {
+      // antes de cada caso: Enter / → vão ao 1º passo; os status ainda não valem
+      if (event.key === 'Enter' || event.key === 'ArrowRight') { pre = false; render(); }
+      else if (event.key === 'm' || event.key === 'M') toggleCompact();
+      else handled = i >= 0;
+      if (handled) { event.preventDefault(); event.stopPropagation(); }
+      return;
+    }
     if (i >= 0) setStatus(STATUS_ORDER[i]);
     else if (event.key === 'ArrowRight') go(1);
     else if (event.key === 'ArrowLeft') go(-1);

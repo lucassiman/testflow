@@ -45,6 +45,7 @@ export const TYPE_LABELS: Record<string, string> = {
   visao: 'Visão',
   epico: 'Épico',
   historia: 'História de usuário',
+  compartilhado: 'Passos e dados compartilhados',
   'ciclo-regressao': 'Ciclo de regressão',
   execucao: 'Execução',
   'relatorio-encerramento': 'Relatório de encerramento (Go/No-Go)',

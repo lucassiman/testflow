@@ -117,6 +117,49 @@ const RULES = ([
 ] as Rule[]).map((rule, prio) => ({ ...rule, prio, re: new RegExp(rule.re.source, `${rule.re.flags}d`) }));
 
 /** Dados sensíveis do texto, ordenados e sem sobreposição. */
+const SECRET_COL = /^(senha|password|pass|pwd|token|segredo|secret|pin)\b/i;
+
+/** Células das colunas "Senha" / "Token"… de tabelas Markdown. */
+function secretCells(src: string, found: Array<SensitiveFinding & { prio: number }>): void {
+  const lines = src.split('\n');
+  let pos = 0;
+  /** @type {number[]} */
+  let cols: number[] = [];
+  const offsets = lines.map((l) => { const o = pos; pos += l.length + 1; return o; });
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    if (!l.includes('|')) { cols = []; continue; }
+    if (i + 1 < lines.length && /^\s*\|?\s*:?-{2,}/.test(lines[i + 1]) && !/^\s*\|?\s*:?-{2,}/.test(l)) {
+      cols = cellSpans(l).map((c, k) => (SECRET_COL.test(c.text.replace(/[`*_]/g, '').trim()) ? k : -1)).filter((k) => k >= 0);
+      continue;
+    }
+    if (!cols.length || /^\s*\|?\s*:?-{2,}/.test(l)) continue;
+    const spans = cellSpans(l);
+    for (const k of cols) {
+      const c = spans[k];
+      if (!c || !c.text.trim() || /^[•*\-—]+$/.test(c.text.trim())) continue;
+      found.push({ prio: 0, kind: 'senha', label: SENSITIVE_KINDS.senha, start: offsets[i] + c.start, end: offsets[i] + c.start + c.text.length, value: c.text });
+    }
+  }
+}
+
+/** Células de uma linha de tabela com a posição do texto (sem os espaços das pontas). */
+function cellSpans(line: string): Array<{ start: number; text: string }> {
+  const out: Array<{ start: number; text: string }> = [];
+  let from = line.trimStart().startsWith('|') ? line.indexOf('|') + 1 : 0;
+  for (let i = from; i <= line.length; i++) {
+    if (i === line.length || (line[i] === '|' && line[i - 1] !== '\\')) {
+      const raw = line.slice(from, i);
+      if (i < line.length || raw.trim()) {
+        const lead = raw.length - raw.trimStart().length;
+        out.push({ start: from + lead, text: raw.trim() });
+      }
+      from = i + 1;
+    }
+  }
+  return out;
+}
+
 export function findSensitive(text: string | null | undefined): SensitiveFinding[] {
   const src = String(text || '');
   const found: Array<SensitiveFinding & { prio: number }> = [];
@@ -133,6 +176,8 @@ export function findSensitive(text: string | null | undefined): SensitiveFinding
       found.push({ prio: rule.prio, kind: rule.kind, label: SENSITIVE_KINDS[rule.kind], start, end: start + value.length, value });
     }
   }
+  // tabelas com coluna de senha/token (ex.: Dados de um compartilhado): o valor da célula é sensível, seja qual for
+  secretCells(src, found);
   // sem sobreposição: o primeiro a começar ganha; empate → a regra mais específica (ordem de RULES)
   found.sort((a, b) => a.start - b.start || a.prio - b.prio);
   const out: SensitiveFinding[] = [];

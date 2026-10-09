@@ -8,6 +8,14 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.35.0', date: '09/10/2026',
+    items: [
+      { icon: '🔑', text: '**Passos e dados compartilhados**: logins, URLs e preparação definidos uma vez, com **escopo** (pasta, aplicação ou tudo — como o beforeEach). No caso, `↪ Fazer login (admin)` vale um passo (dois logins = duas linhas) e `{{admin.senha}}` usa o dado.', manual: '6.8 Passos e dados compartilhados' },
+      { icon: '📋', text: '**Copiar rápido**: aba **🔑** da barra lateral (`Alt+K`) com só os dados do escopo do documento, e no painel de execução os passos do bloco com **e-mail e senha em botões de copiar** (senha sempre ••••). "Antes de cada caso" aparece antes do 1º passo; "antes da rodada", no painel da rodada.', manual: '6.8 Passos e dados compartilhados' },
+      { icon: '🤖', text: 'O Claude usa os compartilhados ao escrever casos (`qa_compartilhados`) — sem repetir login nem escrever senhas.', manual: '6.8 Passos e dados compartilhados' },
+    ],
+  },
+  {
     version: '1.34.0', date: '09/10/2026',
     items: [
       { icon: '📈', text: '**Tendência entre rodadas**: gráfico da % de sucesso por rodada e dos bugs por mês (abertos × fechados), tabelas por rodada (com a variação para a anterior), por sprint e os **casos que mais falham** no histórico, com o tempo médio. Tela inicial → 📈 ou paleta → *Tendência*. O Claude lê pelo MCP (`qa_tendencia`).', manual: '11.1 Visões' },

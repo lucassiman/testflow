@@ -12,6 +12,7 @@ export const SHORTCUTS = [
   { keys: 'Alt+Shift+N', cmd: 'newFromTemplate' },
   { keys: 'Alt+Q', cmd: 'quickNote' },
   { keys: 'Alt+M', cmd: 'comment' },
+  { keys: 'Alt+K', cmd: 'sharedPanel' },
   { keys: 'Ctrl+/', cmd: 'commandMenu' },
   { keys: 'Ctrl+Alt+C', cmd: 'copyAll' },
   { keys: 'Ctrl+Shift+E', cmd: 'toggleSidebar' },

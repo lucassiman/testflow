@@ -79,6 +79,7 @@ export function refreshCyclePanel() {
       <div class="cp-bar cp-bar-seg" role="img" aria-label="${data.done} de ${data.total} concluídos (${pct}%)">${bar}</div>
       <div class="cp-count">${data.done}/${data.total}${data.failed ? ` · <span class="cp-fail">${data.failed} com falha</span>` : ''}${data.closed ? ' · encerrado' : ''}</div>
     </div>
+    ${data.before.length && !data.closed ? `<details class="cp-before"${data.beforeDone.length >= data.before.length ? '' : ' open'}><summary title="Passos compartilhados de preparação (beforeAll): uma vez, no começo da rodada">⏮ Antes da rodada <span>${Math.min(data.beforeDone.length, data.before.length)}/${data.before.length}</span></summary><ul>${data.before.map((b, i) => `<li><label><input type="checkbox" data-cp-before="${i}"${data.beforeDone.includes(i) ? ' checked' : ''}> <span>${esc(b.acao)}${b.esperado ? ` <small>→ ${esc(b.esperado)}</small>` : ''}</span></label></li>`).join('')}</ul></details>` : ''}
     ${data.auto ? `<div class="cp-auto" title="${esc(`${data.auto.tool}${data.auto.fonte ? ` — ${data.auto.fonte}` : ''}: resultado separado dos casos manuais`)}">🤖 <b>${data.auto.total}</b> automatizado${data.auto.total > 1 ? 's' : ''}: <span class="cp-ok">${data.auto.pass} PASS</span>${data.auto.fail ? ` · <span class="cp-fail">${data.auto.fail} FAIL</span>` : ''}${data.auto.skip ? ` · ${data.auto.skip} SKIP` : ''}${data.auto.sucessoPct == null ? '' : ` · ${data.auto.sucessoPct}%`}</div>` : ''}
     ${data.total ? '' : '<p class="cp-empty">Sem casos manuais nesta execução.</p>'}
     ${data.total > 3 ? `<div class="cp-filter" role="group" aria-label="Filtrar a lista">${[['todos', `Todos ${data.total}`], ['pendentes', `Pendentes ${nPend}`], ['falhas', `Falhas ${nFail}`]].map(([k, l]) => `<button type="button" class="cp-fchip" data-cp="filter" data-f="${k}" aria-pressed="${filter === k}">${esc(l)}</button>`).join('')}</div>` : ''}
@@ -125,6 +126,23 @@ el.addEventListener('click', (event) => {
   else if (act === 'retest') rerunFailed(data0()?.path || '');
   else if (act === 'again') { const ciclo = data0()?.ciclo; if (ciclo) runCycle(ciclo.path); }
   else if (act === 'skip' && b.dataset.key) skipCycleCase(b.dataset.key);
+});
+
+// ⏮ Antes da rodada: marcar o que já foi feito (fica lembrado por rodada)
+el.addEventListener('change', (event) => {
+  const box = /** @type {HTMLInputElement} */ (event.target);
+  if (!box.matches?.('[data-cp-before]')) return;
+  const path = data0()?.path;
+  if (!path) return;
+  const all = { ...(loadPrefs().cycleBefore || {}) };
+  const set = new Set(/** @type {number[]} */ (all[path] || []));
+  if (box.checked) set.add(Number(box.dataset.cpBefore)); else set.delete(Number(box.dataset.cpBefore));
+  all[path] = [...set];
+  const keys = Object.keys(all);
+  if (keys.length > 10) for (const k of keys.slice(0, keys.length - 10)) delete all[k];
+  savePrefs({ cycleBefore: all });
+  lastSig = '';
+  refreshCyclePanel();
 });
 
 // ↑/↓ entre os casos quando o foco está na lista

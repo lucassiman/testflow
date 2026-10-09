@@ -29,6 +29,7 @@ Se as ferramentas `qa_*` estiverem disponíveis, a pasta de trabalho do usuário
 - Rodada de regressão: `qa_rodada_criar` (por `segmento` — épico, ticket, `#tag` —, `consulta`, lista de `casos` ou `ciclo` salvo) → `qa_rodada_registrar` por caso (passos ou o status do caso inteiro) → `qa_rodada_status` → `qa_rodada_finalizar` (confirme antes: SKIP nos pendentes, encerra e gera os 4 relatórios). `qa_relatorios` regera. Reteste só das falhas de uma execução: `qa_rodada_criar { reteste: "EXEC-…" }` (com `reteste_skip: true` soma os SKIP).
 - Bug de um caso que já tem bug ligado: `qa_bug_do_caso` devolve a lista em vez de criar — pergunte se é **reincidência** (`reincidencia: "BUG-…"`, reabre se fechado) ou bug novo (`novo: true`). Achado numa rodada: informe `execucao`.
 - Qualidade e cobertura: `qa_validar` (avisos, links quebrados, evidências faltando — por documento, segmento ou pasta) e `qa_rastreabilidade` (ticket/épico → casos → resultado → bugs). Filtro `segmento` em `qa_listar`/`qa_consultar`. Evolução no tempo (resumo da sprint, casos instáveis): `qa_tendencia` (% de sucesso por rodada e sprint, casos que mais falham, bugs por mês).
+- Passos e dados compartilhados: **antes de escrever casos**, `qa_compartilhados { pasta: "<onde o caso vai ficar>" }` (ou `{ documento }`) — use `↪ Bloco (dado)` como **um** passo e `{{dado}}` / `{{dado.senha}}` nos passos, em vez de repetir login/preparação ou escrever senha. Nada no escopo e o mesmo login/setup aparece em vários casos → proponha criar um (`qa_criar { tipo: "compartilhado", app, titulo }`, escopo `pasta` | `app` | `global`).
 - Toda gravação guarda a versão anterior em `.versoes/`; nada é apagado nem publicado. Confirme com o usuário antes de mudanças em muitos documentos.
 
 ## 1. Cabeçalho (front-matter) — obrigatório
@@ -74,6 +75,7 @@ Sempre em tabela, com estas colunas nesta ordem:
 - `Resultado esperado` obrigatório em todo passo; um comportamento verificável por passo.
 - `Resultado obtido` e `Status` **vazios** até a execução.
 - Dados concretos na seção **Massa de dados**, não dentro da ação.
+- **Reaproveite o compartilhado** (veja `qa_compartilhados`): login/preparação viram **um** passo `| 1 | ↪ Fazer login (admin) | Painel do administrador | | |`; dados viram `{{admin}}` / `{{admin.senha}}`. Caso com 2 perfis = 2 linhas `↪` (`↪ Fazer login (admin)` … `↪ Fazer login (usuario=cliente)`). Não repita no caso o que está em "Antes de cada caso" do escopo. **Nunca escreva senhas** nos casos.
 
 ### Status geral e resumo
 
@@ -159,7 +161,7 @@ Quando o usuário trouxer uma história, critérios de aceite, um ticket do Jira
 1. **Entenda antes de escrever.** Liste os critérios de aceite numerados (se vierem em texto corrido, extraia-os) e as regras de negócio implícitas. Pergunte o que faltar e for decisivo (perfis de usuário, limites, mensagens exatas); o resto vira **Observações**/premissas no caso, não invenção.
 2. **Cubra cada critério** com pelo menos um caso **positivo**; acrescente **negativos** (dado inválido, permissão, estado errado), **limites** (mínimo, máximo, vazio, um a mais/menos), e quando couber **alternativos** (outro caminho que leva ao mesmo resultado) e **regressão** do que o ticket pode quebrar. Um comportamento verificável por caso; prefira vários casos curtos a um longo.
 3. **Rastreabilidade no cabeçalho:** `jira:` com a chave do ticket da história, `epico:` com o épico, `app:`, tags do domínio (as do ticket/épico se houver) e `prioridade` pelo risco (crítico para o negócio = Alta). Cite a história no corpo: `Origem: [[PORTAL-120]] — critério 2`.
-4. **Massa de dados** concreta na seção dela (usuários, valores, cupons), sem dados reais de clientes.
+4. **Massa de dados** concreta na seção dela (usuários, valores, cupons), sem dados reais de clientes — e o que já existir no compartilhado do escopo entra como `{{dado}}` / `↪ Bloco (dado)` (`qa_compartilhados { pasta }`).
 5. **Entregue uma matriz** no fim da resposta: critério → casos que o cobrem → tipo (positivo/negativo/limite). Critério sem caso = lacuna declarada.
 6. Com o MCP: `qa_criar` um caso por arquivo (com `campos: { jira, epico, tags }`), depois `qa_rastreabilidade { segmento: "<ticket ou épico>" }` para conferir.
 
@@ -176,6 +178,7 @@ Para "revise estes casos", "estão bons?" ou antes de uma regressão, avalie cad
 - [ ] **Rastreabilidade**: `jira:`/`epico:` preenchidos; o critério de aceite que cobre
 - [ ] **Prioridade** coerente com o risco; `automacao:` se já existe teste automatizado
 - [ ] **Sem duplicidade** com outro caso do mesmo ticket (sugira juntar ou diferenciar)
+- [ ] **Sem repetir o compartilhado**: login/preparação copiados passo a passo → sugira `↪ Bloco (dado)`; senha/e-mail escritos no caso → `{{dado}}` / `{{dado.senha}}`; o mesmo setup em 3+ casos sem compartilhado → sugira criar um com escopo
 - [ ] **No nível certo** (6.0): caso de regra interna/backend que já tem teste unitário ou de API → sugira remover ou mover para o dev; tags de nível/tipo presentes
 - [ ] Formato QA-MD (seção 6)
 

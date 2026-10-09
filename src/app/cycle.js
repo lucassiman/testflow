@@ -20,6 +20,7 @@ import { viewDocs } from './views.js';
 import { createDocIn } from './templates.js';
 import { openDocOverrides, currentWorkspacePath, openWikiTarget } from './links.js';
 import { startRun, doNewRound } from './execution.js';
+import { beforeRound } from './sharedData.js';
 import { loadPrefs, savePrefs } from '../io/drafts.js';
 import { confirmDialog, showDialog } from '../ui/dialog.js';
 import { openCasePicker } from '../ui/casePicker.js';
@@ -238,7 +239,7 @@ export async function skipCycleCase(key) {
 /**
  * Dados do painel da rodada: um item por caso, na ordem do ciclo (null = não há ciclo a mostrar).
  * Leve de propósito (roda a cada mudança no documento): usa o texto do ciclo e o dos casos, sem recalcular bugs.
- * @returns {{ path: string, title: string, closed: boolean, onCycle: boolean, counts: { PASS: number, FAIL: number, BLOCKED: number, SKIP: number }, done: number, total: number, failed: number, next: string | null, items: ChecklistItem[], ciclo: { path: string, titulo: string } | null, numero: number, links: import('../markdown/linkTypes.ts').LinkChip[], auto: import('../markdown/cycleAuto.ts').AutoSummary | null, whole: { key: string, done: number, total: number } | null } | null}
+ * @returns {{ path: string, title: string, closed: boolean, onCycle: boolean, counts: { PASS: number, FAIL: number, BLOCKED: number, SKIP: number }, done: number, total: number, failed: number, next: string | null, items: ChecklistItem[], ciclo: { path: string, titulo: string } | null, numero: number, links: import('../markdown/linkTypes.ts').LinkChip[], auto: import('../markdown/cycleAuto.ts').AutoSummary | null, whole: { key: string, done: number, total: number } | null, before: Array<{ acao: string, esperado: string, source: string }>, beforeDone: number[] } | null}
  */
 export function cycleChecklist() {
   const c = currentCycle();
@@ -293,6 +294,9 @@ export function cycleChecklist() {
     done: doneItems.length, total: items.length, failed: doneItems.filter((i) => i.status === 'FAIL' || i.status === 'BLOCKED').length, next, items,
     ciclo: cycleOfCurrent(), numero: execNumber(c.text), links: currentLinkChips(c.text), auto: autoSummary(c.text),
     whole: wholeOpen(c, openKey, items),
+    // compartilhados "antes da rodada" (beforeAll) dos casos desta rodada, e os já feitos (marcados no painel)
+    before: beforeRound(items.map((i) => docIndex.resolve(i.key)?.path || '').filter(Boolean)),
+    beforeDone: /** @type {number[]} */ ((loadPrefs().cycleBefore || {})[c.path] || []),
   };
 }
 

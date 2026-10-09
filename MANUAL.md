@@ -350,6 +350,39 @@ Para revisar o documento de outra pessoa (ou deixar uma dúvida para você mesmo
 
 O comentário fica no próprio `.md` (vai para a pasta oficial junto, para quem revisa ver), mas **não vai** para o Jira, para o Notion nem para o pacote do hub — é nota interna. Seu nome é pedido uma vez (o mesmo de *Publicado por*).
 
+### 6.8 Passos e dados compartilhados
+
+Login, URL do ambiente e preparação que se repetem em vários casos ficam **uma vez** num documento **compartilhado** — como o *beforeEach* / *beforeAll* da automação, com um **escopo**:
+
+| `escopo:` | Vale para |
+| --- | --- |
+| `pasta` | os documentos da pasta onde o compartilhado está e das pastas de dentro (ex.: salvo na pasta do épico → só os casos daquele épico) |
+| `app` | a aplicação toda (`app:` do cabeçalho ou `aplicacoes/<App>/`) |
+| `global` | a pasta de trabalho toda |
+
+`aplica-a: [pix, TC-7, PORTAL-10]` restringe a quem tem uma dessas tags, IDs, tickets ou épicos. Se dois compartilhados têm um dado ou bloco com o mesmo nome, **o mais perto do caso ganha** (o da pasta do épico ganha do da aplicação).
+
+**Criar:** aba **🔑** da barra lateral → **＋ Novo compartilhado**, ou **Novo ▾ → A partir de modelo → Passos e dados compartilhados**. O modelo já vem com as seções:
+
+- **Dados** — tabela `Nome | Valor | Senha | Observação` (colunas a mais viram campos). Ex.: `admin | admin@loja.com | S3nha! | Administrador`.
+- **Antes da rodada** — passos feitos uma vez no começo da rodada: aparecem no painel da rodada como **⏮ Antes da rodada**, para marcar.
+- **Antes de cada caso** — aparecem no painel de execução **antes do 1º passo** de cada caso do escopo (**Enter** ou **✓ Pronto** vai ao 1º passo).
+- **Passos: Fazer login** (com `Parâmetros: usuario`) — um bloco de passos com nome, que os casos incluem.
+
+**Usar no caso:**
+
+- **↪ Bloco** — um passo cuja ação é `↪ Fazer login (admin)` vale **um passo e um status**. Caso com dois perfis: duas linhas — `↪ Fazer login (admin)` e `↪ Fazer login (usuario=cliente)`; vários parâmetros: `↪ Transferir (origem=admin, destino=cliente)`. Inserir: `/` ou `Ctrl+Shift+P` → **Incluir passos compartilhados…** (escolha o bloco e o dado), ou **＋ Inserir no caso** na aba 🔑.
+- **{{dado}}** — `{{admin}}` usa o valor; `{{admin.senha}}` a senha; `{{admin.perfil}}` outra coluna. Inserir: `/` → **Dado compartilhado {{…}}…**.
+- No **Preview** o bloco aparece como `↪ Fazer login · admin` (passe o mouse para ver os passos) e o dado aparece com o valor — **clique copia** (a senha aparece `••••••`). Ao editar, volta o texto original. Bloco ou dado que não existe no escopo vira **aviso** no rodapé.
+- No **painel de execução** (também minimizado e no ⧉ Flutuar), o passo `↪` mostra os passos do bloco com o **e-mail e a senha em botões de copiar**; **🔑** no topo do painel abre todos os dados do caso para copiar.
+
+**Aba 🔑 Dados** (barra lateral, `Alt+K`): só os dados e blocos que **valem para o documento aberto** (o de outra aplicação ou pasta não aparece), com **📋 copiar** em cada campo, **👁** para ver a senha, os "antes de" e de onde vem cada um.
+
+> [!IMPORTANT]
+> **Senhas:** ficam só no compartilhado (no `.md`, que vai para a pasta oficial — use senhas de ambiente de teste). Na tela aparecem `••••••`; copiar não mostra o valor no aviso; ao copiar/exportar o documento (Jira, PDF, Claude) a proteção de dados sensíveis trata a coluna **Senha** como sensível; o Claude (MCP) **nunca recebe** as senhas. Nunca escreva senha num caso — use `{{nome.senha}}`.
+
+**Com o Claude:** ele consulta `qa_compartilhados` antes de escrever casos e usa `↪ Bloco (dado)` e `{{dado}}` em vez de repetir login ou escrever senhas; sugere criar um compartilhado quando o mesmo setup aparece em vários casos.
+
 ## 7. Executar testes
 
 ### 7.1 Status clicável
@@ -916,6 +949,7 @@ Ele aplica só o que você aprovar e, para os "confirmar", propõe a resposta: l
 | Painel de execução: passo anterior / próximo | `←` / `→` | igual |
 | Painel de execução: ir ao campo *obtido* / sair dele | `Enter` / `Esc` | igual |
 | Painel de execução: minimizar / expandir | `M` | igual |
+| Aba 🔑 Dados compartilhados (copiar e-mail, senha, URL) | `Alt+K` | `⌥K` |
 | Seletor de casos (nova rodada): mover · marcar · marcar intervalo | `↑` `↓` · `Espaço` · `Shift+Espaço` | igual |
 | Navegar pela tela | `Tab` / `Shift+Tab` (o item em foco ganha um contorno; os atalhos dos botões aparecem na dica e são lidos por leitores de tela) | igual |
 | Link para documento (lista para escolher) | `[[` no texto | igual |

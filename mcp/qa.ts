@@ -30,6 +30,7 @@ import {
   defCases, execNumber, cicloOf, nextExecNumber, cycleProgress, unexecuted, nextCase, execInfo, syncDefExecutions, retestCases,
 } from '../src/markdown/cycle.ts';
 import type { CaseLookup } from '../src/markdown/cycle.ts';
+import { parseShared, scopeFor, parseInclude, expandInclude, resolveText, sharedWarnings, maskSecretColumns, SHARED_TYPE, type SharedDoc, type SharedScopeResult, type Segment } from '../src/markdown/shared.ts';
 import { buildReports, linkReports, REPORT_TYPES } from '../src/markdown/reports.ts';
 import { readLinks } from '../src/markdown/linkTypes.ts';
 import { findBrokenLinks } from '../src/markdown/brokenLinks.ts';
@@ -326,13 +327,15 @@ export class QaWorkspace {
       evid.length ? `Evidências/anexos: ${evid.map((r) => r.href).join(', ')}` : '',
     ].filter(Boolean);
     if (!incluirTexto) return head.join('\n');
-    let body = text;
+    // compartilhado: a senha não sai do arquivo (o QA copia no app)
+    let body = String(data.tipo || '') === SHARED_TYPE ? maskSecretColumns(text) : text;
     if (secao) {
       const lines = text.split('\n');
       const esc = secao.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const sec = findSection(lines, new RegExp(`^${esc}`, 'i'));
       if (!sec) throw new Error(`seção "${secao}" não encontrada em ${e.path}`);
       body = lines.slice(sec.heading, sec.end).join('\n');
+      if (String(data.tipo || '') === SHARED_TYPE) body = maskSecretColumns(body);
     }
     return `${head.join('\n')}\n\n----- ${secao ? `seção "${secao}"` : 'documento'} -----\n${body}`;
   }
@@ -407,7 +410,7 @@ export class QaWorkspace {
     const appName = String(dm.app || '');
     // execução/ciclo: junto dos do mesmo tipo (ou numa execucoes/ que já existe), como no app
     const sibs = RUN_TYPES.includes(tipo) ? this.index.all().filter((e) => RUN_TYPES.includes(e.tipo) && (!appName || (e.app || '').toLowerCase() === appName.toLowerCase())).map((e) => e.path) : [];
-    const dir = o.pasta ? o.pasta.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '') : RUN_TYPES.includes(tipo) ? runDestination({ tipo, app: appName }, this.dirs, sibs).dir : suggestDestination({ tipo, app: appName, jira: dm.jira, epico: dm.epico, id: String(dm.id || '') }, this.dirs).dir;
+    const dir = o.pasta ? o.pasta.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '') : tipo === SHARED_TYPE ? (appName ? `aplicacoes/${appName}/compartilhados` : 'compartilhados') : RUN_TYPES.includes(tipo) ? runDestination({ tipo, app: appName }, this.dirs, sibs).dir : suggestDestination({ tipo, app: appName, jira: dm.jira, epico: dm.epico, id: String(dm.id || '') }, this.dirs).dir;
     // dentro de aplicacoes/<App>/casos/<ÉPICO>/<TICKET>/: app:, jira: e epico: vazios vêm da pasta; tags e sprint do épico e da história (herança)
     text = this.inheritFromFolder(fillApp(text, appOfDir(dir)), dir, tipo);
     text = updateSummaryBlocks(text); // resumo automático já calculado
@@ -1025,6 +1028,7 @@ export class QaWorkspace {
       const warns = this.lint(text).map((m) => `aviso: ${m}`);
       const docDir = dirOf(e.path);
       for (const b of findBrokenLinks(text, { wikiExists: exists, mdExists: (p) => !!this.index.get(p), docDir })) warns.push(`link quebrado (linha ${b.line + 1}): ${b.kind === 'wiki' ? `[[${b.target}]]` : b.target}`);
+      if (/\{\{|↪/.test(text) && e.tipo !== SHARED_TYPE) for (const w of sharedWarnings(text, this.scopeOfEntry(e))) warns.push(`compartilhado (linha ${w.line + 1}): ${w.message}`);
       for (const r of findRefs(text).filter((x) => x.image && isRelativeHref(x.href))) {
         const p = resolveHref(e.path, r.href);
         if (p && !(await kindAt(this.h, p))) warns.push(`evidência faltando: ${r.href}`);
@@ -1099,6 +1103,75 @@ export class QaWorkspace {
     if (o.segmento) lines.push(`segmento: ${o.segmento}`);
     if (o.app) lines.push(`app: ${o.app}`);
     return this.query(lines.join('\n'));
+  }
+
+  /** Os compartilhados da pasta (passos e dados com escopo). */
+  private sharedAll(): SharedDoc[] {
+    return this.index.all().filter((e) => e.tipo === SHARED_TYPE).map((e) => parseShared(e.text || '', e.path)).filter((x): x is SharedDoc => !!x);
+  }
+  private scopeOfEntry(e: { path: string; app?: string; tags?: string[]; id?: string; jira?: string; epico?: string }): SharedScopeResult {
+    return scopeFor({ path: e.path, app: e.app, tags: e.tags, id: e.id, jira: e.jira, epico: e.epico }, this.sharedAll());
+  }
+
+  /**
+   * Passos e dados compartilhados (11.1) que valem para um documento ou uma pasta: dados (sem as senhas), blocos de
+   * passos com parâmetros, "antes de cada caso" e "antes da rodada"; num documento, as inclusões dele expandidas.
+   */
+  async shared(o: { documento?: string; pasta?: string }): Promise<string> {
+    await this.refresh(true);
+    const all = this.sharedAll();
+    const where = (d: SharedDoc) => (d.escopo === 'global' ? 'tudo' : d.escopo === 'app' ? `aplicação ${d.app || '?'}` : `pasta ${d.dir || '/'}`);
+    if (!o.documento && !o.pasta) {
+      if (!all.length) return 'Nenhum compartilhado na pasta. Crie com qa_criar { tipo: "compartilhado", app, titulo } — dados (logins, URLs) e passos usados por vários casos, com escopo (pasta | app | global).';
+      return [`${all.length} compartilhado(s):`, ...all.map((d) => `- ${d.id} — ${d.titulo} (${d.path}) · escopo: ${where(d)}${d.aplicaA.length ? ` · só ${d.aplicaA.join(', ')}` : ''} · ${d.vars.length} dado(s), ${d.blocks.length} bloco(s)${d.beforeEach.length ? `, antes de cada caso: ${d.beforeEach.length}` : ''}${d.beforeAll.length ? `, antes da rodada: ${d.beforeAll.length}` : ''}`)].join('\n');
+    }
+    let target: { path: string; app?: string; tags?: string[]; id?: string; jira?: string; epico?: string };
+    let docText = '';
+    let label: string;
+    if (o.documento) {
+      const e = await this.find(o.documento);
+      target = e; docText = e.text || ''; label = `${e.id || e.name} (${e.path})`;
+    } else {
+      const dir = (o.pasta || '').replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+      target = { path: `${dir}/novo.md`, app: /^aplicacoes\/([^/]+)/.exec(dir)?.[1] || '' };
+      label = `a pasta ${dir}`;
+    }
+    const scope = this.scopeOfEntry(target);
+    if (!scope.docs.length) return `Nenhum compartilhado vale para ${label}.${all.length ? ` Na pasta há ${all.length} (escopos: ${all.map((d) => `${d.id} → ${where(d)}`).join('; ')}).` : ''}`;
+    const plain = (segs: Segment[]) => segs.map((x) => (typeof x === 'string' ? x : x.missing ? `{{${x.name}${x.field ? `.${x.field}` : ''}}}` : x.secret ? '••••' : x.value)).join('');
+    const out = [`Compartilhados que valem para ${label} (do mais de fora para o mais perto; o mais perto ganha):`, ...scope.docs.map((d) => `- ${d.id} — ${d.titulo} · escopo: ${where(d)}${d.aplicaA.length ? ` · só ${d.aplicaA.join(', ')}` : ''} · ${d.path}`)];
+    if (scope.vars.size) {
+      out.push('', 'Dados — nos passos use {{nome}} ou {{nome.campo}}; NUNCA escreva a senha no caso (o QA copia no app):');
+      for (const v of scope.vars.values()) {
+        const fields = Object.entries(v.fields).filter(([k, val]) => val && k !== 'valor').map(([k, val]) => (v.secret.includes(k) ? `${k}: (definida)` : `${k}: ${val}`));
+        out.push(`- ${v.name} = ${v.secret.includes('valor') ? '(oculto)' : v.value}${fields.length ? ` · ${fields.join(' · ')}` : ''} [${v.source}]`);
+      }
+    }
+    if (scope.blocks.size) {
+      out.push('', 'Blocos de passos — inclua como UM passo na tabela, com a ação "↪ Nome (parâmetro)" (vários: "↪ Nome (p1=x, p2=y)"):');
+      for (const b of scope.blocks.values()) {
+        out.push(`- ↪ ${b.name}${b.params.length ? ` (${b.params.join(', ')})` : ''} [${b.source}]`);
+        b.steps.forEach((st, i) => out.push(`  ${i + 1}. ${st.acao}${st.esperado ? ` → ${st.esperado}` : ''}`));
+      }
+    }
+    if (scope.beforeEach.length) out.push('', 'Antes de cada caso (o app mostra antes do 1º passo de cada caso do escopo — não repita nos casos):', ...scope.beforeEach.map((st) => `- ${resolveText(st.acao, scope)}${st.esperado ? ` → ${resolveText(st.esperado, scope)}` : ''} [${st.source}]`));
+    if (scope.beforeAll.length) out.push('', 'Antes da rodada (uma vez, no painel da rodada):', ...scope.beforeAll.map((st) => `- ${resolveText(st.acao, scope)}${st.esperado ? ` → ${resolveText(st.esperado, scope)}` : ''} [${st.source}]`));
+    if (docText) {
+      const incs: string[] = [];
+      docText.split('\n').forEach((l, i) => {
+        if (!l.includes('↪') || !l.includes('|')) return;
+        for (const c of l.split('|')) {
+          const inc = parseInclude(c);
+          if (!inc) continue;
+          const ex = expandInclude(inc, scope);
+          incs.push(`- linha ${i + 1}: ↪ ${ex.label}${ex.block ? `: ${ex.steps.map((st, k) => `${k + 1}. ${plain(st.acao)}`).join('; ')}` : ' — bloco não encontrado'}${ex.missing.length ? ` (falta ${ex.missing.join(', ')})` : ''}`);
+        }
+      });
+      if (incs.length) out.push('', 'Inclusões neste documento:', ...incs);
+      const w = sharedWarnings(docText, scope);
+      if (w.length) out.push('', 'Avisos:', ...w.map((x) => `- linha ${x.line + 1}: ${x.message}`));
+    }
+    return out.join('\n');
   }
 
   /** Tendência entre rodadas (11.1): % de sucesso por rodada/sprint, casos que mais falham, bugs por mês. */
