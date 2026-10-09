@@ -106,3 +106,25 @@ export function toggleToolbarMode() {
 
 // volta como estava
 if (loadPrefs().focusMode) requestAnimationFrame(() => toggleFocus(true, { silent: true }));
+
+// ---------------------------------------------------------------- cartão do cabeçalho recolhível
+/** Cartão do cabeçalho compacto (padrão): só a linha com tipo · ID · status · prioridade · ambiente · Jira. */
+const fmCompact = () => loadPrefs().fmCompact !== false;
+document.body.classList.toggle('fm-compact', fmCompact());
+// o clique em "▾ mais / ▴ menos" não abre o formulário do cabeçalho
+document.addEventListener('keydown', (event) => {
+  const t = /** @type {HTMLElement} */ (event.target);
+  if ((event.key === 'Enter' || event.key === ' ') && t.closest?.('[data-fm-toggle]')) { event.preventDefault(); event.stopPropagation(); t.click(); }
+}, true);
+for (const type of ['pointerdown', 'mousedown', 'click']) {
+  document.addEventListener(type, (event) => {
+    const t = /** @type {HTMLElement} */ (event.target);
+    if (!t.closest?.('[data-fm-toggle]')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (type !== 'click') return;
+    const next = !fmCompact();
+    savePrefs({ fmCompact: next });
+    document.body.classList.toggle('fm-compact', next);
+  }, true);
+}

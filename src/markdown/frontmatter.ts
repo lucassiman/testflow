@@ -228,7 +228,16 @@ export function renderFrontMatterCard(text: string, opts: { jiraBase?: string } 
       head.push(`<span class="fm-level fm-level-${cls}" title="${FIELD_BY_KEY[k].label}">${FIELD_BY_KEY[k].label}: ${esc(data[k])}</span>`);
     }
   }
-  parts.push(`<div class="fm-head">${head.join('') || '<span class="fm-type">Metadados</span>'}</div>`);
+  // linha compacta (cartão recolhido): o essencial ao lado do status — ambiente e Jira
+  const compact: string[] = [];
+  if (data.ambiente && !Array.isArray(data.ambiente)) compact.push(`<span class="fm-chip fm-compact-only" title="Ambiente">${esc(data.ambiente)}</span>`);
+  for (const k of jiraValues(data.jira).slice(0, 2)) {
+    const url = jiraUrl(k, opts.jiraBase || '');
+    compact.push(url ? `<a class="fm-chip fm-compact-only fm-jira" href="${esc(url)}" target="_blank" rel="noopener" title="Abrir no Jira">${esc(jiraLabel(k))} ↗</a>` : `<span class="fm-chip fm-compact-only">${esc(jiraLabel(k))}</span>`);
+  }
+  // (span: o Preview não aceita <button> dentro do conteúdo)
+  const toggle = '<span class="fm-more" role="button" tabindex="0" data-fm-toggle="1" title="Mostrar / esconder os campos do cabeçalho (vale para todos os documentos)"><span class="fm-more-open">▾ mais</span><span class="fm-more-close">▴ menos</span></span>';
+  parts.push(`<div class="fm-head">${head.join('') || '<span class="fm-type">Metadados</span>'}${compact.join('')}${toggle}</div>`);
   if (data.titulo) parts.push(`<div class="fm-title">${esc(data.titulo)}</div>`);
 
   const skip = new Set(['tipo', 'id', 'uid', 'titulo', 'status', 'prioridade', 'severidade', 'tags', 'qa-md', 'revisao', 'publicado_em', 'publicado_por', 'publicado_hash']);

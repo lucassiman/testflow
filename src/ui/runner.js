@@ -474,7 +474,27 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
 
   // ---------------------------------------------------------------- comum
   /** Redesenha o painel e avisa o editor (estado visível: execução/sessão, prints pendentes). */
-  function render() { renderPanel(); onStateChange?.(); }
+  function render() { renderPanel(); layoutDock(); onStateChange?.(); }
+
+  /** Largura do painel encaixado (px). */
+  /**
+   * Painel encaixado à direita (10.3): com espaço (o Preview tem 1000 px ou mais), o painel deixa de flutuar por cima
+   * da tabela de passos — ocupa uma coluna de 380 px à direita (styles: body.runner-docked) e o documento encolhe.
+   * Em tela estreita (ou com ⧉ Flutuar), flutua.
+   */
+  function layoutDock() {
+    const body = document.body;
+    const pane = document.getElementById('previewPane');
+    const width = pane && pane.offsetParent !== null ? pane.clientWidth : 0; // clientWidth já inclui o espaço reservado (padding)
+    const on = !!mode && !pip && !el.hidden && width >= 1000;
+    body.classList.toggle('runner-docked', on);
+    if (!on || !pane) return;
+    const r = pane.getBoundingClientRect();
+    body.style.setProperty('--dock-top', `${Math.round(r.top)}px`);
+    body.style.setProperty('--dock-bottom', `${Math.round(window.innerHeight - r.bottom)}px`);
+  }
+  window.addEventListener('resize', () => layoutDock());
+
   function renderPanel() {
     if (!mode) { el.hidden = true; highlightRow(null); return; }
     const focused = doc().activeElement;

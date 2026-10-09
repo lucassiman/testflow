@@ -1567,3 +1567,20 @@ body.home-open #fileName, body.home-open #stats, body.home-open #lintStatus { vi
 .cp-fchip[aria-pressed='true'] { border-color: var(--accent); color: var(--text); background: var(--accent-soft); font-weight: 600; }
 .cp-dur { font-size: 9.5px; text-transform: none; letter-spacing: 0; color: var(--muted); font-weight: 400; }
 .cp-empty { color: var(--muted); font-size: 12px; padding: 6px 12px; list-style: none; }
+/* painel de execução encaixado à direita (1.29.0): não cobre mais a tabela de passos */
+body.runner-docked #previewPane { padding-right: 380px; }
+body.runner-docked .runner { top: var(--dock-top, 96px); bottom: var(--dock-bottom, 26px); right: 0; width: 380px; border-radius: 0; border-width: 0 0 0 1px; box-shadow: none; display: flex; flex-direction: column; overflow: auto; }
+body.runner-docked.cp-open .runner { right: 269px; }
+body.runner-docked.cp-mini .runner { right: 45px; }
+body.runner-docked .runner[hidden] { display: none; }
+/* cartão do cabeçalho recolhível (1.29.0) */
+.fm-head { position: relative; }
+.fm-more { margin-left: auto; font: inherit; font-size: 11px; border: 1px solid var(--border); background: var(--panel); color: var(--muted); border-radius: 99px; padding: 1px 8px; cursor: pointer; }
+.fm-more:hover { color: var(--text); border-color: var(--accent); }
+.fm-compact-only, .fm-more-close { display: none; }
+body:not(.fm-compact) .fm-more-close { display: inline; }
+body:not(.fm-compact) .fm-more-open { display: none; }
+body.fm-compact .fm-card .fm-grid, body.fm-compact .fm-card .fm-tags, body.fm-compact .fm-card .fm-note { display: none; }
+body.fm-compact .fm-card .fm-compact-only { display: inline-flex; }
+body.fm-compact .fm-card { padding-top: 8px; padding-bottom: 8px; }
+body.fm-compact .fm-card .fm-title { margin-bottom: 0; }

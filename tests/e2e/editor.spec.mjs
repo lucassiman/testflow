@@ -1007,7 +1007,7 @@ test('links no Preview: anexo abre em outra aba, .md abre no editor — o editor
 test('jira no cabeçalho: chave vira link para o ticket no cartão', async ({ page }) => {
   await page.addInitScript(() => { window.__opened = []; window.open = (u) => { window.__opened.push(String(u)); return null; }; });
   await openEditor(page, { mode: 'preview', doc: '---\ntipo: bug\nid: BUG-001\njira: [QA-123]\n---\n\n# BUG-001\n' });
-  const link = page.locator('#preview .fm-card a.fm-jira');
+  const link = page.locator('#preview .fm-card a.fm-jira:visible'); // cartão compacto (padrão): o chip da linha do topo
   await expect(link).toHaveText('QA-123 ↗');
   await expect(link).toHaveAttribute('href', 'https://ngosolucoes.atlassian.net/browse/QA-123');
   const url = page.url();
