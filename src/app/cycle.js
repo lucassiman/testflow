@@ -7,7 +7,7 @@
 import { app } from './context.js';
 import {
   CYCLE_TYPE, cycleDoc, cycleStart, cycleClosed, cycleProgress, nextCase, syncCycle, closeCycle, caseResult, lastResultBefore, needsFreshRound, cycleTable, isCycle, unexecuted, skipPending, cycleSummary,
-  EXEC_TYPE, isCycleDef, cycleDefDoc, defCases, execInfo, nextExecNumber, syncDefExecutions, applySkipped, applyWhole, cicloOf, execNumber, attachAutomation as attachAutoToText,
+  EXEC_TYPE, isCycleDef, cycleDefDoc, defCases, retestCases, execInfo, nextExecNumber, syncDefExecutions, applySkipped, applyWhole, cicloOf, execNumber, attachAutomation as attachAutoToText,
 } from '../markdown/cycle.ts';
 import { autoSummary } from '../markdown/cycleAuto.ts';
 import { buildAutomationBlock } from '../markdown/automationReport.js';
@@ -826,6 +826,41 @@ export async function runCycle(defPath = '') {
   const dispositivo = readDevice(text);
   // a execução herda do ciclo: vínculos, dispositivo e tags
   await createExecution(cases, def.app || '', `ciclo ${def.titulo || def.name}`, titulo, { ciclo: keyOf(def), numero }, readLinks(text), (t) => (dispositivo ? setDevice(t, dispositivo) : t), headerOf(text).tags);
+}
+
+/**
+ * 🔂 Reteste das falhas (11.1): uma rodada nova só com os casos FAIL/BLOCKED da execução aberta (ou da ativa) — para
+ * validar as correções. Herda app, vínculos, dispositivo e tags (+ reteste); a origem aponta para a execução de antes.
+ * @param {string} [execPath] a execução de origem (omitida: a aberta / ativa)
+ */
+export async function rerunFailed(execPath = '') {
+  const c = execPath ? { path: execPath, text: textAt(execPath) || '' } : currentCycle();
+  if (!c || !c.text || !isCycle(c.text)) { app.toast('Abra uma execução (rodada) para retestar as falhas dela.', 'error'); return; }
+  const fails = retestCases(c.text);
+  const skips = retestCases(c.text, ['SKIP']).length - fails.length;
+  if (!fails.length && !skips) { app.toast('Esta execução não tem casos com FAIL ou BLOCKED — nada para retestar. 🎉'); return; }
+  const h = headerOf(c.text);
+  const e = docIndex.get(c.path);
+  const id = h.id || (e ? keyOf(e) : '');
+  const tituloAtual = e?.titulo || /^#\s+(.+)$/m.exec(c.text)?.[1]?.trim() || '';
+  const nf = fails.length;
+  const res = await showDialog({
+    title: '🔂 Reteste das falhas', icon: '🔂',
+    message: `Cria uma rodada nova só com ${nf ? `os ${nf} caso(s) com FAIL ou BLOCKED` : 'os casos pulados'} de "${tituloAtual || c.path}" — para validar as correções. A rodada de agora não muda.`,
+    buttons: [
+      { id: 'cancel', label: 'Cancelar' },
+      ...(skips ? [{ id: 'skip', label: `Incluir os SKIP também (${nf + skips})` }] : []),
+      ...(nf ? [{ id: 'go', label: `Criar reteste (${nf})`, kind: /** @type {'primary'} */ ('primary') }] : []),
+    ],
+    defaultId: nf ? 'go' : 'skip', cancelId: 'cancel',
+  });
+  if (!res || res.id === 'cancel') return;
+  const cases = res.id === 'skip' ? retestCases(c.text, ['SKIP']) : fails;
+  const base = (tituloAtual || 'Execução').replace(/\s+—\s+Reteste( \d+)?$/i, '');
+  const titulo = `${base} — Reteste`;
+  const dispositivo = readDevice(c.text);
+  await createExecution(cases, e?.app || '', `reteste das falhas de [[${id}]]`, titulo, null, readLinks(c.text),
+    (t) => (dispositivo ? setDevice(t, dispositivo) : t), [...h.tags, 'reteste']);
 }
 
 /** Abre o ciclo (definição) a que esta execução pertence. */

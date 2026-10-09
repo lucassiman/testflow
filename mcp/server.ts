@@ -55,7 +55,7 @@ Como trabalhar:
 - Antes de escrever testware do zero, leia qa_convencoes. Não invente dados, resultados, IDs do Jira nem evidências.
 - Nada é publicado na pasta oficial nem apagado por aqui; o editor aberto percebe a mudança e oferece recarregar.
 - Jira: qa_para_jira devolve o bug pronto (resumo, prioridade, descrição, anexos); depois de criar o ticket com o conector do Jira, grave a chave com qa_atualizar_cabecalho { jira: "CHAVE-123" }.
-- Rodada de regressão: qa_rodada_criar (por segmento — épico, ticket, #tag —, consulta, lista de casos ou ciclo salvo) → qa_rodada_registrar por caso → qa_rodada_status para ver como está → qa_rodada_finalizar (SKIP nos pendentes e os 4 relatórios: encerramento/Go-No-Go, defeitos, rastreabilidade, log + comparativo). qa_relatorios regera.
+- Rodada de regressão: qa_rodada_criar (por segmento — épico, ticket, #tag —, consulta, lista de casos, ciclo salvo, ou reteste: EXEC-… só com as falhas) → qa_rodada_registrar por caso → qa_rodada_status para ver como está → qa_rodada_finalizar (SKIP nos pendentes e os 4 relatórios: encerramento/Go-No-Go, defeitos, rastreabilidade, log + comparativo). qa_relatorios regera.
 - Bug de um caso que já tem bug ligado: qa_bug_do_caso devolve os bugs; pergunte ao usuário se é reincidência (reincidencia: "BUG-…") ou bug novo (novo: true).
 - Segmento = tudo o que nasceu de um épico/ticket/execução/ciclo/#tag (filtro segmento em qa_listar/qa_consultar/qa_validar/qa_rastreabilidade).
 - Qualidade: qa_validar (avisos de QA, links quebrados, evidências faltando) antes de entregar ou publicar; qa_varredura acha documentos antigos sem os vínculos (relate primeiro, aplique só com o OK do usuário).
@@ -200,13 +200,15 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
   }, async (a) => run(() => ws.roundStatus(a.execucao || ''), text));
 
   server.registerTool('qa_rodada_criar', {
-    title: 'Nova rodada de execução', description: 'Cria a execução (rodada) com os casos de um segmento (épico, ticket, #tag, execução anterior), de uma consulta (sintaxe das visões), de uma lista de IDs — combinados, vale a interseção — ou de um ciclo salvo (vira a execução #N dele). A execução herda as tags/épico/ticket/sprint que todos os casos têm (ou os do ciclo) e nasce junto das outras execuções.',
+    title: 'Nova rodada de execução', description: 'Cria a execução (rodada) com os casos de um segmento (épico, ticket, #tag, execução anterior), de uma consulta (sintaxe das visões), de uma lista de IDs — combinados, vale a interseção — ou de um ciclo salvo (vira a execução #N dele) — ou o reteste das falhas de uma execução (reteste: EXEC-…). A execução herda as tags/épico/ticket/sprint que todos os casos têm (ou os do ciclo) e nasce junto das outras execuções.',
     inputSchema: {
       nome: z.string().optional(), casos: z.array(z.string()).optional().describe('IDs dos casos'),
       segmento: z.string().optional().describe('ex.: PORTAL-10, PORTAL-120, #pix, EXEC-20261001-0900'),
       consulta: z.string().optional().describe('ex.: "tags: regressao\napp: Portal\nprioridade: Alta"'),
       ciclo: z.string().optional().describe('ID do ciclo salvo (tipo ciclo-regressao) para executar de novo'),
       app: z.string().optional(), vinculos: z.record(z.string(), z.string()).optional().describe('jira, epico, sprint, plano'),
+      reteste: z.string().optional().describe('ID de uma execução (EXEC-…): cria o reteste só com os casos FAIL/BLOCKED dela (herda vínculos, tags + reteste, dispositivo)'),
+      reteste_skip: z.boolean().optional().describe('com reteste: inclui também os SKIP'),
     }, annotations: RW,
   }, async (a) => run(() => ws.roundCreate(a), text));
 

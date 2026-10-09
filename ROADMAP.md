@@ -172,6 +172,8 @@ Ida e volta pela área de transferência (sem chave de API, nada sai do editor s
 
 ✅ **Feito na 1.12.0 — Dispositivo/ambiente:** substituir/expandir o campo atual *Browser* por **Dispositivo/Ambiente**: WEB, Mobile iOS, Mobile Android, Mobile — Todos; para mobile informar a versão (ex.: Mobile iOS — iOS 18, Mobile Android — Android 15). Deve aparecer nas tags, no cabeçalho do caso, nos modelos de criação de casos e nas informações da execução, para rastrear em que dispositivo/plataforma cada caso foi validado.
 
+**1.33.0 (09/10) — 11.1, parte 1: reteste das falhas.** `retestCases(text, incluir)` em `src/markdown/cycle.ts` (FAIL/BLOCKED da tabela *Casos do ciclo*, + SKIP opcional); `rerunFailed` em `src/app/cycle.js` (diálogo com *Incluir os SKIP*; `createExecution` avulsa com origem `reteste das falhas de [[EXEC]]`, vínculos, dispositivo e tags + `reteste`); botão 🔂 no painel da rodada (com falhas; destacado quando encerrada) e comando na paleta. MCP: `qa_rodada_criar { reteste, reteste_skip }`; skill cita. Testes: `reteste.spec`, `mcpRodada.test`.
+
 **1.32.0 (09/10) — abas em tela pequena e Preview ao abrir (pedidos do uso).** `src/ui/tabs.js`: a barra vira `.tab-strip` (rola por dentro, `scrollbar-width: none` — no Mac a barra sobreposta cobria as abas) + `.tab-tools` (‹ › só com overflow, `⌄ N` lista todas em `.tab-menu`, ＋); abas com `min-width: 128px` encolhem antes de rolar; roda vertical rola na horizontal; esmaecido nas bordas (`ov-left/ov-right`); a ativa é trazida à vista sem `scrollIntoView` (não rola a página). `src/main.js`: preferência `openMode` (`preview` padrão | `ultimo`): o app inicia no Preview e `prepareTab` marca `freshOpen` → `loadDocument` aplica o modo; `doNew` e a nota rápida não forçam mais o Dividido (no Preview, `preview.newBlockAtEnd()`). Os testes de tela usam `openMode: 'ultimo'` (`helpers.mjs`). Teste: `abasMuitas.spec`.
 
 **1.31.0 (09/10) — painel de execução minimizado e cancelar execução (pedido do uso).** `src/ui/runner.js`: `compact` (preferência `runnerCompact`, botão ▁, tecla M; `renderExecMini`/sessão minimizada; minimizado não encaixa — `layoutDock` — e no Document PiP `fitPip` faz `resizeTo` para o tamanho do painel); FAIL/BLOCKED marcado minimizado guarda `lastProblem` e oferece voltar ao passo (expande e foca o obtido). `cancelExec`: guarda o documento ao começar (`cancelBase`; o ciclo passa `base` antes de arquivar a rodada antiga), sem mudanças fecha, com mudanças pede segundo clique e volta o documento (Ctrl+Z refaz), esquece `execRuns` do documento e chama `onCancel` → `cancelCaseStart` (tira o caso de `cycleStarted` e devolve o cursor da rodada). Teste: `painelMini.spec`.
@@ -452,6 +454,58 @@ Ao **🏁 Finalizar execução**, o TestFlow gera 4 documentos em `relatorios/<E
 | **Herança** | Pai → filho: tags somadas e campos vazios preenchidos (épico/história → caso; casos → execução/ciclo; ciclo → execução; execução → relatórios; caso → bug, sem o jira). |
 | **Pasta do épico** | `casos/<ÉPICO>/<TICKET>/` (o épico mora na pasta dele); *Organizar por épico e ticket* arruma o que já existe. Bugs e execuções ficam nas pastas deles. |
 
+### Fase 11 — O que as ferramentas de mercado têm *(planejada em 09/10/2026)*
+
+Levantada comparando com TestRail, Zephyr, Xray, Qase, Testmo e as extensões de captura de bug (Jam, Marker.io, BrowserStack Bug Capture). Esforço: **P** / **M** / **G**. Ordem: 11.1 primeiro (pedido em 09/10); o resto conforme a necessidade.
+
+#### 11.1 — Reaproveitar e acompanhar *(M–G)* — em andamento
+
+| Item | Detalhe | Esforço |
+|---|---|---|
+| **Passos e dados compartilhados** | Como o *beforeEach/beforeAll* da automação: passos e dados (ex.: logins com usuário e senha) definidos uma vez, com **escopo** escolhido (pasta, aplicação, épico/ticket, tags); mais de um parâmetro por caso (ex.: caso com 2 logins); painel lateral com **só as variáveis do escopo** do documento aberto e **copiar rápido** cada dado (e-mail, senha). | G |
+| **Reexecutar só falhas e bloqueados** | ✅ 1.33.0 — A partir de uma rodada, criar outra só com os casos FAIL/BLOCKED (validar correções). | P–M |
+| **Tendência entre rodadas** | % de sucesso por rodada/sprint, bugs abertos × fechados no tempo, casos que mais falham, tempo médio por caso. | M |
+
+#### 11.2 — Escrever casos *(M)*
+
+| Item | Detalhe | Esforço |
+|---|---|---|
+| **Casos com dados (data-driven)** | Uma tabela de dados no caso (usuário A, B, C…): na rodada vira uma execução por linha. | M |
+| **Aprovação do caso** | Rascunho → em revisão → aprovado; só aprovado entra na rodada (opcional). | M |
+| **Versões com comparação** | Ver o que mudou num caso entre versões, lado a lado, e voltar a uma anterior. | M |
+| **Edição em massa** | Selecionar vários casos e mudar prioridade, tags, épico ou responsável de uma vez. | M |
+| **Importação em massa** | De TestRail/Zephyr (CSV) ou Excel com um caso por linha → um documento por caso. | M |
+
+#### 11.3 — Planejar e executar *(M)*
+
+| Item | Detalhe | Esforço |
+|---|---|---|
+| **Matriz de configurações** | Chrome/Safari × Windows/macOS × Mobile: a rodada gera um caso por combinação. | M |
+| **Atribuir casos na rodada** | Cada caso com um testador; "minhas pendências" e carga por pessoa. | M |
+| **Previsão de tempo da rodada** | Quanto falta, pela duração média que cada caso já teve. | P |
+| **Releases / milestones** | Rodadas e planos agrupados por versão do produto, com o progresso da release. | M |
+| **Status personalizados** | Além dos 5 (ex.: *Reteste*, *Falha conhecida*), com cor e regra de contagem. | M |
+
+#### 11.4 — Captura de bug com console e rede *(G — opcional)*
+
+| Item | Detalhe | Esforço |
+|---|---|---|
+| **Extensão opcional do navegador** | Quem quiser instala uma extensão: erros do console, requisições com falha (HAR), URL, navegador, sistema e tamanho da tela entram no bug junto com o print. Liga/desliga nas preferências; **desligada (ou sem a extensão), o fluxo continua exatamente como hoje**. | G |
+| **Replay instantâneo** | Os últimos 30 s – 2 min da tela já gravados, sem ter apertado gravar (depende da extensão). | M |
+
+#### 11.5 — Integrações e acompanhamento *(M–G)*
+
+| Item | Detalhe | Esforço |
+|---|---|---|
+| **Jira pela API** | Criar a issue direto e trazer o status de volta (hoje: copiar/colar e CSV). | M–G |
+| **Reporter ao vivo para o CI** | Playwright/Jest/Cypress mandam o resultado direto para a execução, sem baixar e importar o arquivo. | M |
+| **Testes instáveis** | Marca o teste automatizado que alterna PASS/FAIL entre execuções. | P–M |
+| **Exportar `.feature`** | Cenários BDD como arquivos Gherkin para o repositório da automação. | P |
+| **Avisos automáticos** | Slack/Teams/e-mail quando a rodada termina ou um caso crítico falha (hoje o resumo é copiado à mão). | M |
+| **Link de relatório para o time** | Página para o PO/gerente acompanhar a rodada sem instalar nada. | M |
+
+Fora por ora: papéis, permissões e auditoria (fazem sentido em ferramenta de nuvem com time grande; o TestFlow é local com pasta compartilhada).
+
 ## 4. Ordem sugerida
 
 1. ~~**Colar imagem** (Fase 1)~~ ✅ feito em 24/09 (junto com soltar arquivos de evidência). Pendente na época: redimensionar/miniatura e lembrar a pasta entre sessões (ambos feitos depois: tamanho do print P/M/G e pasta de evidências lembrada por arquivo) (vai junto com "Lembrar arquivos e recentes", Fase 0).
@@ -462,6 +516,8 @@ Ao **🏁 Finalizar execução**, o TestFlow gera 4 documentos em `relatorios/<E
 6. **Tabela de passos interativa + progresso** (Fase 3) — resolve o caso "resultado de teste" que hoje vai para o VS Code.
 7. ~~Depois, conforme a necessidade: execução, automação, devolução.~~ ✅ Fases 3 a 8 concluídas (até 28/09).
 8. **Fase 9** (29/09 em diante): 9.1 Consolidar → 9.2 Ler e navegar → 9.3 Visões e rastreabilidade → 9.4 Regressão e trabalho a dois → 9.5 **MCP local** (1.0). QoL pontuais entram entre as rodadas.
+9. ~~**Fase 10**~~ ✅ concluída na 1.30.0.
+10. **Fase 11** (09/10 em diante): 11.1 primeiro (passos e dados compartilhados, reexecutar falhas, tendência); a captura com console e rede (11.4) depois, como extensão opcional.
 
 ---
 

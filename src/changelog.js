@@ -8,6 +8,12 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.33.0', date: '09/10/2026',
+    items: [
+      { icon: '🔂', text: '**Reteste das falhas**: no painel da rodada (ou na paleta), cria uma rodada nova **só com os casos FAIL/BLOCKED** — para validar as correções. Herda vínculos, dispositivo e tags (+ `reteste`) e aponta a execução de origem; dá para incluir os SKIP também. O Claude faz o mesmo pelo MCP.', manual: '7.8 Ciclo de regressão' },
+    ],
+  },
+  {
     version: '1.32.0', date: '09/10/2026',
     items: [
       { icon: '🗂', text: '**Muitas abas em tela pequena**: a barra de rolagem não fica mais por cima das abas. As abas encolhem até um limite e depois rolam com a roda do mouse ou com **‹ ›**; **⌄ N** lista todas para escolher. A aba ativa sempre fica à vista.', manual: '4. A tela' },

@@ -80,6 +80,15 @@ test('rodada pelo MCP: criar pelo épico, registrar, status, bug com reincidênc
   assert.match(enc, /^plano: PT-1$/m);
   await assert.rejects(ws.roundFinish({}), /nenhuma execução em andamento/);
 
+  // 11.1: reteste só com as falhas (FAIL/BLOCKED) — herda vínculos e tags (+ reteste)
+  const execId = /^id: (EXEC-\S+)$/m.exec(exec)[1];
+  const rt = await ws.roundCreate({ reteste: execId });
+  assert.match(rt, /^Criada: aplicacoes\/Portal\/execucoes\/regressao-pagamentos-reteste\.md .* com 2 caso\(s\): TC-2, TC-3\. Vínculos: epico: PORTAL-10\./);
+  const rtText = readFileSync(join(dir, 'aplicacoes/Portal/execucoes/regressao-pagamentos-reteste.md'), 'utf8');
+  assert.match(rtText, /^tags: \[regressao, pix, reteste\]$/m);
+  assert.match(rtText, new RegExp(`reteste das falhas de \\[\\[${execId}\\]\\]`));
+  assert.doesNotMatch(rtText, /\[\[TC-1\]\]/);
+
   // regerar preserva o aceite escrito
   writeFileSync(encPath, enc.replace('| Aprovado por | |', '| Aprovado por | Maria |'));
   assert.match(await ws.reports(rel), /Relatórios em/);

@@ -4,7 +4,7 @@
  * em andamento e pendente. Clicar num caso abre ele (um concluído abre para revisão e volta para o caso em foco
  * ao concluir). Aparece no ciclo e em qualquer caso dele; recolhe para uma faixa estreita.
  */
-import { cycleChecklist, attachAutomation, editDevice, markWhole, goToCycleCase, nextCycleCase, openCycle, finishCycle, showRoundSummary, skipCycleCase, runCycle, openCycleDef, editLinks } from './cycle.js';
+import { cycleChecklist, attachAutomation, editDevice, markWhole, goToCycleCase, nextCycleCase, openCycle, finishCycle, showRoundSummary, skipCycleCase, runCycle, openCycleDef, editLinks, rerunFailed } from './cycle.js';
 import { loadPrefs, savePrefs } from '../io/drafts.js';
 import { $ } from './shared.js';
 import { openWikiTarget } from './links.js';
@@ -93,6 +93,7 @@ export function refreshCyclePanel() {
       ${data.onCycle ? '<button type="button" class="cp-btn" data-cp="device" title="WEB, Mobile iOS/Android (com a versão) ou Mobile — Todos">📱 Dispositivo</button>' : ''}
       <button type="button" class="cp-btn" data-cp="links" title="Jira, Épico, Sprint… desta execução">🔗 Vínculos</button>
       ${data.ciclo ? `<button type="button" class="cp-btn" data-cp="def" title="Abrir o ciclo &quot;${esc(data.ciclo.titulo)}&quot; (definição e histórico das execuções)">📋 Ciclo</button>` : ''}
+      ${nFail ? `<button type="button" class="cp-btn${data.closed ? ' primary' : ''}" data-cp="retest" title="Cria uma rodada nova só com os casos FAIL/BLOCKED desta — para validar as correções">🔂 Reteste das falhas (${nFail})</button>` : ''}
       ${data.closed && data.ciclo ? '<button type="button" class="cp-btn primary" data-cp="again" title="Cria a próxima execução com os mesmos casos">🔁 Executar de novo</button>' : ''}
       <button type="button" class="cp-btn" data-cp="summary" title="Totais, % de sucesso, duração e falhas da rodada">📊 ${data.closed ? 'Como foi' : 'Como está'}</button>
       <button type="button" class="cp-btn" data-cp="reports" title="Encerramento e Go/No-Go, Defeitos, Rastreabilidade e Log + comparativo — em relatorios/ ao lado da execução (regerar mantém seus comentários)">📑 Relatórios</button>
@@ -121,6 +122,7 @@ el.addEventListener('click', (event) => {
   else if (act === 'whole') markWhole(/** @type {'PASS' | 'FAIL' | 'BLOCKED'} */ (b.dataset.st));
   else if (act === 'links') editLinks({ fromCase: true });
   else if (act === 'linkdoc') { const l = data0()?.links[Number(b.dataset.i)]; if (l?.doc) openWikiTarget(l.doc.path); }
+  else if (act === 'retest') rerunFailed(data0()?.path || '');
   else if (act === 'again') { const ciclo = data0()?.ciclo; if (ciclo) runCycle(ciclo.path); }
   else if (act === 'skip' && b.dataset.key) skipCycleCase(b.dataset.key);
 });

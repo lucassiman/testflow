@@ -26,7 +26,7 @@ Se as ferramentas `qa_*` estiverem disponíveis, a pasta de trabalho do usuário
 - Executar: `qa_marcar_passos` (status/obtido por passo; `concluir: true` registra a rodada), `qa_nova_rodada`, `qa_anexar_evidencia` (arquivo do computador → `evidencias/`).
 - Revisar: `qa_comentar` (comentário de revisão). Ajustar o cabeçalho: `qa_atualizar_cabecalho`.
 - Jira: `qa_para_jira` devolve o bug pronto; crie o ticket com o conector do Jira (se houver) e grave a chave com `qa_atualizar_cabecalho { jira: "CHAVE-123" }`.
-- Rodada de regressão: `qa_rodada_criar` (por `segmento` — épico, ticket, `#tag` —, `consulta`, lista de `casos` ou `ciclo` salvo) → `qa_rodada_registrar` por caso (passos ou o status do caso inteiro) → `qa_rodada_status` → `qa_rodada_finalizar` (confirme antes: SKIP nos pendentes, encerra e gera os 4 relatórios). `qa_relatorios` regera.
+- Rodada de regressão: `qa_rodada_criar` (por `segmento` — épico, ticket, `#tag` —, `consulta`, lista de `casos` ou `ciclo` salvo) → `qa_rodada_registrar` por caso (passos ou o status do caso inteiro) → `qa_rodada_status` → `qa_rodada_finalizar` (confirme antes: SKIP nos pendentes, encerra e gera os 4 relatórios). `qa_relatorios` regera. Reteste só das falhas de uma execução: `qa_rodada_criar { reteste: "EXEC-…" }` (com `reteste_skip: true` soma os SKIP).
 - Bug de um caso que já tem bug ligado: `qa_bug_do_caso` devolve a lista em vez de criar — pergunte se é **reincidência** (`reincidencia: "BUG-…"`, reabre se fechado) ou bug novo (`novo: true`). Achado numa rodada: informe `execucao`.
 - Qualidade e cobertura: `qa_validar` (avisos, links quebrados, evidências faltando — por documento, segmento ou pasta) e `qa_rastreabilidade` (ticket/épico → casos → resultado → bugs). Filtro `segmento` em `qa_listar`/`qa_consultar`.
 - Toda gravação guarda a versão anterior em `.versoes/`; nada é apagado nem publicado. Confirme com o usuário antes de mudanças em muitos documentos.
@@ -188,7 +188,7 @@ Para "como foi a regressão?", "o que falhou?" ou "posso liberar?":
 3. **Falhas agrupadas por causa provável** (mesma tela/serviço/mensagem de erro, mesmo dado, ambiente instável): para cada grupo, os casos, o passo e o obtido, e a evidência que sustenta a hipótese. Diga quando for só hipótese.
 4. **Bugs**: falha sem bug ligado → sugira o bug (`qa_bug_do_caso`, informando `execucao`); se o caso já tinha bug, verifique se é **reincidência** antes de criar outro. Destaque bugs reabertos e os Críticos/Altos ainda abertos.
 5. **Comparativo** com a execução anterior (log/comparativo): regressões (passou a falhar) primeiro, depois os corrigidos e os que continuam falhando.
-6. **Próximos passos**: o que retestar (casos dos bugs corrigidos), o que ficou sem executar (SKIP/BLOCKED com o motivo) e, se houver os tickets da sprint, sugestões de casos de regressão para eles (`qa_rodada_criar { segmento: "<épico ou #tag>" }`).
+6. **Próximos passos**: o que retestar (casos dos bugs corrigidos — ofereça `qa_rodada_criar { reteste: "<EXEC>" }`), o que ficou sem executar (SKIP/BLOCKED com o motivo) e, se houver os tickets da sprint, sugestões de casos de regressão para eles (`qa_rodada_criar { segmento: "<épico ou #tag>" }`).
 
 ## 7. Modelos por tipo
 

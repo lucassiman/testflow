@@ -27,7 +27,7 @@ import { suggestDestination, runDestination, INBOX_DIR, fillApp, fillJira, fillF
 import { inheritHeader, segmentMembers, commonHeader, headerOf } from '../src/markdown/segment.ts';
 import {
   cycleDoc, cycleTable, isCycle, isCycleDef, cycleStart, cycleClosed, syncCycle, caseResult, needsFreshRound, closeCycle, skipPending, cycleSummary,
-  defCases, execNumber, cicloOf, nextExecNumber, cycleProgress, unexecuted, nextCase, execInfo, syncDefExecutions,
+  defCases, execNumber, cicloOf, nextExecNumber, cycleProgress, unexecuted, nextCase, execInfo, syncDefExecutions, retestCases,
 } from '../src/markdown/cycle.ts';
 import type { CaseLookup } from '../src/markdown/cycle.ts';
 import { buildReports, linkReports, REPORT_TYPES } from '../src/markdown/reports.ts';
@@ -772,11 +772,11 @@ export class QaWorkspace {
    * Nova rodada: os casos vêm da lista, de um segmento (épico, ticket, #tag, execução…), de uma consulta (sintaxe das
    * visões) ou de um ciclo salvo (vira a execução #N dele). A execução herda o que os casos têm em comum.
    */
-  roundCreate(o: { nome?: string; casos?: string[]; segmento?: string; consulta?: string; ciclo?: string; app?: string; vinculos?: Record<string, string> }): Promise<string> {
+  roundCreate(o: { nome?: string; casos?: string[]; segmento?: string; consulta?: string; ciclo?: string; app?: string; vinculos?: Record<string, string>; reteste?: string; reteste_skip?: boolean }): Promise<string> {
     return this.exclusive(() => this.roundCreateNow(o));
   }
 
-  private async roundCreateNow(o: { nome?: string; casos?: string[]; segmento?: string; consulta?: string; ciclo?: string; app?: string; vinculos?: Record<string, string> }): Promise<string> {
+  private async roundCreateNow(o: { nome?: string; casos?: string[]; segmento?: string; consulta?: string; ciclo?: string; app?: string; vinculos?: Record<string, string>; reteste?: string; reteste_skip?: boolean }): Promise<string> {
     await this.refresh(true);
     const all = this.index.all();
     const isCaseDoc = (e: DocEntry) => CASE_TYPES.includes(e.tipo);
@@ -784,7 +784,19 @@ export class QaWorkspace {
     let origem = '';
     let link: { ciclo: string; numero: number } | null = null;
     let defText = '';
-    if (o.ciclo) {
+    /** reteste: a execução de origem (herda vínculos, tags, dispositivo) */
+    let retestText = '';
+    let retestTitle = '';
+    if (o.reteste) {
+      const ex = await this.find(o.reteste);
+      retestText = ex.text || '';
+      if (!isCycle(retestText)) throw new Error(`${ex.path} não é uma execução (rodada)`);
+      const cases = retestCases(retestText, o.reteste_skip ? ['SKIP'] : []);
+      if (!cases.length) throw new Error(`${ex.id || ex.path} não tem casos com FAIL ou BLOCKED${o.reteste_skip ? ' (nem SKIP)' : ''} — nada para retestar`);
+      picked = cases.map((c) => this.index.resolve(c.key)).filter((x): x is DocEntry => !!x);
+      origem = `reteste das falhas de [[${ex.id || ex.name.replace(/\.(md|markdown)$/i, '')}]]`;
+      retestTitle = `${String(meta(retestText).titulo || ex.titulo || 'Execução').replace(/\s+—\s+Reteste$/i, '')} — Reteste`;
+    } else if (o.ciclo) {
       const def = await this.find(o.ciclo);
       defText = def.text || '';
       if (!isCycleDef(defText)) throw new Error(`${def.path} não é um ciclo salvo (tipo: ciclo-regressao sem inicio:)`);
@@ -819,17 +831,17 @@ export class QaWorkspace {
     const appName = o.app || (apps.length === 1 ? apps[0] : '');
     // herança: do ciclo (vínculos, tags) ou o que todos os casos têm em comum; vínculos informados valem mais
     const common = commonHeader(picked);
-    const fromDef = defText ? headerOf(defText) : null;
-    const links: Record<string, string[]> = defText ? readLinks(defText) : { ...(common.jira.length ? { jira: common.jira } : {}), ...(common.epico.length ? { epico: common.epico } : {}), ...(common.sprint.length ? { sprint: common.sprint } : {}) };
+    const fromDef = defText ? headerOf(defText) : retestText ? headerOf(retestText) : null;
+    const links: Record<string, string[]> = defText ? readLinks(defText) : retestText ? readLinks(retestText) : { ...(common.jira.length ? { jira: common.jira } : {}), ...(common.epico.length ? { epico: common.epico } : {}), ...(common.sprint.length ? { sprint: common.sprint } : {}) };
     for (const [k, v] of Object.entries(o.vinculos || {})) links[k] = String(v).split(/[,;]+/).map((x) => x.trim()).filter(Boolean);
     const now = new Date();
-    const titulo = o.nome || (link ? `${String(meta(defText).titulo || link.ciclo)} — Execução #${link.numero}` : `Rodada${appName ? ` ${appName}` : ''} — ${now.toLocaleDateString('pt-BR')}`);
+    const titulo = o.nome || retestTitle || (link ? `${String(meta(defText).titulo || link.ciclo)} — Execução #${link.numero}` : `Rodada${appName ? ` ${appName}` : ''} — ${now.toLocaleDateString('pt-BR')}`);
     const start = link && link.numero > 1 ? new Date(Math.ceil((now.getTime() + 1) / 60000) * 60000) : now;
     let text = cycleDoc({
       titulo, app: appName, origem, cases: picked.map((e) => ({ key: e.id || e.name.replace(/\.(md|markdown)$/i, ''), titulo: e.titulo || e.heading || e.name })),
-      start, responsavel: this.opts.who || '', links, tags: fromDef ? fromDef.tags : common.tags, ...(link ? { ciclo: link.ciclo, numero: link.numero } : {}),
+      start, responsavel: this.opts.who || '', links, tags: fromDef ? [...fromDef.tags, ...(retestText ? ['reteste'] : [])] : common.tags, ...(link ? { ciclo: link.ciclo, numero: link.numero } : {}),
     });
-    const dispositivo = defText ? String(meta(defText).dispositivo || '') : '';
+    const dispositivo = defText || retestText ? String(meta(defText || retestText).dispositivo || '') : '';
     if (dispositivo) text = setFrontMatterFields(text, { dispositivo });
     const sibs = all.filter((e) => (e.tipo === 'execucao' || e.tipo === 'relatorio-execucao') && (!appName || (e.app || '').toLowerCase() === appName.toLowerCase())).map((e) => e.path);
     const dir = runDestination({ tipo: 'execucao', app: appName }, this.dirs, sibs).dir;

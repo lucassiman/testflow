@@ -104,7 +104,7 @@ export function cycleDoc(o: { titulo: string; app?: string; versao?: string; ori
 }
 
 export interface CycleRow { line: number; key: string; status: StatusWord | null; cells: string[] }
-interface CycleTable { rows: CycleRow[]; cols: { caso: number; status: number; when: number; bugs: number } }
+interface CycleTable { rows: CycleRow[]; cols: { caso: number; status: number; when: number; bugs: number; titulo: number } }
 
 /** A tabela "Casos do ciclo". */
 export function cycleTable(text: string): CycleTable | null {
@@ -114,7 +114,7 @@ export function cycleTable(text: string): CycleTable | null {
   for (let i = sec.start; i < sec.end - 1; i++) {
     if (!lines[i].includes('|') || !/^\s*\|?\s*:?-{2,}/.test(lines[i + 1])) continue;
     const head = splitRow(lines[i]).map(normHeader);
-    const cols = { caso: head.indexOf('caso'), status: head.findIndex((h) => h === 'status' || h === 'situacao'), when: head.indexOf('executado em'), bugs: head.indexOf('bugs') };
+    const cols = { caso: head.indexOf('caso'), status: head.findIndex((h) => h === 'status' || h === 'situacao'), when: head.indexOf('executado em'), bugs: head.indexOf('bugs'), titulo: head.indexOf('titulo') };
     if (cols.caso < 0 || cols.status < 0) continue;
     const rows: CycleRow[] = [];
     for (let j = i + 2; j < sec.end && lines[j].includes('|') && lines[j].trim(); j++) {
@@ -128,6 +128,25 @@ export function cycleTable(text: string): CycleTable | null {
     return { rows, cols };
   }
   return null;
+}
+
+/**
+ * Reteste (11.1): os casos da execução que terminaram em FAIL ou BLOCKED, na ordem da tabela — para uma rodada nova
+ * só com eles (validar as correções). `incluir` soma outros status (ex.: SKIP).
+ */
+export function retestCases(text: string, incluir: StatusWord[] = []): CycleCase[] {
+  const t = cycleTable(text);
+  if (!t) return [];
+  const want = new Set<StatusWord>(['FAIL', 'BLOCKED', ...incluir]);
+  const seen = new Set<string>();
+  const out: CycleCase[] = [];
+  for (const r of t.rows) {
+    if (!r.status || !want.has(r.status) || seen.has(r.key.toLowerCase())) continue;
+    seen.add(r.key.toLowerCase());
+    const titulo = t.cols.titulo >= 0 ? (r.cells[t.cols.titulo] || '').replace(/\\\|/g, '|').trim() : '';
+    out.push({ key: r.key, titulo: titulo || r.key });
+  }
+  return out;
 }
 
 export interface CaseResult {
