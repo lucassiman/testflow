@@ -1101,6 +1101,14 @@ export class QaWorkspace {
     return this.query(lines.join('\n'));
   }
 
+  /** Tendência entre rodadas (11.1): % de sucesso por rodada/sprint, casos que mais falham, bugs por mês. */
+  async trend(o: { app?: string; sprint?: string; segmento?: string; tags?: string; limite?: number }): Promise<string> {
+    const lines = ['titulo: Tendência entre rodadas', 'formato: tendencia'];
+    for (const k of ['app', 'sprint', 'segmento', 'tags'] as const) if (o[k]) lines.push(`${k}: ${o[k]}`);
+    if (o.limite) lines.push(`limite: ${o.limite}`);
+    return this.query(lines.join('\n'));
+  }
+
   /** Histórico de versões de um documento (.versoes/). */
   async versions(ref: string): Promise<string> {
     const e = await this.find(ref);

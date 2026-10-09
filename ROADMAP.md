@@ -172,6 +172,8 @@ Ida e volta pela área de transferência (sem chave de API, nada sai do editor s
 
 ✅ **Feito na 1.12.0 — Dispositivo/ambiente:** substituir/expandir o campo atual *Browser* por **Dispositivo/Ambiente**: WEB, Mobile iOS, Mobile Android, Mobile — Todos; para mobile informar a versão (ex.: Mobile iOS — iOS 18, Mobile Android — Android 15). Deve aparecer nas tags, no cabeçalho do caso, nos modelos de criação de casos e nas informações da execução, para rastrear em que dispositivo/plataforma cada caso foi validado.
 
+**1.34.0 (09/10) — 11.1, parte 2: tendência entre rodadas.** `src/markdown/trend.ts` (puro: `buildTrend` — rodadas por `cycleSummary` com variação em pp, bugs novos pela `execucao:` do bug ou citados na rodada; sprints; casos pelo Histórico de execuções (`runsOf`, `parseDur`); bugs por mês de `data:`). Visão `formato: tendencia` em `views.ts` (`ViewChart` + tabelas; Markdown com barras de texto) e gráficos em HTML/CSS em `app/views.js` (`chartHtml`, cor por faixa). Pronta *Tendência entre rodadas* (`visoes/tendencia.md`), `openTrend` (paleta e tela inicial). MCP `qa_tendencia`. Testes: `tendencia.test`, `tendencia.spec`.
+
 **1.33.0 (09/10) — 11.1, parte 1: reteste das falhas.** `retestCases(text, incluir)` em `src/markdown/cycle.ts` (FAIL/BLOCKED da tabela *Casos do ciclo*, + SKIP opcional); `rerunFailed` em `src/app/cycle.js` (diálogo com *Incluir os SKIP*; `createExecution` avulsa com origem `reteste das falhas de [[EXEC]]`, vínculos, dispositivo e tags + `reteste`); botão 🔂 no painel da rodada (com falhas; destacado quando encerrada) e comando na paleta. MCP: `qa_rodada_criar { reteste, reteste_skip }`; skill cita. Testes: `reteste.spec`, `mcpRodada.test`.
 
 **1.32.0 (09/10) — abas em tela pequena e Preview ao abrir (pedidos do uso).** `src/ui/tabs.js`: a barra vira `.tab-strip` (rola por dentro, `scrollbar-width: none` — no Mac a barra sobreposta cobria as abas) + `.tab-tools` (‹ › só com overflow, `⌄ N` lista todas em `.tab-menu`, ＋); abas com `min-width: 128px` encolhem antes de rolar; roda vertical rola na horizontal; esmaecido nas bordas (`ov-left/ov-right`); a ativa é trazida à vista sem `scrollIntoView` (não rola a página). `src/main.js`: preferência `openMode` (`preview` padrão | `ultimo`): o app inicia no Preview e `prepareTab` marca `freshOpen` → `loadDocument` aplica o modo; `doNew` e a nota rápida não forçam mais o Dividido (no Preview, `preview.newBlockAtEnd()`). Os testes de tela usam `openMode: 'ultimo'` (`helpers.mjs`). Teste: `abasMuitas.spec`.
@@ -464,7 +466,7 @@ Levantada comparando com TestRail, Zephyr, Xray, Qase, Testmo e as extensões de
 |---|---|---|
 | **Passos e dados compartilhados** | Como o *beforeEach/beforeAll* da automação: passos e dados (ex.: logins com usuário e senha) definidos uma vez, com **escopo** escolhido (pasta, aplicação, épico/ticket, tags); mais de um parâmetro por caso (ex.: caso com 2 logins); painel lateral com **só as variáveis do escopo** do documento aberto e **copiar rápido** cada dado (e-mail, senha). | G |
 | **Reexecutar só falhas e bloqueados** | ✅ 1.33.0 — A partir de uma rodada, criar outra só com os casos FAIL/BLOCKED (validar correções). | P–M |
-| **Tendência entre rodadas** | % de sucesso por rodada/sprint, bugs abertos × fechados no tempo, casos que mais falham, tempo médio por caso. | M |
+| **Tendência entre rodadas** | ✅ 1.34.0 — % de sucesso por rodada/sprint, bugs abertos × fechados no tempo, casos que mais falham, tempo médio por caso. | M |
 
 #### 11.2 — Escrever casos *(M)*
 

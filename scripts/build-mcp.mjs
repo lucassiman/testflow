@@ -59,6 +59,7 @@ const TOOLS = [
   ['qa_relatorios', 'Relatórios de fim de execução (Go/No-Go, defeitos, rastreabilidade, log)'],
   ['qa_validar', 'Avisos de QA, links quebrados e evidências faltando'],
   ['qa_rastreabilidade', 'Ticket/épico → casos → resultado → bugs'],
+  ['qa_tendencia', '% de sucesso por rodada e sprint, casos que mais falham, bugs no tempo'],
   ['qa_ligar', 'Ligar dois documentos ([[link]], ex.: bug órfão ao caso)'],
   ['qa_varredura', 'Documentos antigos sem os vínculos (app, ticket, épico, tags, caso do bug)'],
 ];

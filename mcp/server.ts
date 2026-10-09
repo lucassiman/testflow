@@ -57,6 +57,7 @@ Como trabalhar:
 - Jira: qa_para_jira devolve o bug pronto (resumo, prioridade, descrição, anexos); depois de criar o ticket com o conector do Jira, grave a chave com qa_atualizar_cabecalho { jira: "CHAVE-123" }.
 - Rodada de regressão: qa_rodada_criar (por segmento — épico, ticket, #tag —, consulta, lista de casos, ciclo salvo, ou reteste: EXEC-… só com as falhas) → qa_rodada_registrar por caso → qa_rodada_status para ver como está → qa_rodada_finalizar (SKIP nos pendentes e os 4 relatórios: encerramento/Go-No-Go, defeitos, rastreabilidade, log + comparativo). qa_relatorios regera.
 - Bug de um caso que já tem bug ligado: qa_bug_do_caso devolve os bugs; pergunte ao usuário se é reincidência (reincidencia: "BUG-…") ou bug novo (novo: true).
+- Evolução da qualidade (sprint, % de sucesso no tempo, casos que mais falham): qa_tendencia.
 - Segmento = tudo o que nasceu de um épico/ticket/execução/ciclo/#tag (filtro segmento em qa_listar/qa_consultar/qa_validar/qa_rastreabilidade).
 - Qualidade: qa_validar (avisos de QA, links quebrados, evidências faltando) antes de entregar ou publicar; qa_varredura acha documentos antigos sem os vínculos (relate primeiro, aplique só com o OK do usuário).
 - Escopo dos casos: siga a seção "Nível, tipo e profundidade" de qa_convencoes — gere só o nível pedido (ex.: e2e/UI sem casos de backend/unitários) e diga a premissa quando o pedido não especificar.`;
@@ -254,6 +255,11 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
     title: 'Rastreabilidade', description: 'Matriz requisito (ticket/épico) → casos → último resultado → bugs. Com segmento, só o do épico/ticket/execução.',
     inputSchema: { segmento: z.string().optional(), app: z.string().optional() }, annotations: RO,
   }, async (a) => run(() => ws.traceability(a), text));
+
+  server.registerTool('qa_tendencia', {
+    title: 'Tendência entre rodadas', description: 'Como a qualidade evolui: % de sucesso por rodada (e a variação para a anterior) e por sprint, casos que mais falham no histórico (com o tempo médio) e bugs por mês de abertura (ainda abertos × fechados). Use para o resumo da sprint ou para achar casos instáveis.',
+    inputSchema: { app: z.string().optional(), sprint: z.string().optional(), segmento: z.string().optional(), tags: z.string().optional(), limite: z.number().int().min(1).max(100).optional().describe('últimas N rodadas (padrão 12)') }, annotations: RO,
+  }, async (a) => run(() => ws.trend(a), text));
 
   return server;
 }

@@ -5,6 +5,7 @@ import { TYPE_LABELS, formatValue } from './frontmatter.ts';
 import { statusKind } from './qa.ts';
 import { jiraLabel } from './jiraLink.ts';
 import { VIEW_OPEN, VIEW_CLOSE, findViewBlocks } from './viewBlocks.ts';
+import { buildTrend, monthLabel, durLabel } from './trend.ts';
 
 /**
  * Visões: consultas salvas sobre os documentos da pasta de trabalho (funções puras).
@@ -21,10 +22,10 @@ import { VIEW_OPEN, VIEW_CLOSE, findViewBlocks } from './viewBlocks.ts';
  *
  * Filtros: tipo, app, status, tags, jira, epico, sprint, dispositivo (web, mobile, ios, android), versao, pasta, responsavel, prioridade, texto, execucao, automacao.
  * Listas separadas por vírgula; "!" na frente exclui (status: !PASS).
- * Formatos: lista (padrão) · quadro · cobertura (medida: execucao | automacao) · jira · rastreabilidade.
+ * Formatos: lista (padrão) · quadro · cobertura (medida: execucao | automacao) · jira · rastreabilidade · tendencia (rodadas ao longo do tempo).
  */
 
-export type ViewFormat = 'lista' | 'quadro' | 'cobertura' | 'jira' | 'rastreabilidade';
+export type ViewFormat = 'lista' | 'quadro' | 'cobertura' | 'jira' | 'rastreabilidade' | 'tendencia';
 
 export interface ViewSpec {
   titulo: string;
@@ -69,10 +70,12 @@ export interface ViewDoc {
   lastModified?: number;
   /** última rodada arquivada (### Rodada N — data — STATUS) */
   last?: { round: number; date: string; overall: string } | null;
+  /** texto do documento (a tendência lê as execuções, o histórico dos casos e a data dos bugs) */
+  text?: string;
 }
 
 const FILTER_KEYS = ['segmento', 'tipo', 'app', 'status', 'tags', 'jira', 'epico', 'sprint', 'dispositivo', 'versao', 'pasta', 'responsavel', 'prioridade', 'execucao', 'automacao', 'comentarios'];
-const FORMATS: ViewFormat[] = ['lista', 'quadro', 'cobertura', 'jira', 'rastreabilidade'];
+const FORMATS: ViewFormat[] = ['lista', 'quadro', 'cobertura', 'jira', 'rastreabilidade', 'tendencia'];
 export const VIEW_COLUMNS: Record<string, string> = {
   id: 'ID', titulo: 'Título', tipo: 'Tipo', status: 'Status', app: 'App', prioridade: 'Prioridade', responsavel: 'Responsável',
   jira: 'Jira', tags: 'Tags', progresso: 'Progresso', rodada: 'Última rodada', automacao: 'Automação', pasta: 'Pasta', versao: 'Versão',
@@ -305,6 +308,16 @@ function sortValue(d: ViewDoc, key: string): string | number {
 // ---------------------------------------------------------------- resultado
 export interface ViewCell { text: string; link?: string; badge?: string }
 export interface ViewTable { head: string[]; rows: ViewCell[][]; group?: string }
+export interface ViewChart {
+  title: string;
+  /** '%' (0–100) ou 'n' (contagem) */
+  unit: '%' | 'n';
+  /** séries: uma barra por série em cada ponto (ex.: bugs abertos × fechados) */
+  series: Array<{ name: string; kind?: string }>;
+  /** kind: cor do ponto (sobrepõe a da série — ex.: % de sucesso verde/amarelo/vermelho) */
+  points: Array<{ label: string; values: Array<number | null>; link?: string; hint?: string; kind?: string }>;
+}
+
 export interface ViewResult {
   title: string;
   /** lista/quadro/cobertura/jira/rastreabilidade */
@@ -313,6 +326,8 @@ export interface ViewResult {
   tables: ViewTable[];
   /** quadro: colunas com cartões */
   board?: Array<{ title: string; badge?: string; cards: ViewCell[] }>;
+  /** tendência: gráficos de barras (um ponto por rodada / mês) */
+  charts?: ViewChart[];
   total: number;
   summary: string;
   errors: string[];
@@ -374,6 +389,8 @@ export function runView(spec: ViewSpec, all: ViewDoc[], errors: string[] = []): 
   // o limite vale só para as linhas mostradas (lista/quadro); cobertura, Jira e rastreabilidade contam tudo
   const truncated = (spec.formato === 'lista' || spec.formato === 'quadro') && rows.length > spec.limite;
   if (truncated) rows = rows.slice(0, spec.limite);
+
+  if (spec.formato === 'tendencia') return trendView(spec, docs, rows, base);
 
   if (spec.formato === 'cobertura') {
     const g = spec.agrupar || 'app';
@@ -447,6 +464,71 @@ export function runView(spec: ViewSpec, all: ViewDoc[], errors: string[] = []): 
   return { ...base, tables, summary: `${rows.length} documento(s)${truncated ? ` (primeiros ${spec.limite})` : ''}` };
 }
 
+// ---------------------------------------------------------------- tendência entre rodadas
+const signed = (n: number | null): string => (n === null ? '—' : n > 0 ? `▲ ${n} pp` : n < 0 ? `▼ ${-n} pp` : '= 0 pp');
+const shortDate = (d: Date | null): string => (d ? `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}` : '—');
+
+function trendView(spec: ViewSpec, docs: ViewDoc[], rows: ViewDoc[], base: { title: string; format: ViewFormat; total: number; errors: string[] }): ViewResult {
+  const isExec = (d: ViewDoc): boolean => d.tipo === 'execucao' || d.tipo === 'ciclo-regressao';
+  const ref = (d: ViewDoc) => ({ id: d.id || d.name.replace(/\.(md|markdown)$/i, ''), link: idCell(d).link || '', titulo: d.titulo || d.heading || d.name, text: d.text || '' });
+  const t = buildTrend({
+    execs: rows.filter(isExec).map((d) => ({ ...ref(d), sprint: d.sprint || '' })),
+    cases: rows.filter(isCase).map(ref),
+    bugs: rows.filter(isBug).map((d) => ({ ...ref(d), open: bugOpen(d) })),
+    limite: spec.limite && spec.limite !== 500 ? spec.limite : 12,
+  });
+  const tables: ViewTable[] = [];
+  const charts: ViewChart[] = [];
+  if (t.rounds.length) {
+    charts.push({
+      title: '% de sucesso por rodada', unit: '%', series: [{ name: '% de sucesso', kind: 'pass' }],
+      points: t.rounds.map((r) => ({ label: shortDate(r.inicio).slice(0, 5), values: [r.sucessoPct], link: r.link, kind: r.sucessoPct === null ? undefined : r.sucessoPct >= 90 ? 'pass' : r.sucessoPct >= 70 ? 'blocked' : 'fail', hint: `${r.titulo}: ${r.sucessoPct ?? '—'}% (${r.pass} PASS · ${r.fail} FAIL · ${r.blocked} BLOCKED)` })),
+    });
+    tables.push({
+      group: 'Por rodada', head: ['Rodada', 'Início', 'Sprint', 'Casos', 'PASS', 'FAIL', 'BLOCKED', 'SKIP', '% sucesso', 'Variação', 'Bugs novos', 'Duração'],
+      rows: [...t.rounds].reverse().map((r) => [
+        { text: r.id, link: r.link }, { text: shortDate(r.inicio) }, { text: r.sprint || '—' }, { text: String(r.total) },
+        { text: String(r.pass) }, { text: String(r.fail) }, { text: String(r.blocked) }, { text: String(r.skip) },
+        { text: r.sucessoPct === null ? '—' : `${r.sucessoPct}%`, badge: r.sucessoPct === null ? undefined : r.sucessoPct >= 90 ? 'pass' : r.sucessoPct >= 70 ? 'blocked' : 'fail' },
+        { text: signed(r.deltaPct) }, { text: r.bugsNovos.join(', ') || '0' }, { text: r.encerrada ? durLabel(r.duracaoMs) : 'em andamento' },
+      ]),
+    });
+  }
+  if (t.sprints.length > 1 || (t.sprints.length === 1 && t.rounds.length > 1)) {
+    tables.push({
+      group: 'Por sprint', head: ['Sprint', 'Rodadas', '% sucesso', 'Bugs novos', 'Ainda abertos'],
+      rows: t.sprints.map((s) => [{ text: s.sprint }, { text: String(s.rodadas) }, { text: s.sucessoPct === null ? '—' : `${s.sucessoPct}%` }, { text: String(s.bugsNovos) }, { text: String(s.bugsAbertos) }]),
+    });
+  }
+  if (t.cases.length) {
+    tables.push({
+      group: 'Casos que mais falham', head: ['Caso', 'Título', 'Rodadas', 'FAIL/BLOCKED', 'Taxa de falha', 'Última', 'Tempo médio'],
+      rows: t.cases.map((c) => [{ text: c.id, link: c.link }, { text: c.titulo }, { text: String(c.rodadas) }, { text: String(c.falhas) }, { text: `${c.taxa}%` }, { text: c.ultima ? `${c.ultima} ${shortDate(c.ultimaData)}` : '—', badge: statusKind(c.ultima) || undefined }, { text: durLabel(c.mediaMs) }]),
+    });
+  }
+  if (t.bugMonths.length) {
+    charts.push({
+      title: 'Bugs por mês de abertura', unit: 'n', series: [{ name: 'Ainda abertos', kind: 'fail' }, { name: 'Já fechados', kind: 'pass' }],
+      points: t.bugMonths.map((m) => ({ label: monthLabel(m.mes), values: [m.aindaAbertos, m.fechados], hint: `${monthLabel(m.mes)}: ${m.abertos} aberto(s) no mês — ${m.fechados} já fechado(s), ${m.aindaAbertos} ainda aberto(s)` })),
+    });
+    tables.push({
+      group: 'Bugs por mês de abertura', head: ['Mês', 'Abertos no mês', 'Já fechados', 'Ainda abertos'],
+      rows: [...t.bugMonths].reverse().map((m) => [{ text: monthLabel(m.mes) }, { text: String(m.abertos) }, { text: String(m.fechados) }, { text: String(m.aindaAbertos) }]),
+    });
+  }
+  const withPct = t.rounds.filter((r) => r.sucessoPct !== null);
+  const first = withPct[0];
+  const last = withPct.at(-1);
+  const parts: string[] = [];
+  if (last) parts.push(withPct.length > 1 && first ? `% de sucesso: ${first.sucessoPct}% → ${last.sucessoPct}% em ${withPct.length} rodadas (${signed((last.sucessoPct as number) - (first.sucessoPct as number))})` : `% de sucesso na rodada: ${last.sucessoPct}%`);
+  else parts.push('Nenhuma rodada com casos executados ainda');
+  if (t.cases[0]) parts.push(`caso que mais falha: ${t.cases[0].id} (${t.cases[0].falhas} de ${t.cases[0].rodadas})`);
+  if (t.tempoMedioMs) parts.push(`tempo médio por caso: ${durLabel(t.tempoMedioMs)}`);
+  const open = rows.filter((d) => isBug(d) && bugOpen(d)).length;
+  if (rows.some(isBug)) parts.push(`${open} bug(s) aberto(s)`);
+  return { ...base, total: t.rounds.length, tables, charts, summary: parts.join(' · ') };
+}
+
 // ---------------------------------------------------------------- Markdown (cópia gerada, para ler fora do app)
 const esc = (s: string): string => s.replace(/\|/g, '\\|').replace(/\n/g, ' ');
 
@@ -465,12 +547,24 @@ export function viewMarkdown(r: ViewResult): string {
       out.push(...(col.cards.length ? col.cards.map((c) => `- ${c.link ? `[[${c.link}]] ` : ''}${c.link ? c.text.replace(/^[^—]*— /, '') : c.text}`) : ['- —']), '');
     }
   }
+  // gráficos como barras de texto (legível no GitHub/Notion)
+  for (const c of r.charts || []) {
+    const max = c.unit === '%' ? 100 : Math.max(1, ...c.points.map((p) => p.values.reduce((a: number, v) => a + (v || 0), 0)));
+    out.push(`**${c.title}**${c.series.length > 1 ? ` (${c.series.map((x) => x.name).join(' · ')})` : ''}`, '', '```text');
+    const w = Math.max(...c.points.map((p) => p.label.length));
+    for (const p of c.points) {
+      const tot = p.values.reduce((a: number, v) => a + (v || 0), 0);
+      const bar = '█'.repeat(Math.round((tot / max) * 24));
+      out.push(`${p.label.padEnd(w)}  ${bar.padEnd(24)}  ${p.values[0] === null && p.values.length === 1 ? '—' : c.unit === '%' ? `${p.values[0]}%` : p.values.join(' · ')}`);
+    }
+    out.push('```', '');
+  }
   for (const t of r.tables) {
     if (t.group) out.push(`**${t.group}**`, '');
     if (!t.rows.length) { out.push('_Nenhum documento._', ''); continue; }
     out.push(`| ${t.head.map(esc).join(' | ')} |`, `| ${t.head.map(() => '---').join(' | ')} |`, ...t.rows.map((row) => `| ${row.map(cellMd).join(' | ')} |`), '');
   }
-  if (!r.board && !r.tables.length) out.push('_Nenhum documento._', '');
+  if (!r.board && !r.tables.length && !(r.charts || []).length) out.push(r.format === 'tendencia' ? '_Nenhuma rodada ainda._' : '_Nenhum documento._', '');
   return out.join('\n').trimEnd();
 }
 
@@ -527,6 +621,11 @@ export const VIEW_PRESETS: ViewPreset[] = [
     id: 'automacao', label: 'Cobertura de automação', hint: 'casos com automacao: preenchido, por aplicação', file: 'cobertura-automacao.md',
     text: doc('Cobertura de automação', 'Casos funcionais com o campo `automacao:` preenchido (o spec do teste automatizado), por aplicação.',
       'titulo: Cobertura de automação\nformato: cobertura\nmedida: automacao\ntipo: caso-de-teste, cenario-bdd\nagrupar: app'),
+  },
+  {
+    id: 'tendencia', label: 'Tendência entre rodadas', hint: '% de sucesso por rodada e sprint, casos que mais falham, bugs no tempo', file: 'tendencia.md',
+    text: doc('Tendência entre rodadas', 'Como a qualidade evolui: % de sucesso por rodada (e a variação para a anterior), por sprint, os casos que mais falham no histórico e os bugs por mês de abertura. Para uma aplicação só, preencha `app:`; para as últimas N rodadas, `limite: N`.',
+      'titulo: Tendência entre rodadas\nformato: tendencia\n# app: Portal\n# sprint: Sprint 9\n# limite: 12'),
   },
   {
     id: 'rastreabilidade', label: 'Rastreabilidade (ticket → casos → bugs)', hint: 'para uma versão: o que cada ticket cobre e o que ficou vermelho', file: 'rastreabilidade.md',

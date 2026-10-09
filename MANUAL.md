@@ -723,6 +723,7 @@ Uma **visão** é o equivalente às bases de dados do Notion: uma tabela (ou qua
 | **Cobertura da regressão** | Casos com a tag `regressao`: executados × total, com falha e nunca executados, por aplicação. |
 | **Cobertura de automação** | Casos com `automacao:` preenchido × total, por aplicação. |
 | **Rastreabilidade** | Ticket → casos (com status) → bugs. Descomente `versao: 2.14` para ver o que uma versão cobre e o que ficou vermelho. |
+| **📈 Tendência entre rodadas** | Gráfico da **% de sucesso por rodada** (verde ≥ 90%, amarelo ≥ 70%, vermelho abaixo) e dos **bugs por mês de abertura** (ainda abertos × já fechados); tabelas **por rodada** (PASS/FAIL/BLOCKED/SKIP, variação em pontos para a anterior, bugs novos, duração), **por sprint** e **casos que mais falham** no histórico (rodadas com FAIL/BLOCKED ÷ rodadas, última, tempo médio). Atalho: tela inicial → **📈 Tendência entre rodadas** ou `Ctrl+Shift+P` → *Tendência* (abre a visão; cria em `visoes/` na primeira vez). `app:`, `sprint:`, `tags:` filtram; `limite: N` = últimas N rodadas (padrão 12). Clique numa barra para abrir a rodada. |
 
 **Usar:** clique num ID para abrir o documento (`Ctrl+clique` abre ao lado); a chave do Jira abre o ticket. **📋 Copiar** leva a visão como tabela Markdown (Jira, Notion, e-mail). **↻** redesenha; ela também se atualiza ao salvar qualquer documento.
 
@@ -736,7 +737,7 @@ Uma **visão** é o equivalente às bases de dados do Notion: uma tabela (ou qua
 | `execucao` | `nunca`, `andamento`, `executado`, `com-falha`. |
 | `automacao` | `sim` / `nao` (campo `automacao:` preenchido). |
 | `texto` | Palavra no título, ID ou caminho. |
-| `formato` | `lista` (padrão) · `quadro` (colunas por status) · `cobertura` (com `medida: execucao` ou `automacao`) · `jira` · `rastreabilidade`. |
+| `formato` | `lista` (padrão) · `quadro` (colunas por status) · `cobertura` (com `medida: execucao` ou `automacao`) · `jira` · `rastreabilidade` · `tendencia`. |
 | `agrupar` | `app`, `status`, `tipo`, `execucao`, `responsavel`, `prioridade`, `versao`, `pasta`… (uma tabela por grupo). |
 | `colunas` | `id, titulo, tipo, status, app, prioridade, responsavel, jira, tags, progresso, rodada, automacao, pasta, versao, bugs`. |
 | `ordenar`, `limite` | Coluna (`-` na frente = decrescente: `ordenar: -rodada`); máximo de linhas (padrão 500). |

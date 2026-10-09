@@ -1427,8 +1427,8 @@ test('visões: criar as prontas, ver ao vivo, abrir o caso pela visão; cópia g
   await page.keyboard.type('Nova visão');
   await page.keyboard.press('Enter');
   await page.locator('.cmd-menu .cmd-item', { hasText: 'Todas as prontas' }).click();
-  await expect(page.locator('#toast')).toContainText('5 visões criadas em visoes/');
-  expect(await page.evaluate(() => window.__ls('visoes'))).toEqual(['casos-nao-executados.md', 'cobertura-automacao.md', 'cobertura-regressao.md', 'rastreabilidade.md', 'tickets-em-teste.md']);
+  await expect(page.locator('#toast')).toContainText('6 visões criadas em visoes/');
+  expect(await page.evaluate(() => window.__ls('visoes'))).toEqual(['casos-nao-executados.md', 'cobertura-automacao.md', 'cobertura-regressao.md', 'rastreabilidade.md', 'tendencia.md', 'tickets-em-teste.md']);
   // a última criada está aberta: rastreabilidade
   await expect(page.locator('#fileName')).toContainText('rastreabilidade');
   const view = page.locator('#preview .qa-view');

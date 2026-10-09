@@ -10,7 +10,7 @@ import { jiraUrl } from '../markdown/jiraLink.ts';
 import { parseView, runView, viewMarkdown, syncViewSnapshots, findViewBlocks, VIEW_PRESETS, viewFromFilters } from '../markdown/views.ts';
 import { VIEWS_DIR } from '../markdown/structure.ts';
 import { createDocIn } from './templates.js';
-import { openDocOverrides } from './links.js';
+import { openDocOverrides, openWikiTarget } from './links.js';
 import { JIRA_BASE, docIndex, menu, errMsg } from './shared.js';
 
 /** @typedef {import('../markdown/views.ts').ViewDoc} ViewDoc */
@@ -73,8 +73,27 @@ function viewHtml(src, docs) {
   const tables = r.tables.map((t) => `${t.group ? `<div class="qa-view-group">${esc(t.group)}</div>` : ''}${t.rows.length
     ? `<table class="qa-view-table"><thead><tr>${t.head.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${t.rows.map((row) => `<tr>${row.map((c) => `<td>${cellHtml(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`
     : '<p class="qa-view-note">Nenhum documento com esses filtros.</p>'}`).join('');
-  const empty = !r.board && !r.tables.length ? '<p class="qa-view-note">Nenhum documento com esses filtros.</p>' : '';
-  return head + errs + board + tables + empty;
+  const charts = (r.charts || []).map(chartHtml).join('');
+  const empty = !r.board && !r.tables.length && !charts ? `<p class="qa-view-note">${r.format === 'tendencia' ? 'Nenhuma rodada (execução) com esses filtros ainda.' : 'Nenhum documento com esses filtros.'}</p>` : '';
+  return head + errs + board + (charts ? `<div class="qa-charts">${charts}</div>` : '') + tables + empty;
+}
+
+/**
+ * Gráfico de barras da tendência (HTML/CSS, acompanha o tema): uma coluna por ponto, empilhada quando há mais de uma série.
+ * @param {import('../markdown/views.ts').ViewChart} c
+ */
+function chartHtml(c) {
+  const totals = c.points.map((p) => p.values.reduce((/** @type {number} */ a, v) => a + (v || 0), 0));
+  const max = c.unit === '%' ? 100 : Math.max(1, ...totals);
+  const legend = c.series.length > 1 ? `<div class="qa-chart-legend">${c.series.map((x) => `<span><i class="qa-bar-${esc(x.kind || 'n')}"></i>${esc(x.name)}</span>`).join('')}</div>` : '';
+  const cols = c.points.map((p, i) => {
+    const label = c.unit === '%' ? (p.values[0] === null ? '—' : `${p.values[0]}%`) : String(totals[i]);
+    const segs = p.values.map((v, k) => (v ? `<span class="qa-bar qa-bar-${esc(p.kind || c.series[k]?.kind || 'n')}" style="height:${Math.max(2, Math.round(((v || 0) / max) * 100))}%"></span>` : '')).join('');
+    const x = p.link ? `<a class="wikilink qa-chart-x" data-wikilink="${esc(p.link)}" href="#">${esc(p.label)}</a>` : `<span class="qa-chart-x">${esc(p.label)}</span>`;
+    return `<div class="qa-chart-col" title="${esc(p.hint || `${p.label}: ${label}`)}"><span class="qa-chart-v">${esc(label)}</span><div class="qa-chart-bars">${segs}</div>${x}</div>`;
+  }).join('');
+  const aria = `${c.title}: ${c.points.map((p, i) => `${p.label} ${c.unit === '%' ? (p.values[0] ?? '—') + '%' : totals[i]}`).join(', ')}`;
+  return `<figure class="qa-chart"><figcaption>${esc(c.title)}</figcaption>${legend}<div class="qa-chart-plot${c.unit === '%' ? ' pct' : ''}" role="img" aria-label="${esc(aria)}">${cols}</div></figure>`;
 }
 
 /**
@@ -166,4 +185,17 @@ export async function saveFiltersAsView(filters) {
   const slug = filters.titulo.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'visao';
   const path = await createDocIn(VIEWS_DIR, viewFromFilters(filters), `${slug}.md`);
   if (path) app.toast(`Visão salva: ${path} — ela se atualiza sozinha com a pasta`);
+}
+
+/**
+ * 📈 Tendência entre rodadas (11.1): abre a visão de tendência da pasta (a primeira com `formato: tendencia`)
+ * ou cria a pronta em visoes/.
+ */
+export async function openTrend() {
+  if (!app.workspaceDir) { app.toast('Abra a pasta de trabalho primeiro (☰ → Arquivos → Abrir…): a tendência lê as execuções da pasta.', 'error'); return; }
+  if (!docIndex.ready) { app.toast('Ainda lendo os documentos da pasta… tente de novo em instantes.'); return; }
+  const found = docIndex.all().find((e) => e.text && findViewBlocks(e.text).some((b) => /^\s*formato:\s*tendencia\s*$/m.test(b.src)));
+  if (found) { await openWikiTarget(found.path, { entry: found }); return; }
+  const p = VIEW_PRESETS.find((x) => x.id === 'tendencia');
+  if (p && await createDocIn(VIEWS_DIR, p.text, p.file)) app.toast(`📈 Visão "Tendência entre rodadas" criada em ${VIEWS_DIR}/ — ela se atualiza sozinha com as rodadas da pasta.`);
 }

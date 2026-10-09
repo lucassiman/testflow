@@ -108,6 +108,7 @@ export function createHome(actions) {
             <button type="button" data-home-cmd="quickNote">📝 Nota rápida</button>
             <button type="button" data-home-cmd="newFromTemplate">🧩 Outro documento…</button>
             ${ws ? '<button type="button" data-home-cmd="dashboard">📊 Painel da pasta</button>' : ''}
+            ${ws ? '<button type="button" data-home-cmd="trend">📈 Tendência entre rodadas</button>' : ''}
           </div>
         </section>
         ${pinned.length || recents.length ? `<section class="home-card">

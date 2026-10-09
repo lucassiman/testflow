@@ -8,6 +8,12 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.34.0', date: '09/10/2026',
+    items: [
+      { icon: '📈', text: '**Tendência entre rodadas**: gráfico da % de sucesso por rodada e dos bugs por mês (abertos × fechados), tabelas por rodada (com a variação para a anterior), por sprint e os **casos que mais falham** no histórico, com o tempo médio. Tela inicial → 📈 ou paleta → *Tendência*. O Claude lê pelo MCP (`qa_tendencia`).', manual: '11.1 Visões' },
+    ],
+  },
+  {
     version: '1.33.0', date: '09/10/2026',
     items: [
       { icon: '🔂', text: '**Reteste das falhas**: no painel da rodada (ou na paleta), cria uma rodada nova **só com os casos FAIL/BLOCKED** — para validar as correções. Herda vínculos, dispositivo e tags (+ `reteste`) e aponta a execução de origem; dá para incluir os SKIP também. O Claude faz o mesmo pelo MCP.', manual: '7.8 Ciclo de regressão' },
