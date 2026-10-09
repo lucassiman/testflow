@@ -79,9 +79,10 @@ const CARET = '<span class="side-caret" aria-hidden="true"><svg viewBox="0 0 16 
  *   onOfficial?: () => unknown,
  *   onOfficialUpdate?: () => unknown,
  *   mark?: (path: string) => { key: string, icon: string, title: string } | null,
+ *   label?: (path: string) => { id: string, titulo: string, status: string } | null,
  * }} deps
  */
-export function createSidebar({ root, onOpenFile, onOpenRecent, onRemoveRecent, onPickWorkspace, onUnlockWorkspace, onRefresh, onOutlineClick, onTabChange, onOpenLink, onOpenWorkspace, onRemoveWorkspace, onSearch, onOpenHit, onDashboard, onEntryAction, onMoveEntry, onTrashAction, suggest, onOfficial, onOfficialUpdate, mark }) {
+export function createSidebar({ root, onOpenFile, onOpenRecent, onRemoveRecent, onPickWorkspace, onUnlockWorkspace, onRefresh, onOutlineClick, onTabChange, onOpenLink, onOpenWorkspace, onRemoveWorkspace, onSearch, onOpenHit, onDashboard, onEntryAction, onMoveEntry, onTrashAction, suggest, onOfficial, onOfficialUpdate, mark, label }) {
   root.innerHTML = `
     <div class="side-tabs" role="tablist">
       <button type="button" role="tab" data-tab="files" aria-selected="true">Arquivos</button>
@@ -92,7 +93,7 @@ export function createSidebar({ root, onOpenFile, onOpenRecent, onRemoveRecent, 
     <div class="side-panel" data-panel="files">
     <section class="side-section side-ws">
       <div class="side-head">
-        <span class="side-title">Pasta de trabalho</span>
+        <span class="side-title side-title-ws" title="Pasta de trabalho">Pasta</span>
         <button type="button" data-side="dashboard" title="Painel da pasta: todos os documentos com status, progresso, tags e filtros">📊 Painel</button>
         <button type="button" data-side="toggleAll" title="Recolher todas as pastas" aria-label="Recolher todas as pastas">⊟</button>
         <button type="button" data-side="refresh" title="Atualizar a lista">↻</button>
@@ -284,7 +285,7 @@ export function createSidebar({ root, onOpenFile, onOpenRecent, onRemoveRecent, 
     if (!list.length) return '';
     return `<li class="side-pins-head"><span>★ Fixados</span></li>`
       + list.map((x) => `<li class="side-row side-pin-row"><button type="button" class="side-item side-file side-pinned${isCurrent(x.name, `${wsName}/${x.path}`) ? ' current' : ''}" data-ws-index="${files.indexOf(x)}" data-ws-path="${esc(x.path)}" style="--depth:0" title="${esc(x.path)}">
-          <span class="side-name">${esc(x.name.replace(/\.(md|markdown)$/i, ''))}</span><span class="side-path">${esc(x.path.split('/').slice(0, -1).join('/') || '/')}</span>${fileMark(x.path)}</button><button type="button" class="side-unpin" data-unpin="${esc(x.path)}" title="Desafixar" aria-label="Desafixar">★</button></li>`).join('')
+          ${fileLabel(x)}</span><span class="side-path">${esc(x.path.split('/').slice(0, -1).join('/') || '/')}</span>${fileMark(x.path)}</button><button type="button" class="side-unpin" data-unpin="${esc(x.path)}" title="Desafixar" aria-label="Desafixar">★</button></li>`).join('')
       + '<li class="side-pins-sep" aria-hidden="true"></li>';
   }
   /** @type {Links} */
@@ -319,6 +320,28 @@ export function createSidebar({ root, onOpenFile, onOpenRecent, onRemoveRecent, 
   function fileMark(path) {
     const m = mark?.(path);
     return m ? `<span class="side-mark side-mark-${esc(m.key)}" title="${esc(m.title)}">${esc(m.icon)}</span>` : '';
+  }
+
+  const STATUS_TIP = /** @type {Record<string, string>} */ ({ PASS: 'PASS', FAIL: 'FAIL', BLOCKED: 'BLOCKED', SKIP: 'SKIP', PENDING: 'não executado / pendente' });
+  /**
+   * Nome na árvore: "ID · título" do cabeçalho (com a bolinha do status) — ou o nome do arquivo, se o documento não
+   * tiver ID/título ou a preferência for "nome do arquivo". O nome do arquivo fica na dica.
+   * @param {{ name: string, path: string }} f
+   */
+  function fileLabel(f) {
+    const plain = esc(f.name.replace(/\.(md|markdown)$/i, ''));
+    const info = label?.(f.path);
+    const dot = info?.status && STATUS_TIP[info.status] ? `<span class="side-dot side-dot-${info.status.toLowerCase()}" title="${esc(STATUS_TIP[info.status])}" aria-label="${esc(STATUS_TIP[info.status])}"></span>` : '<span class="side-dot side-dot-none" aria-hidden="true"></span>';
+    if (!info || (!info.id && !info.titulo)) return `${dot}<span class="side-name">${plain}`;
+    const title = info.titulo && info.titulo !== info.id ? info.titulo : '';
+    return `${dot}<span class="side-name">${info.id ? `<b class="side-id">${esc(info.id)}</b>` : ''}${info.id && title ? ' <span class="side-sep">·</span> ' : ''}${esc(title)}`;
+  }
+
+  /** Dica do arquivo: "ID — título" e o caminho. @param {{ path: string }} f */
+  function fileTip(f) {
+    const info = label?.(f.path);
+    const head = info && (info.id || info.titulo) ? `${[info.id, info.titulo].filter(Boolean).join(' — ')}${info.status ? ` (${info.status})` : ''}\n` : '';
+    return `${head}${f.path}`;
   }
 
   function drawFiles() {
@@ -420,8 +443,8 @@ export function createSidebar({ root, onOpenFile, onOpenRecent, onRemoveRecent, 
       const files = node.files.slice().sort((a, b) => COLLATOR.compare(a.name, b.name));
       for (const f of files) {
         if (rows++ > 1500) return;
-        out.push(`<li class="side-row"><button type="button" class="side-item side-file${isCurrent(f.name, `${wsName}/${f.path}`) ? ' current' : ''}" data-ws-index="${indexOf.get(f) ?? -1}" data-ws-path="${esc(f.path)}" draggable="true" style="--depth:${depth}" title="${esc(f.path)} — arraste para uma pasta para mover · F2 renomeia">
-          <span class="side-name">${esc(f.name.replace(/\.(md|markdown)$/i, ''))}${isPinned(f.path) ? ' <span class="side-star" title="Fixado no topo">★</span>' : ''}</span>${fileMark(f.path)}</button><button type="button" class="side-more" data-more tabindex="-1" title="Renomear, mover, lixeira" aria-label="Mais ações">⋯</button></li>`);
+        out.push(`<li class="side-row"><button type="button" class="side-item side-file${isCurrent(f.name, `${wsName}/${f.path}`) ? ' current' : ''}" data-ws-index="${indexOf.get(f) ?? -1}" data-ws-path="${esc(f.path)}" draggable="true" style="--depth:${depth}" title="${esc(fileTip(f))} — arraste para uma pasta para mover · F2 renomeia">
+          ${fileLabel(f)}${isPinned(f.path) ? ' <span class="side-star" title="Fixado no topo">★</span>' : ''}</span>${fileMark(f.path)}</button><button type="button" class="side-more" data-more tabindex="-1" title="Renomear, mover, lixeira" aria-label="Mais ações">⋯</button></li>`);
       }
     };
     /** posição de cada arquivo (evita indexOf por linha: árvore grande) */
@@ -476,14 +499,16 @@ export function createSidebar({ root, onOpenFile, onOpenRecent, onRemoveRecent, 
   // Recentes recolhível: a árvore da pasta de trabalho ganha a altura toda
   const RECENTS_KEY = 'mdqa:recentsCollapsed';
   let recentsCollapsed = false;
-  try { recentsCollapsed = localStorage.getItem(RECENTS_KEY) === '1'; } catch { /* sem armazenamento */ }
-  /** @param {boolean} on */
-  function setRecentsCollapsed(on) {
+  /** o usuário ainda não escolheu: recolhe sozinho quando há pasta de trabalho aberta (a árvore ganha o espaço) */
+  let recentsAuto = true;
+  try { const v = localStorage.getItem(RECENTS_KEY); recentsAuto = v === null; recentsCollapsed = v === '1'; } catch { /* sem armazenamento */ }
+  /** @param {boolean} on @param {boolean} [byUser] */
+  function setRecentsCollapsed(on, byUser = false) {
     recentsCollapsed = on;
     const sec = /** @type {HTMLElement} */ (root.querySelector('.side-recents'));
     sec.classList.toggle('collapsed', on);
     q('recentsToggle').setAttribute('aria-expanded', String(!on));
-    try { localStorage.setItem(RECENTS_KEY, on ? '1' : '0'); } catch { /* sem armazenamento */ }
+    if (byUser) { recentsAuto = false; try { localStorage.setItem(RECENTS_KEY, on ? '1' : '0'); } catch { /* sem armazenamento */ } }
   }
   setRecentsCollapsed(recentsCollapsed);
 
@@ -501,7 +526,7 @@ export function createSidebar({ root, onOpenFile, onOpenRecent, onRemoveRecent, 
     const near = (sel) => /** @type {HTMLElement | null} */ (t.closest(sel));
     const tabBtn = near('[data-tab]');
     if (tabBtn) return setTab(tabBtn.dataset.tab || 'files');
-    if (near('[data-side="recentsToggle"]')) { setRecentsCollapsed(!recentsCollapsed); return; }
+    if (near('[data-side="recentsToggle"]')) { setRecentsCollapsed(!recentsCollapsed, true); return; }
     const rt = near('[data-recent-tab]');
     if (rt) {
       root.querySelectorAll('[data-recent-tab]').forEach((b) => b.setAttribute('aria-selected', String(b === rt)));
@@ -781,6 +806,7 @@ export function createSidebar({ root, onOpenFile, onOpenRecent, onRemoveRecent, 
       wsLoading = loading;
       wsProgress = progress;
       locked = needsUnlock ? name : null;
+      if (recentsAuto) setRecentsCollapsed(!!name && !needsUnlock);
       q('newFolder').hidden = !name || needsUnlock;
       q('official').hidden = !name;
       if (!name) q('officialUpdate').hidden = true;

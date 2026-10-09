@@ -40,7 +40,10 @@ test('árvore, de onde é o documento (📍) e evidências do documento', async 
   await expect(folder).not.toHaveClass(/open/);
   await expect(tree.getByRole('button', { name: 'TC-1-login', exact: true })).toHaveCount(0);
   await expect(folder.locator('.side-holds')).toBeVisible();
-  // Recentes recolhe (e lembra)
+  // Recentes: com a pasta de trabalho aberta já vem recolhido (1.24.0); abre e recolhe de novo (e lembra)
+  await expect(page.locator('.side-recents')).toHaveClass(/collapsed/);
+  await page.click('[data-side="recentsToggle"]');
+  await expect(page.locator('.side-recents')).not.toHaveClass(/collapsed/);
   await page.click('[data-side="recentsToggle"]');
   await expect(page.locator('.side-recents')).toHaveClass(/collapsed/);
   await expect(page.locator('[data-side="recentList"]')).toBeHidden();

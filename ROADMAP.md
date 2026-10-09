@@ -172,6 +172,8 @@ Ida e volta pela área de transferência (sem chave de API, nada sai do editor s
 
 ✅ **Feito na 1.12.0 — Dispositivo/ambiente:** substituir/expandir o campo atual *Browser* por **Dispositivo/Ambiente**: WEB, Mobile iOS, Mobile Android, Mobile — Todos; para mobile informar a versão (ex.: Mobile iOS — iOS 18, Mobile Android — Android 15). Deve aparecer nas tags, no cabeçalho do caso, nos modelos de criação de casos e nas informações da execução, para rastrear em que dispositivo/plataforma cada caso foi validado.
 
+**1.24.0 (08/10) — 10.3, parte 1: árvore e avisos.** Árvore com **ID · título** e bolinha de status (`treeLabel` em `src/app/docState.js`, opção `label` do `createSidebar`; preferência `treeLabels: titulo|arquivo`, comando na paleta; os testes de tela usam `arquivo` por padrão em `helpers.mjs`); dica do arquivo com ID — título (status) + caminho; árvore redesenha ao salvar (status muda). Recentes recolhe sozinho com pasta aberta até o usuário escolher. Sem os avisos "Aberto: …" e "Pasta de trabalho: …" (fica só o "de volta onde você parou"); dica do rodapé só nas 5 primeiras sessões (`hintSessions`).
+
 **1.23.0 (08/10) — escopo dos casos e varredura de vínculos** (pedido do Lucas). Skill `qa-markdown` §6.0 *Nível, tipo e profundidade* (e2e/API/unitário/negócio · smoke/sanity/regressão/funcional/exploratório/não funcional · enxuto/padrão/completo com técnicas ISTQB; padrão = caixa-preta do QA, sem backend/unitário, premissa declarada, tags de nível/tipo) — também em `CONVENCOES-QA.md` §8 (o `qa_convencoes` do MCP entrega). `src/markdown/sweep.ts` (`sweepLinks`, `applySweep`, `sweepReport`): achados com confiança certo/provável/confirmar; MCP `qa_varredura` (relata; `aplicar: certo|provavel` só preenche vazios e soma tags) e `qa_ligar`; skill nova `qa-varredura` (`scripts/skill-varredura.md`, gerada por `npm run skill`).
 
 **1.22.0 (08/10) — Fase 10.4: Claude no fluxo do QA.** MCP (`mcp/qa.ts`, `mcp/server.ts`): `qa_rodada_status`, `qa_rodada_criar` (segmento/consulta/casos — interseção — ou ciclo salvo → execução #N; herança via `commonHeader`/`headerOf`; `runDestination`), `qa_rodada_registrar` (passos no caso com `needsFreshRound`→`newRound` e `logRun` quando todos marcados; ou status do caso inteiro na execução; observação vira comentário), `qa_rodada_finalizar` (`skipPending`+`closeCycle`, atualiza a tabela Execuções do ciclo, relatórios), `qa_relatorios` (`buildReports`/`linkReports`, aceite lido do disco), `qa_validar` (lint + `findBrokenLinks` + evidência faltando + cabeçalho), `qa_rastreabilidade` (visão `formato: rastreabilidade` + `segmento:`); `qa_bug_do_caso` com `reincidencia`/`novo`/`execucao`. Skill: §6.1 do requisito ao caso, §6.2 checklist de revisão, §6.3 analisar a rodada; herança na §Como entregar.
@@ -401,7 +403,7 @@ Ao **🏁 Finalizar execução**, o TestFlow gera 4 documentos em `relatorios/<E
 | **Rastreabilidade e cobertura** | História/épico/ticket (`jira:`, `epico:`) → casos → resultado nesta rodada → bugs; o que ficou **sem caso**, **sem executar** ou **só automatizado**; cobertura de automação. | M |
 | **Log + comparativo** | Log cronológico (caso, início, fim, duração, quem, dispositivo) e **comparação com a execução anterior do mesmo ciclo**: passou a falhar (regressão), foi corrigido, continua falhando, novo. | M |
 
-#### 10.3 — Interface e navegação *(M–G, em versões pequenas)*
+#### 10.3 — Interface e navegação *(M–G, em versões pequenas)* — em andamento: 1.24.0 árvore e avisos
 
 | Item | Detalhe | Esforço |
 |---|---|---|

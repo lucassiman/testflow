@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.24.0', date: '08/10/2026',
+    items: [
+      { icon: '🌳', text: '**Árvore mais legível**: cada documento aparece como **ID · título** (em vez do nome do arquivo cortado), com uma **bolinha de status** (PASS, FAIL, BLOCKED, não executado). O nome do arquivo fica na dica; a paleta alterna de volta.', manual: '10.' },
+      { icon: '🔕', text: 'Menos avisos de rotina: abrir um arquivo ou a pasta de trabalho não mostra mais aviso; a dica do rodapé some depois das primeiras sessões. **Recentes** já vem recolhido quando há pasta aberta.', manual: '10.' },
+    ],
+  },
+  {
     version: '1.23.0', date: '08/10/2026',
     items: [
       { icon: '🎯', text: '**Escopo dos casos no Claude**: diga o nível (e2e, API, unitário, negócio), o tipo (smoke, regressão, funcional, acessibilidade…) e a profundidade (enxuto, padrão, completo). Sem indicação, ele fica no que é do QA (caixa-preta, sem casos de backend/unitário) e diz a premissa.', manual: '12.6' },

@@ -882,7 +882,7 @@ button { font: inherit; color: inherit; }
 .side-recents.collapsed .side-head { margin-bottom: 0; }
 .side-folder .side-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .side-folder .side-count { font-weight: 400; font-size: 11px; color: var(--muted); background: var(--bg-soft); border-radius: 99px; padding: 0 6px; }
-.side-item.side-file { padding-left: calc(30px + var(--depth, 0) * 16px); }
+.side-item.side-file { padding-left: calc(18px + var(--depth, 0) * 16px); }
 /* organizar: ⋯, arrastar e soltar, lixeira */
 .side-tree .side-row { position: relative; }
 .side-more {
@@ -1487,3 +1487,15 @@ button { font: inherit; color: inherit; }
 a.cp-chip, button.cp-chip { cursor: pointer; color: var(--accent); }
 button.cp-chip { font: inherit; font-size: 11px; }
 .rs-links { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+
+/* árvore: ID · título com a bolinha do status (1.24.0) */
+.side-tree .side-file .side-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; background: transparent; }
+.side-dot-pass { background: #1a7f37 !important; }
+.side-dot-fail { background: #cf222e !important; }
+.side-dot-blocked { background: #bf8700 !important; }
+.side-dot-skip { background: #8c959f !important; }
+.side-dot-pending { background: transparent !important; box-shadow: inset 0 0 0 1.5px #8c959f; }
+.side-id { font-weight: 600; font-variant-numeric: tabular-nums; }
+.side-sep { color: var(--muted); }
+.side-item.current .side-id { color: var(--accent); }
+.side-pin-row .side-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }

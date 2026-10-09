@@ -70,7 +70,7 @@ import { pendingIdChange, prepareSave, afterSave, checkOutsideRenames } from './
 import { updateDocPlace, placeMenu, placeTabMark, askDiskRoot } from './app/place.js';
 import { snapshotRanges, parseSearch, viewMatches } from './markdown/views.ts';
 import { openSide, pickSide, closeSide, refreshSide } from './app/sideDoc.js';
-import { refreshDocState, tabMarks, treeMark } from './app/docState.js';
+import { refreshDocState, tabMarks, treeMark, treeLabel } from './app/docState.js';
 import { hintAfterRender, hintRunner, hintTree } from './app/hints.js';
 import { captureFiles, captureToDocument, capturer, toggleRecording } from './app/capture.js';
 import { showWhatsNew, changesSince } from './ui/whatsNew.js';
@@ -104,6 +104,9 @@ const APP_NAME = typeof __APP_NAME__ !== 'undefined' ? __APP_NAME__ : 'TestFlow'
 const MODES = ['raw', 'split', 'preview'];
 
 const prefs = loadPrefs();
+/** Sessões em que o rodapé ainda mostra a dica de edição. */
+const HINT_SESSIONS = 5;
+savePrefs({ hintSessions: (prefs.hintSessions || 0) + 1 });
 let mode = MODES.includes(prefs.mode) ? prefs.mode : (window.innerWidth < 800 ? 'preview' : 'split');
 /** @type {'raw'|'preview'} */
 let lastFocus = 'raw';
@@ -313,6 +316,7 @@ const sidebar = createSidebar({
   onOfficial: () => officialMenu(),
   onOfficialUpdate: () => updateAllFromOfficial(),
   mark: (path) => treeMark(path),
+  label: (path) => treeLabel(path),
   onTrashAction: (action, item) => (action === 'restore' && item ? organizer.restore(item) : organizer.purge(item)),
 });
 
@@ -590,7 +594,6 @@ async function openWorkspace(dir, { granted = false } = {}) {
   toggleSidebar(true);
   sidebar.setTab('files');
   await loadWorkspaceFiles({ ifStale: true }); // se a barra acabou de pedir a leitura desta pasta, só espera por ela
-  toast(`Pasta de trabalho: ${dir.name}`);
 }
 
 async function refreshRecentWorkspaces() {
@@ -739,7 +742,8 @@ function setMode(next) {
     if (b.tagName === 'BUTTON') b.setAttribute('aria-selected', String(/** @type {HTMLElement} */ (b).dataset.mode === mode));
   });
   els.modeLabel.textContent = /** @type {Record<string, string>} */ ({ raw: 'Markdown', split: 'Markdown | Visual', preview: 'Visual' })[mode];
-  els.hint.textContent = mode === 'raw'
+  // dica do rodapé: só nas primeiras sessões (depois é ruído)
+  els.hint.textContent = (loadPrefs().hintSessions || 0) > HINT_SESSIONS ? '' : mode === 'raw'
     ? 'Selecione um texto e use a toolbar'
     : 'Clique no Preview para editar · Esc cancela · Alt+clique vai para a linha no Raw';
   if (mode !== 'raw') preview.render(store.source, { force: false });
@@ -1032,7 +1036,8 @@ async function openFromHandleNow(handle, { folder, path, readMode, superseded })
     await addRecent({ handle, folder: knownFolder, path });
     await saveSession({ handle, folder: knownFolder, path });
     refreshRecents();
-    toast(`Aberto: ${file.name}${back ? ' — de volta onde você parou' : ''}`);
+    // abrir é rotina: sem aviso (o nome já aparece no topo e na aba) — só quando volta ao ponto onde parou
+    if (back) toast(`${file.name} — de volta onde você parou`);
     return true;
   } catch (err) {
     toast(`Não foi possível abrir: ${errMsg(err)}`, 'error');
@@ -1125,7 +1130,7 @@ async function doSave(asNew = false, { auto = false } = {}) {
       sidebar?.setCurrent({ name: result.name, path: disk.path });
       persistTabs({ handles: true });
       const wsPath = currentWorkspacePath();
-      if (wsPath) docIndex.update(wsPath, store.source, { lastModified: disk.lastModified });
+      if (wsPath) { docIndex.update(wsPath, store.source, { lastModified: disk.lastModified }); sidebar.redraw(); } // status/título na árvore
       drawViews(document);
       if (placedInWorkspace) { await loadWorkspaceFiles(); sidebar.expandFolder(dirOf(wsPath)); }
       // código trocado: links dos outros documentos e nome do arquivo acompanham
@@ -1421,7 +1426,7 @@ const PALETTE_ACTIONS = [
   ['Abrir o manual (todas as funcionalidades)', 'manual', null, 'F1'], ['O que mudou (novidades desta versão)', 'whatsNew', null, ''], ['Nova visão (consulta salva: não executados, tickets, cobertura…)', 'newView', null, ''],
   ['Próximo caso da pasta (salva e abre o próximo não executado)', 'nextCase', null, 'Alt+Shift+→'], ['Próximo caso da pasta e já executar', 'nextCase', 'run', ''],
   ['Organizar por épico e ticket (casos/<ÉPICO>/<TICKET>/, pelos campos epico: e jira:)…', 'byTicket', null, ''],
-  ['Ciclo de regressão: novo (salvar os casos)…', 'newCycle', null, ''], ['Rodada de execução: nova (avulsa, escolher os casos)…', 'newRun', null, ''], ['Ciclo de regressão: executar um ciclo salvo (nova execução)…', 'runCycle', null, ''], ['Execução: anexar relatório de testes automatizados (Playwright, JUnit, Newman)…', 'attachAutomation', null, ''], ['Execução só automatizada: criar a partir de um relatório…', 'newAutoRun', null, ''], ['Ciclo de regressão: próximo caso', 'nextCycleCase', null, ''], ['Ciclo de regressão: voltar ao ciclo', 'openCycle', null, ''], ['Vínculos: Jira, Épico, Sprint deste documento…', 'editLinks', null, ''], ['Dispositivo / ambiente: WEB, Mobile iOS, Mobile Android… deste documento', 'editDevice', null, ''], ['Ciclo de regressão: finalizar execução…', 'finishCycle', null, ''], ['Ciclo de regressão: como está / como foi a rodada', 'roundSummary', null, ''], ['Relatórios da execução: gerar / regerar (Encerramento e Go/No-Go, Defeitos, Rastreabilidade, Log)', 'execReports', null, ''],
+  ['Ciclo de regressão: novo (salvar os casos)…', 'newCycle', null, ''], ['Rodada de execução: nova (avulsa, escolher os casos)…', 'newRun', null, ''], ['Ciclo de regressão: executar um ciclo salvo (nova execução)…', 'runCycle', null, ''], ['Execução: anexar relatório de testes automatizados (Playwright, JUnit, Newman)…', 'attachAutomation', null, ''], ['Execução só automatizada: criar a partir de um relatório…', 'newAutoRun', null, ''], ['Ciclo de regressão: próximo caso', 'nextCycleCase', null, ''], ['Ciclo de regressão: voltar ao ciclo', 'openCycle', null, ''], ['Vínculos: Jira, Épico, Sprint deste documento…', 'editLinks', null, ''], ['Dispositivo / ambiente: WEB, Mobile iOS, Mobile Android… deste documento', 'editDevice', null, ''], ['Ciclo de regressão: finalizar execução…', 'finishCycle', null, ''], ['Ciclo de regressão: como está / como foi a rodada', 'roundSummary', null, ''], ['Relatórios da execução: gerar / regerar (Encerramento e Go/No-Go, Defeitos, Rastreabilidade, Log)', 'execReports', null, ''], ['Árvore: mostrar ID · título ou o nome do arquivo', 'treeLabels', null, ''],
   ['Comentar (comentário de revisão no documento)', 'comment', null, 'Alt+M'], ['Comentários do documento (pendentes e resolvidos)…', 'listComments', null, ''],
   ['Exportar bugs para o Jira (CSV do importador do Jira Cloud)…', 'jiraCsv', null, ''], ['Trazer chaves do Jira (CSV exportado do Jira)…', 'jiraKeys', null, ''],
   ['Ver outro documento ao lado (consulta)…', 'sideOpen', null, ''], ['Fechar o documento ao lado', 'sideClose', null, ''],
@@ -1588,6 +1593,7 @@ function run(cmd, value, event) {
     case 'openCycle': openCycle(); return true;
     case 'finishCycle': finishCycle(); return true;
     case 'roundSummary': showRoundSummary(); return true;
+    case 'treeLabels': { const next = loadPrefs().treeLabels === 'arquivo' ? 'titulo' : 'arquivo'; savePrefs({ treeLabels: next }); sidebar.redraw(); toast(next === 'arquivo' ? 'Árvore: nome do arquivo' : 'Árvore: ID · título (do cabeçalho)'); return true; }
     case 'execReports': import('./app/reports.js').then((m) => m.generateReports()); return true;
     case 'listComments': listComments(); return true;
     case 'jiraCsv': if (!docIndex.ready) { toast('Abra a pasta de trabalho primeiro.', 'error'); return true; } exportJiraCsv(docIndex.all()); return true;

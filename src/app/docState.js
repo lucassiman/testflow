@@ -9,6 +9,7 @@ import { officialDir, openVersionHistory } from './publishing.js';
 import { currentWorkspacePath } from './links.js';
 import { startRun } from './execution.js';
 import { $, docIndex } from './shared.js';
+import { loadPrefs } from '../io/drafts.js';
 import { behindOf, editingOthers, behindDialog } from './collab.js';
 import { cycleMark, cycleMenu, runCycle } from './cycle.js';
 import { scheduleCyclePanel } from './cyclePanel.js';
@@ -101,4 +102,25 @@ export function treeMark(path) {
       : null;
   treeCache.set(path, { text: e.text, mark });
   return mark;
+}
+
+const DOT_TYPES = new Set(['caso-de-teste', 'cenario-bdd', 'checklist', 'bug', 'execucao', 'ciclo-regressao', 'relatorio-execucao', 'charter-exploratorio']);
+/**
+ * Nome do arquivo na árvore: ID · título (do cabeçalho) e o status para a bolinha. null = mostra o nome do arquivo
+ * (preferência "nome do arquivo", ou documento ainda não lido).
+ * @param {string} path
+ * @returns {{ id: string, titulo: string, status: string } | null}
+ */
+export function treeLabel(path) {
+  if (loadPrefs().treeLabels === 'arquivo') return null;
+  const e = docIndex.get(path);
+  if (!e) return null;
+  let status = '';
+  if (DOT_TYPES.has(e.tipo)) {
+    const s = (e.overall || '').toUpperCase();
+    if (e.tipo === 'bug') status = !s ? '' : /^(PASS|SKIP|FECHAD|RESOLVID|CLOSED|DONE|CONCLU|CORRIGID|CANCELAD)/.test(s.normalize('NFD').replace(/[̀-ͯ]/g, '')) ? 'PASS' : 'FAIL';
+    else status = ['PASS', 'FAIL', 'BLOCKED', 'SKIP', 'PENDING'].includes(s) ? s : '';
+  }
+  const heading = (e.heading || '').replace(/^[A-Z][A-Z0-9_]*-\d+\s*[—–:-]\s*/, '');
+  return { id: e.id || '', titulo: e.titulo || heading, status };
 }
