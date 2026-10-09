@@ -172,6 +172,8 @@ Ida e volta pela área de transferência (sem chave de API, nada sai do editor s
 
 ✅ **Feito na 1.12.0 — Dispositivo/ambiente:** substituir/expandir o campo atual *Browser* por **Dispositivo/Ambiente**: WEB, Mobile iOS, Mobile Android, Mobile — Todos; para mobile informar a versão (ex.: Mobile iOS — iOS 18, Mobile Android — Android 15). Deve aparecer nas tags, no cabeçalho do caso, nos modelos de criação de casos e nas informações da execução, para rastrear em que dispositivo/plataforma cada caso foi validado.
 
+**1.25.0 (08/10) — 10.3, parte 2: menos barras e modo foco.** `src/app/chrome.js`: no Preview (preferência `toolbarMode: auto|sempre`), a `#toolbar` vira `position:absolute` sobre a coluna do documento (`--tb-top`/`--tb-left`) e só aparece com bloco em edição/selecionado, foco ou menu aberto; o bloco em edição é rolado para não ficar sob ela. Modo foco (`Ctrl+Shift+.`, `focusMode` lembrado, botão ⤢). Barra de execução numa linha: sem os chips zerados e sem o rótulo "Execução"; "📊 Resumo".
+
 **1.24.0 (08/10) — 10.3, parte 1: árvore e avisos.** Árvore com **ID · título** e bolinha de status (`treeLabel` em `src/app/docState.js`, opção `label` do `createSidebar`; preferência `treeLabels: titulo|arquivo`, comando na paleta; os testes de tela usam `arquivo` por padrão em `helpers.mjs`); dica do arquivo com ID — título (status) + caminho; árvore redesenha ao salvar (status muda). Recentes recolhe sozinho com pasta aberta até o usuário escolher. Sem os avisos "Aberto: …" e "Pasta de trabalho: …" (fica só o "de volta onde você parou"); dica do rodapé só nas 5 primeiras sessões (`hintSessions`).
 
 **1.23.0 (08/10) — escopo dos casos e varredura de vínculos** (pedido do Lucas). Skill `qa-markdown` §6.0 *Nível, tipo e profundidade* (e2e/API/unitário/negócio · smoke/sanity/regressão/funcional/exploratório/não funcional · enxuto/padrão/completo com técnicas ISTQB; padrão = caixa-preta do QA, sem backend/unitário, premissa declarada, tags de nível/tipo) — também em `CONVENCOES-QA.md` §8 (o `qa_convencoes` do MCP entrega). `src/markdown/sweep.ts` (`sweepLinks`, `applySweep`, `sweepReport`): achados com confiança certo/provável/confirmar; MCP `qa_varredura` (relata; `aplicar: certo|provavel` só preenche vazios e soma tags) e `qa_ligar`; skill nova `qa-varredura` (`scripts/skill-varredura.md`, gerada por `npm run skill`).
@@ -403,7 +405,7 @@ Ao **🏁 Finalizar execução**, o TestFlow gera 4 documentos em `relatorios/<E
 | **Rastreabilidade e cobertura** | História/épico/ticket (`jira:`, `epico:`) → casos → resultado nesta rodada → bugs; o que ficou **sem caso**, **sem executar** ou **só automatizado**; cobertura de automação. | M |
 | **Log + comparativo** | Log cronológico (caso, início, fim, duração, quem, dispositivo) e **comparação com a execução anterior do mesmo ciclo**: passou a falhar (regressão), foi corrigido, continua falhando, novo. | M |
 
-#### 10.3 — Interface e navegação *(M–G, em versões pequenas)* — em andamento: 1.24.0 árvore e avisos
+#### 10.3 — Interface e navegação *(M–G, em versões pequenas)* — em andamento: 1.24.0 árvore e avisos · 1.25.0 menos barras e modo foco
 
 | Item | Detalhe | Esforço |
 |---|---|---|

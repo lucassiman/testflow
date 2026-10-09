@@ -262,11 +262,12 @@ export function createExecutionBar({ pane, root, onSummary, onRun, onSession, on
         const k = KIND_OF[w];
         return counts[k] ? `<span class="seg seg-${k}" style="flex:${counts[k]}" title="${w}: ${counts[k]}"></span>` : '';
       }).join('');
-      parts.push(`<span class="exec-title">Execução</span>`);
       if (overall) parts.push(`<code class="badge badge-${KIND_OF[overall]}" title="Status geral calculado pelos passos">${overall}</code>`);
       parts.push(`<span class="exec-progress" title="${executed} de ${counts.total} executados"><span class="exec-track">${seg}</span><span class="exec-num">${executed}/${counts.total}</span></span>`);
+      // só os status que existem no documento (os zerados só ocupavam espaço)
       parts.push('<span class="exec-chips">' + STATUS_ORDER.map((w) => {
         const k = KIND_OF[w];
+        if (!counts[k] && filter !== k) return '';
         return `<button type="button" class="exec-chip chip-${k}" data-filter="${k}" aria-pressed="${filter === k}" title="Mostrar só as linhas ${w}"${counts[k] ? '' : ' disabled'}>${w} <b>${counts[k]}</b></button>`;
       }).join('') + '</span>');
     }
@@ -285,7 +286,7 @@ export function createExecutionBar({ pane, root, onSummary, onRun, onSession, on
     if (next && !automated) actions.push(`<button type="button" class="exec-action exec-next" data-act="caseNext" title="Salva e abre o próximo caso da pasta (${esc(next)}) já em execução — Alt+Shift+→">⏭ Próximo caso: ${esc(next)}</button>`);
     if (charter) actions.push('<button type="button" class="exec-action" data-act="session" title="Cronômetro e notas rápidas da sessão exploratória">⏱ Sessão</button>');
     parts.push(`<span class="exec-actions">${actions.join('')}`);
-    parts.push(`<button type="button" class="exec-summary${stale ? ' stale' : ''}" data-act="summary" title="${hasSummary ? (stale ? 'Resumo desatualizado — clique para recalcular' : 'Recalcular resumo e status geral') : 'Inserir resumo automático (tabela + gráfico)'}">📊 ${hasSummary ? (stale ? 'Atualizar resumo' : 'Resumo ✓') : 'Inserir resumo'}</button></span>`);
+    parts.push(`<button type="button" class="exec-summary${stale ? ' stale' : ''}" data-act="summary" title="${hasSummary ? (stale ? 'Resumo desatualizado — clique para recalcular' : 'Recalcular resumo e status geral') : 'Inserir resumo automático (tabela + gráfico)'}">📊 ${hasSummary ? (stale ? 'Atualizar resumo' : 'Resumo ✓') : 'Resumo'}</button></span>`);
     bar.innerHTML = parts.join('');
     // filtro que ficou sem linhas: limpa
     if (filter && filter !== 'todo' && !counts[/** @type {StatusKind} */ (filter)]) setFilter('');

@@ -1499,3 +1499,20 @@ button.cp-chip { font: inherit; font-size: 11px; }
 .side-sep { color: var(--muted); }
 .side-item.current .side-id { color: var(--accent); }
 .side-pin-row .side-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+
+/* ---------- menos barras (1.25.0) ---------- */
+#app { position: relative; }
+/* Preview: a barra de formatação flutua por cima do documento e só aparece num bloco */
+body.tb-float #toolbar { position: absolute; left: var(--tb-left, 0); right: var(--tb-right, 0); top: var(--tb-top, 48px); z-index: 25; box-shadow: 0 6px 16px -10px rgba(0, 0, 0, .35); }
+body.tb-float:not(.tb-show) #toolbar { display: none; }
+/* modo foco: só o documento (e o painel de execução/rodada) */
+body.focus-mode .topbar, body.focus-mode .tabbar, body.focus-mode #toolbar, body.focus-mode .statusbar, body.focus-mode .sidebar, body.focus-mode .exec-bar { display: none !important; }
+body.focus-mode .markdown-body { padding-top: 28px; }
+.focus-exit { position: fixed; top: 10px; right: 14px; z-index: 60; font-size: 12px; padding: 4px 10px; border-radius: 99px; border: 1px solid var(--border); background: var(--panel); color: var(--muted); opacity: .55; cursor: pointer; }
+.focus-exit:hover, .focus-exit:focus-visible { opacity: 1; color: var(--text); border-color: var(--accent); }
+.focus-exit[hidden] { display: none; }
+/* barra de execução compacta: uma linha */
+.exec-bar { flex-wrap: nowrap; padding: 5px 16px; overflow-x: auto; scrollbar-width: none; }
+.exec-chips, .exec-actions { flex-wrap: nowrap; }
+.exec-track { width: 100px; }
+.exec-action, .exec-summary { white-space: nowrap; }

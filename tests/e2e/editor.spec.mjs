@@ -890,7 +890,7 @@ test('"/" no Preview: novo bug a partir do caso com FAIL — preenchido, com o p
   await expect(page.locator('#fileName')).toContainText('TC-042');
   await page.locator('#preview h1').click();
   await page.keyboard.press('Escape');
-  await page.locator('#previewPane').click({ position: { x: 5, y: 5 } });
+  await page.locator('#previewPane').click({ position: { x: 5, y: 300 } }) // fora da barra de formatação (que fica por cima do topo);
   await page.keyboard.press('/');
   await page.keyboard.type('bug');
   await expect(page.locator('.cmd-item.active')).toContainText('Bug novo, ligado a este documento');

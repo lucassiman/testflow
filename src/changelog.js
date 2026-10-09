@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.25.0', date: '08/10/2026',
+    items: [
+      { icon: '🧼', text: '**Menos barras no topo**: no Preview, a barra de formatação só aparece quando você está num bloco — por cima do documento, sem empurrar o texto. A barra de execução cabe numa linha (só os status que existem).', manual: '4. A tela' },
+      { icon: '🎯', text: '**Modo foco** (`Ctrl+Shift+.`): só o documento, sem topo, barras nem barra lateral — bom para ler ou executar. **⤢ Sair do foco** no canto volta.', manual: '4. A tela' },
+    ],
+  },
+  {
     version: '1.24.0', date: '08/10/2026',
     items: [
       { icon: '🌳', text: '**Árvore mais legível**: cada documento aparece como **ID · título** (em vez do nome do arquivo cortado), com uma **bolinha de status** (PASS, FAIL, BLOCKED, não executado). O nome do arquivo fica na dica; a paleta alterna de volta.', manual: '10.' },

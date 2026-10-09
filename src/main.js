@@ -71,6 +71,7 @@ import { updateDocPlace, placeMenu, placeTabMark, askDiskRoot } from './app/plac
 import { snapshotRanges, parseSearch, viewMatches } from './markdown/views.ts';
 import { openSide, pickSide, closeSide, refreshSide } from './app/sideDoc.js';
 import { refreshDocState, tabMarks, treeMark, treeLabel } from './app/docState.js';
+import { updateToolbar, resetToolbar, toggleFocus, toggleToolbarMode } from './app/chrome.js';
 import { hintAfterRender, hintRunner, hintTree } from './app/hints.js';
 import { captureFiles, captureToDocument, capturer, toggleRecording } from './app/capture.js';
 import { showWhatsNew, changesSince } from './ui/whatsNew.js';
@@ -747,6 +748,7 @@ function setMode(next) {
     ? 'Selecione um texto e use a toolbar'
     : 'Clique no Preview para editar · Esc cancela · Alt+clique vai para a linha no Raw';
   if (mode !== 'raw') preview.render(store.source, { force: false });
+  updateToolbar();
   if (typeof find !== 'undefined') find.refresh();
   if (mode === 'raw') raw.focus();
   savePrefs({ mode });
@@ -781,6 +783,7 @@ async function confirmDiscard(action = 'continuar') {
  */
 function loadDocument({ text, name, handle = null, eol = '\n', bom = false, dirty = false, folder = null, lastModified = 0, path = '' }) {
   preview.cancel();
+  resetToolbar();
   runner?.close();
   closeLightbox(); // o print ampliado era do documento anterior
   docFormat = { eol, bom };
@@ -1426,7 +1429,7 @@ const PALETTE_ACTIONS = [
   ['Abrir o manual (todas as funcionalidades)', 'manual', null, 'F1'], ['O que mudou (novidades desta versão)', 'whatsNew', null, ''], ['Nova visão (consulta salva: não executados, tickets, cobertura…)', 'newView', null, ''],
   ['Próximo caso da pasta (salva e abre o próximo não executado)', 'nextCase', null, 'Alt+Shift+→'], ['Próximo caso da pasta e já executar', 'nextCase', 'run', ''],
   ['Organizar por épico e ticket (casos/<ÉPICO>/<TICKET>/, pelos campos epico: e jira:)…', 'byTicket', null, ''],
-  ['Ciclo de regressão: novo (salvar os casos)…', 'newCycle', null, ''], ['Rodada de execução: nova (avulsa, escolher os casos)…', 'newRun', null, ''], ['Ciclo de regressão: executar um ciclo salvo (nova execução)…', 'runCycle', null, ''], ['Execução: anexar relatório de testes automatizados (Playwright, JUnit, Newman)…', 'attachAutomation', null, ''], ['Execução só automatizada: criar a partir de um relatório…', 'newAutoRun', null, ''], ['Ciclo de regressão: próximo caso', 'nextCycleCase', null, ''], ['Ciclo de regressão: voltar ao ciclo', 'openCycle', null, ''], ['Vínculos: Jira, Épico, Sprint deste documento…', 'editLinks', null, ''], ['Dispositivo / ambiente: WEB, Mobile iOS, Mobile Android… deste documento', 'editDevice', null, ''], ['Ciclo de regressão: finalizar execução…', 'finishCycle', null, ''], ['Ciclo de regressão: como está / como foi a rodada', 'roundSummary', null, ''], ['Relatórios da execução: gerar / regerar (Encerramento e Go/No-Go, Defeitos, Rastreabilidade, Log)', 'execReports', null, ''], ['Árvore: mostrar ID · título ou o nome do arquivo', 'treeLabels', null, ''],
+  ['Ciclo de regressão: novo (salvar os casos)…', 'newCycle', null, ''], ['Rodada de execução: nova (avulsa, escolher os casos)…', 'newRun', null, ''], ['Ciclo de regressão: executar um ciclo salvo (nova execução)…', 'runCycle', null, ''], ['Execução: anexar relatório de testes automatizados (Playwright, JUnit, Newman)…', 'attachAutomation', null, ''], ['Execução só automatizada: criar a partir de um relatório…', 'newAutoRun', null, ''], ['Ciclo de regressão: próximo caso', 'nextCycleCase', null, ''], ['Ciclo de regressão: voltar ao ciclo', 'openCycle', null, ''], ['Vínculos: Jira, Épico, Sprint deste documento…', 'editLinks', null, ''], ['Dispositivo / ambiente: WEB, Mobile iOS, Mobile Android… deste documento', 'editDevice', null, ''], ['Ciclo de regressão: finalizar execução…', 'finishCycle', null, ''], ['Ciclo de regressão: como está / como foi a rodada', 'roundSummary', null, ''], ['Relatórios da execução: gerar / regerar (Encerramento e Go/No-Go, Defeitos, Rastreabilidade, Log)', 'execReports', null, ''], ['Árvore: mostrar ID · título ou o nome do arquivo', 'treeLabels', null, ''], ['Modo foco: só o documento (esconde topo, barras e barra lateral)', 'focusMode', 'Ctrl+Shift+.', ''], ['Barra de formatação no Preview: só ao editar / sempre', 'toolbarMode', null, ''],
   ['Comentar (comentário de revisão no documento)', 'comment', null, 'Alt+M'], ['Comentários do documento (pendentes e resolvidos)…', 'listComments', null, ''],
   ['Exportar bugs para o Jira (CSV do importador do Jira Cloud)…', 'jiraCsv', null, ''], ['Trazer chaves do Jira (CSV exportado do Jira)…', 'jiraKeys', null, ''],
   ['Ver outro documento ao lado (consulta)…', 'sideOpen', null, ''], ['Fechar o documento ao lado', 'sideClose', null, ''],
@@ -1593,6 +1596,8 @@ function run(cmd, value, event) {
     case 'openCycle': openCycle(); return true;
     case 'finishCycle': finishCycle(); return true;
     case 'roundSummary': showRoundSummary(); return true;
+    case 'focusMode': toggleFocus(); return true;
+    case 'toolbarMode': toggleToolbarMode(); return true;
     case 'treeLabels': { const next = loadPrefs().treeLabels === 'arquivo' ? 'titulo' : 'arquivo'; savePrefs({ treeLabels: next }); sidebar.redraw(); toast(next === 'arquivo' ? 'Árvore: nome do arquivo' : 'Árvore: ID · título (do cabeçalho)'); return true; }
     case 'execReports': import('./app/reports.js').then((m) => m.generateReports()); return true;
     case 'listComments': listComments(); return true;
@@ -1697,6 +1702,8 @@ els.zoomBody.addEventListener('wheel', (event) => {
 }, { passive: false });
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !els.zoomModal.hidden) els.zoomModal.hidden = true;
+  // modo foco: Ctrl+Shift+. (⌘⇧. no Mac)
+  if ((event.ctrlKey || event.metaKey) && event.shiftKey && (event.key === '.' || event.key === '>' || event.code === 'Period')) { event.preventDefault(); toggleFocus(); }
 });
 
 // ---------------------------------------------------------------- arrastar e soltar
