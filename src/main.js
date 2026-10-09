@@ -1420,7 +1420,7 @@ const PALETTE_ACTIONS = [
   ['Reaproveitar print de outro documento (galeria de evidências)…', 'reuseEvidence', null, ''], ['Limpar evidências: prints que nenhum documento usa…', 'cleanPrints', null, ''], ['Novo bug a partir deste documento (ligado)…', 'newBug', null, ''],
   ['Nota rápida (vai para _entrada/)', 'quickNote', null, 'Alt+Q'], ['Importar do Notion (.zip do export)…', 'importNotion', null, ''], ['Criar estrutura da pasta de trabalho…', 'structure', null, ''], ['Nova aplicação (pasta com casos, bugs, planos…)', 'newApp', null, ''],
   ['Mover documento para outra pasta…', 'moveDoc', null, ''], ['Nova pasta na pasta de trabalho…', 'newFolder', null, ''], ['Desfazer a última organização (mover, renomear, lixeira, importação)', 'undoOrganize', null, ''],
-  ['Mover aba para a esquerda', 'moveTabLeft', null, 'Alt+Shift+PageUp'], ['Mover aba para a direita', 'moveTabRight', null, 'Alt+Shift+PageDown'], ['Novo documento', 'new', null, 'Alt+N'], ['Novo a partir de modelo…', 'newFromTemplate', null, 'Alt+Shift+N'],
+  ['Mover aba para a esquerda', 'moveTabLeft', null, 'Alt+Shift+PageUp'], ['Mover aba para a direita', 'moveTabRight', null, 'Alt+Shift+PageDown'], ['Novo caso de teste (do modelo)', 'newCase', null, ''], ['Novo documento em branco', 'new', null, 'Alt+N'], ['Novo a partir de modelo…', 'newFromTemplate', null, 'Alt+Shift+N'],
   ['Abrir arquivo…', 'open', null, 'Ctrl+O'], ['Salvar', 'save', null, 'Ctrl+S'], ['Salvar como…', 'saveAs', null, 'Ctrl+Shift+S'],
   ['Fechar aba', 'closeTab', null, 'Alt+W'], ['Próxima aba', 'nextTab', null, 'Alt+PageDown'], ['Aba anterior', 'prevTab', null, 'Alt+PageUp'],
   ['Copiar tudo (Markdown)', 'copyAll', null, 'Ctrl+Alt+C'],
@@ -1452,8 +1452,31 @@ const PALETTE_ACTIONS = [
   ['Escolher pasta de trabalho…', 'pickWorkspace', null, ''], ['Pasta de evidências do documento…', 'pickFolder', null, ''],
 ];
 
+/** Categoria e ícone de cada ação da paleta (as que não estão aqui ficam em "Ações"). */
+const PALETTE_GROUPS = /** @type {Array<[string, string, string[]]>} */ ([
+  ['Documento', '📄', ['newCase', 'new', 'newFromTemplate', 'open', 'save', 'saveAs', 'rename', 'saveTemplate', 'history', 'toggleAutoSave', 'quickNote', 'newBug', 'newView', 'importSheet', 'pdf', 'exportHtml', 'sensitive']],
+  ['Execução e rodadas', '▶', ['newRun', 'newCycle', 'runCycle', 'newAutoRun', 'attachAutomation', 'nextCycleCase', 'openCycle', 'finishCycle', 'roundSummary', 'execReports', 'nextCase', 'editLinks', 'editDevice']],
+  ['Pasta de trabalho', '📂', ['pickWorkspace', 'home', 'dashboard', 'searchAll', 'structure', 'newApp', 'newFolder', 'moveDoc', 'byTicket', 'undoOrganize', 'importNotion', 'backup', 'backupPref', 'loadDiag', 'diskRoot', 'officialFolder', 'officialUpdate', 'publish']],
+  ['Evidências e prints', '📸', ['capture', 'captureChoose', 'captureStop', 'record', 'evidencePanel', 'reuseEvidence', 'cleanPrints', 'bigPrint', 'pickFolder']],
+  ['Compartilhar e revisar', '📤', ['copyAll', 'copyClaude', 'review', 'reviewApply', 'copyJira', 'openJira', 'copyNotion', 'notionZip', 'hubZip', 'jiraCsv', 'jiraKeys', 'comment', 'listComments']],
+  ['Exibição', '👁', ['mode', 'focusMode', 'toolbarMode', 'treeLabels', 'toggleSidebar', 'sideOpen', 'sideClose', 'foldAll', 'unfoldAll', 'zoomIn', 'zoomOut', 'zoomReset', 'toggleTheme', 'find', 'replace', 'codeblock', 'moveTabLeft', 'moveTabRight', 'closeTab', 'nextTab', 'prevTab']],
+  ['Ajuda e preferências', '❓', ['manual', 'whatsNew', 'tipsToggle', 'tipsReset']],
+]);
+const PALETTE_GROUP_OF = new Map(PALETTE_GROUPS.flatMap(([g, icon, cmds]) => cmds.map((c) => [c, { group: g, icon }])));
+const PALETTE_RECENT = 6;
+
 function openPalette() {
   const items = [];
+  // usados recentemente primeiro (as ações escolhidas na paleta)
+  const recent = /** @type {string[]} */ (loadPrefs().paletteRecent || []);
+  const actionItems = PALETTE_ACTIONS.map(([label, cmd, value, keys]) => {
+    const meta = PALETTE_GROUP_OF.get(String(cmd)) || { group: 'Ações', icon: '⌘' };
+    return { id: `act-${cmd}-${value}`, group: meta.group, label: String(label), icon: meta.icon, hint: String(keys || ''), kind: 'action', cmd, value, keywords: meta.group };
+  });
+  for (const id of recent) {
+    const it = actionItems.find((x) => x.id === id);
+    if (it) items.push({ ...it, id: `recent-${id}`, group: 'Usados recentemente', icon: '🕘' });
+  }
   // abas abertas
   if (tabs.count > 1) {
     for (const t of tabs.list) {
@@ -1462,7 +1485,8 @@ function openPalette() {
       items.push({ id: `tab-${t.id}`, group: 'Abas', label: `${name}${dirty ? ' ●' : ''}`, icon: t.id === tabs.activeId ? '▸' : '🗂', hint: t.id === tabs.activeId ? 'aba atual' : '', kind: 'tab', tab: t.id });
     }
   }
-  PALETTE_ACTIONS.forEach(([label, cmd, value, keys]) => items.push({ id: `act-${cmd}-${value}`, group: 'Ações', label, icon: '⌘', hint: keys, kind: 'action', cmd, value }));
+  // por categoria, na ordem das categorias
+  for (const [g] of [...PALETTE_GROUPS, ['Ações']]) items.push(...actionItems.filter((x) => x.group === g));
   commandItems().forEach((it) => items.push({ ...it, group: it.group === 'Modelos' || it.group === 'Meus modelos' ? 'Novo documento a partir de modelo' : `Inserir · ${it.group}`, paletteInsert: true }));
   // títulos do documento
   extractOutline(store.source).forEach((h, i) => items.push({ id: `h-${i}`, group: 'Ir para título', label: h.text || '(sem título)', icon: `H${h.level}`, hint: `linha ${h.line + 1}`, kind: 'heading', line: h.line }));
@@ -1478,6 +1502,8 @@ function openPalette() {
     onPick: (item) => {
       if (item.kind === 'tab') switchTab(item.tab);
       else if (item.kind === 'action') {
+        const id = `act-${item.cmd}-${item.value}`;
+        savePrefs({ paletteRecent: [id, ...recent.filter((x) => x !== id)].slice(0, PALETTE_RECENT) });
         if (item.cmd === 'toggleTheme') els.themeBtn.click();
         else if (item.cmd === 'pickWorkspace') pickAndLoadWorkspace();
         else if (item.cmd === 'pickFolder') requestFolder();
@@ -1526,7 +1552,6 @@ const home = createHome({
   continueRound: async (path) => { await openWikiTarget(path); await nextCycleCase(); },
   search: (q) => { toggleSidebar(true); sidebar.focusSearch(q); },
   command: (cmd) => {
-    if (cmd === 'newCase') { const t = BUILTIN_TEMPLATES.find((x) => x.key === 'caso-de-teste'); if (t) newFromTemplate(t, null); return; }
     if (cmd === 'openWorkspace') { toggleSidebar(true); pickAndLoadWorkspace(); return; }
     run(cmd);
   },
@@ -1623,6 +1648,7 @@ function run(cmd, value, event) {
     case 'focusMode': toggleFocus(); return true;
     case 'toolbarMode': toggleToolbarMode(); return true;
     case 'home': home.show(); return true;
+    case 'newCase': { const t = BUILTIN_TEMPLATES.find((x) => x.key === 'caso-de-teste'); if (t) newFromTemplate(t, null); return true; }
     case 'treeLabels': { const next = loadPrefs().treeLabels === 'arquivo' ? 'titulo' : 'arquivo'; savePrefs({ treeLabels: next }); sidebar.redraw(); toast(next === 'arquivo' ? 'Árvore: nome do arquivo' : 'Árvore: ID · título (do cabeçalho)'); return true; }
     case 'execReports': import('./app/reports.js').then((m) => m.generateReports()); return true;
     case 'listComments': listComments(); return true;

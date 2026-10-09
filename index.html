@@ -24,16 +24,21 @@
           <span class="menu split-btn">
             <button data-cmd="new" title="Novo documento em branco (Alt+N)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="tb-label">Novo</span></button><button data-menu="newMenu" class="split-caret" title="Mais opções de novo documento" aria-haspopup="true" aria-label="Mais opções de novo documento">▾</button>
             <div class="menu-pop" id="newMenu" hidden>
-              <button data-cmd="new">Documento em branco <kbd>Alt+N</kbd></button>
-              <button data-cmd="newFromTemplate">A partir de modelo… <kbd>Alt+Shift+N</kbd></button>
-              <button data-cmd="quickNote">📝 Nota rápida <kbd>Alt+Q</kbd> <small>já salva em _entrada/ da pasta de trabalho, para organizar depois</small></button>
-              <button data-cmd="newCycle">🔁 Ciclo de regressão… <small>escolher os casos e salvar o ciclo; executá-lo depois, quantas vezes quiser (#1, #2…)</small></button>
-              <button data-cmd="newRun">▶ Rodada de execução… <small>escolher os casos e já executar um por um (avulsa, sem ciclo)</small></button>
-              <button data-cmd="newAutoRun">🤖 Execução só automatizada… <small>a partir de um relatório Playwright, JUnit ou Newman (sem casos manuais)</small></button>
-              <button data-cmd="runCycle">▶ Executar um ciclo salvo… <small>nova execução (#N) com os casos de um ciclo já salvo</small></button>
-              <button data-cmd="newView">📊 Nova visão… <small>consulta salva: não executados, tickets em teste, cobertura da regressão e da automação, rastreabilidade</small></button>
-              <button data-cmd="importNotion">📥 Importar do Notion (.zip)… <small>export "Markdown &amp; CSV" → _entrada/, com [[links]] e imagens</small></button>
-              <button data-cmd="importAutomation">Relatório de automação (JUnit / Playwright / Newman)…</button>
+              <div class="menu-title">Documento</div>
+              <button data-cmd="newCase">📄 Caso de teste <small>do modelo, com o próximo ID — salve e ele vai para a pasta certa</small></button>
+              <button data-cmd="newFromTemplate">🧩 A partir de modelo… <kbd>Alt+Shift+N</kbd> <small>bug, plano, BDD, checklist, sessão, épico, história e os seus modelos</small></button>
+              <button data-cmd="quickNote">📝 Nota rápida <kbd>Alt+Q</kbd> <small>já salva em _entrada/, para organizar depois</small></button>
+              <button data-cmd="new">Em branco <kbd>Alt+N</kbd></button>
+              <button data-cmd="newView">📊 Visão… <small>consulta salva: não executados, tickets em teste, cobertura, rastreabilidade</small></button>
+              <div class="menu-title">Execução</div>
+              <button data-cmd="newRun">▶ Rodada de execução… <small>escolher os casos (por tag, épico, visão…) e já executar um por um</small></button>
+              <button data-cmd="newCycle">🔁 Ciclo de regressão… <small>salvar os casos da regressão e executá-la quantas vezes quiser (#1, #2…)</small></button>
+              <button data-cmd="runCycle">⏯ Executar um ciclo salvo… <small>nova execução (#N) com os casos de um ciclo</small></button>
+              <button data-cmd="newAutoRun">🤖 Execução só automatizada… <small>a partir de um relatório Playwright, JUnit ou Newman</small></button>
+              <div class="menu-title">Importar</div>
+              <button data-cmd="importNotion">📥 Do Notion (.zip)… <small>export "Markdown &amp; CSV" → _entrada/, com [[links]] e imagens</small></button>
+              <button data-cmd="importAutomation">🤖 Relatório de automação… <small>JUnit / Playwright / Newman como documento</small></button>
+              <button data-cmd="importSheet">📊 Planilha (XLSX/CSV)… <small>vira tabela Markdown no documento</small></button>
             </div>
           </span>
           <button data-cmd="open" title="Abrir arquivo .md (Ctrl+O)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v1"/><path d="M3 7v11a2 2 0 0 0 2 2h13l3-9H7l-3 7"/></svg><span class="tb-label">Abrir</span></button>

@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.27.0', date: '09/10/2026',
+    items: [
+      { icon: '🗂', text: '**Menu Novo agrupado** em Documento · Execução · Importar, com **📄 Caso de teste** direto (do modelo).', manual: '4. A tela' },
+      { icon: '⌘', text: '**Paleta** com categorias e ícones, e as ações que você mais usou **no topo** (*Usados recentemente*) — não começa mais por "Renomear arquivo".', manual: '11.' },
+    ],
+  },
+  {
     version: '1.26.0', date: '09/10/2026',
     items: [
       { icon: '🏠', text: '**Tela inicial** no lugar do exemplo: a **rodada em andamento** com **▶ Continuar**, as **pendências da pasta** (falhas, bloqueios, nunca executados, bugs abertos — um clique abre a lista), atalhos (novo caso, nova rodada, nota rápida) e fixados/recentes. Volta pelo logo ou pela paleta (*Início*).', manual: '4. A tela' },
