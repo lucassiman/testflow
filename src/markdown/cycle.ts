@@ -135,18 +135,20 @@ export interface CaseResult {
   state: 'feito' | 'andamento' | 'pendente';
   status: StatusWord | null;
   when: string;
+  /** duração da rodada concluída no ciclo (coluna Duração do histórico), se houver */
+  dur?: string;
 }
 
 /** Rodadas concluídas (tabela "Rodada | Data | Início | … | Resultado" do Histórico de execuções). */
-export function runsOf(text: string): Array<{ round: number; at: Date; status: StatusWord | null }> {
+export function runsOf(text: string): Array<{ round: number; at: Date; status: StatusWord | null; dur: string }> {
   const lines = text.split('\n');
   const sec = findSection(lines, HISTORY_TITLE);
   if (!sec) return [];
-  const out: Array<{ round: number; at: Date; status: StatusWord | null }> = [];
+  const out: Array<{ round: number; at: Date; status: StatusWord | null; dur: string }> = [];
   for (let i = sec.start; i < sec.end - 1; i++) {
     if (!lines[i].includes('|') || !/^\s*\|?\s*:?-{2,}/.test(lines[i + 1])) continue;
     const head = splitRow(lines[i]).map(normHeader);
-    const c = { round: head.indexOf('rodada'), date: head.indexOf('data'), start: head.indexOf('inicio'), end: head.indexOf('fim'), result: head.indexOf('resultado') };
+    const c = { round: head.indexOf('rodada'), date: head.indexOf('data'), start: head.indexOf('inicio'), end: head.indexOf('fim'), result: head.indexOf('resultado'), dur: head.indexOf('duracao') };
     if (c.round < 0 || c.date < 0 || c.result < 0) continue;
     for (let j = i + 2; j < sec.end && lines[j].includes('|') && lines[j].trim(); j++) {
       const cells = splitRow(lines[j]);
@@ -160,7 +162,7 @@ export function runsOf(text: string): Array<{ round: number; at: Date; status: S
       const start = new Date(...day, t ? Number(t[1]) : 0, t ? Number(t[2]) : 0);
       let at = f ? new Date(...day, Number(f[1]), Number(f[2])) : start;
       if (at < start) at = new Date(at.getTime() + 24 * 3600_000);
-      out.push({ round: Number(cells[c.round]) || 0, at, status: kind ? (kind.toUpperCase() as StatusWord) : null });
+      out.push({ round: Number(cells[c.round]) || 0, at, status: kind ? (kind.toUpperCase() as StatusWord) : null, dur: c.dur >= 0 ? (cells[c.dur] || '').trim() : '' });
     }
     i = sec.end;
   }
@@ -192,7 +194,7 @@ export function caseResult(text: string, since: Date, counts: StatusCounts, modi
   const from = new Date(since.getFullYear(), since.getMonth(), since.getDate(), since.getHours(), since.getMinutes()).getTime();
   const runs = runsOf(text).filter((r) => r.at.getTime() >= from).sort((a, b) => a.at.getTime() - b.at.getTime() || a.round - b.round);
   const last = runs.at(-1);
-  if (last) return { state: 'feito', status: last.status, when: `${dmy(last.at)} ${hm(last.at)}` };
+  if (last) return { state: 'feito', status: last.status, when: `${dmy(last.at)} ${hm(last.at)}`, dur: last.dur };
   const marked = counts.total > 0 && counts.pending < counts.total;
   const day0 = new Date(since.getFullYear(), since.getMonth(), since.getDate()).getTime();
   const freshArchive = () => archivedRounds(text).some((r) => r.day.getTime() >= day0);

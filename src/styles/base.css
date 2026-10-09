@@ -1557,3 +1557,13 @@ body.home-open .runner, body.home-open #cyclePanel, body.home-open #toolbar { di
 .home-actions button { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; color: var(--text); }
 .home-actions button:hover { border-color: var(--accent); }
 body.home-open #fileName, body.home-open #stats, body.home-open #lintStatus { visibility: hidden; }
+/* painel da rodada (1.28.0): barra com as cores dos status, filtro, duração */
+.cp-bar.cp-bar-seg { display: flex; overflow: hidden; }
+.cp-seg { height: 100%; }
+.cp-bar .cp-seg-pass { background: var(--pass-fg); } .cp-bar .cp-seg-fail { background: var(--fail-fg); } .cp-bar .cp-seg-blocked { background: var(--blocked-fg); }
+.cp-bar .cp-seg-skip { background: var(--skip-fg); } .cp-bar .cp-seg-pendente { background: transparent; }
+.cp-filter { display: flex; gap: 4px; padding: 0 12px 6px; flex-wrap: wrap; }
+.cp-fchip { font: inherit; font-size: 11px; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--border); background: var(--panel); color: var(--muted); cursor: pointer; }
+.cp-fchip[aria-pressed='true'] { border-color: var(--accent); color: var(--text); background: var(--accent-soft); font-weight: 600; }
+.cp-dur { font-size: 9.5px; text-transform: none; letter-spacing: 0; color: var(--muted); font-weight: 400; }
+.cp-empty { color: var(--muted); font-size: 12px; padding: 6px 12px; list-style: none; }

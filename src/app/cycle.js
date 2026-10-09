@@ -233,12 +233,12 @@ export async function skipCycleCase(key) {
 }
 
 // ---------------------------------------------------------------- checklist da rodada (painel lateral)
-/** @typedef {{ key: string, titulo: string, state: 'feito' | 'atual' | 'andamento' | 'pendente', status: string | null, when: string, aberto: boolean, whole: boolean, last: { status: string, when: string } | null }} ChecklistItem */
+/** @typedef {{ key: string, titulo: string, state: 'feito' | 'atual' | 'andamento' | 'pendente', status: string | null, when: string, aberto: boolean, whole: boolean, last: { status: string, when: string } | null, dur: string }} ChecklistItem */
 
 /**
  * Dados do painel da rodada: um item por caso, na ordem do ciclo (null = não há ciclo a mostrar).
  * Leve de propósito (roda a cada mudança no documento): usa o texto do ciclo e o dos casos, sem recalcular bugs.
- * @returns {{ path: string, title: string, closed: boolean, onCycle: boolean, done: number, total: number, failed: number, next: string | null, items: ChecklistItem[], ciclo: { path: string, titulo: string } | null, numero: number, links: import('../markdown/linkTypes.ts').LinkChip[], auto: import('../markdown/cycleAuto.ts').AutoSummary | null, whole: { key: string, done: number, total: number } | null } | null}
+ * @returns {{ path: string, title: string, closed: boolean, onCycle: boolean, counts: { PASS: number, FAIL: number, BLOCKED: number, SKIP: number }, done: number, total: number, failed: number, next: string | null, items: ChecklistItem[], ciclo: { path: string, titulo: string } | null, numero: number, links: import('../markdown/linkTypes.ts').LinkChip[], auto: import('../markdown/cycleAuto.ts').AutoSummary | null, whole: { key: string, done: number, total: number } | null } | null}
  */
 export function cycleChecklist() {
   const c = currentCycle();
@@ -263,6 +263,13 @@ export function cycleChecklist() {
     let state = status ? 'feito' : 'pendente';
     /** @type {ChecklistItem['last']} */
     let last = null;
+    let dur = '';
+    if (status && since) {
+      // concluído: a duração da rodada dele neste ciclo (coluna Duração do histórico do caso)
+      const e = docIndex.resolve(r.key);
+      const text = e ? open.get(e.path) ?? e.text ?? '' : '';
+      if (text) dur = caseResult(text, since, describeDoc(text).counts, 0).dur || '';
+    }
     if (!status) {
       const e = docIndex.resolve(r.key);
       if (e && since) {
@@ -270,18 +277,19 @@ export function cycleChecklist() {
         const counts = text === e.text ? e.counts : describeDoc(text).counts;
         const modified = e.path === active && app.store.dirty ? Date.now() : open.has(e.path) && text !== e.text ? Date.now() : e.lastModified || 0;
         const res = caseResult(text, since, counts, modified, started.includes(r.key.toLowerCase()) || started.includes((e.id || '').toLowerCase()));
-        if (res.state === 'feito' && res.status) { status = res.status; when = res.when; state = 'feito'; }
+        if (res.state === 'feito' && res.status) { status = res.status; when = res.when; state = 'feito'; dur = res.dur || ''; }
         else if (res.state === 'andamento') state = 'andamento';
         else last = lastResultBefore(text, since, counts);
       }
       if (state !== 'feito' && sameKey(r.key, cursor)) state = 'atual';
     }
-    return { key: r.key, titulo, state, status, when, aberto: sameKey(r.key, openKey), whole: isWhole(docIndex.resolve(r.key)), last };
+    return { key: r.key, titulo, state, status, when, aberto: sameKey(r.key, openKey), whole: isWhole(docIndex.resolve(r.key)), last, dur };
   });
   const doneItems = items.filter((i) => i.state === 'feito');
   const next = items.find((i) => i.state !== 'feito')?.key || null;
   return {
     path: c.path, title: docIndex.get(c.path)?.titulo || docIndex.get(c.path)?.name || 'Ciclo', closed: cycleClosed(c.text), onCycle,
+    counts: { PASS: doneItems.filter((i) => i.status === 'PASS').length, FAIL: doneItems.filter((i) => i.status === 'FAIL').length, BLOCKED: doneItems.filter((i) => i.status === 'BLOCKED').length, SKIP: doneItems.filter((i) => i.status === 'SKIP').length },
     done: doneItems.length, total: items.length, failed: doneItems.filter((i) => i.status === 'FAIL' || i.status === 'BLOCKED').length, next, items,
     ciclo: cycleOfCurrent(), numero: execNumber(c.text), links: currentLinkChips(c.text), auto: autoSummary(c.text),
     whole: wholeOpen(c, openKey, items),

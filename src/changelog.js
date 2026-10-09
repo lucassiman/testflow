@@ -8,6 +8,12 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.28.0', date: '09/10/2026',
+    items: [
+      { icon: '📊', text: '**Painel da rodada**: barra de progresso nas cores dos status, filtros **Pendentes / Falhas** e a **duração** de cada caso concluído.', manual: '7.8 Ciclo de regressão' },
+    ],
+  },
+  {
     version: '1.27.0', date: '09/10/2026',
     items: [
       { icon: '🗂', text: '**Menu Novo agrupado** em Documento · Execução · Importar, com **📄 Caso de teste** direto (do modelo).', manual: '4. A tela' },

@@ -66,7 +66,7 @@ test('ciclo: resultado do caso pela rodada concluída depois do início; manual 
   const start = new Date(2026, 8, 29, 13, 40);
   const done = logRun(tcText('TC-1', { steps: ['PASS', 'FAIL'] }), { start: new Date(2026, 8, 29, 14, 5), end: new Date(2026, 8, 29, 14, 9) }).source;
   assert.deepEqual(runsOf(done).map((r) => [r.round, r.status]), [[1, 'FAIL']]);
-  assert.deepEqual(caseResult(done, start, countStatuses(done)), { state: 'feito', status: 'FAIL', when: '29/09/2026 14:09' });
+  assert.deepEqual(caseResult(done, start, countStatuses(done)), { state: 'feito', status: 'FAIL', when: '29/09/2026 14:09', dur: '4 min' });
   const old = logRun(tcText('TC-2', { steps: ['PASS', 'PASS'] }), { start: new Date(2026, 8, 20, 10, 0), end: new Date(2026, 8, 20, 10, 5) }).source;
   assert.equal(caseResult(old, start, countStatuses(old)).state, 'pendente');
   assert.equal(needsFreshRound(old, start, countStatuses(old)), true);
