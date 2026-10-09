@@ -383,6 +383,14 @@ Login, URL do ambiente e preparação que se repetem em vários casos ficam **um
 
 **Com o Claude:** ele consulta `qa_compartilhados` antes de escrever casos e usa `↪ Bloco (dado)` e `{{dado}}` em vez de repetir login ou escrever senhas; sugere criar um compartilhado quando o mesmo setup aparece em vários casos.
 
+**Converter os casos que você já tem:** peça ao Claude *"varre a aplicação Portal para compartilhados"* (skill de varredura → `qa_varredura { modo: "compartilhados" }`). Ele acha a **mesma sequência de passos em 3 ou mais casos** (ex.: os 3 passos de login, mudando só o e-mail e a senha) e os **e-mails, senhas e URLs escritos à mão**, e mostra o compartilhado proposto — os dados (com a senha), o bloco `↪` com parâmetro e o escopo (a pasta em comum dos casos; na aplicação inteira vai para `aplicacoes/<App>/compartilhados/`). Nada é gravado sem o seu OK:
+
+- **✅ certo** — cria o compartilhado e troca cada sequência por **uma** linha `↪ Fazer login (admin)` (o obtido e o pior status dos passos trocados vão para ela; o `#` é renumerado);
+- **🟡 provável** — também troca o e-mail/URL soltos em outros passos por `{{admin}}` / `{{url}}`, e a senha que está ao lado de um e-mail conhecido por `{{admin.senha}}`;
+- **❓ confirmar** — senha na Massa de dados ou sem usuário ao lado: fica com você.
+
+A versão anterior de cada caso fica em `.versoes/` (histórico do documento). Bloco ou dado que já existe num compartilhado do escopo é reaproveitado, não duplicado.
+
 ## 7. Executar testes
 
 ### 7.1 Status clicável

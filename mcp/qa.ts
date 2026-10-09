@@ -30,6 +30,7 @@ import {
   defCases, execNumber, cicloOf, nextExecNumber, cycleProgress, unexecuted, nextCase, execInfo, syncDefExecutions, retestCases,
 } from '../src/markdown/cycle.ts';
 import type { CaseLookup } from '../src/markdown/cycle.ts';
+import { planSharedSweep, sharedDocText, applyCasePlan, sharedSweepReport } from '../src/markdown/sharedSweep.ts';
 import { parseShared, scopeFor, parseInclude, expandInclude, resolveText, sharedWarnings, maskSecretColumns, SHARED_TYPE, type SharedDoc, type SharedScopeResult, type Segment } from '../src/markdown/shared.ts';
 import { buildReports, linkReports, REPORT_TYPES } from '../src/markdown/reports.ts';
 import { readLinks } from '../src/markdown/linkTypes.ts';
@@ -1048,10 +1049,11 @@ export class QaWorkspace {
    * Varredura de vínculos (documentos antigos): o que falta de app:, jira:, epico:, tags, sprint, caso do bug e pasta.
    * `aplicar`: preenche os campos vazios e soma tags até a confiança pedida ("certo" ou "provavel"); "confirmar" nunca.
    */
-  sweep(o: { pasta?: string; app?: string; aplicar?: string; limite?: number }): Promise<string> {
+  sweep(o: { pasta?: string; app?: string; aplicar?: string; limite?: number; modo?: string; min_casos?: number }): Promise<string> {
     return this.exclusive(async () => {
       await this.refresh(true);
       const scope = o.pasta ? o.pasta.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '') : o.app ? `aplicacoes/${o.app}` : '';
+      if (o.modo === 'compartilhados') return this.sweepShared(scope, o);
       const docs = this.docTexts();
       const found = sweepLinks(docs, this.dirs, scope);
       const total = docs.filter((d) => (scope ? d.path.toLowerCase().startsWith(`${scope.toLowerCase()}/`) : d.path.startsWith('aplicacoes/'))).length;
@@ -1071,6 +1073,43 @@ export class QaWorkspace {
       const shown = found.slice(0, o.limite || 80);
       return sweepReport(shown, { total, applied, level }) + (found.length > shown.length ? `\n\n… e mais ${found.length - shown.length} documento(s) (use pasta/app para dividir).` : '');
     });
+  }
+
+  /**
+   * Varredura de compartilhados (1.36.0): passos repetidos e dados escritos à mão nos casos → um compartilhado e as
+   * linhas `↪ Bloco (dado)` / `{{dado}}`. Sem aplicar, só relata.
+   */
+  private async sweepShared(scope: string, o: { aplicar?: string; min_casos?: number; app?: string }): Promise<string> {
+    const inScope = (p: string) => (scope ? p.toLowerCase().startsWith(`${scope.toLowerCase()}/`) : p.startsWith('aplicacoes/'));
+    const cases = this.index.all().filter((e) => CASE_TYPES.includes(e.tipo) && inScope(e.path));
+    // compartilhados que já valem para algum dos casos: os dados e blocos deles são reaproveitados (não duplica)
+    const scopes = cases.map((e) => this.scopeOfEntry(e));
+    const existing = scopeFor({ path: '' }, []);
+    for (const sc of scopes) {
+      for (const [k, v] of sc.vars) if (!existing.vars.has(k)) existing.vars.set(k, v);
+      for (const [k, b] of sc.blocks) if (!existing.blocks.has(k)) existing.blocks.set(k, b);
+      for (const d of sc.docs) if (!existing.docs.includes(d)) existing.docs.push(d);
+    }
+    const plan = planSharedSweep(cases.map((e) => ({ path: e.path, id: e.id || e.name.replace(/\.(md|markdown)$/i, ''), text: e.text || '' })), { minCases: Math.max(2, o.min_casos || 3), scope: existing });
+    const level = o.aplicar === 'provavel' || o.aplicar === 'provável' ? 'provavel' : o.aplicar === 'certo' ? 'certo' : '';
+    if (o.aplicar && !level) throw new Error('aplicar: "certo" (cria o compartilhado e troca os blocos repetidos) ou "provavel" (também os dados soltos)');
+    if (!level) return sharedSweepReport(plan);
+    const d = new Date();
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const text = sharedDocText(plan, nextId('COMP-', this.allIds()), today);
+    let created = '';
+    if (text) created = await this.createDoc(plan.dir || 'compartilhados', plan.fileName, text);
+    let applied = 0;
+    const skipped: string[] = [];
+    for (const p of plan.cases) {
+      const doc = await this.readDoc(p.path);
+      const indexed = this.index.get(p.path)?.text ?? '';
+      if (doc.text !== indexed) { skipped.push(p.path); continue; }
+      const r = applyCasePlan(doc.text, p, level);
+      if (r.applied && await this.writeDoc(p.path, r.text, doc)) applied += r.applied;
+    }
+    await this.refresh(true);
+    return sharedSweepReport(plan, { applied, level, created: created || '(nada novo: blocos e dados já existiam no escopo)' }) + (skipped.length ? `\n\nNão alterados (mudaram no disco durante a varredura): ${skipped.join(', ')} — rode de novo.` : '');
   }
 
   /**

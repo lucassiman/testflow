@@ -1,6 +1,6 @@
 ---
 name: qa-varredura
-description: Varre a pasta de QA do TestFlow (aplicacoes/) atrás de casos, bugs, histórias, execuções e relatórios antigos sem os vínculos (app, ticket/jira, épico, tags e sprint herdadas, bug sem caso, caso sem requisito, arquivo fora da pasta do épico/ticket) e corrige com o OK do usuário. Use quando o usuário pedir para "organizar", "varrer", "revisar os vínculos", "arrumar documentos antigos" ou "preparar a pasta para os segmentos/relatórios".
+description: Varre a pasta de QA do TestFlow (aplicacoes/) atrás de casos, bugs, histórias, execuções e relatórios antigos sem os vínculos (app, ticket/jira, épico, tags e sprint herdadas, bug sem caso, caso sem requisito, arquivo fora da pasta do épico/ticket) e de login/preparação repetidos e senhas escritas nos casos (leva para um compartilhado), e corrige com o OK do usuário. Use quando o usuário pedir para "organizar", "varrer", "revisar os vínculos", "arrumar documentos antigos" ou "preparar a pasta para os segmentos/relatórios" ou "converter para o formato de compartilhados".
 ---
 
 # Varredura de vínculos (TestFlow)
@@ -18,7 +18,7 @@ O TestFlow junta tudo o que nasceu de um épico, ticket, execução ou ciclo (**
 4. **Mover arquivos** (para a pasta do épico/ticket) é feito **no app**: clique direito em `casos/` → **🎫 Organizar por épico e ticket** — ele leva links, prints e anexos junto e tem Desfazer. Não mova à mão.
 5. **Relatórios antigos** (de execuções sem tags/vínculos): depois de corrigir a execução, gere de novo (`qa_relatorios` ou 📑 Relatórios no app) — o que o QA escreveu no aceite fica.
 6. Toda gravação pelo MCP guarda a versão anterior em `.versoes/`.
-7. **Passos e dados repetidos**: login/preparação copiados passo a passo em vários casos, ou senha/e-mail escritos no caso → relate como 🟡 e proponha um **compartilhado** (`qa_compartilhados { pasta }` mostra o que já existe; criar com `qa_criar { tipo: "compartilhado" }` e escopo `pasta`/`app`) e trocar nos casos por `↪ Bloco (dado)` e `{{dado}}` — só com o OK, caso a caso. Senha escrita num caso é sempre item a corrigir.
+7. **Passos e dados repetidos** (formato novo de compartilhados): `qa_varredura { modo: "compartilhados", app | pasta }` acha login/preparação repetidos (a mesma sequência em 3+ casos — `min_casos` muda) e e-mail/senha/URL escritos à mão, e propõe o compartilhado (dados com senha, bloco `↪` com parâmetro, escopo pela pasta em comum dos casos). Mostre o resumo (sem senhas) e, com o OK: `aplicar: "certo"` cria o compartilhado e troca as sequências por **uma** linha `↪ Bloco (dado)` (status e obtido juntados, `#` renumerado); `aplicar: "provavel"` troca também os dados soltos por `{{dado}}`. Os ❓ (senha na Massa de dados, senha sem usuário ao lado) ficam com o usuário — sugira levar para o compartilhado. Senha escrita num caso é sempre item a corrigir.
 
 ## Com o MCP do TestFlow (ferramentas `qa_*`)
 
@@ -30,6 +30,7 @@ O TestFlow junta tudo o que nasceu de um épico, ticket, execução ou ciclo (**
 4. Para os ❓ confirmar, proponha a resposta quando houver indício — por exemplo, o bug órfão cujo título/obtido bate com um caso (`qa_buscar` pelo texto do erro), o caso sem ticket que está junto de outros do mesmo ticket — e, com o OK, grave com `qa_atualizar_cabecalho` (campos `jira`, `epico`, `tags`) ou ligue com `qa_ligar { doc: "BUG-2", alvo: "TC-14" }` (põe "Encontrado em [[TC-14]]" no Resumo do bug). Depois de ligar, rode a varredura de novo: o bug passa a herdar épico/tags do caso.
 5. Rode `qa_varredura` de novo para confirmar que sobrou só o que depende do usuário, e `qa_validar { app }` para links quebrados e evidências faltando.
 6. Feche com: o que foi aplicado (por tipo), o que ficou para o usuário decidir, e o lembrete de **🎫 Organizar por épico e ticket** no app se houver itens "mover".
+7. Pastas com casos antigos (antes dos compartilhados): rode também `qa_varredura { modo: "compartilhados", app }` (regra 7) — uma aplicação por vez.
 
 ## Sem o MCP (arquivos à mão ou anexados)
 

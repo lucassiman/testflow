@@ -8,6 +8,12 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.36.0', date: '09/10/2026',
+    items: [
+      { icon: '🧹', text: '**Converter casos antigos para compartilhados**: a varredura do Claude acha o login/preparação repetidos em vários casos e os e-mails, senhas e URLs escritos à mão, propõe o compartilhado e, com o seu OK, troca por `↪ Fazer login (admin)` e `{{dado}}` (versão anterior guardada).', manual: '6.8 Passos e dados compartilhados' },
+    ],
+  },
+  {
     version: '1.35.0', date: '09/10/2026',
     items: [
       { icon: '🔑', text: '**Passos e dados compartilhados**: logins, URLs e preparação definidos uma vez, com **escopo** (pasta, aplicação ou tudo — como o beforeEach). No caso, `↪ Fazer login (admin)` vale um passo (dois logins = duas linhas) e `{{admin.senha}}` usa o dado.', manual: '6.8 Passos e dados compartilhados' },

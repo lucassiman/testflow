@@ -58,7 +58,7 @@ Como trabalhar:
 - Rodada de regressão: qa_rodada_criar (por segmento — épico, ticket, #tag —, consulta, lista de casos, ciclo salvo, ou reteste: EXEC-… só com as falhas) → qa_rodada_registrar por caso → qa_rodada_status para ver como está → qa_rodada_finalizar (SKIP nos pendentes e os 4 relatórios: encerramento/Go-No-Go, defeitos, rastreabilidade, log + comparativo). qa_relatorios regera.
 - Bug de um caso que já tem bug ligado: qa_bug_do_caso devolve os bugs; pergunte ao usuário se é reincidência (reincidencia: "BUG-…") ou bug novo (novo: true).
 - Evolução da qualidade (sprint, % de sucesso no tempo, casos que mais falham): qa_tendencia.
-- Login, URLs e preparação repetidos em vários casos: veja qa_compartilhados (pasta ou documento) antes de escrever casos — use "↪ Bloco (param)" como um passo e {{dado}} / {{dado.senha}} em vez de repetir passos ou escrever senhas; se não houver, sugira criar um compartilhado (qa_criar tipo compartilhado, escopo pasta | app | global).
+- Login, URLs e preparação repetidos em vários casos: veja qa_compartilhados (pasta ou documento) antes de escrever casos — use "↪ Bloco (param)" como um passo e {{dado}} / {{dado.senha}} em vez de repetir passos ou escrever senhas; se não houver, sugira criar um compartilhado (qa_criar tipo compartilhado, escopo pasta | app | global). Casos antigos com login repetido ou senha escrita: qa_varredura { modo: "compartilhados" } relata e, com o OK, converte.
 - Segmento = tudo o que nasceu de um épico/ticket/execução/ciclo/#tag (filtro segmento em qa_listar/qa_consultar/qa_validar/qa_rastreabilidade).
 - Qualidade: qa_validar (avisos de QA, links quebrados, evidências faltando) antes de entregar ou publicar; qa_varredura acha documentos antigos sem os vínculos (relate primeiro, aplique só com o OK do usuário).
 - Escopo dos casos: siga a seção "Nível, tipo e profundidade" de qa_convencoes — gere só o nível pedido (ex.: e2e/UI sem casos de backend/unitários) e diga a premissa quando o pedido não especificar.`;
@@ -242,8 +242,12 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
   }, async (a) => run(() => ws.validate(a), text));
 
   server.registerTool('qa_varredura', {
-    title: 'Varredura de vínculos', description: 'Procura em aplicacoes/ (ou na pasta/app informada) documentos antigos sem os vínculos: app:, jira:/epico: (pela pasta do ticket/épico ou pela história), tags e sprint herdadas do pai, bug sem caso ligado, caso sem requisito, execução sem o épico/tags dos casos, relatório desatualizado, arquivo fora da pasta de épico/ticket. Cada achado vem com a confiança (certo / provável / confirmar). Sem aplicar, só relata; aplicar: "certo" ou "provavel" preenche campos vazios e soma tags (versão anterior em .versoes/). Mover arquivos e os "confirmar" ficam com o usuário.',
-    inputSchema: { pasta: z.string().optional(), app: z.string().optional(), aplicar: z.enum(['certo', 'provavel']).optional(), limite: z.number().int().min(1).max(1000).optional() },
+    title: 'Varredura de vínculos', description: 'Procura em aplicacoes/ (ou na pasta/app informada) documentos antigos sem os vínculos: app:, jira:/epico: (pela pasta do ticket/épico ou pela história), tags e sprint herdadas do pai, bug sem caso ligado, caso sem requisito, execução sem o épico/tags dos casos, relatório desatualizado, arquivo fora da pasta de épico/ticket. Cada achado vem com a confiança (certo / provável / confirmar). Sem aplicar, só relata; aplicar: "certo" ou "provavel" preenche campos vazios e soma tags (versão anterior em .versoes/). Mover arquivos e os "confirmar" ficam com o usuário. Com modo: "compartilhados", leva login/preparação repetidos e dados escritos à mão para um documento compartilhado (aplicar certo: cria e troca os blocos; provavel: também os dados soltos).',
+    inputSchema: {
+      pasta: z.string().optional(), app: z.string().optional(), aplicar: z.enum(['certo', 'provavel']).optional(), limite: z.number().int().min(1).max(1000).optional(),
+      modo: z.enum(['vinculos', 'compartilhados']).optional().describe('vinculos (padrão) ou compartilhados: acha passos repetidos (login, preparação) e dados escritos à mão (e-mail, senha, URL) nos casos, propõe o compartilhado e troca por "↪ Bloco (dado)" / {{dado}}'),
+      min_casos: z.number().int().min(2).max(50).optional().describe('modo compartilhados: em quantos casos a sequência precisa se repetir (padrão 3)'),
+    },
     annotations: RW,
   }, async (a) => run(() => ws.sweep(a), text));
 
