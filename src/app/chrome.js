@@ -128,3 +128,13 @@ for (const type of ['pointerdown', 'mousedown', 'click']) {
     document.body.classList.toggle('fm-compact', next);
   }, true);
 }
+
+// ---------------------------------------------------------------- atalhos anunciados
+/**
+ * Os botões já mostram o atalho no title ("Salvar (Ctrl+S)"); aqui ele vira
+ * aria-keyshortcuts para leitores de tela anunciarem também.
+ */
+for (const b of document.querySelectorAll('button[title]')) {
+  const m = /\(((?:Ctrl|Alt|Shift)(?:\+[^)\s]+)+)\)/.exec(b.getAttribute('title') || '');
+  if (m && !b.hasAttribute('aria-keyshortcuts')) b.setAttribute('aria-keyshortcuts', m[1].replace(/Ctrl/g, 'Control'));
+}

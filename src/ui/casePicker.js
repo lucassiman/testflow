@@ -34,6 +34,7 @@ export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada —
     /** @type {DocEntry[]} */
     let visible = list;
     let anchor = -1;
+    let focusAt = 0;   // linha que recebe o Tab (roving tabindex)
 
     const overlay = document.createElement('div');
     overlay.className = 'review-overlay cpk-overlay';
@@ -47,8 +48,8 @@ export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada —
           <button type="button" class="cpk-btn" data-act="none">Limpar</button>
         </div>
         ${shortcuts.length ? `<div class="cpk-chips"><span class="cpk-chips-label">Atalhos:</span>${shortcuts.map((s, i) => `<button type="button" class="cpk-chip" data-chip="${i}" title="${esc(s.hint || 'Adiciona estes casos à seleção')}">${esc(s.label)}${s.hint ? ` <small>${esc(s.hint)}</small>` : ''}</button>`).join('')}</div>` : ''}
-        <div class="cpk-head cpk-row"><label class="cpk-chk"><input type="checkbox" data-cpk="head"></label><span>Caso</span><span>Aplicação / pasta</span><span>Tags</span><span>Último</span></div>
-        <div class="cpk-list" data-cpk="list" role="listbox" aria-multiselectable="true"></div>
+        <div class="cpk-head cpk-row"><label class="cpk-chk"><input type="checkbox" data-cpk="head" aria-label="Selecionar todos os casos visíveis"></label><span>Caso</span><span>Aplicação / pasta</span><span>Tags</span><span>Último</span></div>
+        <div class="cpk-list" data-cpk="list" role="listbox" aria-multiselectable="true" aria-label="Casos de teste"></div>
         <details class="cpk-links" data-cpk="links"><summary>🔗 Vínculos (opcional) — Jira, Épico, Sprint…</summary></details>
         <div class="review-foot">
           <label class="cpk-name">Nome <input type="text" data-cpk="name" value="${esc(defaultName)}" spellcheck="false"></label>
@@ -87,8 +88,8 @@ export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada —
         const on = selected.has(e.path);
         const last = e.overall && e.overall !== 'PENDING' ? e.overall : '';
         const where = [e.app, folderOf(e.path)].filter(Boolean).join(' / ');
-        return `<div class="cpk-row cpk-item${on ? ' on' : ''}" role="option" aria-selected="${on}" data-i="${i}">
-          <label class="cpk-chk"><input type="checkbox" tabindex="-1"${on ? ' checked' : ''}></label>
+        return `<div class="cpk-row cpk-item${on ? ' on' : ''}" role="option" aria-selected="${on}" tabindex="${i === focusAt ? 0 : -1}" data-i="${i}">
+          <span class="cpk-chk" aria-hidden="true"><span class="cpk-box"></span></span>
           <span class="cpk-case"><b>${esc(keyOf(e))}</b> <span>${esc(e.titulo || e.heading || e.name)}</span>${e.counts.total === 0 ? ' <small class="cpk-whole" title="Sem tabela de passos (ex.: checklist): na rodada é avaliado como um todo — você marca os itens e registra PASS/FAIL/BLOCKED">🗒 como um todo</small>' : ''}${e.jira ? ` <small class="cpk-jira">${esc(e.jira)}</small>` : ''}</span>
           <span class="cpk-where" title="${esc(e.path)}">${esc(where)}</span>
           <span class="cpk-tags">${e.tags.map((t) => `<em>${esc(t)}</em>`).join('')}</span>
@@ -124,6 +125,22 @@ export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada —
     }
     document.addEventListener('keydown', onKey, true);
 
+    // teclado: ↑ ↓ movem entre os casos, Espaço/Enter marcam (Shift = intervalo)
+    listEl.addEventListener('keydown', (event) => {
+      const row = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (event.target).closest('.cpk-item'));
+      if (!row) return;
+      const i = Number(row.dataset.i);
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        const next = /** @type {HTMLElement | null} */ (listEl.querySelector(`.cpk-item[data-i="${i + (event.key === 'ArrowDown' ? 1 : -1)}"]`));
+        if (next) { row.tabIndex = -1; next.tabIndex = 0; focusAt = Number(next.dataset.i); next.focus(); }
+      } else if (event.key === ' ' || (event.key === 'Enter' && !event.ctrlKey && !event.metaKey)) {
+        event.preventDefault(); event.stopPropagation();
+        focusAt = i;
+        row.dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: event.shiftKey }));
+        /** @type {HTMLElement | null} */ (listEl.querySelector(`.cpk-item[data-i="${i}"]`))?.focus();
+      }
+    });
     listEl.addEventListener('click', (event) => {
       const row = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (event.target).closest('.cpk-item'));
       if (!row) return;
@@ -135,11 +152,12 @@ export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada —
         for (let k = a; k <= b; k++) setAt(k, target);
       } else setAt(i, on);
       anchor = i;
+      focusAt = i;
       const keep = listEl.scrollTop;
       renderList();
       listEl.scrollTop = keep;
     });
-    search.addEventListener('input', () => { anchor = -1; renderList(); });
+    search.addEventListener('input', () => { anchor = -1; focusAt = 0; renderList(); });
     nameInput.addEventListener('input', refreshCount);
     headChk.addEventListener('change', () => { visible.forEach((_, i) => setAt(i, headChk.checked)); renderList(); });
     overlay.addEventListener('click', (event) => {

@@ -1,6 +1,6 @@
 {
   "name": "testflow",
-  "version": "1.29.0",
+  "version": "1.30.0",
   "description": "Editor Markdown leve para documentação de QA (Raw, Preview editável, Mermaid).",
   "scripts": {
     "dev": "vite",
@@ -41,6 +41,7 @@
     "@playwright/test": "^1.63.0",
     "@types/node": "^22.20.4",
     "@types/turndown": "^5.0.6",
+    "axe-core": "^4.14.0",
     "esbuild": "^0.28.2",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",

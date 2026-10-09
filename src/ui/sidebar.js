@@ -108,7 +108,7 @@ export function createSidebar({ root, onOpenFile, onOpenRecent, onRemoveRecent, 
     </section>
     <section class="side-section side-recents">
       <div class="side-head"><button type="button" class="side-title side-collapse" data-side="recentsToggle" aria-expanded="true" title="Recolher / mostrar os recentes (a árvore ganha o espaço)">${CARET}Recentes</button>
-        <span class="side-seg" role="tablist"><button type="button" data-recent-tab="files" aria-selected="true">Arquivos</button><button type="button" data-recent-tab="folders" aria-selected="false">Pastas</button></span>
+        <span class="side-seg" role="tablist" aria-label="Recentes"><button type="button" role="tab" data-recent-tab="files" aria-selected="true">Arquivos</button><button type="button" role="tab" data-recent-tab="folders" aria-selected="false">Pastas</button></span>
       </div>
       <ul class="side-list" data-side="recentList"></ul>
       <ul class="side-list" data-side="recentFolders" hidden></ul>

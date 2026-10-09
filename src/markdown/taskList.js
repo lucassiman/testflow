@@ -21,9 +21,11 @@ export function taskListPlugin(md) {
       const checked = match[1].toLowerCase() === 'x';
       const line = item.map ? item.map[0] : -1;
       const checkbox = new state.Token('html_inline', '', 0);
-      checkbox.content = `<input type="checkbox" class="task-checkbox" data-line="${line}"${checked ? ' checked' : ''}>`;
       inline.children[0].content = inline.children[0].content.replace(TASK_RE, '');
       inline.content = inline.content.replace(TASK_RE, '');
+      // rótulo acessível = texto do item (leitores de tela anunciam a tarefa)
+      const label = inline.content.replace(/[*_`~[\]]/g, '').trim().slice(0, 120).replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
+      checkbox.content = `<input type="checkbox" class="task-checkbox" data-line="${line}" aria-label="${label || 'tarefa'}"${checked ? ' checked' : ''}>`;
       inline.children.unshift(checkbox);
       item.attrJoin('class', 'task-list-item');
 

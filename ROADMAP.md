@@ -172,6 +172,8 @@ Ida e volta pela área de transferência (sem chave de API, nada sai do editor s
 
 ✅ **Feito na 1.12.0 — Dispositivo/ambiente:** substituir/expandir o campo atual *Browser* por **Dispositivo/Ambiente**: WEB, Mobile iOS, Mobile Android, Mobile — Todos; para mobile informar a versão (ex.: Mobile iOS — iOS 18, Mobile Android — Android 15). Deve aparecer nas tags, no cabeçalho do caso, nos modelos de criação de casos e nas informações da execução, para rastrear em que dispositivo/plataforma cada caso foi validado.
 
+**1.30.0 (09/10) — 10.3, parte 7: acessibilidade (fecha a 10.3 e a Fase 10).** Varredura com axe-core (`tests/e2e/acessibilidade.spec.mjs`: início, caso, execução, seletor de casos, rodada, claro e escuro — zero violações críticas/sérias). Foco visível global (`:focus-visible` em botões, links, abas, `[tabindex]`; anel nos campos); contraste: `--blocked-fg` claro `#7d5300`, wikilink misturado ao texto, sem `opacity` em textos do painel da rodada e do passo, botões de texto branco sobre `--brand` (não `--accent`, claro demais no escuro). Rótulos: checkboxes de tarefa (`aria-label` = texto do item), zoom, abas (`<nav>`, `aria-current`, fechar), paleta (`dialog`/`listbox`), Recentes (`tablist`), runner `role=region`, status com `aria-pressed`; `aria-keyshortcuts` tirado do `title` dos botões (`src/app/chrome.js`); tabelas roláveis com `tabindex=0`. Teclado: seletor de casos com *roving tabindex* (↑ ↓, Espaço/Enter, Shift = intervalo; caixa visual no lugar do `<input>` aninhado); runner: Enter foca o *obtido*. `prefers-reduced-motion` respeitado.
+
 **1.29.0 (09/10) — 10.3, parte 6: painel de execução encaixado e cartão compacto.** `layoutDock` em `src/ui/runner.js`: com o Preview ≥ 1000 px, `body.runner-docked` (o painel vira coluna de 380 px à direita, entre o topo do Preview e o rodapé — `--dock-top/--dock-bottom` —, ao lado do painel da rodada; o Preview ganha `padding-right`); fora disso flutua. Cartão do cabeçalho: `renderFrontMatterCard` põe ambiente/Jira na linha do topo (`.fm-compact-only`) e o `▾ mais` (span com `data-fm-toggle`; o Preview não aceita `<button>`); `body.fm-compact` (padrão; preferência `fmCompact`) esconde a grade e as tags; o clique no ▾ não abre o formulário (`src/app/chrome.js`).
 
 **1.28.0 (09/10) — 10.3, parte 5: painel da rodada.** `runsOf` lê a coluna Duração (`dur`) e `caseResult` devolve `dur`; `cycleChecklist` dá `dur` por item e `counts` (PASS/FAIL/BLOCKED/SKIP); o painel desenha a barra segmentada (`.cp-seg-*`), filtros `cyclePanelFilter` (todos/pendentes/falhas; o caso aberto sempre aparece) e ⏱ duração. ("Nesta rodada × último resultado" já veio na 1.19.1.)
@@ -390,7 +392,7 @@ Ideias de uso diário, por área. Esforço: **P** / **M** / **G** como nas fases
 | Confiança | ✅ (07/10, 1.18.0) *Salvar ▾ → 💾 Backup (.zip)* (`app/backup.js`, `listAllFiles`) + lembrete a cada 7/14/30 dias se mudou (`backupDue` em `markdown/backup.ts`) — **Lembrete de backup** quando a pasta de trabalho não tem cópia recente (tudo é local). | P |
 | Aparência | ~~Descartado em 07/10 (não precisa)~~ — **Tema claro/escuro** pelo horário ou pelo sistema, se ainda não existir. | P |
 
-### Fase 10 — TestFlow: relatórios de fim de execução, interface limpa e Claude no fluxo do QA *(planejada em 08/10/2026)*
+### Fase 10 — TestFlow: relatórios de fim de execução, interface limpa e Claude no fluxo do QA *(planejada em 08/10/2026 — ✅ concluída na 1.30.0)*
 
 Levantada numa revisão das telas com a pasta `exemplos/` (como um QA novo usaria) e no que o Claude ainda não faz pelo MCP. Esforço: **P** / **M** / **G**. Ordem sugerida: 10.1 → 10.2 → 10.4 (o MCP gera os mesmos relatórios) → 10.3 em versões pequenas.
 
@@ -413,7 +415,7 @@ Ao **🏁 Finalizar execução**, o TestFlow gera 4 documentos em `relatorios/<E
 | **Rastreabilidade e cobertura** | História/épico/ticket (`jira:`, `epico:`) → casos → resultado nesta rodada → bugs; o que ficou **sem caso**, **sem executar** ou **só automatizado**; cobertura de automação. | M |
 | **Log + comparativo** | Log cronológico (caso, início, fim, duração, quem, dispositivo) e **comparação com a execução anterior do mesmo ciclo**: passou a falhar (regressão), foi corrigido, continua falhando, novo. | M |
 
-#### 10.3 — Interface e navegação *(M–G, em versões pequenas)* — em andamento: 1.24.0 árvore e avisos · 1.25.0 menos barras e modo foco · 1.26.0 tela inicial · 1.27.0 menu Novo e paleta · 1.28.0 painel da rodada · 1.29.0 painel de execução encaixado e cartão compacto
+#### 10.3 — Interface e navegação *(M–G, em versões pequenas)* — ✅ feito: 1.24.0 árvore e avisos · 1.25.0 menos barras e modo foco · 1.26.0 tela inicial · 1.27.0 menu Novo e paleta · 1.28.0 painel da rodada · 1.29.0 painel de execução encaixado e cartão compacto · 1.30.0 acessibilidade
 
 | Item | Detalhe | Esforço |
 |---|---|---|

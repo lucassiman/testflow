@@ -28,7 +28,7 @@ export function createCommandMenu() {
   const el = document.createElement('div');
   el.className = 'cmd-menu';
   el.hidden = true;
-  el.setAttribute('role', 'listbox');
+  el.setAttribute('role', 'dialog');
   document.body.appendChild(el);
 
   /** @type {CommandItem[]} */
@@ -137,7 +137,8 @@ export function createCommandMenu() {
       title = opts.title || '';
       el.classList.toggle('wide', !!opts.wide);
       el.classList.toggle('over-dialog', !!opts.top);
-      el.innerHTML = `${title ? `<div class="cmd-title">${esc(title)}</div>` : ''}${opts.searchable ? `<input class="cmd-search" type="text" placeholder="${esc(opts.placeholder || 'Filtrar…')}" spellcheck="false">` : ''}<div class="cmd-list"></div>`;
+      el.setAttribute('aria-label', title || 'Menu');
+      el.innerHTML = `${title ? `<div class="cmd-title">${esc(title)}</div>` : ''}${opts.searchable ? `<input class="cmd-search" type="text" placeholder="${esc(opts.placeholder || 'Filtrar…')}" aria-label="${esc(opts.placeholder || 'Filtrar')}" spellcheck="false">` : ''}<div class="cmd-list" role="listbox" aria-label="${esc(title || 'Opções')}"></div>`;
       el.hidden = false;
       search = el.querySelector('.cmd-search');
       filter('');

@@ -111,6 +111,14 @@ const renderLinkOpen = (tokens, idx, options, env, self) => {
 };
 md.renderer.rules.link_open = renderLinkOpen;
 
+// Tabelas largas rolam na horizontal: tabindex deixa rolar pelo teclado (acessibilidade).
+/** @type {RendererRule} */
+const renderTableOpen = (tokens, idx, options, _env, self) => {
+  tokens[idx].attrSet('tabindex', '0');
+  return self.renderToken(tokens, idx, options);
+};
+md.renderer.rules.table_open = renderTableOpen;
+
 /** @type {Record<string, string>} */
 const BLOCK_TYPES = {
   paragraph_open: 'paragraph',

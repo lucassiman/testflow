@@ -61,7 +61,7 @@
 .mermaid-block { margin: 0.4em 0; text-align: center; }
 .mermaid-block .mermaid-src { text-align: left; }
 .mermaid-block:has(.mermaid-svg) .mermaid-src { display: none; }
-.mermaid-block.loading .mermaid-src { opacity: 0.55; }
+.mermaid-block.loading .mermaid-src { cursor: progress; }
 .mermaid-block.loading::after { content: 'Renderizando diagrama…'; display: block; color: var(--muted); font-size: 0.8em; }
 .mermaid-svg { overflow: auto; cursor: zoom-in; }
 .mermaid-svg svg { max-width: 100%; height: auto; zoom: var(--preview-scale, 1); }
@@ -122,7 +122,7 @@
 :root {
   --pass-fg: #1a7f37; --pass-bg: #dafbe1;
   --fail-fg: #cf222e; --fail-bg: #ffebe9;
-  --blocked-fg: #9a6700; --blocked-bg: #fff1c2;
+  --blocked-fg: #7d5300; --blocked-bg: #fff1c2;
   --skip-fg: #57606a; --skip-bg: #eaeef2;
   --pending-fg: #0969da; --pending-bg: #ddf4ff;
   --note: #0969da; --tip: #1a7f37; --important: #8250df; --warning: #9a6700; --caution: #cf222e;

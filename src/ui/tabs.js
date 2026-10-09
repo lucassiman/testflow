@@ -37,10 +37,10 @@ export function createTabs({ bar, onSwitch, onClose, onNew, getActiveInfo, onReo
     document.documentElement.classList.toggle('has-tabs', tabs.length >= 2);
     bar.innerHTML = tabs.map((t) => {
       const i = info(t);
-      return `<div class="tab${t.id === activeId ? ' active' : ''}" data-id="${t.id}" title="${esc(i.path || i.name)} — arraste para mudar a ordem" role="tab" aria-selected="${t.id === activeId}">
+      return `<div class="tab${t.id === activeId ? ' active' : ''}" data-id="${t.id}" title="${esc(i.path || i.name)} — arraste para mudar a ordem"${t.id === activeId ? ' aria-current="page"' : ''}>
         <span class="tab-name">${esc(i.name.replace(/\.(md|markdown)$/i, ''))}</span>${(marks?.(t.id, t.id === activeId) || []).map((m) => `<span class="tab-mark tab-mark-${esc(m.key)}" title="${esc(m.title)}">${esc(m.icon)}</span>`).join('')}${i.dirty ? '<span class="tab-dirty" title="Não salvo">●</span>' : ''}
-        <button type="button" class="tab-close" data-close="${t.id}" title="Fechar aba (Alt+W)">×</button></div>`;
-    }).join('') + '<button type="button" class="tab-new" title="Nova aba (Alt+N)">＋</button>';
+        <button type="button" class="tab-close" data-close="${t.id}" title="Fechar aba (Alt+W)" aria-label="Fechar ${esc(i.name)}">×</button></div>`;
+    }).join('') + '<button type="button" class="tab-new" title="Nova aba (Alt+N)" aria-label="Nova aba">＋</button>';
     bar.querySelector('.tab.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
 

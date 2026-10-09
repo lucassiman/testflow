@@ -45,6 +45,8 @@ import {
 export function createRunner({ store, preview, toast: appToast, root, onPastePrint, onPasteFiles, onSavePrints, onReadClipboardImages, onNewBug, onCapture, onRecord, isRecording, onStateChange, onFinish, docKey: docKeyDep, prefs }) {
   const el = document.createElement('div');
   el.className = 'runner';
+  el.setAttribute('role', 'region');
+  el.setAttribute('aria-label', 'Execução em andamento');
   el.hidden = true;
   document.body.appendChild(el);
 
@@ -317,12 +319,12 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
           <span class="run-print-info">${prints ? `${prints} print${prints > 1 ? 's' : ''} neste passo` : (pip ? 'ou Ctrl+V nesta janela' : 'ou Ctrl+V com o foco fora do Raw')}</span>
         </div>
         ${(kind === 'fail' || kind === 'blocked') && onNewBug ? `<div class="run-bug"><button type="button" data-act="bug" class="run-btn" title="Cria o bug ligado a este documento, já com os passos até aqui, esperado, obtido e os prints do passo (abre numa aba nova)">🐞 Abrir bug deste passo</button></div>` : ''}
-        <div class="run-status">${STATUS_ORDER.map((w, i) => `<button type="button" data-word="${w}" class="${kind === KIND_OF[w] ? 'current' : ''}" title="${w} (${i + 1})"><kbd>${i + 1}</kbd><code class="badge badge-${KIND_OF[w]}">${w}</code></button>`).join('')}</div>
+        <div class="run-status">${STATUS_ORDER.map((w, i) => `<button type="button" data-word="${w}" class="${kind === KIND_OF[w] ? 'current' : ''}" aria-pressed="${kind === KIND_OF[w]}" title="${w} (${i + 1})"><kbd>${i + 1}</kbd><code class="badge badge-${KIND_OF[w]}">${w}</code></button>`).join('')}</div>
       </div>
       <div class="run-foot">
         <button type="button" data-act="prev" title="Passo anterior (←)">◀</button>
         <button type="button" data-act="next" title="Próximo passo (→)">▶</button>
-        <span class="run-hint">1–5 status · ← → passos</span>
+        <span class="run-hint">1–5 status · ← → passos · Enter obtido · Esc sai do campo</span>
         <button type="button" data-act="finish" class="primary" title="Registra a rodada no Histórico de execuções">✓ Concluir</button>
       </div>`;
     highlightRow(t, row.index);
@@ -653,6 +655,11 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     if (i >= 0) setStatus(STATUS_ORDER[i]);
     else if (event.key === 'ArrowRight') go(1);
     else if (event.key === 'ArrowLeft') go(-1);
+    else if (event.key === 'Enter' && (!a || a === d.body || !a.closest('button, a, [role="button"], select'))) {
+      // teclado só: Enter leva ao campo "resultado obtido" do passo atual
+      const f = /** @type {HTMLElement | null} */ (el.querySelector('.run-actual'));
+      if (f) f.focus(); else handled = false;
+    }
     else handled = false;
     if (handled) { event.preventDefault(); event.stopPropagation(); }
   }

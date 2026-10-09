@@ -365,7 +365,7 @@ Status geral, barra de progresso e contagem por status. **Clique num status** pa
 **▶ Executar** (ou `/executar`) abre um painel com a ação e o resultado esperado do passo atual:
 
 - digite o **obtido** (`Ctrl+Enter` salva e avança);
-- marque o status com **1–5** (avança sozinho); `←`/`→` trocam de passo;
+- marque o status com **1–5** (avança sozinho); `←`/`→` trocam de passo; **Enter** leva ao campo *obtido* e **Esc** sai dele — a rodada inteira funciona só pelo teclado;
 - **📷 Colar print do passo** ou `Ctrl+V` em qualquer lugar (menos com o cursor no Raw): o print entra em *Evidências* com a legenda "Passo N — ação · dd/mm hh:mm" e o nome do arquivo leva documento, passo e ação; o painel mostra quantos prints o passo tem;
 - cronômetro com **⏸ Pausar** e **↺ Zerar** (dois cliques) — o tempo pausado não conta;
 - **✓ Concluir** registra a rodada (data, início, fim, duração, ambiente, resultado, responsável) em *Histórico de execuções*.
@@ -905,6 +905,9 @@ Ele aplica só o que você aprovar e, para os "confirmar", propõe a resposta: l
 | Ir para a linha no Raw | `Alt+clique` no bloco | `⌥+clique` |
 | **Status (seletor e painel de execução)** | `1` PASS · `2` FAIL · `3` BLOCKED · `4` SKIP · `5` PENDING · `0` limpa | igual |
 | Painel de execução: passo anterior / próximo | `←` / `→` | igual |
+| Painel de execução: ir ao campo *obtido* / sair dele | `Enter` / `Esc` | igual |
+| Seletor de casos (nova rodada): mover · marcar · marcar intervalo | `↑` `↓` · `Espaço` · `Shift+Espaço` | igual |
+| Navegar pela tela | `Tab` / `Shift+Tab` (o item em foco ganha um contorno; os atalhos dos botões aparecem na dica e são lidos por leitores de tela) | igual |
 | Link para documento (lista para escolher) | `[[` no texto | igual |
 | Próximo caso da pasta (salva e abre) | `Alt+Shift+→` | `⌥⇧→` (fora de campos de texto) |
 | Blocos selecionados: apagar · duplicar · mover | `Delete` · `Ctrl+D` · `Alt+↑/↓` | `⌫` · `⌘D` · `⌥↑/↓` |

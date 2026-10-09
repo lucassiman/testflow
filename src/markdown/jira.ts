@@ -267,6 +267,7 @@ const escHtml = (s: unknown): string => String(s).replace(/[&<>"]/g, (c) => (({ 
 export function toJiraHtml(markdown: string): string {
   let html = md.render(String(markdown));
   html = html
+    .replace(/<table tabindex="0">/g, '<table>')
     // título do alerta (ui-only) → negrito simples; a citação continua
     .replace(/<blockquote class="alert alert-\w+" data-alert="(\w+)">\s*<p class="alert-title ui-only">[\s\S]*?<\/p>/g,
       (_m, type: string) => `<blockquote><p><strong>${escHtml(ALERTS[type as AlertType]?.label || type)}</strong></p>`)

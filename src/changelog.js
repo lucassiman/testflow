@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.30.0', date: '09/10/2026',
+    items: [
+      { icon: '♿', text: '**Acessibilidade**: foco visível em toda a navegação por teclado, contraste corrigido (badges BLOCKED, links entre documentos, painel da rodada) e atalhos anunciados nos botões.', manual: '13. Atalhos' },
+      { icon: '⌨', text: '**Rodada só pelo teclado**: no seletor de casos **↑ ↓** movem e **Espaço** marca; no painel de execução **Enter** vai ao campo *obtido* (Esc sai dele, 1–5 marcam, ← → trocam de passo).', manual: '7.3 Executar passo a passo' },
+    ],
+  },
+  {
     version: '1.29.0', date: '09/10/2026',
     items: [
       { icon: '🧷', text: '**Painel de execução encaixado à direita** quando há espaço: não cobre mais a tabela de passos (em tela estreita continua flutuando).', manual: '4. A tela' },
