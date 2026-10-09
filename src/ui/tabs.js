@@ -23,6 +23,75 @@ export function createTabs({ bar, onSwitch, onClose, onNew, getActiveInfo, onReo
   /** @type {string | null} */
   let activeId = null;
 
+  // a faixa das abas rola por dentro (sem barra de rolagem por cima das abas — no Mac ela cobria os nomes);
+  // à direita ficam ‹ › (só com abas demais), a lista de todas as abas e o ＋
+  bar.innerHTML = `<div class="tab-strip" role="presentation"></div>
+    <div class="tab-tools">
+      <button type="button" class="tab-scroll" data-scroll="-1" title="Rolar as abas para a esquerda" aria-label="Rolar as abas para a esquerda">‹</button>
+      <button type="button" class="tab-scroll" data-scroll="1" title="Rolar as abas para a direita" aria-label="Rolar as abas para a direita">›</button>
+      <button type="button" class="tab-list" title="Todas as abas" aria-label="Todas as abas" aria-haspopup="true">⌄</button>
+      <button type="button" class="tab-new" title="Nova aba (Alt+N)" aria-label="Nova aba">＋</button>
+    </div>`;
+  const strip = /** @type {HTMLElement} */ (bar.querySelector('.tab-strip'));
+  const listBtn = /** @type {HTMLElement} */ (bar.querySelector('.tab-list'));
+
+  /** Abas demais para a largura: mostra ‹ › e o esmaecido nas bordas. */
+  function updateOverflow() {
+    const over = strip.scrollWidth > strip.clientWidth + 1;
+    const left = over && strip.scrollLeft > 1;
+    const right = over && strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 1;
+    bar.classList.toggle('overflow', over);
+    bar.classList.toggle('ov-left', left);
+    bar.classList.toggle('ov-right', right);
+    /** @type {HTMLButtonElement} */ (bar.querySelector('[data-scroll="-1"]')).disabled = !left;
+    /** @type {HTMLButtonElement} */ (bar.querySelector('[data-scroll="1"]')).disabled = !right;
+    listBtn.textContent = over ? `⌄ ${tabs.length}` : '⌄';
+  }
+  strip.addEventListener('scroll', updateOverflow, { passive: true });
+  window.addEventListener('resize', updateOverflow);
+  // roda do mouse (vertical) rola as abas na horizontal
+  strip.addEventListener('wheel', (e) => {
+    if (strip.scrollWidth <= strip.clientWidth || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    e.preventDefault();
+    strip.scrollLeft += e.deltaY;
+  }, { passive: false });
+
+  /** Lista de todas as abas (para escolher sem rolar). */
+  /** @type {HTMLElement | null} */
+  let menu = null;
+  function closeMenu() { menu?.remove(); menu = null; listBtn.setAttribute('aria-expanded', 'false'); }
+  function openMenu() {
+    closeMenu();
+    menu = document.createElement('div');
+    menu.className = 'tab-menu';
+    menu.setAttribute('role', 'menu');
+    menu.innerHTML = tabs.map((t) => {
+      const i = info(t);
+      return `<button type="button" role="menuitem" data-pick="${t.id}" class="${t.id === activeId ? 'on' : ''}" title="${esc(i.path || i.name)}"><span>${esc(i.name.replace(/\.(md|markdown)$/i, ''))}</span>${i.dirty ? '<span class="tab-dirty" title="Não salvo">●</span>' : ''}</button>`;
+    }).join('');
+    document.body.appendChild(menu);
+    const r = listBtn.getBoundingClientRect();
+    menu.style.top = `${Math.round(r.bottom + 4)}px`;
+    menu.style.right = `${Math.max(8, Math.round(window.innerWidth - r.right))}px`;
+    listBtn.setAttribute('aria-expanded', 'true');
+    /** @type {HTMLElement | null} */ (menu.querySelector('.on') || menu.querySelector('button'))?.focus();
+    menu.addEventListener('click', (e) => {
+      const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('[data-pick]'));
+      if (!b) return;
+      closeMenu();
+      if (b.dataset.pick !== activeId) onSwitch(b.dataset.pick || '');
+    });
+    menu.addEventListener('keydown', (e) => {
+      const items = /** @type {HTMLElement[]} */ ([...(menu?.querySelectorAll('button') || [])]);
+      const i = items.indexOf(/** @type {HTMLElement} */ (document.activeElement));
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); items[(i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus(); }
+      else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeMenu(); listBtn.focus(); }
+    });
+  }
+  document.addEventListener('pointerdown', (e) => {
+    if (menu && !menu.contains(/** @type {Node} */ (e.target)) && !listBtn.contains(/** @type {Node} */ (e.target))) closeMenu();
+  }, true);
+
   /** @param {unknown} s */
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => /** @type {Record<string, string>} */ ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
@@ -35,13 +104,24 @@ export function createTabs({ bar, onSwitch, onClose, onNew, getActiveInfo, onReo
   function render() {
     bar.hidden = tabs.length < 2;
     document.documentElement.classList.toggle('has-tabs', tabs.length >= 2);
-    bar.innerHTML = tabs.map((t) => {
+    closeMenu();
+    const keep = strip.scrollLeft;
+    strip.innerHTML = tabs.map((t) => {
       const i = info(t);
       return `<div class="tab${t.id === activeId ? ' active' : ''}" data-id="${t.id}" title="${esc(i.path || i.name)} — arraste para mudar a ordem"${t.id === activeId ? ' aria-current="page"' : ''}>
         <span class="tab-name">${esc(i.name.replace(/\.(md|markdown)$/i, ''))}</span>${(marks?.(t.id, t.id === activeId) || []).map((m) => `<span class="tab-mark tab-mark-${esc(m.key)}" title="${esc(m.title)}">${esc(m.icon)}</span>`).join('')}${i.dirty ? '<span class="tab-dirty" title="Não salvo">●</span>' : ''}
         <button type="button" class="tab-close" data-close="${t.id}" title="Fechar aba (Alt+W)" aria-label="Fechar ${esc(i.name)}">×</button></div>`;
-    }).join('') + '<button type="button" class="tab-new" title="Nova aba (Alt+N)" aria-label="Nova aba">＋</button>';
-    bar.querySelector('.tab.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }).join('');
+    strip.scrollLeft = keep;
+    if (!bar.hidden) {
+      const act = /** @type {HTMLElement | null} */ (strip.querySelector('.tab.active'));
+      // a aba ativa sempre à vista (sem rolar a página)
+      if (act) {
+        if (act.offsetLeft < strip.scrollLeft) strip.scrollLeft = act.offsetLeft - 8;
+        else if (act.offsetLeft + act.offsetWidth > strip.scrollLeft + strip.clientWidth) strip.scrollLeft = act.offsetLeft + act.offsetWidth - strip.clientWidth + 8;
+      }
+    }
+    updateOverflow();
   }
 
   /** Move a aba `id` para a posição `to` (índice na lista). @param {string} id @param {number} to */
@@ -77,15 +157,13 @@ export function createTabs({ bar, onSwitch, onClose, onNew, getActiveInfo, onReo
       bar.classList.add('reordering');
     }
     // troca de lugar ao passar do meio da aba vizinha (a aba arrastada vai junto com o ponteiro)
-    const others = /** @type {HTMLElement[]} */ ([...bar.querySelectorAll('.tab')]).filter((t) => t !== d.el);
-    const before = others.find((t) => { const r = t.getBoundingClientRect(); return e.clientX < r.left + r.width / 2; });
-    const newBtn = bar.querySelector('.tab-new');
-    const anchor = before || newBtn;
-    if (anchor && d.el.nextElementSibling !== anchor) bar.insertBefore(d.el, anchor);
-    // perto das bordas: rola a barra de abas
-    const box = bar.getBoundingClientRect();
-    if (e.clientX < box.left + 24) bar.scrollLeft -= 12;
-    else if (e.clientX > box.right - 24) bar.scrollLeft += 12;
+    const others = /** @type {HTMLElement[]} */ ([...strip.querySelectorAll('.tab')]).filter((t) => t !== d.el);
+    const before = others.find((t) => { const r = t.getBoundingClientRect(); return e.clientX < r.left + r.width / 2; }) || null;
+    if (d.el.nextElementSibling !== before) strip.insertBefore(d.el, before);
+    // perto das bordas: rola a faixa de abas
+    const box = strip.getBoundingClientRect();
+    if (e.clientX < box.left + 24) strip.scrollLeft -= 12;
+    else if (e.clientX > box.right - 24) strip.scrollLeft += 12;
   });
   /** @param {PointerEvent} e */
   function endDrag(e) {
@@ -115,6 +193,9 @@ export function createTabs({ bar, onSwitch, onClose, onNew, getActiveInfo, onReo
     const close = /** @type {HTMLElement | null} */ (target.closest('[data-close]'));
     if (close) { onClose(close.dataset.close || ''); return; }
     if (target.closest('.tab-new')) { onNew(); return; }
+    const sc = /** @type {HTMLElement | null} */ (target.closest('[data-scroll]'));
+    if (sc) { strip.scrollBy({ left: Number(sc.dataset.scroll) * Math.max(160, strip.clientWidth * 0.7), behavior: 'smooth' }); return; }
+    if (target.closest('.tab-list')) { if (menu) closeMenu(); else openMenu(); return; }
     const tab = /** @type {HTMLElement | null} */ (target.closest('.tab'));
     if (tab && tab.dataset.id !== activeId) onSwitch(tab.dataset.id || '');
   });

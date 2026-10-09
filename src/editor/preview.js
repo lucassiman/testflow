@@ -978,6 +978,8 @@ export function createPreview({
     },
     /** Bloco novo, vazio e já em edição, ANTES deste bloco (o "+" com Alt no primeiro bloco). @param {HTMLElement} el */
     newBlockBefore(el) { startNewBlock(el, Number(el.dataset.start)); },
+    /** Bloco novo, vazio e já em edição, no fim do documento (documento novo / nota rápida no Preview). */
+    newBlockAtEnd() { startNewBlock(null, store.source.split('\n').length); },
     /** Abre para edição o bloco que começa na linha e seleciona o texto dele (para digitar por cima). */
     /** @param {number} line */
     editAtLine(line) {

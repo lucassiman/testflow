@@ -1,8 +1,8 @@
 // Utilitários dos testes de tela.
-// treeLabels: 'arquivo' — a árvore mostra o nome do arquivo (os testes acham os documentos por ele); home: false — sem a tela inicial (os testes partem do documento de exemplo). Os padrões do app são testados em interface1/interface3.
+// treeLabels: 'arquivo' — a árvore mostra o nome do arquivo (os testes acham os documentos por ele); home: false — sem a tela inicial (os testes partem do documento de exemplo); openMode: 'ultimo' — o modo pedido pelo teste vale (o app abre no Preview por padrão, testado em abasMuitas.spec). Os padrões do app são testados em interface1/interface3.
 export async function openEditor(page, { mode = 'preview', doc = null, prefs = {} } = {}) {
   await page.goto('/');
-  await page.evaluate(([m, p]) => { localStorage.clear(); localStorage.setItem('mdqa:prefs', JSON.stringify({ mode: m, annotateOnPaste: false, tips: false, treeLabels: 'arquivo', home: false, ...p })); }, [mode, prefs]);
+  await page.evaluate(([m, p]) => { localStorage.clear(); localStorage.setItem('mdqa:prefs', JSON.stringify({ mode: m, annotateOnPaste: false, tips: false, treeLabels: 'arquivo', home: false, openMode: 'ultimo', ...p })); }, [mode, prefs]);
   await page.reload();
   await page.waitForSelector('#preview .md-block');
   if (doc !== null) await setRaw(page, doc);

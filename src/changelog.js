@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.32.0', date: '09/10/2026',
+    items: [
+      { icon: '🗂', text: '**Muitas abas em tela pequena**: a barra de rolagem não fica mais por cima das abas. As abas encolhem até um limite e depois rolam com a roda do mouse ou com **‹ ›**; **⌄ N** lista todas para escolher. A aba ativa sempre fica à vista.', manual: '4. A tela' },
+      { icon: '👁', text: '**Documentos abrem no Preview** (novo, aberto da pasta ou de modelo); o Dividido fica para quando você quiser. Documento novo já abre um bloco para digitar. Prefere o último modo usado? Paleta → *Ao abrir documento*.', manual: '5.1 Três modos' },
+    ],
+  },
+  {
     version: '1.31.0', date: '09/10/2026',
     items: [
       { icon: '▁', text: '**Painel de execução minimizado** (▁ ou tecla **M**): uma faixa pequena com o passo, o tempo, os status 1–5, print e ✓ Concluir — mais tela para o sistema testado, também no ⧉ Flutuar. Marcou FAIL/BLOCKED minimizado? Um clique volta ao passo para escrever o obtido ou abrir o bug.', manual: '7.4 Painel flutuante' },

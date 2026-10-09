@@ -110,7 +110,15 @@ const prefs = loadPrefs();
 /** Sessões em que o rodapé ainda mostra a dica de edição. */
 const HINT_SESSIONS = 5;
 savePrefs({ hintSessions: (prefs.hintSessions || 0) + 1 });
-let mode = MODES.includes(prefs.mode) ? prefs.mode : (window.innerWidth < 800 ? 'preview' : 'split');
+// documento abre no Preview (padrão); com a preferência openMode = 'ultimo', no último modo usado
+let mode = prefs.openMode !== 'ultimo' ? 'preview' : (MODES.includes(prefs.mode) ? prefs.mode : 'preview');
+/** Um documento novo/aberto está para ser carregado (prepareTab): ao carregar, aplica o modo de abertura. */
+let freshOpen = false;
+/** Documento aberto ou criado: vai para o Preview (o usuário troca para Dividido quando quiser). */
+function applyOpenMode() {
+  if (loadPrefs().openMode === 'ultimo' || mode === 'preview') return;
+  setMode('preview');
+}
 /** @type {'raw'|'preview'} */
 let lastFocus = 'raw';
 let docFormat = { eol: '\n', bom: false };
@@ -811,6 +819,7 @@ function loadDocument({ text, name, handle = null, eol = '\n', bom = false, dirt
   documentChanged(handle, folder).then(() => preview.refreshImages());
   collabDocChanged();
   refreshCycleDoc();
+  if (freshOpen) { freshOpen = false; applyOpenMode(); }
 }
 
 // ---------------------------------------------------------------- abas
@@ -891,6 +900,7 @@ function isDisposable() {
 /** Antes de carregar outro documento: guarda o atual numa aba e abre uma aba nova. */
 function prepareTab() {
   preview.commit();
+  freshOpen = true;
   if (isDisposable()) return;
   tabs.open(captureDoc());
 }
@@ -1274,8 +1284,8 @@ async function doNew() {
   persistTabs({ handles: true });
   saveSession(null);
   setFolder(null);
-  setMode(mode === 'preview' ? 'split' : mode);
-  raw.focus();
+  // no Preview o documento vazio já abre um bloco em edição para digitar; no Raw/Dividido, o cursor vai para o Markdown
+  if (mode === 'preview') requestAnimationFrame(() => preview.newBlockAtEnd()); else raw.focus();
 }
 
 // ---------------------------------------------------------------- renomear o arquivo (clique no nome, no topo)
@@ -1435,7 +1445,7 @@ const PALETTE_ACTIONS = [
   ['Abrir o manual (todas as funcionalidades)', 'manual', null, 'F1'], ['O que mudou (novidades desta versão)', 'whatsNew', null, ''], ['Nova visão (consulta salva: não executados, tickets, cobertura…)', 'newView', null, ''],
   ['Próximo caso da pasta (salva e abre o próximo não executado)', 'nextCase', null, 'Alt+Shift+→'], ['Próximo caso da pasta e já executar', 'nextCase', 'run', ''],
   ['Organizar por épico e ticket (casos/<ÉPICO>/<TICKET>/, pelos campos epico: e jira:)…', 'byTicket', null, ''],
-  ['Ciclo de regressão: novo (salvar os casos)…', 'newCycle', null, ''], ['Rodada de execução: nova (avulsa, escolher os casos)…', 'newRun', null, ''], ['Ciclo de regressão: executar um ciclo salvo (nova execução)…', 'runCycle', null, ''], ['Execução: anexar relatório de testes automatizados (Playwright, JUnit, Newman)…', 'attachAutomation', null, ''], ['Execução só automatizada: criar a partir de um relatório…', 'newAutoRun', null, ''], ['Ciclo de regressão: próximo caso', 'nextCycleCase', null, ''], ['Ciclo de regressão: voltar ao ciclo', 'openCycle', null, ''], ['Vínculos: Jira, Épico, Sprint deste documento…', 'editLinks', null, ''], ['Dispositivo / ambiente: WEB, Mobile iOS, Mobile Android… deste documento', 'editDevice', null, ''], ['Ciclo de regressão: finalizar execução…', 'finishCycle', null, ''], ['Ciclo de regressão: como está / como foi a rodada', 'roundSummary', null, ''], ['Relatórios da execução: gerar / regerar (Encerramento e Go/No-Go, Defeitos, Rastreabilidade, Log)', 'execReports', null, ''], ['Início: rodada em andamento, pendências, fixados e atalhos', 'home', null, ''], ['Árvore: mostrar ID · título ou o nome do arquivo', 'treeLabels', null, ''], ['Modo foco: só o documento (esconde topo, barras e barra lateral)', 'focusMode', 'Ctrl+Shift+.', ''], ['Barra de formatação no Preview: só ao editar / sempre', 'toolbarMode', null, ''],
+  ['Ciclo de regressão: novo (salvar os casos)…', 'newCycle', null, ''], ['Rodada de execução: nova (avulsa, escolher os casos)…', 'newRun', null, ''], ['Ciclo de regressão: executar um ciclo salvo (nova execução)…', 'runCycle', null, ''], ['Execução: anexar relatório de testes automatizados (Playwright, JUnit, Newman)…', 'attachAutomation', null, ''], ['Execução só automatizada: criar a partir de um relatório…', 'newAutoRun', null, ''], ['Ciclo de regressão: próximo caso', 'nextCycleCase', null, ''], ['Ciclo de regressão: voltar ao ciclo', 'openCycle', null, ''], ['Vínculos: Jira, Épico, Sprint deste documento…', 'editLinks', null, ''], ['Dispositivo / ambiente: WEB, Mobile iOS, Mobile Android… deste documento', 'editDevice', null, ''], ['Ciclo de regressão: finalizar execução…', 'finishCycle', null, ''], ['Ciclo de regressão: como está / como foi a rodada', 'roundSummary', null, ''], ['Relatórios da execução: gerar / regerar (Encerramento e Go/No-Go, Defeitos, Rastreabilidade, Log)', 'execReports', null, ''], ['Início: rodada em andamento, pendências, fixados e atalhos', 'home', null, ''], ['Árvore: mostrar ID · título ou o nome do arquivo', 'treeLabels', null, ''], ['Ao abrir documento: Preview ou o último modo usado', 'openMode', null, ''], ['Modo foco: só o documento (esconde topo, barras e barra lateral)', 'focusMode', 'Ctrl+Shift+.', ''], ['Barra de formatação no Preview: só ao editar / sempre', 'toolbarMode', null, ''],
   ['Comentar (comentário de revisão no documento)', 'comment', null, 'Alt+M'], ['Comentários do documento (pendentes e resolvidos)…', 'listComments', null, ''],
   ['Exportar bugs para o Jira (CSV do importador do Jira Cloud)…', 'jiraCsv', null, ''], ['Trazer chaves do Jira (CSV exportado do Jira)…', 'jiraKeys', null, ''],
   ['Ver outro documento ao lado (consulta)…', 'sideOpen', null, ''], ['Fechar o documento ao lado', 'sideClose', null, ''],
@@ -1461,7 +1471,7 @@ const PALETTE_GROUPS = /** @type {Array<[string, string, string[]]>} */ ([
   ['Pasta de trabalho', '📂', ['pickWorkspace', 'home', 'dashboard', 'searchAll', 'structure', 'newApp', 'newFolder', 'moveDoc', 'byTicket', 'undoOrganize', 'importNotion', 'backup', 'backupPref', 'loadDiag', 'diskRoot', 'officialFolder', 'officialUpdate', 'publish']],
   ['Evidências e prints', '📸', ['capture', 'captureChoose', 'captureStop', 'record', 'evidencePanel', 'reuseEvidence', 'cleanPrints', 'bigPrint', 'pickFolder']],
   ['Compartilhar e revisar', '📤', ['copyAll', 'copyClaude', 'review', 'reviewApply', 'copyJira', 'openJira', 'copyNotion', 'notionZip', 'hubZip', 'jiraCsv', 'jiraKeys', 'comment', 'listComments']],
-  ['Exibição', '👁', ['mode', 'focusMode', 'toolbarMode', 'treeLabels', 'toggleSidebar', 'sideOpen', 'sideClose', 'foldAll', 'unfoldAll', 'zoomIn', 'zoomOut', 'zoomReset', 'toggleTheme', 'find', 'replace', 'codeblock', 'moveTabLeft', 'moveTabRight', 'closeTab', 'nextTab', 'prevTab']],
+  ['Exibição', '👁', ['mode', 'openMode', 'focusMode', 'toolbarMode', 'treeLabels', 'toggleSidebar', 'sideOpen', 'sideClose', 'foldAll', 'unfoldAll', 'zoomIn', 'zoomOut', 'zoomReset', 'toggleTheme', 'find', 'replace', 'codeblock', 'moveTabLeft', 'moveTabRight', 'closeTab', 'nextTab', 'prevTab']],
   ['Ajuda e preferências', '❓', ['manual', 'whatsNew', 'tipsToggle', 'tipsReset']],
 ]);
 const PALETTE_GROUP_OF = new Map(PALETTE_GROUPS.flatMap(([g, icon, cmds]) => cmds.map((c) => [c, { group: g, icon }])));
@@ -1651,6 +1661,7 @@ function run(cmd, value, event) {
     case 'toolbarMode': toggleToolbarMode(); return true;
     case 'home': home.show(); return true;
     case 'newCase': { const t = BUILTIN_TEMPLATES.find((x) => x.key === 'caso-de-teste'); if (t) newFromTemplate(t, null); return true; }
+    case 'openMode': { const next = loadPrefs().openMode === 'ultimo' ? 'preview' : 'ultimo'; savePrefs({ openMode: next }); toast(next === 'ultimo' ? 'Documentos abrem no último modo usado (Raw, Dividido ou Preview).' : 'Documentos abrem no Preview — Alt+2 (ou Dividido no topo) quando precisar do Markdown.'); return true; }
     case 'treeLabels': { const next = loadPrefs().treeLabels === 'arquivo' ? 'titulo' : 'arquivo'; savePrefs({ treeLabels: next }); sidebar.redraw(); toast(next === 'arquivo' ? 'Árvore: nome do arquivo' : 'Árvore: ID · título (do cabeçalho)'); return true; }
     case 'execReports': import('./app/reports.js').then((m) => m.generateReports()); return true;
     case 'listComments': listComments(); return true;

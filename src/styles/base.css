@@ -803,17 +803,34 @@ button { font: inherit; color: inherit; }
 
 /* ---------- abas ---------- */
 .tabbar {
-  display: flex; align-items: stretch; gap: 2px; padding: 4px 8px 0; overflow-x: auto; scrollbar-width: thin;
+  display: flex; align-items: stretch; gap: 4px; padding: 4px 6px 0 8px;
   background: var(--bg-soft); border-bottom: 1px solid var(--border);
 }
+/* a faixa rola por dentro, sem barra de rolagem (no Mac a barra sobreposta cobria as abas): roda do mouse, ‹ ›, lista ⌄ */
+.tabbar .tab-strip { display: flex; align-items: stretch; gap: 2px; flex: 1 1 auto; min-width: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain; }
+.tabbar .tab-strip::-webkit-scrollbar { display: none; }
+.tabbar.ov-left .tab-strip { -webkit-mask-image: linear-gradient(to right, transparent, #000 28px); mask-image: linear-gradient(to right, transparent, #000 28px); }
+.tabbar.ov-right .tab-strip { -webkit-mask-image: linear-gradient(to left, transparent, #000 28px); mask-image: linear-gradient(to left, transparent, #000 28px); }
+.tabbar.ov-left.ov-right .tab-strip { -webkit-mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
+.tabbar .tab-tools { flex: none; display: flex; align-items: center; gap: 1px; padding-bottom: 3px; }
+.tabbar .tab-scroll, .tabbar .tab-list { border: 0; background: none; color: var(--muted); font: inherit; font-size: 14px; line-height: 1; padding: 3px 7px; cursor: pointer; border-radius: 6px; white-space: nowrap; }
+.tabbar .tab-list { font-size: 12px; }
+.tabbar .tab-scroll:hover:not(:disabled), .tabbar .tab-list:hover { background: var(--hover); color: var(--text); }
+.tabbar .tab-scroll:disabled { opacity: .35; cursor: default; }
+.tabbar:not(.overflow) .tab-scroll { display: none; }
+.tab-menu { position: fixed; z-index: 90; min-width: 220px; max-width: min(420px, calc(100vw - 16px)); max-height: min(60vh, 480px); overflow: auto; padding: 4px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); }
+.tab-menu button { display: flex; align-items: center; gap: 6px; width: 100%; text-align: left; font: inherit; font-size: 13px; padding: 6px 10px; border: 0; border-radius: 6px; background: none; color: var(--text); cursor: pointer; }
+.tab-menu button span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab-menu button:hover, .tab-menu button:focus-visible { background: var(--hover); outline: none; }
+.tab-menu button.on { font-weight: 600; box-shadow: inset 2px 0 0 var(--brand, #b91c47); }
 .tabbar[hidden] { display: none; }
 .tabbar .tab {
-  display: inline-flex; align-items: center; gap: 6px; max-width: 240px; padding: 5px 6px 5px 12px; font-size: 12.5px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; flex: 0 1 auto; min-width: 128px; max-width: 240px; padding: 5px 6px 5px 12px; font-size: 12.5px; cursor: pointer;
   border: 1px solid transparent; border-bottom: 0; border-radius: 8px 8px 0 0; color: var(--muted); white-space: nowrap; user-select: none;
 }
 .tabbar .tab:hover { background: var(--hover); color: var(--text); }
 .tabbar .tab.active { background: var(--bg); color: var(--text); border-color: var(--border); margin-bottom: -1px; box-shadow: inset 0 2px 0 var(--brand, #b91c47); font-weight: 600; }
-.tabbar .tab-name { overflow: hidden; text-overflow: ellipsis; }
+.tabbar .tab-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1 1 auto; }
 .tabbar .tab-dirty { color: var(--accent); font-size: 10px; }
 .tabbar .tab-close {
   border: 0; background: none; color: var(--muted); font-size: 15px; line-height: 1; padding: 1px 5px; border-radius: 4px; cursor: pointer; opacity: .6;
@@ -1632,3 +1649,4 @@ input[type='checkbox']:focus-visible, input[type='radio']:focus-visible { outlin
 .run-head strong, .run-head .run-step, .run-head .run-float { white-space: nowrap; }
 .run-head .run-progress { flex: 0 1 60px; min-width: 20px; }
 .run-head .run-min { font-size: 15px; padding: 0 3px; }
+.tab-menu .tab-dirty { color: var(--accent); font-size: 10px; flex: none; }

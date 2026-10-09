@@ -371,8 +371,9 @@ export async function quickNote() {
     if (!path) return;
     app.toast(`📝 Nota em ${path} — escreva à vontade; depois organize (⋯ → Mover para…)`);
   }
-  if (app.mode === 'preview') app.setMode('split');
-  requestAnimationFrame(() => { app.raw.focus(); els.raw.setSelectionRange(app.store.source.length, app.store.source.length); });
+  // no Preview: bloco novo no fim, já em edição; no Raw/Dividido, o cursor no fim do Markdown
+  if (app.mode === 'preview') requestAnimationFrame(() => app.preview.newBlockAtEnd());
+  else requestAnimationFrame(() => { app.raw.focus(); els.raw.setSelectionRange(app.store.source.length, app.store.source.length); });
 }
 
 /**
