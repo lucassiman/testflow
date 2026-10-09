@@ -1516,3 +1516,44 @@ body.focus-mode .markdown-body { padding-top: 28px; }
 .exec-chips, .exec-actions { flex-wrap: nowrap; }
 .exec-track { width: 100px; }
 .exec-action, .exec-summary { white-space: nowrap; }
+
+/* ---------- tela inicial (1.26.0) ---------- */
+.workspace { position: relative; }
+.home { position: absolute; inset: 0; z-index: 20; overflow: auto; background: var(--bg); }
+.home[hidden] { display: none; }
+.home-inner { max-width: 880px; margin: 0 auto; padding: 28px 24px 40px; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; align-content: start; }
+.home-head, .home-foot { grid-column: 1 / -1; }
+.home-head h1 { margin: 0 0 4px; font-size: 24px; }
+.home-head p { margin: 0; color: var(--muted); }
+.home-card { border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; background: var(--panel); }
+.home-card h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.home-card h2 + .home-list { margin-bottom: 10px; }
+.home-round { border-color: var(--accent); }
+.home-round-title { font-weight: 700; font-size: 15px; margin-bottom: 8px; }
+.home-bar { height: 8px; border-radius: 99px; background: var(--bg-soft); border: 1px solid var(--border); overflow: hidden; margin-bottom: 6px; }
+.home-bar span { display: block; height: 100%; background: var(--accent); }
+.home-muted { color: var(--muted); font-size: 12.5px; }
+.home-fail { color: var(--fail-fg); font-weight: 600; }
+.home-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.home-actions button { padding: 6px 12px; }
+.home-actions button.primary { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+.home-grid { margin-top: 0; }
+.home-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 8px; }
+.home-stat { display: flex; align-items: center; gap: 10px; text-align: left; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; }
+.home-stat:hover { border-color: var(--accent); }
+.home-stat.zero { opacity: .55; }
+.home-num { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 28px; }
+.home-stat.st-fail .home-num, .home-stat.st-bug .home-num { color: var(--fail-fg); }
+.home-stat.st-blocked .home-num { color: var(--blocked-fg); }
+.home-list { list-style: none; margin: 0; padding: 0; }
+.home-list button { width: 100%; text-align: left; border: 0; background: none; padding: 5px 6px; border-radius: 6px; display: flex; gap: 8px; align-items: baseline; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.home-list button:hover { background: var(--bg-soft); }
+.home-list small { color: var(--muted); margin-left: auto; overflow: hidden; text-overflow: ellipsis; }
+.home-foot { color: var(--muted); font-size: 12.5px; text-align: center; }
+.home-link { border: 0; background: none; color: var(--accent); padding: 0; cursor: pointer; text-decoration: underline; }
+.topbar .logo { cursor: pointer; }
+/* na tela inicial, o painel de execução e o da rodada esperam (voltam ao sair dela) */
+body.home-open .runner, body.home-open #cyclePanel, body.home-open #toolbar { display: none !important; }
+.home-actions button { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; color: var(--text); }
+.home-actions button:hover { border-color: var(--accent); }
+body.home-open #fileName, body.home-open #stats, body.home-open #lintStatus { visibility: hidden; }

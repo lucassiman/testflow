@@ -8,6 +8,12 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.26.0', date: '09/10/2026',
+    items: [
+      { icon: '🏠', text: '**Tela inicial** no lugar do exemplo: a **rodada em andamento** com **▶ Continuar**, as **pendências da pasta** (falhas, bloqueios, nunca executados, bugs abertos — um clique abre a lista), atalhos (novo caso, nova rodada, nota rápida) e fixados/recentes. Volta pelo logo ou pela paleta (*Início*).', manual: '4. A tela' },
+    ],
+  },
+  {
     version: '1.25.0', date: '08/10/2026',
     items: [
       { icon: '🧼', text: '**Menos barras no topo**: no Preview, a barra de formatação só aparece quando você está num bloco — por cima do documento, sem empurrar o texto. A barra de execução cabe numa linha (só os status que existem).', manual: '4. A tela' },

@@ -72,6 +72,8 @@ import { snapshotRanges, parseSearch, viewMatches } from './markdown/views.ts';
 import { openSide, pickSide, closeSide, refreshSide } from './app/sideDoc.js';
 import { refreshDocState, tabMarks, treeMark, treeLabel } from './app/docState.js';
 import { updateToolbar, resetToolbar, toggleFocus, toggleToolbarMode } from './app/chrome.js';
+import { createHome } from './app/home.js';
+import { BUILTIN_TEMPLATES } from './templates/index.js';
 import { hintAfterRender, hintRunner, hintTree } from './app/hints.js';
 import { captureFiles, captureToDocument, capturer, toggleRecording } from './app/capture.js';
 import { showWhatsNew, changesSince } from './ui/whatsNew.js';
@@ -532,6 +534,7 @@ async function readWorkspaceOnce() {
     sidebar.rerunSearch();
     dashboard.update({ entries: dashboardEntries() });
     sidebar.redraw(); // marcas de publicação na árvore
+    home.refresh(); // tela inicial: rodada, pendências e fixados com a pasta lida
     drawViews(document); // visões abertas (aqui e ao lado) com a pasta lida
     refreshCycleDoc(); // ciclo aberto: linhas pelo resultado dos casos
     refreshDocState();
@@ -784,6 +787,7 @@ async function confirmDiscard(action = 'continuar') {
 function loadDocument({ text, name, handle = null, eol = '\n', bom = false, dirty = false, folder = null, lastModified = 0, path = '' }) {
   preview.cancel();
   resetToolbar();
+  home.hide();
   runner?.close();
   closeLightbox(); // o print ampliado era do documento anterior
   docFormat = { eol, bom };
@@ -1429,7 +1433,7 @@ const PALETTE_ACTIONS = [
   ['Abrir o manual (todas as funcionalidades)', 'manual', null, 'F1'], ['O que mudou (novidades desta versão)', 'whatsNew', null, ''], ['Nova visão (consulta salva: não executados, tickets, cobertura…)', 'newView', null, ''],
   ['Próximo caso da pasta (salva e abre o próximo não executado)', 'nextCase', null, 'Alt+Shift+→'], ['Próximo caso da pasta e já executar', 'nextCase', 'run', ''],
   ['Organizar por épico e ticket (casos/<ÉPICO>/<TICKET>/, pelos campos epico: e jira:)…', 'byTicket', null, ''],
-  ['Ciclo de regressão: novo (salvar os casos)…', 'newCycle', null, ''], ['Rodada de execução: nova (avulsa, escolher os casos)…', 'newRun', null, ''], ['Ciclo de regressão: executar um ciclo salvo (nova execução)…', 'runCycle', null, ''], ['Execução: anexar relatório de testes automatizados (Playwright, JUnit, Newman)…', 'attachAutomation', null, ''], ['Execução só automatizada: criar a partir de um relatório…', 'newAutoRun', null, ''], ['Ciclo de regressão: próximo caso', 'nextCycleCase', null, ''], ['Ciclo de regressão: voltar ao ciclo', 'openCycle', null, ''], ['Vínculos: Jira, Épico, Sprint deste documento…', 'editLinks', null, ''], ['Dispositivo / ambiente: WEB, Mobile iOS, Mobile Android… deste documento', 'editDevice', null, ''], ['Ciclo de regressão: finalizar execução…', 'finishCycle', null, ''], ['Ciclo de regressão: como está / como foi a rodada', 'roundSummary', null, ''], ['Relatórios da execução: gerar / regerar (Encerramento e Go/No-Go, Defeitos, Rastreabilidade, Log)', 'execReports', null, ''], ['Árvore: mostrar ID · título ou o nome do arquivo', 'treeLabels', null, ''], ['Modo foco: só o documento (esconde topo, barras e barra lateral)', 'focusMode', 'Ctrl+Shift+.', ''], ['Barra de formatação no Preview: só ao editar / sempre', 'toolbarMode', null, ''],
+  ['Ciclo de regressão: novo (salvar os casos)…', 'newCycle', null, ''], ['Rodada de execução: nova (avulsa, escolher os casos)…', 'newRun', null, ''], ['Ciclo de regressão: executar um ciclo salvo (nova execução)…', 'runCycle', null, ''], ['Execução: anexar relatório de testes automatizados (Playwright, JUnit, Newman)…', 'attachAutomation', null, ''], ['Execução só automatizada: criar a partir de um relatório…', 'newAutoRun', null, ''], ['Ciclo de regressão: próximo caso', 'nextCycleCase', null, ''], ['Ciclo de regressão: voltar ao ciclo', 'openCycle', null, ''], ['Vínculos: Jira, Épico, Sprint deste documento…', 'editLinks', null, ''], ['Dispositivo / ambiente: WEB, Mobile iOS, Mobile Android… deste documento', 'editDevice', null, ''], ['Ciclo de regressão: finalizar execução…', 'finishCycle', null, ''], ['Ciclo de regressão: como está / como foi a rodada', 'roundSummary', null, ''], ['Relatórios da execução: gerar / regerar (Encerramento e Go/No-Go, Defeitos, Rastreabilidade, Log)', 'execReports', null, ''], ['Início: rodada em andamento, pendências, fixados e atalhos', 'home', null, ''], ['Árvore: mostrar ID · título ou o nome do arquivo', 'treeLabels', null, ''], ['Modo foco: só o documento (esconde topo, barras e barra lateral)', 'focusMode', 'Ctrl+Shift+.', ''], ['Barra de formatação no Preview: só ao editar / sempre', 'toolbarMode', null, ''],
   ['Comentar (comentário de revisão no documento)', 'comment', null, 'Alt+M'], ['Comentários do documento (pendentes e resolvidos)…', 'listComments', null, ''],
   ['Exportar bugs para o Jira (CSV do importador do Jira Cloud)…', 'jiraCsv', null, ''], ['Trazer chaves do Jira (CSV exportado do Jira)…', 'jiraKeys', null, ''],
   ['Ver outro documento ao lado (consulta)…', 'sideOpen', null, ''], ['Fechar o documento ao lado', 'sideClose', null, ''],
@@ -1512,6 +1516,26 @@ function applyHistory(entry) {
   if (!entry) return;
   store.setSource(entry.text, { origin: 'history', record: false, sel: entry.sel });
   if (entry.sel && target() === 'raw') els.raw.setSelectionRange(entry.sel[0], entry.sel[1]);
+}
+
+// ---------------------------------------------------------------- tela inicial
+const home = createHome({
+  recents: () => lastRecents || [],
+  openRecent: (i) => { const r = lastRecents[i]; if (r) openFromHandle(r.handle, { folder: r.folder, path: r.path, latest: true }); },
+  openPath: (path) => openWikiTarget(path),
+  continueRound: async (path) => { await openWikiTarget(path); await nextCycleCase(); },
+  search: (q) => { toggleSidebar(true); sidebar.focusSearch(q); },
+  command: (cmd) => {
+    if (cmd === 'newCase') { const t = BUILTIN_TEMPLATES.find((x) => x.key === 'caso-de-teste'); if (t) newFromTemplate(t, null); return; }
+    if (cmd === 'openWorkspace') { toggleSidebar(true); pickAndLoadWorkspace(); return; }
+    run(cmd);
+  },
+  showExample: () => { if (store.source !== welcome) { prepareTab(); loadDocument({ text: welcome, name: 'exemplo-test-case.md' }); } },
+});
+document.querySelector('.topbar .logo')?.addEventListener('click', () => home.show());
+/** Mostra a tela inicial se não há documento de verdade aberto (só o exemplo ou vazio). */
+function maybeHome() {
+  if (isDisposable() && store.source === welcome && tabs.list.length <= 1) home.show(); else home.hide();
 }
 
 // ---------------------------------------------------------------- comandos
@@ -1598,6 +1622,7 @@ function run(cmd, value, event) {
     case 'roundSummary': showRoundSummary(); return true;
     case 'focusMode': toggleFocus(); return true;
     case 'toolbarMode': toggleToolbarMode(); return true;
+    case 'home': home.show(); return true;
     case 'treeLabels': { const next = loadPrefs().treeLabels === 'arquivo' ? 'titulo' : 'arquivo'; savePrefs({ treeLabels: next }); sidebar.redraw(); toast(next === 'arquivo' ? 'Árvore: nome do arquivo' : 'Árvore: ID · título (do cabeçalho)'); return true; }
     case 'execReports': import('./app/reports.js').then((m) => m.generateReports()); return true;
     case 'listComments': listComments(); return true;
@@ -1853,6 +1878,7 @@ if (savedTabs?.tabs?.length && savedTabs.tabs.some((t) => typeof t.text === 'str
   loadDocument({ text: welcome, name: 'exemplo-test-case.md' });
 }
 setMode(mode);
+maybeHome();
 updateStats();
 updateFileInfo();
 updateFolderStatus();
