@@ -24,7 +24,7 @@ export const execBar = createExecutionBar({
 });
 import('./nextCase.js').then((m) => { nextMod = m; });
 
-/** @param {{ revisit?: boolean }} [opts] */
+/** @param {{ revisit?: boolean, base?: string }} [opts] */
 export function startRun(opts) {
   app.preview.commit();
   if (app.mode === 'raw') app.setMode('split');

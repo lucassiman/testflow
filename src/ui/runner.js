@@ -38,11 +38,12 @@ import {
  *   isRecording?: () => boolean,
  *   onStateChange?: () => void,
  *   onFinish?: (res: { overall: string, round: number, revised?: boolean }) => boolean | void,
+ *   onCancel?: (res: { reverted: boolean }) => void,
  *   docKey?: () => string,
  *   prefs: import('../types').PrefsApi,
  * }} deps
  */
-export function createRunner({ store, preview, toast: appToast, root, onPastePrint, onPasteFiles, onSavePrints, onReadClipboardImages, onNewBug, onCapture, onRecord, isRecording, onStateChange, onFinish, docKey: docKeyDep, prefs }) {
+export function createRunner({ store, preview, toast: appToast, root, onPastePrint, onPasteFiles, onSavePrints, onReadClipboardImages, onNewBug, onCapture, onRecord, isRecording, onStateChange, onFinish, onCancel, docKey: docKeyDep, prefs }) {
   const el = document.createElement('div');
   el.className = 'runner';
   el.setAttribute('role', 'region');
@@ -61,6 +62,13 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
   let pendingPrints = [];
   /** @type {Window | null} janela Picture-in-Picture (painel por cima de outros programas) */
   let pip = null;
+  /** Painel minimizado (só passo, tempo e status) — lembrado entre execuções. */
+  let compact = !!prefs.load().runnerCompact;
+  /** Passo marcado FAIL/BLOCKED com o painel minimizado: oferece voltar a ele para escrever o obtido / abrir o bug. */
+  let lastProblem = -1;
+  /** Documento como estava ao começar esta execução: ✕ Cancelar volta para ele (só nesta sessão do editor). @type {string | null} */
+  let cancelBase = null;
+  let confirmCancel = 0;
   /** A execução em andamento (as telas de execução só existem com ela). */
   const ex = () => /** @type {ExecState} */ (exec);
   /** A sessão em andamento. */
@@ -149,10 +157,11 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
   }
 
   /**
-   * @param {{ revisit?: boolean }} [opts] `revisit`: revisão de um caso já concluído no ciclo — ✓ Concluir atualiza o
-   *   resultado da rodada sem mexer nos horários e na duração.
+   * @param {{ revisit?: boolean, base?: string }} [opts] `revisit`: revisão de um caso já concluído no ciclo — ✓ Concluir atualiza o
+   *   resultado da rodada sem mexer nos horários e na duração. `base`: o documento antes do que o app mudou para começar
+   *   (ex.: rodada antiga arquivada no ciclo) — ✕ Cancelar volta para ele.
    */
-  function startExec({ revisit = false } = {}) {
+  function startExec({ revisit = false, base } = {}) {
     const near = preview.activeBlock ? preview.activeBlock.start : -1;
     const tables = collectStatusTables(store.source);
     if (!tables.length) { toast?.('Nenhuma tabela com coluna Status para executar.', 'error'); return; }
@@ -174,6 +183,9 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
       }
       : { ordinal, index: 0, startedAt: Date.now(), elapsedBefore: 0, runningSince: Date.now(), revisit };
     exec = run;
+    cancelBase = base ?? store.source;
+    confirmCancel = 0;
+    lastProblem = -1;
     // começa no primeiro passo ainda sem status
     const t = table();
     const rows = runnable(t);
@@ -251,6 +263,9 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     const c = current();
     if (!c || c.t.status < 0) return;
     write(setStepStatus(store.source, c.row.line, c.t.status, word));
+    const k = cellStatus(word);
+    if (k === 'fail' || k === 'blocked') lastProblem = ex().index;
+    else if (lastProblem === ex().index) lastProblem = -1;
     if (ex().index < c.rows.length - 1) ex().index++;
     render();
   }
@@ -277,6 +292,7 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     write(res.source, res.revised ? `Rodada ${res.round} atualizada no Histórico de execuções — ${res.overall}` : `Rodada ${res.round} registrada no Histórico de execuções — ${res.overall}`);
     rememberEnv();
     exec = null;
+    cancelBase = null;
     persistExec();
     close();
     // na rodada (ciclo) o próximo caso abre em seguida: não rola até o histórico (a posição ficaria lembrada lá)
@@ -284,9 +300,103 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     if (!handled) preview.scrollToLine(Math.max(0, store.source.split('\n').findIndex((l) => /^#{1,6}\s+hist[oó]rico de execu/i.test(l))), { align: 'start' });
   }
 
+  /**
+   * ✕ Cancelar execução (clicou em ▶ Executar sem querer): esquece o cronômetro e, se algo mudou no documento desde que
+   * começou (status, obtido, prints, rodada arquivada), volta como estava — pede um segundo clique. Ctrl+Z traz de volta.
+   */
+  function cancelExec() {
+    if (!exec) return;
+    const changed = cancelBase !== null && store.source !== cancelBase;
+    if (changed && confirmCancel < Date.now()) {
+      confirmCancel = Date.now() + 4000;
+      render();
+      notice('Clique de novo para cancelar: o que mudou nesta execução é desfeito (Ctrl+Z traz de volta).');
+      setTimeout(() => { if (confirmCancel && confirmCancel <= Date.now() && mode === 'exec') { confirmCancel = 0; render(); } }, 4100);
+      return;
+    }
+    const base = cancelBase;
+    confirmCancel = 0;
+    mode = null; // antes de tirar o painel: o "obtido" digitado não é gravado
+    exec = null;
+    cancelBase = null;
+    lastProblem = -1;
+    persistExec();
+    clearInterval(tick);
+    if (pip) { const w = pip; pip = null; dock(); try { w.close(); } catch { /* já fechada */ } }
+    if (changed && base !== null) write(base);
+    render();
+    toast?.(changed ? 'Execução cancelada — o documento voltou como estava antes de começar (Ctrl+Z traz de volta).' : 'Execução cancelada — nada foi registrado.');
+    onCancel?.({ reverted: changed });
+  }
+
+  /** Minimizar / expandir o painel (M fora dos campos). */
+  function toggleCompact() {
+    saveActual();
+    compact = !compact;
+    prefs.save({ runnerCompact: compact });
+    render();
+    fitPip();
+  }
+
+  /** No painel flutuante (janela do sistema), a janela acompanha o tamanho do painel. */
+  function fitPip() {
+    if (!pip) return;
+    const w = pip;
+    requestAnimationFrame(() => {
+      try {
+        const chrome = Math.max(0, w.outerHeight - w.innerHeight);
+        const h = Math.ceil(el.scrollHeight) + chrome;
+        w.resizeTo(compact ? Math.min(w.outerWidth, 440) : Math.max(w.outerWidth, 460), Math.max(compact ? 90 : 300, h));
+      } catch { /* sem permissão para redimensionar: o painel se ajusta dentro da janela */ }
+    });
+  }
+
+  /** Painel minimizado: passo, ação em uma linha, tempo, status 1–5, print e Concluir. @param {NonNullable<ReturnType<typeof current>>} c */
+  function renderExecMini(c) {
+    const { t, rows, row } = c;
+    /** @param {number} i */
+    const cell = (i) => (i >= 0 ? cellToText(row.cells[i] || '') : '');
+    const st = t.status >= 0 ? (row.cells[t.status] || '').replace(/`/g, '').trim() : '';
+    const kind = st ? cellStatus(st) : null;
+    const done = rows.filter((r) => (r.cells[t.status] || '').replace(/`/g, '').trim()).length;
+    const run = ex();
+    const label = t.id >= 0 && cell(t.id) ? cell(t.id) : String(run.index + 1);
+    const action = t.action >= 0 ? cell(t.action) : row.cells.filter((_, i) => ![t.status, t.expected, t.actual, t.id].includes(i)).join(' · ');
+    const expected = t.expected >= 0 ? cell(t.expected) : '';
+    const prob = lastProblem >= 0 && lastProblem < rows.length ? rows[lastProblem] : null;
+    const probLabel = prob ? (t.id >= 0 && prob.cells[t.id] ? cellToText(prob.cells[t.id]) : String(lastProblem + 1)) : '';
+    const ICON = /** @type {Record<string, string>} */ ({ PASS: '✓', FAIL: '✗', BLOCKED: '⛔', SKIP: '⤼', PENDING: '○' });
+    el.innerHTML = `
+      <div class="run-mini">
+        <div class="run-mini-top">
+          <button type="button" data-act="compact" class="run-mini-step" title="Expandir o painel (M)">▶ Passo ${esc(label)} <small>${run.index + 1}/${rows.length}</small></button>
+          <span class="run-progress" title="${done} de ${rows.length} com status"><span style="width:${Math.round((done / rows.length) * 100)}%"></span></span>
+          <span class="run-clock${run.runningSince ? '' : ' paused'}" title="Tempo de execução (sem as pausas)">${clock(timerElapsed(run))}</span>
+          <button type="button" data-act="compact" class="run-x run-expand" title="Expandir o painel (M)" aria-label="Expandir o painel">⤢</button>
+        </div>
+        <div class="run-mini-action" title="${esc(action)}${expected ? `
+
+Esperado: ${esc(expected)}` : ''}">${esc(action) || '<em>—</em>'}</div>
+        <div class="run-mini-bar">
+          ${STATUS_ORDER.map((w, i) => `<button type="button" data-word="${w}" class="run-mini-st st-${KIND_OF[w]}${kind === KIND_OF[w] ? ' current' : ''}" aria-pressed="${kind === KIND_OF[w]}" title="${w} (${i + 1})" aria-label="${w}">${ICON[w] || ''}<kbd>${i + 1}</kbd></button>`).join('')}
+          <span class="run-grow"></span>
+          <button type="button" data-act="prev" class="run-mini-nav" title="Passo anterior (←)" aria-label="Passo anterior">◀</button>
+          <button type="button" data-act="next" class="run-mini-nav" title="Próximo passo (→)" aria-label="Próximo passo">▶</button>
+          ${onCapture
+    ? '<button type="button" data-act="capture" class="run-mini-nav" title="Print da janela do sistema testado (Ctrl+Alt+P no editor)" aria-label="Capturar print">📸</button>'
+    : '<button type="button" data-act="paste" class="run-mini-nav" title="Colar print do passo (Ctrl+V)" aria-label="Colar print do passo">📷</button>'}
+          <button type="button" data-act="finish" class="primary run-mini-done" title="Concluir: registra a rodada no Histórico de execuções">✓</button>
+        </div>
+        ${prob ? `<button type="button" data-act="problem" class="run-mini-prob" title="Expande o painel no passo ${esc(probLabel)} para escrever o obtido ou abrir o bug">✎ Passo ${esc(probLabel)} ${esc(cellToText(prob.cells[t.status] || '').replace(/`/g, ''))}: escrever o obtido / abrir bug</button>` : ''}
+      </div>`;
+    el.querySelector('.run-mini-prob')?.classList.add(cellStatus(cellToText(prob?.cells[t.status] || '')) === 'blocked' ? 'blocked' : 'fail');
+    highlightRow(t, row.index);
+  }
+
   function renderExec() {
     const c = current();
     if (!c) { el.innerHTML = '<div class="run-empty">Tabela sem passos.</div>'; return; }
+    if (compact) { renderExecMini(c); return; }
     const { t, rows, row } = c;
     /** @param {number} i */
     const cell = (i) => (i >= 0 ? cellToText(row.cells[i] || '') : '');
@@ -303,12 +413,14 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
         <span class="run-step">Passo ${esc(label)} <small>(${run.index + 1} de ${rows.length})</small></span>
         <span class="run-progress" title="${done} de ${rows.length} com status"><span style="width:${Math.round((done / rows.length) * 100)}%"></span></span>
         ${floatBtn()}
+        <button type="button" data-act="compact" class="run-x run-min" title="Minimizar (M): fica só o passo, o tempo e os status — mais tela para o sistema testado" aria-label="Minimizar o painel">▁</button>
         <button type="button" data-act="close" class="run-x" title="Fechar (a execução continua; ▶ Executar retoma)">×</button>
       </div>
       <div class="run-timer">
         <span class="run-clock${run.runningSince ? '' : ' paused'}" title="Tempo de execução (sem as pausas)">${clock(timerElapsed(run))}</span>
         ${run.runningSince ? '' : '<span class="run-paused">pausado</span>'}
         ${timerButtons(run)}
+        <button type="button" data-act="cancel" class="run-link run-cancel${confirmCancel > Date.now() ? ' confirm' : ''}" title="Começou sem querer? Esquece esta execução e desfaz o que ela mudou no documento (Ctrl+Z traz de volta)">${confirmCancel > Date.now() ? 'Cancelar mesmo?' : '✕ Cancelar execução'}</button>
       </div>
       <div class="run-body">
         <div class="run-field"><span>Ação</span><div>${esc(action) || '<em>—</em>'}</div></div>
@@ -439,11 +551,27 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     const c = countNotes(store.source);
     const cur = ses();
     const running = !!cur.runningSince;
+    if (compact) {
+      el.innerHTML = `
+      <div class="run-mini">
+        <div class="run-mini-top">
+          <button type="button" data-act="compact" class="run-mini-step" title="Expandir o painel">⏱ Sessão <small>${c.total} nota${c.total === 1 ? '' : 's'}${pendingPrints.length ? ` · 📎 ${pendingPrints.length}` : ''}</small></button>
+          <span class="run-clock${running ? '' : ' paused'}">${clock(elapsed())}</span>
+          <button type="button" data-act="compact" class="run-x run-expand" title="Expandir o painel" aria-label="Expandir o painel">⤢</button>
+        </div>
+        <div class="run-mini-bar">
+          <input class="run-note" type="text" aria-label="Nota da sessão" placeholder="${NOTE_TAGS[cur.tag].label}… Enter anota (bug: / dúvida: / ideia:)">
+          ${onCapture ? '<button type="button" data-act="capture" class="run-mini-nav" title="Print da janela do sistema testado" aria-label="Capturar print">📸</button>' : '<button type="button" data-act="notePrint" class="run-mini-nav" title="Colar print" aria-label="Colar print">📷</button>'}
+        </div>
+      </div>`;
+      return;
+    }
     el.innerHTML = `
       <div class="run-head">
         <strong>⏱ Sessão exploratória</strong>
         <span class="run-grow"></span>
         ${floatBtn()}
+        <button type="button" data-act="compact" class="run-x run-min" title="Minimizar: fica só o tempo e o campo da nota" aria-label="Minimizar o painel">▁</button>
         <button type="button" data-act="close" class="run-x" title="Fechar (o cronômetro continua)">×</button>
       </div>
       <div class="run-timer">
@@ -488,7 +616,7 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     const body = document.body;
     const pane = document.getElementById('previewPane');
     const width = pane && pane.offsetParent !== null ? pane.clientWidth : 0; // clientWidth já inclui o espaço reservado (padding)
-    const on = !!mode && !pip && !el.hidden && width >= 1000;
+    const on = !!mode && !pip && !compact && !el.hidden && width >= 1000;
     body.classList.toggle('runner-docked', on);
     if (!on || !pane) return;
     const r = pane.getBoundingClientRect();
@@ -503,6 +631,7 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     const keepNote = /** @type {HTMLElement | null} */ (focused)?.classList?.contains('run-note') ? /** @type {HTMLInputElement} */ (focused).value : null;
     el.hidden = false;
     el.dataset.mode = mode;
+    el.classList.toggle('compact', compact);
     if (mode === 'exec') renderExec(); else renderSession();
     el.insertAdjacentHTML('beforeend', '<div class="run-notice" role="status"></div>');
     if (keepNote !== null) { const n = el.querySelector('.run-note'); if (n) { /** @type {HTMLInputElement} */ (n).value = keepNote; /** @type {HTMLElement} */ (n).focus(); } }
@@ -559,7 +688,7 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     /** @type {Window} */
     let w;
     try {
-      w = await dpip.requestWindow({ width: 460, height: mode === 'exec' ? 470 : 340 });
+      w = await dpip.requestWindow(compact ? { width: 440, height: mode === 'exec' ? 150 : 110 } : { width: 460, height: mode === 'exec' ? 470 : 340 });
     } catch (err) {
       toast(`Não foi possível abrir o painel flutuante: ${/** @type {Error} */ (err).message}`, 'error');
       return;
@@ -599,6 +728,9 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     if (b.dataset.tag) { ses().tag = /** @type {NoteTag} */ (b.dataset.tag); persistSession(); render(); /** @type {HTMLElement} */ (el.querySelector('.run-note'))?.focus(); return; }
     const act = b.dataset.act;
     if (act === 'close') close();
+    else if (act === 'compact') toggleCompact();
+    else if (act === 'cancel') cancelExec();
+    else if (act === 'problem') { saveActual(); if (exec && lastProblem >= 0) ex().index = lastProblem; lastProblem = -1; compact = false; prefs.save({ runnerCompact: false }); render(); fitPip(); /** @type {HTMLElement | null} */ (el.querySelector('.run-actual'))?.focus(); }
     else if (act === 'prev') go(-1);
     else if (act === 'next') go(1);
     else if (act === 'finish') finishExec();
@@ -655,8 +787,10 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     if (i >= 0) setStatus(STATUS_ORDER[i]);
     else if (event.key === 'ArrowRight') go(1);
     else if (event.key === 'ArrowLeft') go(-1);
+    else if (event.key === 'm' || event.key === 'M') toggleCompact();
     else if (event.key === 'Enter' && (!a || a === d.body || !a.closest('button, a, [role="button"], select'))) {
       // teclado só: Enter leva ao campo "resultado obtido" do passo atual
+      if (compact) toggleCompact(); // minimizado: Enter expande e já vai ao campo
       const f = /** @type {HTMLElement | null} */ (el.querySelector('.run-actual'));
       if (f) f.focus(); else handled = false;
     }

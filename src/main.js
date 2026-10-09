@@ -222,6 +222,8 @@ runner = createRunner({
     offerNextCase(res);
     return false;
   },
+  // ✕ Cancelar execução: na rodada, o caso volta a "não começado"
+  onCancel: () => { import('./app/cycle.js').then((m) => m.cancelCaseStart()); },
   onNewBug: (nearLine) => {
     const bug = findBugTemplate();
     if (bug) createLinkedDoc(bug, { where: 'preview', nearLine });

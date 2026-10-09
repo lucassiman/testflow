@@ -393,17 +393,40 @@ export async function goToCycleCase(key) {
     app.toast(`↩ Revisando ${key} (${row.status}) — ✓ Concluir atualiza o resultado${focus && !sameKey(focus, key) ? ` e volta para ${focus}` : ''}.`, 'info', { duration: 6000 });
     return;
   }
+  const prevCursor = cursorOf(c.path);
   setCursor(c.path, key);
   unskip(c.path, key);
   const since = cycleStart(text) || new Date();
   const counts = describeDoc(app.store.source).counts;
   const first = !startedIn(c.path).includes(key.toLowerCase());
+  const base = app.store.source; // ✕ Cancelar volta para cá (inclusive a rodada arquivada abaixo)
   // primeira vez neste ciclo com passos marcados de antes: arquiva essa rodada (Ctrl+Z desfaz) e começa limpo
   if (first && needsFreshRound(app.store.source, since, counts)) doNewRound();
   // execução guardada de antes do ciclo: não retoma o cronômetro/início antigo
   if (first) app.runner?.discardSaved();
   markStarted(c.path, key);
-  startRun();
+  lastStart = { cyclePath: c.path, key, first, prevCursor };
+  startRun({ base });
+}
+
+/** Último caso começado na rodada (para ✕ Cancelar execução). @type {{ cyclePath: string, key: string, first: boolean, prevCursor: string } | null} */
+let lastStart = null;
+
+/** ✕ Cancelar execução: o caso começado sem querer volta a "não começado" na rodada e o foco volta ao caso anterior. */
+export function cancelCaseStart() {
+  const s = lastStart;
+  lastStart = null;
+  if (!s) return;
+  // só se o caso aberto ainda é o que começou pela rodada (cancelar a execução de outro documento não mexe nela)
+  const c = currentCycle();
+  if (!c || c.path !== s.cyclePath || !sameKey(currentCaseKey(c.text), s.key)) return;
+  if (s.first) {
+    const all = { ...(loadPrefs().cycleStarted || {}) };
+    all[s.cyclePath] = (all[s.cyclePath] || []).filter((/** @type {string} */ k) => k !== s.key.toLowerCase());
+    savePrefs({ cycleStarted: all });
+  }
+  if (s.prevCursor !== undefined) setCursor(s.cyclePath, s.prevCursor);
+  import('./cyclePanel.js').then((m) => m.scheduleCyclePanel());
 }
 
 /** Volta para o documento do ciclo. */
@@ -573,6 +596,7 @@ export function inCycleCase() {
  * @returns {boolean} true = era um caso do ciclo (o aviso já foi dado)
  */
 export function onCaseFinished(res, { auto = false } = {}) {
+  lastStart = null; // concluído: não há mais o que cancelar
   const c = currentCycle();
   if (!c || c.path === currentWorkspacePath()) return false;
   const key = currentCaseKey(c.text);

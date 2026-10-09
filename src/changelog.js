@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.31.0', date: '09/10/2026',
+    items: [
+      { icon: '▁', text: '**Painel de execução minimizado** (▁ ou tecla **M**): uma faixa pequena com o passo, o tempo, os status 1–5, print e ✓ Concluir — mais tela para o sistema testado, também no ⧉ Flutuar. Marcou FAIL/BLOCKED minimizado? Um clique volta ao passo para escrever o obtido ou abrir o bug.', manual: '7.4 Painel flutuante' },
+      { icon: '✕', text: '**Cancelar execução**: clicou em ▶ Executar sem querer? **✕ Cancelar execução** esquece o cronômetro e desfaz o que mudou no documento (Ctrl+Z traz de volta); na rodada, o caso volta a "não começado".', manual: '7.3 Executar passo a passo' },
+    ],
+  },
+  {
     version: '1.30.0', date: '09/10/2026',
     items: [
       { icon: '♿', text: '**Acessibilidade**: foco visível em toda a navegação por teclado, contraste corrigido (badges BLOCKED, links entre documentos, painel da rodada) e atalhos anunciados nos botões.', manual: '13. Atalhos' },

@@ -14,7 +14,7 @@ test('painel de execução encaixa à direita quando há espaço e não cobre a 
   expect(table.x + table.width).toBeLessThanOrEqual(box.x + 1);
   await page.setViewportSize({ width: 900, height: 800 });
   await expect(page.locator('body')).not.toHaveClass(/runner-docked/);
-  await runner.locator('[data-act="close"], .run-x, button[title*="Fechar"]').first().click();
+  await runner.locator('[data-act="close"]').click();
   await expect(runner).toBeHidden();
   await expect(page.locator('body')).not.toHaveClass(/runner-docked/);
 });

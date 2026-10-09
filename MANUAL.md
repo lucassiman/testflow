@@ -375,9 +375,13 @@ Status geral, barra de progresso e contagem por status. **Clique num status** pa
 
 Fechar o painel não perde nada: tudo já está no documento.
 
+**Começou sem querer?** **✕ Cancelar execução** (ao lado do cronômetro) esquece esta execução: se nada mudou, fecha na hora; se você já marcou status, escreveu obtido ou colou print, pede um segundo clique e **desfaz o que mudou desde que começou** (`Ctrl+Z` traz de volta). Na rodada (ciclo), o caso volta a *não começado* — inclusive a rodada antiga que tinha sido arquivada ao abrir.
+
 ### 7.4 Painel flutuante (por cima de outros programas)
 
 No painel ▶ Executar (ou ⏱ Sessão), **⧉ Flutuar** abre o painel numa janelinha que fica **sempre visível**, mesmo com o sistema testado em tela cheia. Marque status, obtido e cole prints por ela (1–5, ←/→ e `Ctrl+V` valem com a janelinha em foco). **⤓ Voltar** (ou fechar a janelinha) devolve o painel ao editor.
+
+**Minimizar (▁ ou tecla `M`)** — com um monitor só, deixe o painel pequeno e veja mais do sistema testado: fica uma faixa com o **passo** (n/total), a **ação** em uma linha (passe o mouse para ver o esperado), o **tempo**, os status **1–5**, ◀ ▶, 📸 e **✓ Concluir**. Funciona no editor (flutua no canto, sem ocupar a coluna da direita) e no ⧉ Flutuar (a janelinha encolhe junto). Marcou **FAIL/BLOCKED** minimizado? Aparece **✎ Passo N: escrever o obtido / abrir bug** — um clique expande o painel naquele passo. Para expandir: **⤢**, clique no passo, `M` ou `Enter` (vai direto ao campo *obtido*). O app lembra se você prefere minimizado. Na ⏱ Sessão, o minimizado mostra o tempo e o campo da nota.
 
 > [!NOTE]
 > Chrome/Edge. Precisa de um clique para abrir (não abre sozinha) e os atalhos só valem com a janelinha em foco. Prints colados por ela são salvos sem o editor de anotação — a pasta de evidências precisa estar definida antes.
@@ -906,6 +910,7 @@ Ele aplica só o que você aprovar e, para os "confirmar", propõe a resposta: l
 | **Status (seletor e painel de execução)** | `1` PASS · `2` FAIL · `3` BLOCKED · `4` SKIP · `5` PENDING · `0` limpa | igual |
 | Painel de execução: passo anterior / próximo | `←` / `→` | igual |
 | Painel de execução: ir ao campo *obtido* / sair dele | `Enter` / `Esc` | igual |
+| Painel de execução: minimizar / expandir | `M` | igual |
 | Seletor de casos (nova rodada): mover · marcar · marcar intervalo | `↑` `↓` · `Espaço` · `Shift+Espaço` | igual |
 | Navegar pela tela | `Tab` / `Shift+Tab` (o item em foco ganha um contorno; os atalhos dos botões aparecem na dica e são lidos por leitores de tela) | igual |
 | Link para documento (lista para escolher) | `[[` no texto | igual |
