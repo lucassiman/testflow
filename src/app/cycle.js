@@ -5,6 +5,8 @@
  * no fim, ✓ Encerrar grava o resultado, as falhas e os bugs ligados.
  */
 import { app } from './context.js';
+import { me } from './assign.js';
+import { assignees, workload, samePerson } from '../markdown/assign.ts';
 import { forecast, caseAvgMs } from '../markdown/forecast.ts';
 import { filterApproved, onlyApproved } from './approval.js';
 import {
@@ -227,7 +229,7 @@ export async function skipCycleCase(key) {
   const onCase = sameKey(currentCaseKey(c.text), key);
   // a execução aberta no editor já recebe o SKIP no texto
   if (c.path === currentWorkspacePath()) refreshCycleDoc();
-  const left = nextCase(applySkipped(text, [key]), key);
+  const left = nextCase(applySkipped(text, [key]), key, me());
   unwhole(c.path, key);
   app.toast(`⏭ ${key} pulado (SKIP).`, 'info', { duration: 4000 });
   if (onCase && left) await goToCycleCase(left);
@@ -236,12 +238,12 @@ export async function skipCycleCase(key) {
 }
 
 // ---------------------------------------------------------------- checklist da rodada (painel lateral)
-/** @typedef {{ key: string, titulo: string, state: 'feito' | 'atual' | 'andamento' | 'pendente', status: string | null, when: string, aberto: boolean, whole: boolean, last: { status: string, when: string } | null, dur: string }} ChecklistItem */
+/** @typedef {{ key: string, titulo: string, state: 'feito' | 'atual' | 'andamento' | 'pendente', status: string | null, when: string, aberto: boolean, whole: boolean, last: { status: string, when: string } | null, dur: string, tester: string }} ChecklistItem */
 
 /**
  * Dados do painel da rodada: um item por caso, na ordem do ciclo (null = não há ciclo a mostrar).
  * Leve de propósito (roda a cada mudança no documento): usa o texto do ciclo e o dos casos, sem recalcular bugs.
- * @returns {{ path: string, title: string, closed: boolean, onCycle: boolean, counts: { PASS: number, FAIL: number, BLOCKED: number, SKIP: number }, done: number, total: number, failed: number, next: string | null, items: ChecklistItem[], ciclo: { path: string, titulo: string } | null, numero: number, links: import('../markdown/linkTypes.ts').LinkChip[], auto: import('../markdown/cycleAuto.ts').AutoSummary | null, whole: { key: string, done: number, total: number } | null, before: Array<{ acao: string, esperado: string, source: string }>, beforeDone: number[], forecast: import('../markdown/forecast.ts').Forecast | null } | null}
+ * @returns {{ path: string, title: string, closed: boolean, onCycle: boolean, counts: { PASS: number, FAIL: number, BLOCKED: number, SKIP: number }, done: number, total: number, failed: number, next: string | null, items: ChecklistItem[], ciclo: { path: string, titulo: string } | null, numero: number, links: import('../markdown/linkTypes.ts').LinkChip[], auto: import('../markdown/cycleAuto.ts').AutoSummary | null, whole: { key: string, done: number, total: number } | null, before: Array<{ acao: string, esperado: string, source: string }>, beforeDone: number[], forecast: import('../markdown/forecast.ts').Forecast | null, me: string, workload: import('../markdown/assign.ts').Workload[] } | null}
  */
 export function cycleChecklist() {
   const c = currentCycle();
@@ -256,6 +258,7 @@ export function cycleChecklist() {
   const open = openDocOverrides();
   const active = currentWorkspacePath();
   const started = startedIn(c.path);
+  const who = assignees(c.text);
   /** @type {ChecklistItem[]} */
   const items = t.rows.map((r) => {
     const titulo = (t.cols.caso + 1 < r.cells.length ? r.cells[t.cols.caso + 1] : '').replace(/\[\[|\]\]/g, '').replace(/\\\|/g, '|').trim() || docIndex.resolve(r.key)?.titulo || '';
@@ -286,10 +289,13 @@ export function cycleChecklist() {
       }
       if (state !== 'feito' && sameKey(r.key, cursor)) state = 'atual';
     }
-    return { key: r.key, titulo, state, status, when, aberto: sameKey(r.key, openKey), whole: isWhole(docIndex.resolve(r.key)), last, dur };
+    return { key: r.key, titulo, state, status, when, aberto: sameKey(r.key, openKey), whole: isWhole(docIndex.resolve(r.key)), last, dur, tester: who.get(r.key.toLowerCase()) || '' };
   });
   const doneItems = items.filter((i) => i.state === 'feito');
-  const next = items.find((i) => i.state !== 'feito')?.key || null;
+  // com testadores: o próximo meu, depois um livre
+  const pend = items.filter((i) => i.state !== 'feito');
+  const meNow = me();
+  const next = (meNow && items.some((i) => i.tester) ? pend.find((i) => samePerson(i.tester, meNow)) || pend.find((i) => !i.tester) : pend[0])?.key || null;
   return {
     path: c.path, title: docIndex.get(c.path)?.titulo || docIndex.get(c.path)?.name || 'Ciclo', closed: cycleClosed(c.text), onCycle,
     counts: { PASS: doneItems.filter((i) => i.status === 'PASS').length, FAIL: doneItems.filter((i) => i.status === 'FAIL').length, BLOCKED: doneItems.filter((i) => i.status === 'BLOCKED').length, SKIP: doneItems.filter((i) => i.status === 'SKIP').length },
@@ -301,6 +307,8 @@ export function cycleChecklist() {
     beforeDone: /** @type {number[]} */ ((loadPrefs().cycleBefore || {})[c.path] || []),
     // previsão: a duração média de cada caso pendente (histórico dele)
     forecast: cycleClosed(c.text) ? null : forecast(items.map((i) => ({ done: i.state === 'feito', avgMs: avgOf(i.key, open) }))),
+    me: me(),
+    workload: workload(applyMarks(c.text, c.path), (k) => avgOf(k, open)),
   };
 }
 
@@ -349,7 +357,7 @@ export async function markWhole(status) {
   unskip(c.path, key);
   if (c.path === currentWorkspacePath()) refreshCycleDoc();
   const after = applyWhole(text, { [key]: { status, when } });
-  const dest = nextCase(after, key);
+  const dest = nextCase(after, key, me());
   const p = cycleProgress(after);
   app.toast(`🔁 ${key}: ${status} registrado${p ? ` (${p.done}/${p.total})` : ''}${dest ? ` — abrindo ${dest}…` : ' — era o último pendente. Abrindo a execução para finalizar.'}`, 'info', { duration: 5000 });
   if (dest) await goToCycleCase(dest); else await openCycle();
@@ -368,7 +376,7 @@ export async function nextCycleCase() {
   const text = syncedCycle(c.text);
   if (cycleClosed(text)) { app.toast('Este ciclo já foi encerrado (fim: no cabeçalho) — crie um novo: Novo ▾ → 🔁 Ciclo de regressão…', 'error'); return; }
   if (text !== app.store.source && c.path === currentWorkspacePath()) programmatic(() => app.store.setSource(text, { origin: 'command' }));
-  const key = nextCase(text, currentCaseKey(text));
+  const key = nextCase(text, currentCaseKey(text), me());
   if (!key && !cycleTable(text)?.rows.length) { app.toast('Esta execução não tem casos manuais — ela é só de testes automatizados (🤖). Para somar casos, edite a tabela "Casos do ciclo".', 'info', { duration: 7000 }); return; }
   if (!key) { app.toast('Todos os casos do ciclo já têm status — abra o ciclo e use 🏁 Finalizar execução.', 'info', { action: { label: 'Abrir o ciclo', run: () => openCycle() }, duration: 7000 }); return; }
   await goToCycleCase(key);
@@ -570,7 +578,7 @@ export function cycleMenu() {
   if (!c) return;
   const p = cycleProgress(c.text);
   const onCycle = c.path === currentWorkspacePath();
-  const next = nextCase(c.text, currentCaseKey(c.text));
+  const next = nextCase(c.text, currentCaseKey(c.text), me());
   menu.open({
     x: window.innerWidth / 2 - 200, y: 90, wide: true,
     title: `🔁 ${docIndex.get(c.path)?.titulo || 'Ciclo de regressão'} — ${p?.done ?? 0}/${p?.total ?? 0}${p?.failed ? ` · ${p.failed} com falha` : ''}`,
@@ -627,7 +635,7 @@ export function onCaseFinished(res, { auto = false } = {}) {
   const text = syncedCycle(c.text);
   const t = cycleTable(text);
   const pending = t ? t.rows.filter((r) => r.key !== key && (!r.status || r.status === 'PENDING')).length : 0;
-  const next = nextCase(text, key);
+  const next = nextCase(text, key, me());
   const nextKey = next && next !== key ? next : null;
   app.toast(`🔁 ${key}: ${res.overall}. ${pending ? `Faltam ${pending} no ciclo.` : 'Era o último do ciclo.'}`, 'info', {
     duration: 12000,
@@ -646,7 +654,7 @@ async function advanceAfterFinish(cyclePath, key, res) {
   const focus = cursorOf(cyclePath);
   const focusRow = t.rows.find((r) => sameKey(r.key, focus));
   // revisão de um caso antigo: volta para onde a execução estava; senão, o próximo pendente
-  let dest = res.revised && focusRow && !sameKey(focus, key) && isOpenRow(focusRow) ? focus : nextCase(text, key);
+  let dest = res.revised && focusRow && !sameKey(focus, key) && isOpenRow(focusRow) ? focus : nextCase(text, key, me());
   if (dest && sameKey(dest, key)) dest = null;
   const p = cycleProgress(text);
   const head = `🔁 ${key}: ${res.overall} ${res.revised ? 'atualizado' : 'registrado'}${p ? ` (${p.done}/${p.total})` : ''}`;

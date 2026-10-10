@@ -45,7 +45,7 @@ export function forecast(items: Array<{ done: boolean; avgMs: number | null }>, 
   const mediaMs = known.length ? Math.round(known.reduce((a, b) => a + b, 0) / known.length) : DEFAULT_CASE_MS;
   const open = items.filter((i) => !i.done);
   const restanteMs = open.reduce((a, i) => a + (i.avgMs && i.avgMs > 0 ? i.avgMs : mediaMs), 0);
-  return { pendentes: open.length, restanteMs, semHistorico: open.filter((i) => !i.avgMs).length, mediaMs, fim: new Date(now.getTime() + restanteMs) };
+  return { pendentes: open.length, restanteMs, semHistorico: open.filter((i) => !i.avgMs).length, mediaMs, fim: new Date(Math.round((now.getTime() + restanteMs) / 60_000) * 60_000) }; // minuto cheio: o painel não redesenha a cada instante
 }
 
 const pad = (n: number): string => String(n).padStart(2, '0');

@@ -15,7 +15,8 @@ import { createDocIndex, describe } from '../src/io/docIndex.ts';
 import { readText, writeText, writeBytes, namesIn, hasName, kindAt } from '../src/io/fsOps.js';
 import { snapshotBeforeSave, listVersions, readVersion, saveVersion } from '../src/io/versions.js';
 import { caseChanges, unifiedDiff } from '../src/markdown/versionDiff.ts';
-import { forecast, caseAvgMs, forecastText, forecastDetail } from '../src/markdown/forecast.ts';
+import { forecast, caseAvgMs, forecastText, forecastDetail, approxDuration } from '../src/markdown/forecast.ts';
+import { assign, distribute, workload, pendingOf, assignees, samePerson } from '../src/markdown/assign.ts';
 import { applyBulk, describeBulk, emptyBulk, splitTags, type BulkChange } from '../src/markdown/bulkEdit.ts';
 import { planImport, caseDocText, sectionDir, importKey } from '../src/markdown/caseImport.ts';
 import { fromCsv, fromXlsx } from '../src/io/sheet.js';
@@ -633,6 +634,50 @@ export class QaWorkspace {
     });
   }
 
+  /**
+   * Atribuir casos na rodada: `para` + `casos` atribui esses casos a uma pessoa; `pessoas` distribui os pendentes entre
+   * elas (pelo tempo previsto ou pela quantidade; `todos` redistribui também os já atribuídos).
+   */
+  roundAssign(o: { execucao?: string; casos?: string[]; para?: string; pessoas?: string[]; por?: 'tempo' | 'quantidade'; todos?: boolean }): Promise<string> {
+    return this.exclusive(async () => {
+      const ex = await this.execOf(o.execucao || '');
+      const doc = await this.readDoc(ex.path);
+      if (cycleClosed(doc.text)) throw new Error(`${ex.path} já foi finalizada — não muda mais`);
+      const avg = (k: string) => caseAvgMs(this.index.resolve(k)?.text || '');
+      let next: string;
+      let msg: string;
+      if (o.pessoas?.length) {
+        const d = distribute(doc.text, o.pessoas, { avgMs: o.por === 'quantidade' ? undefined : avg, todos: !!o.todos });
+        next = d.text;
+        msg = [...d.plan].map(([p, keys]) => `${p}: ${keys.length ? keys.join(', ') : 'nada novo'}${keys.length && o.por !== 'quantidade' ? ` (${approxDuration(keys.reduce((a, k) => a + (avg(k) || 0), 0))})` : ''}`).join(' · ');
+      } else if (o.casos?.length && o.para !== undefined) {
+        const t = cycleTable(doc.text);
+        const keys = o.casos.map((c) => t?.rows.find((r) => r.key.toLowerCase() === c.replace(/^\[\[|\]\]$/g, '').toLowerCase())?.key || '');
+        const missing = o.casos.filter((_, i) => !keys[i]);
+        if (missing.length) throw new Error(`não estão na execução: ${missing.join(', ')}`);
+        const r = assign(doc.text, keys, o.para);
+        next = r.text;
+        msg = `${r.changed.length ? r.changed.join(', ') : 'nada mudou'} → ${o.para || 'sem testador'}`;
+      } else throw new Error('informe pessoas (para distribuir os pendentes) ou casos + para (atribuir esses casos a alguém; para: "" tira)');
+      if (next !== doc.text) await this.writeDoc(ex.path, next, doc);
+      const w = workload(next, avg);
+      return `${ex.path}: ${msg}.${w.length ? ` Carga: ${w.map((x) => `${x.pessoa || 'sem testador'} ${x.pendentes} pendente(s)${x.pendentes ? ` ${approxDuration(x.restanteMs)}` : ''}`).join(' · ')}.` : ''}`;
+    });
+  }
+
+  /** Pendências de uma pessoa nas execuções em andamento (os casos atribuídos a ela). */
+  async pendencies(o: { pessoa?: string }): Promise<string> {
+    await this.refresh(true);
+    const who = (o.pessoa || this.opts.who || '').trim();
+    if (!who) throw new Error('informe a pessoa');
+    const out: string[] = [];
+    for (const e of this.index.all().filter((x) => isCycle(x.text || '') && !cycleClosed(x.text || ''))) {
+      const keys = pendingOf(e.text || '', who);
+      if (keys.length) out.push(`- ${e.id || e.name} (${e.titulo || e.path}): ${keys.join(', ')} — ${approxDuration(keys.reduce((a, k) => a + (caseAvgMs(this.index.resolve(k)?.text || '') || 0), 0))}`);
+    }
+    return out.length ? [`Pendências de ${who}:`, ...out].join('\n') : `${who} não tem casos pendentes atribuídos nas execuções em andamento.`;
+  }
+
   /** Nova rodada: arquiva a tabela como está e limpa obtido/status. */
   newRound(ref: string): Promise<string> {
     return this.exclusive(async () => {
@@ -833,6 +878,7 @@ export class QaWorkspace {
       s.problemas.length ? `Falhas/bloqueios: ${s.problemas.map((p) => `${p.key} ${p.status}${p.bugs.length ? ` (${p.bugs.join(', ')})` : ' (sem bug ligado)'}`).join('; ')}` : 'Sem falhas.',
       pend.length ? `Pendentes: ${pend.join(', ')}` : 'Nenhum pendente.',
       !cycleClosed(text) && pend.length ? (() => { const f = forecast(t.rows.map((r) => ({ done: !!r.status && r.status !== 'PENDING', avgMs: caseAvgMs(this.index.resolve(r.key)?.text || '') }))); return `Previsão: ${forecastText(f)} — ${forecastDetail(f)}`; })() : '',
+      (() => { const w = workload(text, (k) => caseAvgMs(this.index.resolve(k)?.text || '')); return w.length ? `Testadores: ${w.map((x) => `${x.pessoa || 'sem testador'} ${x.feitos}/${x.total}${x.pendentes ? ` (faltam ${x.pendentes}, ${approxDuration(x.restanteMs)})` : ''}`).join(' · ')}` : ''; })(),
       s.auto ? `Automatizados (${s.auto.tool}): ${s.auto.total} — ${s.auto.pass} PASS · ${s.auto.fail} FAIL` : '',
       `Vínculos: ${Object.entries(readLinks(text)).map(([k, v]) => `${k}: ${v.join(', ')}`).join(' · ') || 'nenhum'}`,
     ].filter(Boolean).join('\n');

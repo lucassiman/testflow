@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.45.0', date: '10/10/2026',
+    items: [
+      { icon: '👥', text: '**Atribuir casos na rodada**: 👥 Atribuir divide os pendentes entre os testadores, equilibrando pelo tempo previsto; as iniciais de cada um aparecem no caso (clique para trocar), o filtro **Minhas** mostra só os seus e a linha 👥 a carga de cada um.', manual: '7.8 Ciclo de regressão' },
+      { icon: '▶', text: '**▶ Próximo caso** abre os seus primeiro; a tela Início mostra **👤 Minhas pendências**. Com o Claude: `qa_rodada_atribuir` e `qa_pendencias`.', manual: '7.8 Ciclo de regressão' },
+    ],
+  },
+  {
     version: '1.44.0', date: '10/10/2026',
     items: [
       { icon: '⏱', text: '**Previsão de tempo da rodada**: no painel, *faltam ~1 h 20 min (14 casos) · termina ~16:40*, pela duração média que cada caso já teve. O Claude também mostra no status da rodada.', manual: '7.8 Ciclo de regressão' },

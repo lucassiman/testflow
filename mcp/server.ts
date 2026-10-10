@@ -273,6 +273,19 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
     }, annotations: RW,
   }, async (a) => run(() => ws.roundRecord(a), text));
 
+  server.registerTool('qa_rodada_atribuir', {
+    title: 'Atribuir casos na rodada', description: 'Coluna Testador da execução: pessoas → distribui os casos pendentes entre elas (pelo tempo previsto — duração média de cada caso — ou pela quantidade; todos=true redistribui os já atribuídos); casos + para → atribui esses casos a uma pessoa (para: "" tira). Devolve a carga de cada um.',
+    inputSchema: {
+      execucao: z.string().optional(), pessoas: z.array(z.string()).optional(), casos: z.array(z.string()).optional(), para: z.string().optional(),
+      por: z.enum(['tempo', 'quantidade']).optional(), todos: z.boolean().optional(),
+    }, annotations: RW,
+  }, async (a) => run(() => ws.roundAssign(a), text));
+
+  server.registerTool('qa_pendencias', {
+    title: 'Minhas pendências', description: 'Casos pendentes atribuídos a uma pessoa nas execuções em andamento, com o tempo previsto.',
+    inputSchema: { pessoa: z.string().optional().describe('sem ela: o usuário do MCP') }, annotations: RO,
+  }, async (a) => run(() => ws.pendencies(a), text));
+
   server.registerTool('qa_rodada_finalizar', {
     title: 'Finalizar rodada', description: 'Finaliza a execução: SKIP nos casos não executados, fim:, seção Encerramento, atualiza o ciclo de origem e (padrão) gera os 4 relatórios de fim de execução. Depois de finalizada, a execução não muda mais — confirme com o usuário antes.',
     inputSchema: { execucao: z.string().optional(), relatorios: z.boolean().optional().describe('false = não gera os relatórios') },

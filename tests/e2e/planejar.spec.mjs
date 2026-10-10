@@ -35,3 +35,30 @@ test('previsão: o painel da rodada mostra quanto falta pela duração média do
   await expect(fc).toContainText('faltam ~1 h 30 min (3 casos)');
   await expect(fc).toHaveAttribute('title', /1 sem histórico/);
 });
+
+test('atribuir: 👥 distribui os pendentes, chip do testador, filtro Minhas, carga e ▶ Próximo caso é o meu', async ({ page }) => {
+  await workspace(page, 'ws-atribuir', [
+    ['aplicacoes/Portal/casos/TC-1.md', tc('TC-1', '', HIST.replace('20 min', '30 min'))],
+    ['aplicacoes/Portal/casos/TC-2.md', tc('TC-2', '', HIST)],
+    ['aplicacoes/Portal/casos/TC-3.md', tc('TC-3', '', HIST)],
+  ]);
+  await newRun(page);
+  await page.locator('.cp-btn[data-cp="assign"]').click();
+  await page.locator('.app-dialog-field input').first().fill('Lucas, Bruno');
+  await page.locator('.app-dialog-foot button', { hasText: 'Atribuir' }).click();
+  await expect(page.locator('#toast')).toContainText('Distribuídos — Lucas: 1 (~30 min) · Bruno: 2 (~40 min)');
+  await expect(page.locator('.cp-item', { hasText: 'TC-1' }).locator('.cp-who')).toHaveText('L');
+  await expect(page.locator('.cp-item', { hasText: 'TC-1' }).locator('.cp-who')).toHaveClass(/mine/);
+  await expect(page.locator('.cp-load')).toContainText('Bruno 2');
+  await page.locator('.cp-fchip[data-f="minhas"]').click();
+  await expect(page.locator('.cp-item')).toHaveCount(1);
+  // trocar o testador pelo chip
+  await page.locator('.cp-fchip[data-f="todos"]').click();
+  await page.locator('.cp-item', { hasText: 'TC-2' }).locator('.cp-who').click();
+  await page.locator('.cmd-menu .cmd-item', { hasText: 'Lucas (eu)' }).click();
+  await expect(page.locator('.cp-item', { hasText: 'TC-2' }).locator('.cp-who')).toHaveClass(/mine/);
+  await page.keyboard.press('Control+s');
+  // ▶ Próximo caso abre um dos meus (TC-1)
+  await page.locator('.cp-btn[data-cp="next"]').click();
+  await expect(page.locator('#preview h1')).toHaveText('TC-1');
+});

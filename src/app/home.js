@@ -11,6 +11,7 @@ import { loadPrefs } from '../io/drafts.js';
 import { isCycle, cycleClosed, cycleProgress, cycleStart } from '../markdown/cycle.ts';
 import { execState, bugOpen } from '../markdown/views.ts';
 import { lastRound } from '../markdown/linkInfo.ts';
+import { pendingOf } from '../markdown/assign.ts';
 
 /** @param {unknown} s */
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => /** @type {Record<string, string>} */ ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -61,6 +62,14 @@ export function createHome(actions) {
     };
   }
 
+  /** Meus casos pendentes nas execuções em andamento (coluna Testador). */
+  function mine() {
+    const who = String(loadPrefs().publisherName || '').trim();
+    if (!who) return [];
+    return docIndex.all().filter((e) => e.text && isCycle(e.text) && !cycleClosed(e.text))
+      .map((e) => ({ path: e.path, titulo: e.titulo || e.name, keys: pendingOf(e.text || '', who) })).filter((x) => x.keys.length);
+  }
+
   function pins() {
     const ws = app.workspaceDir?.name || '';
     if (!ws) return [];
@@ -73,6 +82,7 @@ export function createHome(actions) {
     const round = ready ? openRound() : null;
     const pend = ready ? pending() : null;
     const pinned = ready ? pins() : [];
+    const my = ready ? mine() : [];
     const recents = actions.recents().slice(0, 6);
     const label = (/** @type {string} */ p) => { const e = docIndex.get(p); return e ? `${e.id ? `<b>${esc(e.id)}</b> ` : ''}${esc(e.titulo || e.name.replace(/\.(md|markdown)$/i, ''))}` : esc(p.split('/').pop()); };
     const chip = (/** @type {string} */ q, /** @type {string} */ icon, /** @type {number} */ n, /** @type {string} */ text, /** @type {string} */ cls) => `<button type="button" class="home-stat ${cls}${n ? '' : ' zero'}" data-home-search="${esc(q)}" title="Buscar: ${esc(q)}"><span class="home-num">${n}</span><span>${icon} ${esc(text)}</span></button>`;
@@ -88,6 +98,10 @@ export function createHome(actions) {
           ${round.p ? `<div class="home-bar" title="${round.p.done} de ${round.p.total}"><span style="width:${round.p.total ? Math.round((round.p.done / round.p.total) * 100) : 0}%"></span></div>
           <div class="home-muted">${round.p.done}/${round.p.total} casos${round.p.failed ? ` · <span class="home-fail">${round.p.failed} com falha</span>` : ''}${round.p.next ? ` · próximo: <b>${esc(round.p.next)}</b>` : ' · todos com resultado'}</div>` : ''}
           <div class="home-actions">${round.p?.next ? '<button type="button" class="primary" data-home="continue">▶ Continuar</button>' : ''}<button type="button" data-home="openRound">Abrir a execução</button></div>
+        </section>` : ''}
+        ${my.length ? `<section class="home-card home-mine">
+          <h2>👤 Minhas pendências</h2>
+          <ul class="home-list">${my.map((m) => `<li><button type="button" data-home-round="${esc(m.path)}" title="Continuar esta rodada pelos seus casos"><b>${m.keys.length}</b> caso(s) em ${esc(m.titulo)}<small>${esc(m.keys.slice(0, 6).join(', '))}${m.keys.length > 6 ? '…' : ''}</small></button></li>`).join('')}</ul>
         </section>` : ''}
         ${pend ? `<section class="home-card">
           <h2>📋 Pendências da pasta</h2>
@@ -125,6 +139,7 @@ export function createHome(actions) {
     if (!b) return;
     if (b.dataset.homeSearch) { actions.search(b.dataset.homeSearch); return; }
     if (b.dataset.homeOpen) { actions.openPath(b.dataset.homeOpen); return; }
+    if (b.dataset.homeRound) { actions.continueRound(b.dataset.homeRound); return; }
     if (b.dataset.homeRecent) { actions.openRecent(Number(b.dataset.homeRecent)); return; }
     if (b.dataset.homeCmd) { actions.command(b.dataset.homeCmd); return; }
     const round = openRound();

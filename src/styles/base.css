@@ -1400,6 +1400,10 @@ button { font: inherit; color: inherit; }
 .cp-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cp-x { border: 0; background: none; cursor: pointer; color: var(--muted); font-size: 15px; padding: 0 4px; }
 .cp-x:hover { color: var(--text); }
+.cp-who { flex: none; font-size: 10px; font-weight: 700; min-width: 20px; height: 20px; padding: 0 4px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: var(--bg-soft); border: 1px solid var(--border); color: var(--muted); cursor: pointer; margin-left: 4px; }
+.cp-who.mine { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.cp-load { font-size: 11.5px; color: var(--muted); padding: 0 12px 4px; }
+.cp-load .mine { color: var(--fg); font-weight: 600; }
 .cp-forecast { font-size: 11.5px; color: var(--muted); padding: 0 12px 6px; }
 .cp-progress { padding: 8px 10px 6px; }
 .cp-bar { height: 6px; border-radius: 999px; background: var(--border); overflow: hidden; }

@@ -5,6 +5,9 @@
  * ao concluir). Aparece no ciclo e em qualquer caso dele; recolhe para uma faixa estreita.
  */
 import { cycleChecklist, attachAutomation, editDevice, markWhole, goToCycleCase, nextCycleCase, openCycle, finishCycle, showRoundSummary, skipCycleCase, runCycle, openCycleDef, editLinks, rerunFailed } from './cycle.js';
+import { assignRound, reassignCase, initials } from './assign.js';
+import { samePerson } from '../markdown/assign.ts';
+import { approxDuration } from '../markdown/forecast.ts';
 import { forecastText, forecastDetail } from '../markdown/forecast.ts';
 import { loadPrefs, savePrefs } from '../io/drafts.js';
 import { $ } from './shared.js';
@@ -52,10 +55,14 @@ export function refreshCyclePanel() {
   }
   const pct = data.total ? Math.round((data.done / data.total) * 100) : 0;
   // filtro da lista: todos · pendentes · falhas (o caso aberto aparece sempre)
-  const filter = /** @type {'todos' | 'pendentes' | 'falhas'} */ (loadPrefs().cyclePanelFilter || 'todos');
+  const hasTesters = data.items.some((i) => i.tester);
+  let filter = /** @type {'todos' | 'pendentes' | 'falhas' | 'minhas'} */ (loadPrefs().cyclePanelFilter || 'todos');
+  if (filter === 'minhas' && !(hasTesters && data.me)) filter = 'todos';
+  const isMine = (/** @type {{ tester: string }} */ i) => !!data.me && samePerson(i.tester, data.me);
+  const nMine = data.items.filter((i) => isMine(i) && i.state !== 'feito').length;
   const nPend = data.items.filter((i) => i.state !== 'feito').length;
   const nFail = data.items.filter((i) => i.status === 'FAIL' || i.status === 'BLOCKED').length;
-  const visible = data.items.filter((i) => i.aberto || filter === 'todos' || (filter === 'pendentes' ? i.state !== 'feito' : i.status === 'FAIL' || i.status === 'BLOCKED'));
+  const visible = data.items.filter((i) => i.aberto || filter === 'todos' || (filter === 'minhas' ? isMine(i) : filter === 'pendentes' ? i.state !== 'feito' : i.status === 'FAIL' || i.status === 'BLOCKED'));
   // barra de progresso com as cores dos status
   const seg = (/** @type {string} */ k, /** @type {number} */ n) => (n ? `<span class="cp-seg cp-seg-${k.toLowerCase()}" style="flex:${n}" title="${k}: ${n}"></span>` : '');
   const bar = `${seg('PASS', data.counts.PASS)}${seg('FAIL', data.counts.FAIL)}${seg('BLOCKED', data.counts.BLOCKED)}${seg('SKIP', data.counts.SKIP)}${seg('PENDENTE', data.total - data.done)}`;
@@ -68,7 +75,7 @@ export function refreshCyclePanel() {
     const tip = `${i.key}${i.titulo ? ` — ${i.titulo}` : ''}${i.when ? ` · ${i.when}` : ''}${i.dur ? ` · ${i.dur}` : ''}${i.state === 'feito' ? ' (clique para revisar)' : i.last ? ` · pendente nesta rodada (último: ${i.last.status}${i.last.when ? ` em ${i.last.when}` : ''})` : ''}`;
     const skip = !data.closed && i.state !== 'feito' ? `<button type="button" class="cp-skip" data-cp="skip" data-key="${esc(i.key)}" title="Pular ${esc(i.key)}: marca SKIP sem abrir o caso" aria-label="Pular ${esc(i.key)}">⏭</button>` : '';
     return `<li class="cp-li"><button type="button" class="${cls}" data-cp="case" data-key="${esc(i.key)}" title="${esc(tip)}"${i.aberto ? ' aria-current="true"' : ''}>`
-      + `<span class="cp-ic">${icon}</span><span class="cp-name"><b>${esc(i.key)}</b>${i.titulo ? ` <small>${esc(i.titulo)}</small>` : ''}</span><span class="cp-tail">${esc(tail)}${i.dur && i.state === 'feito' ? `<small class="cp-dur" title="Duração da execução deste caso nesta rodada">⏱ ${esc(i.dur)}</small>` : ''}${last}</span></button>${skip}</li>`;
+      + `<span class="cp-ic">${icon}</span><span class="cp-name"><b>${esc(i.key)}</b>${i.titulo ? ` <small>${esc(i.titulo)}</small>` : ''}</span>${i.tester ? `<span class="cp-who${isMine(i) ? ' mine' : ''}" data-cp="who" data-key="${esc(i.key)}" role="button" tabindex="-1" title="Testador: ${esc(i.tester)}${isMine(i) ? ' (você)' : ''} — clique para trocar">${esc(initials(i.tester))}</span>` : ''}<span class="cp-tail">${esc(tail)}${i.dur && i.state === 'feito' ? `<small class="cp-dur" title="Duração da execução deste caso nesta rodada">⏱ ${esc(i.dur)}</small>` : ''}${last}</span></button>${skip}</li>`;
   }).join('');
   el.innerHTML = `
     <div class="cp-head">
@@ -80,11 +87,12 @@ export function refreshCyclePanel() {
       <div class="cp-bar cp-bar-seg" role="img" aria-label="${data.done} de ${data.total} concluídos (${pct}%)">${bar}</div>
       <div class="cp-count">${data.done}/${data.total}${data.failed ? ` · <span class="cp-fail">${data.failed} com falha</span>` : ''}${data.closed ? ' · encerrado' : ''}</div>
     </div>
+    ${hasTesters && data.workload.length ? `<div class="cp-load" title="Carga por testador: pendentes e o tempo previsto">👥 ${data.workload.map((w) => `<span class="${data.me && samePerson(w.pessoa, data.me) ? 'mine' : ''}">${esc(w.pessoa || 'sem testador')} ${w.pendentes}${w.restanteMs && w.pendentes ? ` <small>${esc(approxDuration(w.restanteMs))}</small>` : ''}</span>`).join(' · ')}</div>` : ''}
     ${data.forecast && data.forecast.pendentes ? `<div class="cp-forecast" title="${esc(forecastDetail(data.forecast))}">⏱ ${esc(forecastText(data.forecast))}</div>` : ''}
     ${data.before.length && !data.closed ? `<details class="cp-before"${data.beforeDone.length >= data.before.length ? '' : ' open'}><summary title="Passos compartilhados de preparação (beforeAll): uma vez, no começo da rodada">⏮ Antes da rodada <span>${Math.min(data.beforeDone.length, data.before.length)}/${data.before.length}</span></summary><ul>${data.before.map((b, i) => `<li><label><input type="checkbox" data-cp-before="${i}"${data.beforeDone.includes(i) ? ' checked' : ''}> <span>${esc(b.acao)}${b.esperado ? ` <small>→ ${esc(b.esperado)}</small>` : ''}</span></label></li>`).join('')}</ul></details>` : ''}
     ${data.auto ? `<div class="cp-auto" title="${esc(`${data.auto.tool}${data.auto.fonte ? ` — ${data.auto.fonte}` : ''}: resultado separado dos casos manuais`)}">🤖 <b>${data.auto.total}</b> automatizado${data.auto.total > 1 ? 's' : ''}: <span class="cp-ok">${data.auto.pass} PASS</span>${data.auto.fail ? ` · <span class="cp-fail">${data.auto.fail} FAIL</span>` : ''}${data.auto.skip ? ` · ${data.auto.skip} SKIP` : ''}${data.auto.sucessoPct == null ? '' : ` · ${data.auto.sucessoPct}%`}</div>` : ''}
     ${data.total ? '' : '<p class="cp-empty">Sem casos manuais nesta execução.</p>'}
-    ${data.total > 3 ? `<div class="cp-filter" role="group" aria-label="Filtrar a lista">${[['todos', `Todos ${data.total}`], ['pendentes', `Pendentes ${nPend}`], ['falhas', `Falhas ${nFail}`]].map(([k, l]) => `<button type="button" class="cp-fchip" data-cp="filter" data-f="${k}" aria-pressed="${filter === k}">${esc(l)}</button>`).join('')}</div>` : ''}
+    ${data.total > 3 || (hasTesters && data.me) ? `<div class="cp-filter" role="group" aria-label="Filtrar a lista">${[['todos', `Todos ${data.total}`], ...(hasTesters && data.me ? [['minhas', `Minhas ${nMine}`]] : []), ['pendentes', `Pendentes ${nPend}`], ['falhas', `Falhas ${nFail}`]].map(([k, l]) => `<button type="button" class="cp-fchip" data-cp="filter" data-f="${k}" aria-pressed="${filter === k}">${esc(l)}</button>`).join('')}</div>` : ''}
     <ul class="cp-list">${rows || (data.total ? '<li class="cp-empty">Nenhum caso neste filtro.</li>' : '')}</ul>
     ${data.whole && !data.closed ? `<div class="cp-whole" title="Este documento não tem passos para executar: marque os itens e registre o resultado dele como um todo">
       <div>🗒 <b>${esc(data.whole.key)}</b> é avaliado como um todo${data.whole.total ? ` — ${data.whole.done}/${data.whole.total} itens marcados` : ''}</div>
@@ -94,6 +102,7 @@ export function refreshCyclePanel() {
       ${!data.onCycle ? '<button type="button" class="cp-btn" data-cp="cycle" title="Voltar ao documento da execução">↩ Execução</button>' : ''}
       ${data.onCycle ? `<button type="button" class="cp-btn" data-cp="auto" title="JUnit XML, Playwright JSON ou Newman JSON: entra como Testes automatizados, separado dos manuais">🤖 ${data.auto ? 'Trocar relatório' : 'Relatório automatizado'}</button>` : ''}
       ${data.onCycle ? '<button type="button" class="cp-btn" data-cp="device" title="WEB, Mobile iOS/Android (com a versão) ou Mobile — Todos">📱 Dispositivo</button>' : ''}
+      ${!data.closed && data.total > 1 ? '<button type="button" class="cp-btn" data-cp="assign" title="Dividir os casos entre os testadores (pelo tempo previsto) ou pegar os livres para você">👥 Atribuir</button>' : ''}
       <button type="button" class="cp-btn" data-cp="links" title="Jira, Épico, Sprint… desta execução">🔗 Vínculos</button>
       ${data.ciclo ? `<button type="button" class="cp-btn" data-cp="def" title="Abrir o ciclo &quot;${esc(data.ciclo.titulo)}&quot; (definição e histórico das execuções)">📋 Ciclo</button>` : ''}
       ${nFail ? `<button type="button" class="cp-btn${data.closed ? ' primary' : ''}" data-cp="retest" title="Cria uma rodada nova só com os casos FAIL/BLOCKED desta — para validar as correções">🔂 Reteste das falhas (${nFail})</button>` : ''}
@@ -113,6 +122,7 @@ el.addEventListener('click', (event) => {
   const act = b.dataset.cp;
   if (act === 'toggle') { savePrefs({ cyclePanelCollapsed: !collapsed() }); lastSig = ''; refreshCyclePanel(); return; }
   if (act === 'filter') { savePrefs({ cyclePanelFilter: b.dataset.f || 'todos' }); lastSig = ''; refreshCyclePanel(); return; }
+  if (act === 'who' && b.dataset.key) { event.stopPropagation(); reassignCase(b.dataset.key, b); return; }
   if (act === 'case' && b.dataset.key) { goToCycleCase(b.dataset.key); return; }
   if (act === 'next') nextCycleCase();
   else if (act === 'cycle') openCycle();
@@ -128,6 +138,7 @@ el.addEventListener('click', (event) => {
   else if (act === 'retest') rerunFailed(data0()?.path || '');
   else if (act === 'again') { const ciclo = data0()?.ciclo; if (ciclo) runCycle(ciclo.path); }
   else if (act === 'skip' && b.dataset.key) skipCycleCase(b.dataset.key);
+  else if (act === 'assign') assignRound();
 });
 
 // ⏮ Antes da rodada: marcar o que já foi feito (fica lembrado por rodada)

@@ -105,7 +105,7 @@ export function cycleDoc(o: { titulo: string; app?: string; versao?: string; ori
 }
 
 export interface CycleRow { line: number; key: string; status: StatusWord | null; cells: string[] }
-interface CycleTable { rows: CycleRow[]; cols: { caso: number; status: number; when: number; bugs: number; titulo: number } }
+interface CycleTable { rows: CycleRow[]; cols: { caso: number; status: number; when: number; bugs: number; titulo: number; /** Testador (atribuição, 11.3) */ tester: number } }
 
 /** A tabela "Casos do ciclo". */
 export function cycleTable(text: string): CycleTable | null {
@@ -115,7 +115,7 @@ export function cycleTable(text: string): CycleTable | null {
   for (let i = sec.start; i < sec.end - 1; i++) {
     if (!lines[i].includes('|') || !/^\s*\|?\s*:?-{2,}/.test(lines[i + 1])) continue;
     const head = splitRow(lines[i]).map(normHeader);
-    const cols = { caso: head.indexOf('caso'), status: head.findIndex((h) => h === 'status' || h === 'situacao'), when: head.indexOf('executado em'), bugs: head.indexOf('bugs'), titulo: head.indexOf('titulo') };
+    const cols = { caso: head.indexOf('caso'), status: head.findIndex((h) => h === 'status' || h === 'situacao'), when: head.indexOf('executado em'), bugs: head.indexOf('bugs'), titulo: head.indexOf('titulo'), tester: head.findIndex((h) => /^(testador|testadora|atribuido a|responsavel|executor|quem)$/.test(h)) };
     if (cols.caso < 0 || cols.status < 0) continue;
     const rows: CycleRow[] = [];
     for (let j = i + 2; j < sec.end && lines[j].includes('|') && lines[j].trim(); j++) {
@@ -334,11 +334,22 @@ export function cycleProgress(text: string): CycleProgress | null {
   };
 }
 
-/** Próximo caso depois de `current` (pendente), dando a volta; null = todos feitos. */
-export function nextCase(text: string, current = ''): string | null {
+/**
+ * Próximo caso depois de `current` (pendente), dando a volta; null = todos feitos. `who`: com a coluna Testador, os
+ * dessa pessoa primeiro, depois os sem testador (os atribuídos a outros ficam com eles).
+ */
+export function nextCase(text: string, current = '', who = ''): string | null {
   const t = cycleTable(text);
   if (!t) return null;
-  const open = t.rows.filter((r) => !r.status || r.status === 'PENDING');
+  let open = t.rows.filter((r) => !r.status || r.status === 'PENDING');
+  if (who.trim() && t.cols.tester >= 0) {
+    const k = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/^@/, '').trim();
+    const me = k(who);
+    const of = (r: CycleRow) => k((r.cells[t.cols.tester] || '').replace(/\\\|/g, '|'));
+    const mine = open.filter((r) => { const o = of(r); return !!o && (o === me || o.split(/\s+/)[0] === me || me.split(/\s+/)[0] === o); });
+    const free = open.filter((r) => !of(r));
+    open = mine.length ? mine : free;
+  }
   if (!open.length) return null;
   const i = t.rows.findIndex((r) => r.key.toLowerCase() === current.toLowerCase());
   return (open.find((r) => t.rows.indexOf(r) > i) || open[0]).key;
