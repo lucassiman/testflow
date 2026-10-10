@@ -58,6 +58,7 @@ Como trabalhar:
 - Rodada de regressão: qa_rodada_criar (por segmento — épico, ticket, #tag —, consulta, lista de casos, ciclo salvo, ou reteste: EXEC-… só com as falhas) → qa_rodada_registrar por caso → qa_rodada_status para ver como está → qa_rodada_finalizar (SKIP nos pendentes e os 4 relatórios: encerramento/Go-No-Go, defeitos, rastreabilidade, log + comparativo). qa_relatorios regera.
 - Bug de um caso que já tem bug ligado: qa_bug_do_caso devolve os bugs; pergunte ao usuário se é reincidência (reincidencia: "BUG-…") ou bug novo (novo: true).
 - Evolução da qualidade (sprint, % de sucesso no tempo, casos que mais falham): qa_tendencia.
+- Caso com dados (o mesmo caso para vários perfis/massas): seção "## Iterações" no caso (tabela Chave | campos…, uma linha por execução) ou "iterar: <grupo de Dados compartilhado>" no cabeçalho; nos passos {{dado}} / {{dado.campo}} e "↪ Bloco (dado)". qa_compartilhados { documento } lista as iterações; registre uma a uma (iteracao: nome ou número) em qa_marcar_passos concluir=true / qa_rodada_registrar.
 - Login, URLs e preparação repetidos em vários casos: veja qa_compartilhados (pasta ou documento) antes de escrever casos — use "↪ Bloco (param)" como um passo e {{dado}} / {{dado.senha}} em vez de repetir passos ou escrever senhas; se não houver, sugira criar um compartilhado (qa_criar tipo compartilhado, escopo pasta | app | global). Casos antigos com login repetido ou senha escrita: qa_varredura { modo: "compartilhados" } relata e, com o OK, converte.
 - Segmento = tudo o que nasceu de um épico/ticket/execução/ciclo/#tag (filtro segmento em qa_listar/qa_consultar/qa_validar/qa_rastreabilidade).
 - Qualidade: qa_validar (avisos de QA, links quebrados, evidências faltando) antes de entregar ou publicar; qa_varredura acha documentos antigos sem os vínculos (relate primeiro, aplique só com o OK do usuário).
@@ -164,6 +165,7 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
       doc: docArg,
       passos: z.array(z.object({ passo: z.string().describe('número/ID do passo (coluna #)'), status: z.string().optional(), obtido: z.string().optional() })).min(1),
       concluir: z.boolean().optional(),
+      iteracao: z.string().optional().describe('Caso com dados (## Iterações ou iterar:): qual iteração está sendo concluída — nome (admin) ou número (1). Sem ela: a seguinte à última registrada.'),
     }, annotations: RW,
   }, async (a) => run(() => ws.markSteps(a), text));
 
@@ -221,6 +223,7 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
       passos: z.array(z.object({ passo: z.string(), status: z.string().optional(), obtido: z.string().optional() })).optional(),
       status: z.string().optional().describe('PASS, FAIL, BLOCKED ou SKIP do caso inteiro (quando não há passos)'),
       observacao: z.string().optional().describe('comentário de revisão no caso, com o ID da rodada'),
+      iteracao: z.string().optional().describe('Caso com dados (## Iterações ou iterar:): a iteração destes passos — nome ou número. Sem ela: a seguinte à última registrada. Cada iteração é registrada e a tabela fica pronta para a próxima; o caso fica feito na última (pior resultado).'),
     }, annotations: RW,
   }, async (a) => run(() => ws.roundRecord(a), text));
 

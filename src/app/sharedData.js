@@ -7,7 +7,7 @@
 import { app } from './context.js';
 import { docIndex, menu } from './shared.js';
 import { openDocOverrides, currentWorkspacePath, openWikiTarget } from './links.js';
-import { parseShared, scopeFor, parseInclude, expandInclude, resolveSegments, resolveText, sharedWarnings, includeText, scopeSize, SHARED_TYPE } from '../markdown/shared.ts';
+import { parseShared, scopeFor, parseInclude, expandInclude, resolveSegments, resolveText, sharedWarnings, includeText, scopeSize, SHARED_TYPE, iterationsOf, iterBinding, emptyScope, ITER_VAR } from '../markdown/shared.ts';
 import { headerOf } from '../markdown/segment.ts';
 import { detectFrontMatter, parseFrontMatter } from '../markdown/frontmatter.ts';
 import { splitRow } from '../markdown/status.ts';
@@ -301,8 +301,10 @@ const DECOR = 'data-shared-src';
  */
 export function decorateShared(root) {
   if (root.id !== 'preview') return;
-  const scope = scopeOf();
-  if (!scope || !scopeSize(scope)) return;
+  const scope = scopeOf() || emptyScope();
+  const its = iterationsOf(app.store.source, scope);
+  if (!scopeSize(scope) && !its.items.length) return;
+  const outer = iterBinding(its.items[0]);
   const secrets = showSecrets();
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode: (n) => {
@@ -322,7 +324,7 @@ export function decorateShared(root) {
     // inclusão: a célula inteira é "↪ Bloco (args)"
     const inc = node.parentElement?.closest('td') && !node.previousSibling && !node.nextSibling ? parseInclude(text) : null;
     if (inc) {
-      const ex = expandInclude(inc, scope);
+      const ex = expandInclude(inc, scope, outer, { rawIterLabel: true });
       const span = document.createElement('span');
       span.className = `sh-inc${ex.missing.length ? ' missing' : ''}`;
       span.setAttribute(DECOR, text);
@@ -340,6 +342,20 @@ export function decorateShared(root) {
     for (const s of segs) {
       if (typeof s === 'string') { frag.appendChild(document.createTextNode(s)); continue; }
       const span = document.createElement('span');
+      // {{dado.x}}: muda a cada iteração — mostra o nome e, no título, o valor de cada uma
+      if (s.name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase() === ITER_VAR && its.items.length) {
+        const src = `{{${s.name}${s.field ? `.${s.field}` : ''}}}`;
+        span.setAttribute(DECOR, src);
+        span.className = 'sh-var sh-iter';
+        span.textContent = `🔁 ${s.field || 'dado'}`;
+        span.title = `${src} — varia por iteração (${its.from}):\n${its.items.map((v) => {
+          const sg = resolveSegments(src, scope, iterBinding(v))[0];
+          const val = typeof sg === 'string' || sg.missing ? '—' : sg.secret && !secrets ? '••••' : sg.value;
+          return `• ${v.label || v.name}: ${val}`;
+        }).join('\n')}`;
+        frag.appendChild(span);
+        continue;
+      }
       const src = `{{${s.name}${s.field ? `.${s.field}` : ''}}}`;
       const hide = s.secret && !secrets;
       span.setAttribute(DECOR, src);
@@ -383,14 +399,16 @@ function popSegs(segs) {
 
 /** @param {HTMLElement} el */
 function showPop(el) {
-  const scope = scopeOf();
+  const scope = scopeOf() || emptyScope();
   const inc = parseInclude(el.dataset.shInc || '');
-  if (!scope || !inc) return;
-  const ex = expandInclude(inc, scope);
+  if (!inc) return;
+  const its = iterationsOf(app.store.source, scope);
+  const ex = expandInclude(inc, scope, iterBinding(its.items[0]), { rawIterLabel: true });
   popCopies = [];
   pop.innerHTML = ex.block
     ? `<div class="sh-pop-head">↪ <b>${esc(ex.label)}</b><span class="sh-src">${esc(ex.block.source)}</span></div>
       <ol>${ex.steps.map((st) => `<li>${popSegs(st.acao)}${st.esperado.length ? ` <span class="sh-obs">→ ${popSegs(st.esperado)}</span>` : ''}</li>`).join('')}</ol>
+      ${its.items.length && /\bdado\b/i.test(inc.args.join(',') + Object.values(inc.named).join(',')) ? `<div class="sh-obs">🔁 Valores da 1ª iteração (${esc(its.items[0].label || its.items[0].name)}) — mudam a cada uma: ${esc(its.items.map((v) => v.label || v.name).join(', '))}</div>` : ''}
       ${ex.missing.length ? `<div class="sh-pop-warn">⚠ falta: ${esc(ex.missing.join(', '))}</div>` : ''}`
     : `<div class="sh-pop-warn">⚠ Nenhum bloco "Passos: ${esc(inc.name)}" compartilhado vale para este documento (veja o escopo no painel 🔑, Alt+K).</div>`;
   pop.hidden = false;
@@ -439,10 +457,12 @@ document.addEventListener('click', (event) => {
 // ---------------------------------------------------------------- avisos
 /** Avisos do documento aberto (bloco/dado que não existe no escopo). */
 export function sharedLintWarnings() {
-  if (!app.workspaceDir || !docIndex.ready || !sharedDocs().length) return [];
   if (!/\{\{|↪/.test(app.store.source)) return [];
-  const scope = scopeOf();
-  if (!scope) return [];
+  const hasShared = !!app.workspaceDir && docIndex.ready && sharedDocs().length > 0;
+  // sem compartilhados: só o {{dado}} das iterações do próprio caso
+  if (!hasShared && !/\{\{\s*dado\b/i.test(app.store.source)) return [];
+  if (!hasShared && app.workspaceDir && !docIndex.ready) return [];
+  const scope = scopeOf() || emptyScope();
   return sharedWarnings(app.store.source, scope).map((w) => ({ line: w.line + 1, blockStart: w.line, message: w.message }));
 }
 
@@ -450,13 +470,23 @@ export function sharedLintWarnings() {
 /**
  * Para o painel de execução: o passo de inclusão expandido e os dados do texto, com valores para copiar.
  * @param {string} cell texto da célula Ação
+ * @param {import('../markdown/shared.ts').SharedVar | null} [dado] a linha da iteração da vez ({{dado}})
  */
-export function stepShared(cell) {
-  const scope = scopeOf();
-  if (!scope || !scopeSize(scope)) return null;
+export function stepShared(cell, dado = null) {
+  const scope = scopeOf() || emptyScope();
+  if (!scopeSize(scope) && !dado) return null;
+  const outer = iterBinding(dado);
   const inc = parseInclude(cell);
-  if (inc) return { scope, include: expandInclude(inc, scope), segments: null };
-  return { scope, include: null, segments: cell.includes('{{') ? resolveSegments(cell, scope) : null };
+  if (inc) return { scope, include: expandInclude(inc, scope, outer), segments: null };
+  return { scope, include: null, segments: cell.includes('{{') ? resolveSegments(cell, scope, outer) : null };
+}
+
+/**
+ * As iterações do documento aberto (caso com dados — 11.2): a seção ## Iterações ou o iterar: do cabeçalho.
+ * @returns {import('../markdown/shared.ts').Iterations}
+ */
+export function iterationsFor() {
+  return iterationsOf(app.store.source, scopeOf() || emptyScope());
 }
 
 /** "Antes da rodada" dos casos de uma execução (a soma dos escopos deles, sem repetir). @param {string[]} casePaths */

@@ -27,11 +27,11 @@ import { suggestDestination, runDestination, INBOX_DIR, fillApp, fillJira, fillF
 import { inheritHeader, segmentMembers, commonHeader, headerOf } from '../src/markdown/segment.ts';
 import {
   cycleDoc, cycleTable, isCycle, isCycleDef, cycleStart, cycleClosed, syncCycle, caseResult, needsFreshRound, closeCycle, skipPending, cycleSummary,
-  defCases, execNumber, cicloOf, nextExecNumber, cycleProgress, unexecuted, nextCase, execInfo, syncDefExecutions, retestCases,
+  defCases, execNumber, cicloOf, nextExecNumber, cycleProgress, unexecuted, nextCase, execInfo, syncDefExecutions, retestCases, runsOf,
 } from '../src/markdown/cycle.ts';
 import type { CaseLookup } from '../src/markdown/cycle.ts';
 import { planSharedSweep, sharedDocText, applyCasePlan, sharedSweepReport } from '../src/markdown/sharedSweep.ts';
-import { parseShared, scopeFor, parseInclude, expandInclude, resolveText, sharedWarnings, maskSecretColumns, SHARED_TYPE, type SharedDoc, type SharedScopeResult, type Segment } from '../src/markdown/shared.ts';
+import { parseShared, scopeFor, parseInclude, expandInclude, resolveText, sharedWarnings, maskSecretColumns, iterationsOf, iterBinding, iterLabel, parseIterLabel, SHARED_TYPE, type SharedDoc, type SharedScopeResult, type Segment, type SharedVar } from '../src/markdown/shared.ts';
 import { buildReports, linkReports, REPORT_TYPES } from '../src/markdown/reports.ts';
 import { readLinks } from '../src/markdown/linkTypes.ts';
 import { findBrokenLinks } from '../src/markdown/brokenLinks.ts';
@@ -530,11 +530,50 @@ export class QaWorkspace {
 
   // ---------------------------------------------------------------- execução
   /** Marca status (e obtido) de passos; `concluir` registra a rodada no Histórico de execuções. */
-  markSteps(o: { doc: string; passos: Array<{ passo: string; status?: string; obtido?: string }>; concluir?: boolean }): Promise<string> {
+  markSteps(o: { doc: string; passos: Array<{ passo: string; status?: string; obtido?: string }>; concluir?: boolean; iteracao?: string }): Promise<string> {
     return this.exclusive(() => this.markStepsNow(o));
   }
 
-  private async markStepsNow(o: { doc: string; passos: Array<{ passo: string; status?: string; obtido?: string }>; concluir?: boolean }): Promise<string> {
+  /**
+   * Conclui a rodada do caso (logRun). Caso com dados (11.2 — ## Iterações ou iterar:): registra a iteração da vez
+   * ("admin (1/3)" na coluna Dados) e, se faltar alguma, arquiva a tabela e deixa pronta para a próxima.
+   */
+  private concludeRun(text: string, e: { path: string; app?: string; tags?: string[]; id?: string; jira?: string; epico?: string }, iteracao?: string, plain = (round: number, overall: string) => ` Rodada ${round} registrada (${overall}).`): { text: string; detail: string } {
+    const now = new Date();
+    const its = iterationsOf(text, this.scopeOfEntry(e)).items;
+    if (!its.length) {
+      const res = logRun(text, { start: now, end: now, elapsed: 0 });
+      return { text: res.source, detail: plain(res.round, res.overall) };
+    }
+    const n = its.length;
+    let i: number;
+    if (iteracao !== undefined && String(iteracao).trim()) {
+      const w = String(iteracao).trim();
+      const k = (x: string) => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+      i = /^\d+$/.test(w) ? Number(w) - 1 : its.findIndex((v) => k(v.name) === k(w) || k(v.label) === k(w));
+      if (i < 0 || i >= n) throw new Error(`iteração "${w}" não existe — as iterações são: ${its.map((v, j) => `${j + 1}. ${v.label || v.name}`).join(', ')}`);
+    } else {
+      const last = runsOf(text).sort((a, b) => a.at.getTime() - b.at.getTime() || a.round - b.round).at(-1);
+      const p = last ? parseIterLabel(last.label) : null;
+      i = p && p.total === n && p.index < n - 1 ? p.index + 1 : 0;
+    }
+    const label = iterLabel(its[i], i, n);
+    const res = logRun(text, { start: now, end: now, elapsed: 0, iteration: label });
+    if (i < n - 1) {
+      const nr = newRound(res.source, -1, now, label);
+      const next = its[i + 1];
+      return { text: nr ? nr.source : res.source, detail: ` Iteração ${label} registrada (${res.overall}); tabela limpa para a próxima: ${iterLabel(next, i + 1, n)} — ${this.iterDesc(next)}.` };
+    }
+    return { text: res.source, detail: ` Última iteração ${label} registrada (${res.overall}) — o caso conta o pior resultado entre as ${n}.` };
+  }
+
+  /** {{dado}} da iteração, sem senha. */
+  private iterDesc(v: SharedVar): string {
+    const f = Object.entries(v.fields).filter(([k, val]) => val && !/^(observacao|obs|descricao)$/.test(k)).map(([k, val]) => `{{dado.${k}}} = ${v.secret.includes(k) ? '(senha — o QA copia no app)' : val}`);
+    return f.length ? f.join(', ') : `{{dado}} = ${v.value}`;
+  }
+
+  private async markStepsNow(o: { doc: string; passos: Array<{ passo: string; status?: string; obtido?: string }>; concluir?: boolean; iteracao?: string }): Promise<string> {
     const e = await this.find(o.doc);
     const doc = await this.readDoc(e.path);
     let text = doc.text;
@@ -558,10 +597,9 @@ export class QaWorkspace {
     text = syncExecution(text, { onlyExecuted: true });
     let extra = '';
     if (o.concluir) {
-      const now = new Date();
-      const res = logRun(text, { start: now, end: now, elapsed: 0 });
-      text = res.source;
-      extra = ` Rodada ${res.round} registrada (${res.overall}).`;
+      const r = this.concludeRun(text, e, o.iteracao);
+      text = r.text;
+      extra = r.detail;
     }
     await this.writeDoc(e.path, text, doc);
     const c = countStatuses(text);
@@ -859,11 +897,11 @@ export class QaWorkspace {
    * Registra o resultado de um caso na rodada: com `passos`, marca os passos no caso (arquivando a rodada antiga se as
    * marcas eram de antes) e conclui a rodada do caso; sem passos, grava o status do caso inteiro na execução.
    */
-  roundRecord(o: { execucao?: string; caso: string; status?: string; passos?: Array<{ passo: string; status?: string; obtido?: string }>; observacao?: string }): Promise<string> {
+  roundRecord(o: { execucao?: string; caso: string; status?: string; passos?: Array<{ passo: string; status?: string; obtido?: string }>; observacao?: string; iteracao?: string }): Promise<string> {
     return this.exclusive(() => this.roundRecordNow(o));
   }
 
-  private async roundRecordNow(o: { execucao?: string; caso: string; status?: string; passos?: Array<{ passo: string; status?: string; obtido?: string }>; observacao?: string }): Promise<string> {
+  private async roundRecordNow(o: { execucao?: string; caso: string; status?: string; passos?: Array<{ passo: string; status?: string; obtido?: string }>; observacao?: string; iteracao?: string }): Promise<string> {
     const ex = await this.execOf(o.execucao || '');
     const exDoc = await this.readDoc(ex.path);
     if (cycleClosed(exDoc.text)) throw new Error(`${ex.path} já foi finalizada — não muda mais`);
@@ -896,10 +934,9 @@ export class QaWorkspace {
       text = syncExecution(text, { onlyExecuted: true });
       const counts = countStatuses(text);
       if (counts.pending === 0) {
-        const now = new Date();
-        const res = logRun(text, { start: now, end: now, elapsed: 0 });
-        text = res.source;
-        detail += ` Rodada ${res.round} do caso concluída (${res.overall}).`;
+        const r = this.concludeRun(text, c, o.iteracao, (round, overall) => ` Rodada ${round} do caso concluída (${overall}).`);
+        text = r.text;
+        detail += r.detail;
       } else detail += ` ${counts.total - counts.pending}/${counts.total} passos marcados (falta concluir os outros).`;
       await this.writeDoc(c.path, text, cdoc);
       await this.refresh(true);
@@ -1209,6 +1246,8 @@ export class QaWorkspace {
         }
       });
       if (incs.length) out.push('', 'Inclusões neste documento:', ...incs);
+      const its = iterationsOf(docText, scope);
+      if (its.items.length) out.push('', `Caso com dados — executa uma vez por linha (${its.from}); {{dado}} / {{dado.campo}} é a linha da vez (qa_marcar_passos concluir=true / qa_rodada_registrar registram cada iteração e deixam a tabela pronta para a próxima):`, ...its.items.map((v, i) => `${i + 1}. ${v.label || v.name}: ${this.iterDesc(v)}`));
       const w = sharedWarnings(docText, scope);
       if (w.length) out.push('', 'Avisos:', ...w.map((x) => `- linha ${x.line + 1}: ${x.message}`));
     }

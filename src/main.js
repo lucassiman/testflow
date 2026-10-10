@@ -49,7 +49,7 @@ import { formatCommand, insertBlockAfterActive } from './app/editing.js';
 import { backupWorkspace, backupSetting, checkBackupReminder } from './app/backup.js';
 import { addEvidence, annotateExisting, bigPrintSetting, cleanOrphanPrints, openImageViewer, clipboardImages, pastePrintFromClipboard, requestFolder, reuseEvidence, saveEvidenceFiles, updateFolderStatus } from './app/evidence.js';
 import { bindStatusKeys, execBar, refreshSummary, statusPop } from './app/execution.js';
-import { decorateShared, renderSharedPanel, sharedLintWarnings, showSharedPanel, includeMenu, stepShared, scopeVars, scopeOf, copyShared, showSecrets } from './app/sharedData.js';
+import { decorateShared, renderSharedPanel, sharedLintWarnings, showSharedPanel, includeMenu, stepShared, iterationsFor, scopeVars, scopeOf, copyShared, showSecrets } from './app/sharedData.js';
 import { brokenLinkWarnings, currentWorkspacePath, linkCardFor, markMissingLinks, openDocLink, openDocOverrides, openWikiTarget, updateLinks } from './app/links.js';
 import { createLinkPreview } from './ui/linkPreview.js';
 import { closeLightbox } from './ui/lightbox.js';
@@ -218,7 +218,7 @@ runner = createRunner({
   store, preview, toast, root: els.preview, prefs: { load: loadPrefs, save: savePrefs },
   docKey: () => currentWorkspacePath() || store.fileName,
   // passos e dados compartilhados (11.1): inclusões ↪, {{dados}} com copiar, "antes de cada caso"
-  shared: { step: (cell) => stepShared(cell), vars: () => scopeVars(), beforeEach: () => scopeOf()?.beforeEach || [], copy: (v, l, s, w) => copyShared(v, l, s, w), secrets: () => showSecrets() },
+  shared: { step: (cell, dado) => stepShared(cell, dado), iterations: () => iterationsFor(), vars: () => scopeVars(), beforeEach: () => scopeOf()?.beforeEach || [], copy: (v, l, s, w) => copyShared(v, l, s, w), secrets: () => showSecrets() },
   onPastePrint: (clipboard, opts) => pastePrintFromClipboard(clipboard, opts),
   onPasteFiles: (files, opts) => addEvidence(files, 'preview', opts),
   onSavePrints: (files, opts) => saveEvidenceFiles(files, opts),

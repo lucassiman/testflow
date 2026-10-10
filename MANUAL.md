@@ -391,6 +391,31 @@ Login, URL do ambiente e preparação que se repetem em vários casos ficam **um
 
 A versão anterior de cada caso fica em `.versoes/` (histórico do documento). Bloco ou dado que já existe num compartilhado do escopo é reaproveitado, não duplicado.
 
+### 6.9 Casos com dados (data-driven)
+
+O mesmo caso executado **uma vez por linha de dados** — ex.: o menu conferido com o administrador, o gestor e o cliente — sem copiar o caso três vezes. Duas formas:
+
+- **No próprio caso** — uma seção `## Iterações` com uma tabela (a 1ª coluna, ou a coluna **Chave**, é o nome de cada linha; as outras são os campos):
+
+  ```markdown
+  ## Iterações
+
+  | Chave | E-mail | Senha | Perfil |
+  | --- | --- | --- | --- |
+  | admin | admin@loja.com | S3nha! | Administrador |
+  | cliente | cliente@loja.com | 123456 | Cliente |
+  ```
+
+- **De um compartilhado** — `iterar: Logins` no cabeçalho usa todas as linhas de `## Dados: Logins` do compartilhado do escopo (6.8); `iterar: [admin, cliente]` só essas.
+
+Nos passos, **`{{dado}}`** é a linha da vez: `{{dado.e-mail}}`, `{{dado.senha}}`, `{{dado.perfil}}`; e o bloco compartilhado recebe a linha com `↪ Fazer login (dado)`. No **Preview** o dado aparece como **🔁 perfil** — passe o mouse para ver o valor de cada iteração. `{{dado}}` sem iterações, ou um campo que não existe, vira aviso no rodapé.
+
+**Executar:** ▶ Executar mostra a iteração no topo do painel (**🔁 admin 1/2**), com os valores dela nos passos e no 🔑 (para copiar). **✓ Concluir iteração** registra a rodada no Histórico de execuções com a coluna **Dados** (`admin (1/2)`), guarda a tabela como `### Rodada N — … — admin (1/2)`, limpa os status e começa a próxima linha (o cronômetro zera e o "Antes de cada caso" aparece de novo). Na última, **✓ Concluir** fecha como sempre. Fechou o editor no meio? ▶ Executar continua na iteração seguinte à última registrada (até 12 h). **✕ Cancelar** desfaz só a iteração da vez.
+
+**Na rodada (ciclo):** o caso fica *em andamento (1/2 iterações)* até todas serem concluídas; depois conta como **feito** com o **pior resultado** entre elas (uma FAIL → o caso é FAIL) e a duração somada.
+
+**Com o Claude:** `qa_compartilhados { documento }` lista as iterações com os valores (sem senhas); ele registra uma a uma (`qa_marcar_passos concluir=true` ou `qa_rodada_registrar`, com `iteracao: "admin"` ou o número — sem ela, a seguinte à última registrada).
+
 ## 7. Executar testes
 
 ### 7.1 Status clicável

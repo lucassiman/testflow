@@ -15,7 +15,8 @@
  */
 import { detectFrontMatter, parseFrontMatter, formatValue } from './frontmatter.ts';
 import { splitRow, setCell, normHeader, cellStatus, countStatuses, deriveOverall, setFrontMatterStatus, updateSummaryBlocks, HISTORY_TITLE, SUMMARY_OPEN, SUMMARY_CLOSE } from './status.ts';
-import { findSection } from './runs.ts';
+import { findSection, fmtDuration } from './runs.ts';
+import { parseIterLabel } from './shared.ts';
 import { linksHeader } from './linkTypes.ts';
 import { setFrontMatterFields } from './publish.ts';
 import { autoSummary, autoCounts, addCounts, setAutoSection, type AutoSummary } from './cycleAuto.ts';
@@ -149,6 +150,19 @@ export function retestCases(text: string, incluir: StatusWord[] = []): CycleCase
   return out;
 }
 
+/** Soma "12 min" + "1 h 05 min" + "00:12:30" (Duração do histórico). */
+function sumDur(list: string[]): string {
+  let ms = 0;
+  for (const s of list) {
+    const t = s.trim();
+    const hm2 = /^(?:(\d+)\s*h)?\s*(?:(\d+)\s*min)?$/i.exec(t);
+    const clock = /^(?:(\d+):)?(\d{1,2}):(\d{2})$/.exec(t);
+    if (hm2 && (hm2[1] || hm2[2])) ms += ((Number(hm2[1] || 0) * 60) + Number(hm2[2] || 0)) * 60000;
+    else if (clock) ms += ((Number(clock[1] || 0) * 3600) + Number(clock[2]) * 60 + Number(clock[3])) * 1000;
+  }
+  return fmtDuration(ms);
+}
+
 export interface CaseResult {
   /** feito: rodada concluída no ciclo · andamento: passos marcados, sem concluir · pendente */
   state: 'feito' | 'andamento' | 'pendente';
@@ -156,18 +170,20 @@ export interface CaseResult {
   when: string;
   /** duração da rodada concluída no ciclo (coluna Duração do histórico), se houver */
   dur?: string;
+  /** caso com dados: quantas iterações entraram no resultado */
+  iterations?: number;
 }
 
 /** Rodadas concluídas (tabela "Rodada | Data | Início | … | Resultado" do Histórico de execuções). */
-export function runsOf(text: string): Array<{ round: number; at: Date; status: StatusWord | null; dur: string }> {
+export function runsOf(text: string): Array<{ round: number; at: Date; status: StatusWord | null; dur: string; label: string }> {
   const lines = text.split('\n');
   const sec = findSection(lines, HISTORY_TITLE);
   if (!sec) return [];
-  const out: Array<{ round: number; at: Date; status: StatusWord | null; dur: string }> = [];
+  const out: Array<{ round: number; at: Date; status: StatusWord | null; dur: string; label: string }> = [];
   for (let i = sec.start; i < sec.end - 1; i++) {
     if (!lines[i].includes('|') || !/^\s*\|?\s*:?-{2,}/.test(lines[i + 1])) continue;
     const head = splitRow(lines[i]).map(normHeader);
-    const c = { round: head.indexOf('rodada'), date: head.indexOf('data'), start: head.indexOf('inicio'), end: head.indexOf('fim'), result: head.indexOf('resultado'), dur: head.indexOf('duracao') };
+    const c = { round: head.indexOf('rodada'), date: head.indexOf('data'), start: head.indexOf('inicio'), end: head.indexOf('fim'), result: head.indexOf('resultado'), dur: head.indexOf('duracao'), data: head.indexOf('dados') };
     if (c.round < 0 || c.date < 0 || c.result < 0) continue;
     for (let j = i + 2; j < sec.end && lines[j].includes('|') && lines[j].trim(); j++) {
       const cells = splitRow(lines[j]);
@@ -181,7 +197,7 @@ export function runsOf(text: string): Array<{ round: number; at: Date; status: S
       const start = new Date(...day, t ? Number(t[1]) : 0, t ? Number(t[2]) : 0);
       let at = f ? new Date(...day, Number(f[1]), Number(f[2])) : start;
       if (at < start) at = new Date(at.getTime() + 24 * 3600_000);
-      out.push({ round: Number(cells[c.round]) || 0, at, status: kind ? (kind.toUpperCase() as StatusWord) : null, dur: c.dur >= 0 ? (cells[c.dur] || '').trim() : '' });
+      out.push({ round: Number(cells[c.round]) || 0, at, status: kind ? (kind.toUpperCase() as StatusWord) : null, dur: c.dur >= 0 ? (cells[c.dur] || '').trim() : '', label: c.data >= 0 ? (cells[c.data] || '').trim() : '' });
     }
     i = sec.end;
   }
@@ -213,6 +229,19 @@ export function caseResult(text: string, since: Date, counts: StatusCounts, modi
   const from = new Date(since.getFullYear(), since.getMonth(), since.getDate(), since.getHours(), since.getMinutes()).getTime();
   const runs = runsOf(text).filter((r) => r.at.getTime() >= from).sort((a, b) => a.at.getTime() - b.at.getTime() || a.round - b.round);
   const last = runs.at(-1);
+  // caso com dados (11.2): cada iteração é uma rodada "admin (1/3)"; o caso está feito quando todas foram concluídas,
+  // com o pior resultado entre elas
+  const it = last ? parseIterLabel(last.label) : null;
+  if (last && it && it.total > 1) {
+    const byIndex = new Map<number, (typeof runs)[number]>();
+    for (const r of runs) { const p = parseIterLabel(r.label); if (p && p.total === it.total) byIndex.set(p.index, r); }
+    const done = [...byIndex.values()];
+    if (done.length < it.total) return { state: 'andamento', status: null, when: `${done.length}/${it.total} iterações` };
+    const RANK: Record<string, number> = { FAIL: 5, BLOCKED: 4, PENDING: 3, SKIP: 2, PASS: 1 };
+    const worst = done.reduce((a, r) => ((RANK[r.status || ''] || 0) > (RANK[a.status || ''] || 0) ? r : a), done[0]);
+    const durs = done.map((r) => r.dur).filter(Boolean);
+    return { state: 'feito', status: worst.status, when: `${dmy(last.at)} ${hm(last.at)}`, dur: durs.length === done.length ? sumDur(durs) : last.dur, iterations: done.length };
+  }
   if (last) return { state: 'feito', status: last.status, when: `${dmy(last.at)} ${hm(last.at)}`, dur: last.dur };
   const marked = counts.total > 0 && counts.pending < counts.total;
   const day0 = new Date(since.getFullYear(), since.getMonth(), since.getDate()).getTime();
@@ -269,7 +298,7 @@ export function syncCycle(text: string, lookup: (key: string) => CaseLookup | nu
       line = setCell(line, t.cols.status, `\`${info.result.status}\``);
       if (t.cols.when >= 0) line = setCell(line, t.cols.when, info.result.when);
     } else if (info.result.state === 'andamento' && !row.status && t.cols.when >= 0) {
-      line = setCell(line, t.cols.when, 'em andamento');
+      line = setCell(line, t.cols.when, info.result.when ? `em andamento (${info.result.when})` : 'em andamento');
     }
     if (t.cols.bugs >= 0) {
       const want = info.bugs.map((b) => `[[${b}]]`).join(', ');

@@ -1682,6 +1682,11 @@ input[type='checkbox']:focus-visible, input[type='radio']:focus-visible { outlin
 .markdown-body .sh-var.secret { letter-spacing: .06em; }
 .markdown-body .sh-var.missing, .markdown-body .sh-inc.missing { background: none; color: var(--warn); border-bottom: 1px dashed var(--warn); cursor: help; }
 .markdown-body .sh-inc { display: inline-block; font-weight: 600; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 6px; padding: 0 6px; cursor: help; }
+.markdown-body .sh-var.sh-iter { cursor: help; background: color-mix(in srgb, var(--pass, #2e7d32) 12%, transparent); border-bottom-color: color-mix(in srgb, var(--pass, #2e7d32) 55%, transparent); }
+/* caso com dados (11.2): a iteração da vez no painel de execução */
+.run-iter { display: inline-flex; align-items: baseline; gap: 4px; padding: 1px 8px; border-radius: 999px; font-size: 12px; white-space: nowrap; max-width: 14em; overflow: hidden; text-overflow: ellipsis; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--fg); }
+.run-iter small { color: var(--muted); }
+.run-iter.mini { max-width: 9em; }
 @media print { .markdown-body .sh-var, .markdown-body .sh-inc { background: none; border: 0; padding: 0; } }
 /* painel de execução: dados compartilhados */
 .run-var { font: inherit; font-size: 12.5px; display: inline-flex; align-items: center; gap: 3px; max-width: 100%; padding: 0 5px; margin: 1px 1px; border-radius: 5px; cursor: copy;

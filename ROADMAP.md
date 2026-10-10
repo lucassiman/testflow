@@ -172,6 +172,8 @@ Ida e volta pela área de transferência (sem chave de API, nada sai do editor s
 
 ✅ **Feito na 1.12.0 — Dispositivo/ambiente:** substituir/expandir o campo atual *Browser* por **Dispositivo/Ambiente**: WEB, Mobile iOS, Mobile Android, Mobile — Todos; para mobile informar a versão (ex.: Mobile iOS — iOS 18, Mobile Android — Android 15). Deve aparecer nas tags, no cabeçalho do caso, nos modelos de criação de casos e nas informações da execução, para rastrear em que dispositivo/plataforma cada caso foi validado.
 
+**1.38.0 (10/10) — casos com dados (11.2).** `shared.ts`: `varsFromTable` (Dados e Iterações), `iterationsOf(text, scope)` (`## Iterações` do caso · `iterar: <grupo>` · `iterar: [nomes]`), `ITER_VAR` (`{{dado}}`), `iterBinding`, `iterLabel`/`parseIterLabel` ("admin (1/3)"), `emptyScope`; `expandInclude(inc, scope, outer, { rawIterLabel })` (`↪ Bloco (dado)`); `sharedWarnings` confere `{{dado.x}}` com a 1ª linha e avisa `{{dado}}` sem iterações / `iterar:` desconhecido. `runs.ts`: `logRun({ iteration })` cria a coluna **Dados** no histórico; `newRound(…, label)` → `### Rodada N — … — admin (1/3)`. `cycle.ts`: `runsOf` traz `label`; `caseResult` agrega as iterações (andamento "1/3 iterações"; feito com o pior status e a duração somada). Runner: `iters`/`curIter`/`resumeIter`/`nextIteration` (estado `iter`/`iterWorst` em `execRuns`), chip `.run-iter`, "✓ Concluir iteração", 🔑 com a iteração da vez; Preview `.sh-iter` com os valores no título. MCP: `iteracao` em `qa_marcar_passos`/`qa_rodada_registrar` (`concludeRun`), iterações em `qa_compartilhados`. Testes `dataDriven.test`, `casosComDados.spec`.
+
 **1.37.0 (10/10) — ajustes do 1º uso real dos compartilhados.** Painel 🔑 sai da barra lateral: `#sharedPanel` flutuante (`toggleSharedPanel`, botão `data-cmd="sharedPanel"` no topo, `Alt+K`, `Esc`; `body.sh-open`; encaixa ao lado do runner encaixado/painel da rodada; corpo rola; `sharedPanelOpen` lembrado), dados agrupados por tabela, nome inteiro, botões fixos; preferência `showSecrets` (painel, runner via `shared.secrets`, Preview). `parseShared`: todas as tabelas de cada `## Dados…` (grupo pelo título), coluna `Chave`/`ID` (Nome vira campo; nome com espaço → slug), `cleanValue` (link/`mailto:`/`<…>`/código → texto). Preview: sem máscara na tabela do compartilhado; cartão `.sh-pop` no ↪ (hover/foco) com passos e copiar. Abas da barra lateral com ícone (container query: estreita, só a aberta com nome). Modelo, CONVENCOES, skill e `qa_compartilhados` (agrupado).
 
 **1.36.0 (09/10) — varredura de compartilhados (pedido do uso).** `src/markdown/sharedSweep.ts` (puro): `planSharedSweep` (janelas de 2–6 passos seguidos com a mesma chave normalizada — e-mail/senha/URL viram ⟨slot⟩ — em `minCases`+ casos, escolha gulosa sem sobreposição; parâmetros por e-mail, senha ligada ao e-mail anterior; URL única vira `{{url}}`; dados/blocos do escopo reaproveitados; pasta em comum → escopo `pasta`, ou `app` em `aplicacoes/<App>/compartilhados/`), `sharedDocText`, `applyCasePlan` (✅ bloco → uma linha ↪ com obtido juntado e pior status, `#` renumerado; 🟡 dados soltos → `{{…}}`), `sharedSweepReport` (sem senhas). MCP `qa_varredura { modo: "compartilhados", min_casos, aplicar }`; skill de varredura (regra 7). Teste: `varreduraCompartilhados.test`.
@@ -474,11 +476,11 @@ Levantada comparando com TestRail, Zephyr, Xray, Qase, Testmo e as extensões de
 | **Reexecutar só falhas e bloqueados** | ✅ 1.33.0 — A partir de uma rodada, criar outra só com os casos FAIL/BLOCKED (validar correções). | P–M |
 | **Tendência entre rodadas** | ✅ 1.34.0 — % de sucesso por rodada/sprint, bugs abertos × fechados no tempo, casos que mais falham, tempo médio por caso. | M |
 
-#### 11.2 — Escrever casos *(M)*
+#### 11.2 — Escrever casos *(M)* — em andamento: ✅ 1.38.0 casos com dados
 
 | Item | Detalhe | Esforço |
 |---|---|---|
-| **Casos com dados (data-driven)** | Uma tabela de dados no caso (usuário A, B, C…): na rodada vira uma execução por linha. | M |
+| **Casos com dados (data-driven)** | ✅ 1.38.0 — Uma tabela de dados no caso (usuário A, B, C…): na rodada vira uma execução por linha. | M |
 | **Aprovação do caso** | Rascunho → em revisão → aprovado; só aprovado entra na rodada (opcional). | M |
 | **Versões com comparação** | Ver o que mudou num caso entre versões, lado a lado, e voltar a uma anterior. | M |
 | **Edição em massa** | Selecionar vários casos e mudar prioridade, tags, épico ou responsável de uma vez. | M |

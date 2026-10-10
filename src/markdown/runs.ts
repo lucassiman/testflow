@@ -225,16 +225,25 @@ function meta(source: string): Record<string, FrontMatterValue> {
 /** Registra uma rodada no histórico (cria a seção e a tabela se preciso). */
 export function logRun(
   source: string,
-  run: { start: Date; end: Date; round?: number; elapsed?: number },
+  run: { start: Date; end: Date; round?: number; elapsed?: number; /** caso com dados (11.2): "admin (1/3)" na coluna Dados */ iteration?: string },
 ): { source: string; round: number; overall: StatusWord } {
-  const { start, end, round, elapsed } = run;
+  const { start, end, round, elapsed, iteration } = run;
   const data = meta(source);
   const overall = deriveOverall(countStatuses(source)) || 'PENDING';
   const lines = source.split('\n');
   const n = round ?? currentRound(source);
   const sec = ensureSection(lines, HISTORY_TITLE, 'Histórico de execuções');
-  const row = `| ${n} | ${fmtDate(start)} | ${fmtTime(start)} | ${fmtTime(end)} | ${fmtDuration(elapsed ?? Number(end) - Number(start))} | ${cellText(data.ambiente || '')} | \`${overall}\` | ${cellText(data.responsavel || '')} |`;
+  let row = `| ${n} | ${fmtDate(start)} | ${fmtTime(start)} | ${fmtTime(end)} | ${fmtDuration(elapsed ?? Number(end) - Number(start))} | ${cellText(data.ambiente || '')} | \`${overall}\` | ${cellText(data.responsavel || '')} |`;
   const log = tablesIn(lines, sec.start, sec.end).find((t) => normHeader(t.cols[0] || '') === 'rodada');
+  // coluna Dados (iteração): criada quando a primeira rodada com dados é registrada
+  let dataCol = log ? log.cols.findIndex((c) => normHeader(c) === 'dados') : -1;
+  if (log && iteration && dataCol < 0) {
+    lines[log.header] = `${lines[log.header].replace(/\s*$/, '')} Dados |`;
+    lines[log.header + 1] = `${lines[log.header + 1].replace(/\s*$/, '')} --- |`;
+    for (let i = log.header + 2; i < log.end; i++) lines[i] = `${lines[i].replace(/\s*$/, '')}  |`;
+    dataCol = log.cols.length;
+  }
+  if (dataCol >= 0 || (!log && iteration)) row = `${row} ${cellText(iteration || '')} |`;
   if (log) {
     // a mesma rodada concluída de novo: atualiza a linha dela
     let existing = -1;
@@ -243,7 +252,7 @@ export function logRun(
   } else {
     // tabela de registro fica no topo da seção
     const at = sec.start;
-    const block = ['', HISTORY_HEAD, '| --- | --- | --- | --- | --- | --- | --- | --- |', row];
+    const block = ['', iteration ? `${HISTORY_HEAD} Dados |` : HISTORY_HEAD, `| --- | --- | --- | --- | --- | --- | --- | --- |${iteration ? ' --- |' : ''}`, row];
     if ((lines[at] ?? '').trim() !== '') block.push('');
     lines.splice(at, 0, ...block);
   }
@@ -279,7 +288,7 @@ export function reviseRun(
  * Nova rodada: copia a tabela de passos (como está) para o histórico e limpa
  * "Resultado obtido" e "Status" para executar de novo.
  */
-export function newRound(source: string, nearLine = -1, now = new Date()): { source: string; round: number; overall: StatusWord } | null {
+export function newRound(source: string, nearLine = -1, now = new Date(), /** iteração (11.2): "admin (1/3)" no título */ label = ''): { source: string; round: number; overall: StatusWord } | null {
   const table = stepTable(source, nearLine);
   if (!table) return null;
   const overall = deriveOverall(countStatuses(source)) || 'PENDING';
@@ -294,7 +303,7 @@ export function newRound(source: string, nearLine = -1, now = new Date()): { sou
     lines[r.line] = l;
   }
   const sec = ensureSection(lines, HISTORY_TITLE, 'Histórico de execuções');
-  appendInSection(lines, sec, [`### Rodada ${n} — ${fmtDate(now)} — \`${overall}\``, '', ...tableLines]);
+  appendInSection(lines, sec, [`### Rodada ${n} — ${fmtDate(now)} — \`${overall}\`${label ? ` — ${label}` : ''}`, '', ...tableLines]);
   // cabeçalho volta a PENDING e o resumo zera (a nova rodada ainda não foi executada)
   const next = updateSummaryBlocks(setFrontMatterStatus(lines.join('\n'), 'PENDING'));
   return { source: next, round: n, overall };

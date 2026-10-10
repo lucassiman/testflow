@@ -8,6 +8,14 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.38.0', date: '10/10/2026',
+    items: [
+      { icon: '🔁', text: '**Casos com dados (data-driven)**: o mesmo caso executado uma vez por linha — `## Iterações` no caso ou `iterar: Logins` (os logins do compartilhado). Nos passos, `{{dado.e-mail}}`, `{{dado.perfil}}` e `↪ Fazer login (dado)`.', manual: '6.9 Casos com dados' },
+      { icon: '▶', text: 'No painel de execução, **🔁 admin 1/3** no topo; **✓ Concluir iteração** registra (coluna **Dados** no histórico) e já começa a próxima. Na rodada, o caso fica feito quando todas terminam, com o pior resultado.', manual: '6.9 Casos com dados' },
+      { icon: '🤖', text: 'O Claude registra iteração por iteração (`iteracao` em `qa_marcar_passos` / `qa_rodada_registrar`).', manual: '6.9 Casos com dados' },
+    ],
+  },
+  {
     version: '1.37.0', date: '10/10/2026',
     items: [
       { icon: '🔑', text: '**Painel 🔑 Dados fora da barra lateral**: botão 🔑 no topo ou `Alt+K`, também com a barra fechada; fica ao lado do painel de execução, rola, mostra o nome inteiro de cada dado e os botões de copiar sempre à vista. **☐ mostrar senhas** vale para o painel, a execução e o Preview.', manual: '6.8 Passos e dados compartilhados' },

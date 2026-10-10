@@ -2,9 +2,11 @@
 import { STATUS_ORDER, KIND_OF, cellStatus, collectStatusTables } from '../markdown/status.ts';
 import { applyEnv, describeEnv, mergeEnv, missingEnv, readEnv } from '../markdown/lastEnv.ts';
 import {
-  stepTable, setActual, setStepStatus, cellToText, logRun, reviseRun, fmtDuration, NOTE_TAGS, parseNote,
+  stepTable, setActual, setStepStatus, cellToText, logRun, reviseRun, newRound, fmtDuration, NOTE_TAGS, parseNote,
   addSessionNote, sessionStarted, sessionEnded, countNotes, countStepPrints,
 } from '../markdown/runs.ts';
+import { iterLabel, parseIterLabel } from '../markdown/shared.ts';
+import { runsOf } from '../markdown/cycle.ts';
 
 /**
  * Painel flutuante de execução:
@@ -17,14 +19,15 @@ import {
 /** @typedef {import('../markdown/runs.ts').NoteTag} NoteTag */
 /** Cronômetro com pausa: tempo = acumulado + (agora − retomado). */
 /** @typedef {{ startedAt: number, elapsedBefore: number, runningSince: number | null }} Timer */
-/** @typedef {Timer & { ordinal: number, index: number, revisit?: boolean, autoPaused?: boolean }} ExecState */
+/** @typedef {Timer & { ordinal: number, index: number, revisit?: boolean, autoPaused?: boolean, iter?: number, iterWorst?: string }} ExecState */
 /** @typedef {Timer & { tag: NoteTag }} SessionState */
 /** @typedef {StepRow & { index: number }} RunRow */
 /** @typedef {import('../markdown/shared.ts').Segment} Segment */
 /**
  * Passos e dados compartilhados (11.1), vindos do app.
  * @typedef {{
- *   step: (cell: string) => { include: import('../markdown/shared.ts').Expanded | null, segments: Segment[] | null } | null,
+ *   step: (cell: string, dado?: import('../markdown/shared.ts').SharedVar | null) => { include: import('../markdown/shared.ts').Expanded | null, segments: Segment[] | null } | null,
+ *   iterations?: () => import('../markdown/shared.ts').Iterations,
  *   vars: () => import('../markdown/shared.ts').SharedVar[],
  *   beforeEach: () => Array<{ acao: string, esperado: string, source: string }>,
  *   copy: (value: string, label: string, secret: boolean, win: Window) => void,
@@ -198,8 +201,9 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
         // pausado sozinho ao sair do caso: volta a contar ao voltar; pausado à mão continua pausado
         runningSince: saved.autoPaused ? Date.now() : (saved.runningSince === undefined ? saved.startedAt : saved.runningSince),
         revisit: revisit || !!saved.revisit,
+        iter: saved.iter || 0, iterWorst: saved.iterWorst || '',
       }
-      : { ordinal, index: 0, startedAt: Date.now(), elapsedBefore: 0, runningSince: Date.now(), revisit };
+      : { ordinal, index: 0, startedAt: Date.now(), elapsedBefore: 0, runningSince: Date.now(), revisit, ...resumeIter() };
     exec = run;
     cancelBase = base ?? store.source;
     confirmCancel = 0;
@@ -215,7 +219,9 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     mode = 'exec';
     centerNext = true;
     render();
-    if (!sameDoc) toast?.('Execução iniciada — 1–5 marca o status e avança · Ctrl+V cola print do passo · Concluir registra a rodada');
+    const its = revisit ? [] : iters();
+    if (!sameDoc && its.length) toast?.(`Caso com dados: ${its.length} iterações (${its.map((v) => v.label || v.name).join(', ')}) — ✓ Concluir registra cada uma e já começa a próxima${run.iter ? ` · retomando na ${run.iter + 1}ª` : ''}`, 'info', { duration: 8000 });
+    else if (!sameDoc) toast?.('Execução iniciada — 1–5 marca o status e avança · Ctrl+V cola print do passo · Concluir registra a rodada');
     // já há passos com status: avisa onde retomou
     if (run.index > 0 && rows.length) toast?.(`Retomando no passo ${run.index + 1} de ${rows.length} — os anteriores já têm status`);
     setTimeout(offerLastEnv, 2500); // depois da dica de início, que fica na tela
@@ -239,6 +245,48 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     });
   }
 
+  // ---------------------------------------------------------------- casos com dados (11.2)
+  /** As linhas de dados do caso (uma execução por linha); [] num caso comum. */
+  function iters() { return shared?.iterations?.().items || []; }
+  /** A linha da vez ({{dado}}). */
+  function curIter() {
+    if (!exec || exec.revisit) return null;
+    const its = iters();
+    return its.length ? its[Math.min(exec.iter || 0, its.length - 1)] : null;
+  }
+  /**
+   * Execução nova de um caso com dados: continua depois da última iteração registrada nas últimas 12 h (o editor foi
+   * fechado no meio) — senão, começa na 1ª.
+   * @returns {{ iter: number, iterWorst: string }}
+   */
+  function resumeIter() {
+    const n = iters().length;
+    if (n < 2) return { iter: 0, iterWorst: '' };
+    const runs = runsOf(store.source).sort((a, b) => a.at.getTime() - b.at.getTime() || a.round - b.round);
+    const last = runs.at(-1);
+    const p = last ? parseIterLabel(last.label) : null;
+    if (!last || !p || p.total !== n || p.index >= n - 1 || Date.now() - last.at.getTime() > 12 * 3600 * 1000) return { iter: 0, iterWorst: '' };
+    // pior resultado das iterações já feitas desta execução
+    let worst = '';
+    for (const r of runs.slice(-(p.index + 1))) worst = worseOf(worst, r.status || '');
+    return { iter: p.index + 1, iterWorst: worst };
+  }
+  /** @param {string} a @param {string} b */
+  function worseOf(a, b) {
+    const R = /** @type {Record<string, number>} */ ({ FAIL: 5, BLOCKED: 4, PENDING: 3, SKIP: 2, PASS: 1 });
+    return (R[b] || 0) > (R[a] || 0) ? b : a;
+  }
+  /** Falta alguma iteração depois da da vez? */
+  const moreIters = () => !!curIter() && (ex().iter || 0) < iters().length - 1;
+  /** Rótulo da iteração da vez no topo do painel. @param {boolean} [mini] */
+  function iterChip(mini = false) {
+    const it = curIter();
+    if (!it) return '';
+    const its = iters();
+    const i = Math.min(ex().iter || 0, its.length - 1);
+    return `<span class="run-iter${mini ? ' mini' : ''}" title="Caso com dados: uma execução por linha (${esc(shared?.iterations?.().from || '')}) — {{dado}} nos passos é a linha da vez. Iterações: ${esc(its.map((v) => v.label || v.name).join(', '))}">🔁 ${esc(it.label || it.name)} <small>${i + 1}/${its.length}</small></span>`;
+  }
+
   /** Identifica o documento: o caminho na pasta de trabalho (dois casos de pastas diferentes podem ter o mesmo nome). */
   function docKey() { return (docKeyDep?.() || store.fileName || 'doc'); }
 
@@ -252,7 +300,7 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
   function persistExec() {
     const all = { ...(prefs.load().execRuns || {}) };
     if (exec) {
-      all[docKey()] = { ordinal: exec.ordinal, startedAt: exec.startedAt, elapsedBefore: exec.elapsedBefore, runningSince: exec.runningSince, revisit: !!exec.revisit, autoPaused: !!exec.autoPaused, savedAt: Date.now() };
+      all[docKey()] = { ordinal: exec.ordinal, startedAt: exec.startedAt, elapsedBefore: exec.elapsedBefore, runningSince: exec.runningSince, revisit: !!exec.revisit, autoPaused: !!exec.autoPaused, iter: exec.iter || 0, iterWorst: exec.iterWorst || '', savedAt: Date.now() };
     } else delete all[docKey()];
     // só as execuções mais recentes (as de mais de 12 h nem seriam retomadas)
     const keys = Object.keys(all).sort((a, b) => (all[b].savedAt || 0) - (all[a].savedAt || 0));
@@ -308,7 +356,12 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     if (!exec) return;
     const start = new Date(exec.startedAt);
     const when = { start, end: new Date(), elapsed: timerElapsed(exec) };
-    const res = exec.revisit ? reviseRun(store.source, when) : { ...logRun(store.source, when), revised: false };
+    const its = exec.revisit ? [] : iters();
+    const i = Math.min(exec.iter || 0, Math.max(0, its.length - 1));
+    const label = its.length ? iterLabel(its[i], i, its.length) : undefined;
+    const res = exec.revisit ? reviseRun(store.source, when) : { ...logRun(store.source, { ...when, iteration: label }), revised: false };
+    if (its.length && i < its.length - 1) { nextIteration(res, its, i, label || ''); return; }
+    if (its.length) res.overall = /** @type {typeof res.overall} */ (worseOf(exec.iterWorst || '', res.overall));
     write(res.source, res.revised ? `Rodada ${res.round} atualizada no Histórico de execuções — ${res.overall}` : `Rodada ${res.round} registrada no Histórico de execuções — ${res.overall}`);
     rememberEnv();
     exec = null;
@@ -318,6 +371,36 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     // na rodada (ciclo) o próximo caso abre em seguida: não rola até o histórico (a posição ficaria lembrada lá)
     const handled = onFinish?.({ overall: res.overall, round: res.round, revised: res.revised });
     if (!handled) preview.scrollToLine(Math.max(0, store.source.split('\n').findIndex((l) => /^#{1,6}\s+hist[oó]rico de execu/i.test(l))), { align: 'start' });
+  }
+
+  /**
+   * Caso com dados: a iteração foi registrada; a tabela de passos vai para o histórico ("### Rodada N — … — admin (1/3)"),
+   * os status voltam a vazio e a próxima linha de dados começa (com o cronômetro zerado e o "antes de cada caso").
+   * @param {{ source: string, round: number, overall: string }} res @param {import('../markdown/shared.ts').SharedVar[]} its
+   * @param {number} i @param {string} label
+   */
+  function nextIteration(res, its, i, label) {
+    const run = ex();
+    const tables = collectStatusTables(res.source);
+    const near = tables[Math.min(run.ordinal, tables.length - 1)]?.header ?? -1;
+    const nr = newRound(res.source, near, new Date(), label);
+    const next = its[i + 1];
+    write(nr ? nr.source : res.source, `Iteração ${label} registrada — ${res.overall}. Agora: ${next.label || next.name} (${i + 2}/${its.length})`);
+    rememberEnv();
+    run.iterWorst = worseOf(run.iterWorst || '', res.overall);
+    run.iter = i + 1;
+    run.index = 0;
+    run.startedAt = Date.now();
+    run.elapsedBefore = 0;
+    run.runningSince = Date.now();
+    run.autoPaused = false;
+    cancelBase = store.source; // ✕ Cancelar desfaz só a iteração da vez
+    confirmCancel = 0;
+    lastProblem = -1;
+    pre = !!shared && prefs.load().sharedBeforeEach !== false && shared.beforeEach().length > 0;
+    centerNext = true;
+    persistExec();
+    render();
   }
 
   /**
@@ -386,12 +469,12 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
   }
   /** Texto com os {{dados}} trocados por botões de copiar. @param {string} text */
   function textHtml(text) {
-    const sh = shared && text.includes('{{') ? shared.step(text) : null;
+    const sh = shared && text.includes('{{') ? shared.step(text, curIter()) : null;
     return sh?.segments ? segHtml(sh.segments) : esc(text);
   }
   /** Ação do passo: inclusão (↪ bloco com os passos dele) ou o texto com os dados. @param {string} action */
   function actionHtml(action) {
-    const sh = shared && action ? shared.step(action) : null;
+    const sh = shared && action ? shared.step(action, curIter()) : null;
     if (!sh?.include) return sh?.segments ? segHtml(sh.segments) : esc(action);
     const inc = sh.include;
     return `<div class="run-inc"><b>↪ ${esc(inc.label)}</b>${inc.block
@@ -401,12 +484,14 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
   /** Lista 🔑 dos dados compartilhados do caso, com copiar. */
   function varsHtml() {
     const vs = shared ? shared.vars() : [];
-    if (!vs.length) return '<div class="run-vars"><em>Nenhum dado compartilhado vale para este documento.</em></div>';
+    const it = curIter();
+    const itHtml = it ? `<div class="run-var-group">🔁 Iteração da vez — {{dado}}</div><div class="run-var-row"><b title="${esc(it.obs || it.label || it.name)}">${esc(it.label || it.name)}</b>${(Object.entries(it.fields).filter(([k, val]) => val && !/^(observacao|obs|descricao)$/.test(k)).map(([k, val]) => `<span class="run-var-f"><span class="run-var-k">${esc(k)}</span>${segHtml([{ name: 'dado', field: k === 'valor' ? '' : k, value: val, secret: it.secret.includes(k), missing: false }])}</span>`).join('')) || segHtml([{ name: 'dado', field: '', value: it.value, secret: false, missing: false }])}</div>` : '';
+    if (!vs.length) return `<div class="run-vars">${itHtml || '<em>Nenhum dado compartilhado vale para este documento.</em>'}</div>`;
     /** @type {Map<string, typeof vs>} */
     const groups = new Map();
     for (const v of vs) groups.set(v.group || '', [...(groups.get(v.group || '') || []), v]);
     const many = groups.size > 1;
-    return `<div class="run-vars" role="group" aria-label="Dados compartilhados">${[...groups].map(([g, list]) => `${many && g ? `<div class="run-var-group">${esc(g)}</div>` : ''}${list.map((v) => {
+    return `<div class="run-vars" role="group" aria-label="Dados compartilhados">${itHtml}${[...groups].map(([g, list]) => `${many && g ? `<div class="run-var-group">${esc(g)}</div>` : ''}${list.map((v) => {
       const fields = Object.entries(v.fields).filter(([k, val]) => val && !/^(observacao|obs|descricao)$/.test(k));
       const cells = fields.length
         ? fields.map(([k, val]) => `<span class="run-var-f"><span class="run-var-k">${esc(k)}</span>${segHtml([{ name: v.name, field: k === 'valor' ? '' : k, value: val, secret: v.secret.includes(k), missing: false }])}</span>`).join('')
@@ -414,7 +499,7 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
       return `<div class="run-var-row"><b title="${esc(v.obs || v.label || v.name)}">${esc(v.name)}</b>${cells}</div>`;
     }).join('')}`).join('')}</div>`;
   }
-  const keysBtn = () => (shared && shared.vars().length
+  const keysBtn = () => (shared && (shared.vars().length || curIter())
     ? `<button type="button" data-act="vars" class="run-x run-keys${showVars ? ' on' : ''}" title="Dados compartilhados (e-mail, senha, URL…): clique para copiar" aria-label="Dados compartilhados" aria-pressed="${showVars}">🔑</button>`
     : '');
 
@@ -429,7 +514,7 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     el.innerHTML = `
       <div class="run-head">
         <strong>▶ Execução</strong>
-        <span class="run-step">Antes de começar</span>
+        <span class="run-step">Antes de começar</span>${iterChip()}
         <span class="run-grow"></span>
         ${keysBtn()}${floatBtn()}
         <button type="button" data-act="compact" class="run-x run-min" title="Minimizar (M)" aria-label="Minimizar o painel">▁</button>
@@ -465,12 +550,12 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     el.innerHTML = `
       <div class="run-mini">
         <div class="run-mini-top">
-          <button type="button" data-act="compact" class="run-mini-step" title="Expandir o painel (M)">▶ Passo ${esc(label)} <small>${run.index + 1}/${rows.length}</small></button>
+          <button type="button" data-act="compact" class="run-mini-step" title="Expandir o painel (M)">▶ Passo ${esc(label)} <small>${run.index + 1}/${rows.length}</small></button>${iterChip(true)}
           <span class="run-progress" title="${done} de ${rows.length} com status"><span style="width:${Math.round((done / rows.length) * 100)}%"></span></span>
           <span class="run-clock${run.runningSince ? '' : ' paused'}" title="Tempo de execução (sem as pausas)">${clock(timerElapsed(run))}</span>
           <button type="button" data-act="compact" class="run-x run-expand" title="Expandir o painel (M)" aria-label="Expandir o painel">⤢</button>
         </div>
-        <div class="run-mini-action" title="${esc(action)}${expected ? `\n\nEsperado: ${esc(expected)}` : ''}">${(shared && action && shared.step(action)?.include ? actionHtml(action).replace(/<\/?(ol|li|div)[^>]*>/g, ' ') : textHtml(action)) || '<em>—</em>'}</div>
+        <div class="run-mini-action" title="${esc(action)}${expected ? `\n\nEsperado: ${esc(expected)}` : ''}">${(shared && action && shared.step(action, curIter())?.include ? actionHtml(action).replace(/<\/?(ol|li|div)[^>]*>/g, ' ') : textHtml(action)) || '<em>—</em>'}</div>
         ${showVars ? varsHtml() : ''}
         <div class="run-mini-bar">
           ${STATUS_ORDER.map((w, i) => `<button type="button" data-word="${w}" class="run-mini-st st-${KIND_OF[w]}${kind === KIND_OF[w] ? ' current' : ''}" aria-pressed="${kind === KIND_OF[w]}" title="${w} (${i + 1})" aria-label="${w}">${ICON[w] || ''}<kbd>${i + 1}</kbd></button>`).join('')}
@@ -508,7 +593,7 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     el.innerHTML = `
       <div class="run-head">
         <strong>▶ Execução</strong>
-        <span class="run-step">Passo ${esc(label)} <small>(${run.index + 1} de ${rows.length})</small></span>
+        <span class="run-step">Passo ${esc(label)} <small>(${run.index + 1} de ${rows.length})</small></span>${iterChip()}
         <span class="run-progress" title="${done} de ${rows.length} com status"><span style="width:${Math.round((done / rows.length) * 100)}%"></span></span>
         ${keysBtn()}${floatBtn()}
         <button type="button" data-act="compact" class="run-x run-min" title="Minimizar (M): fica só o passo, o tempo e os status — mais tela para o sistema testado" aria-label="Minimizar o painel">▁</button>
@@ -536,7 +621,7 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
         <button type="button" data-act="prev" title="Passo anterior (←)">◀</button>
         <button type="button" data-act="next" title="Próximo passo (→)">▶</button>
         <span class="run-hint">1–5 status · ← → passos · Enter obtido · Esc sai do campo</span>
-        <button type="button" data-act="finish" class="primary" title="Registra a rodada no Histórico de execuções">✓ Concluir</button>
+        <button type="button" data-act="finish" class="primary" title="${moreIters() ? 'Registra esta iteração no Histórico de execuções e começa a próxima linha de dados' : 'Registra a rodada no Histórico de execuções'}">${moreIters() ? '✓ Concluir iteração' : '✓ Concluir'}</button>
       </div>`;
     highlightRow(t, row.index);
   }

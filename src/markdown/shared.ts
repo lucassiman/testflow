@@ -120,6 +120,40 @@ function stepsOf(t: ReturnType<typeof tableIn>): SharedStep[] {
   return t.rows.map((r) => ({ acao: unesc(r[ai] || ''), esperado: e >= 0 ? unesc(r[e] || '') : '' })).filter((s) => s.acao);
 }
 
+/**
+ * Os dados de uma tabela: a coluna do nome do dado é Chave / ID / Variável; sem ela, Nome (no formato Nome | Valor | Senha).
+ * Usada nos `## Dados` do compartilhado e nas `## Iterações` do caso.
+ */
+function varsFromTable(t: { head: string[]; rawHead: string[]; rows: string[][] }, group: string, source: string): SharedVar[] {
+  const out: SharedVar[] = [];
+  let ni = t.head.findIndex((x) => /^(chave|id|variavel|apelido|dado|iteracao)$/.test(x));
+  const viAny = t.head.findIndex((x) => /^(valor|usuario|e-?mail|login)$/.test(x));
+  const keyIsName = ni < 0;
+  if (ni < 0) ni = Math.max(0, t.head.findIndex((x) => /^nome$/.test(x)));
+  const vi = viAny !== ni ? viAny : -1;
+  const oi = t.head.findIndex((x) => /^(observacao|obs|descricao)$/.test(x));
+  // "Nome" é o nome da pessoa (não há coluna Valor): continua como campo, e a chave sai dele (joao-silva)
+  const nameIsField = keyIsName && t.head[ni] === 'nome' && vi < 0;
+  for (const r of t.rows) {
+    const label = cleanValue(r[ni] || '').replace(/[`*]/g, '');
+    const name = slug(label);
+    if (!name || !VAR_NAME.test(name)) continue;
+    const fields: Record<string, string> = {};
+    const secret: string[] = [];
+    t.head.forEach((col, k) => {
+      if (k === ni && !nameIsField) return;
+      const f = key(t.rawHead[k]).replace(/[`*_]/g, '').replace(/\s+/g, '-');
+      if (!f || f === '#') return;
+      fields[f] = cleanValue(r[k] || '');
+      if (SECRET_RE.test(f)) secret.push(f);
+    });
+    const vIdx = vi >= 0 ? vi : t.head.findIndex((_, k) => k !== ni && k !== oi && !SECRET_RE.test(t.head[k]));
+    const value = cleanValue(r[vIdx] || '');
+    out.push({ name, value, fields, secret, obs: oi >= 0 ? cleanValue(r[oi] || '') : '', source, group, label });
+  }
+  return out;
+}
+
 /** Lê um documento compartilhado. */
 export function parseShared(text: string, path: string): SharedDoc | null {
   const m = meta(text);
@@ -139,34 +173,7 @@ export function parseShared(text: string, path: string): SharedDoc | null {
     if (/^(dados|variaveis|massa de dados)\b/.test(title)) {
       // "## Dados: Colaboradores" → grupo Colaboradores; várias tabelas na mesma seção também valem
       const group = h.text.includes(':') ? h.text.replace(/^[^:]*:\s*/, '').trim() : '';
-      for (const t of tablesIn(lines, h.line + 1, end)) {
-        // coluna do nome do dado: Chave / ID / Variável; sem ela, Nome (no formato Nome | Valor | Senha)
-        let ni = t.head.findIndex((x) => /^(chave|id|variavel|apelido|dado)$/.test(x));
-        const viAny = t.head.findIndex((x) => /^(valor|usuario|e-?mail|login)$/.test(x));
-        const keyIsName = ni < 0;
-        if (ni < 0) ni = Math.max(0, t.head.findIndex((x) => /^nome$/.test(x)));
-        const vi = viAny !== ni ? viAny : -1;
-        const oi = t.head.findIndex((x) => /^(observacao|obs|descricao)$/.test(x));
-        // "Nome" é o nome da pessoa (não há coluna Valor): continua como campo, e a chave sai dele (joao-silva)
-        const nameIsField = keyIsName && t.head[ni] === 'nome' && vi < 0;
-        for (const r of t.rows) {
-          const label = cleanValue(r[ni] || '').replace(/[`*]/g, '');
-          const name = slug(label);
-          if (!name || !VAR_NAME.test(name)) continue;
-          const fields: Record<string, string> = {};
-          const secret: string[] = [];
-          t.head.forEach((col, k) => {
-            if (k === ni && !nameIsField) return;
-            const f = key(t.rawHead[k]).replace(/[`*_]/g, '').replace(/\s+/g, '-');
-            if (!f || f === '#') return;
-            fields[f] = cleanValue(r[k] || '');
-            if (SECRET_RE.test(f)) secret.push(f);
-          });
-          const vIdx = vi >= 0 ? vi : t.head.findIndex((_, k) => k !== ni && k !== oi && !SECRET_RE.test(t.head[k]));
-          const value = cleanValue(r[vIdx] || '');
-          doc.vars.push({ name, value, fields, secret, obs: oi >= 0 ? cleanValue(r[oi] || '') : '', source: id, group, label });
-        }
-      }
+      for (const t of tablesIn(lines, h.line + 1, end)) doc.vars.push(...varsFromTable(t, group, id));
     } else if (/^antes da rodada\b|^antes de tudo\b/.test(title)) doc.beforeAll.push(...stepsOf(tableIn(lines, h.line + 1, end)));
     else if (/^antes de cada( caso)?\b/.test(title)) doc.beforeEach.push(...stepsOf(tableIn(lines, h.line + 1, end)));
     else if (/^(passos|bloco)\s*:/.test(title)) {
@@ -277,20 +284,21 @@ export function resolveText(text: string, scope: SharedScopeResult, binding: Bin
 export interface Expanded { block: SharedBlock | null; binding: Binding; steps: Array<{ acao: Segment[]; esperado: Segment[] }>; missing: string[]; label: string }
 
 /** Os passos de uma inclusão, com os parâmetros ligados aos dados do escopo. */
-export function expandInclude(inc: Include, scope: SharedScopeResult): Expanded {
+export function expandInclude(inc: Include, scope: SharedScopeResult, outer: Binding = {}, { rawIterLabel = false } = {}): Expanded {
   const block = scope.blocks.get(key(inc.name)) || null;
   const missing: string[] = [];
   if (!block) return { block: null, binding: {}, steps: [], missing: [`bloco "${inc.name}"`], label: inc.name };
-  const binding: Binding = {};
+  // o {{dado}} da iteração (e outros de fora) também valem dentro do bloco: ↪ Fazer login (dado)
+  const binding: Binding = { ...outer };
   block.params.forEach((p, i) => {
     const raw = inc.named[key(p)] ?? inc.args[i];
     if (raw === undefined) { missing.push(`parâmetro "${p}"`); return; }
-    const v = scope.vars.get(key(raw));
+    const v = outer[key(raw)]?.var ?? scope.vars.get(key(raw));
     binding[key(p)] = v ? { var: v } : { literal: raw };
   });
   const steps = block.steps.map((s) => ({ acao: resolveSegments(s.acao, scope, binding), esperado: resolveSegments(s.esperado, scope, binding) }));
   for (const st of steps) for (const seg of [...st.acao, ...st.esperado]) if (typeof seg !== 'string' && seg.missing) missing.push(`{{${seg.name}${seg.field ? `.${seg.field}` : ''}}}`);
-  const label = `${block.name}${block.params.length ? ` · ${block.params.map((p) => { const b = binding[key(p)]; return b?.var ? b.var.name : b?.literal ?? '?'; }).join(', ')}` : ''}`;
+  const label = `${block.name}${block.params.length ? ` · ${block.params.map((p, i) => { const raw = inc.named[key(p)] ?? inc.args[i]; if (rawIterLabel && raw && key(raw) === ITER_VAR) return ITER_VAR; const b = binding[key(p)]; return b?.var ? b.var.name : b?.literal ?? '?'; }).join(', ')}` : ''}`;
   return { block, binding, steps, missing: [...new Set(missing)], label };
 }
 
@@ -300,6 +308,10 @@ export function sharedWarnings(text: string, scope: SharedScopeResult): Array<{ 
   const out: Array<{ line: number; message: string }> = [];
   const lines = text.split('\n');
   let fence = false;
+  // {{dado}}: a linha da iteração (## Iterações ou iterar:) — confere os campos com a primeira
+  const its = iterationsOf(text, scope);
+  const outer: Binding = its.items.length ? { [ITER_VAR]: { var: its.items[0] } } : {};
+  if (its.missing.length) out.push({ line: Math.max(0, lines.findIndex((l) => /^iterar\s*:/i.test(l))), message: `iterar: ${its.missing.join(', ')} não existe nos compartilhados do escopo (nem como grupo, nem como dado)` });
   lines.forEach((l, i) => {
     if (/^\s*(```|~~~)/.test(l)) fence = !fence;
     if (fence) return;
@@ -307,17 +319,85 @@ export function sharedWarnings(text: string, scope: SharedScopeResult): Array<{ 
       for (const c of splitRow(l)) {
         const inc = parseInclude(c);
         if (!inc) continue;
-        const ex = expandInclude(inc, scope);
+        const ex = expandInclude(inc, scope, outer);
         if (ex.missing.length) out.push({ line: i, message: `↪ ${inc.name}: ${ex.block ? `falta ${ex.missing.join(', ')}` : `nenhum bloco "Passos: ${inc.name}" compartilhado no escopo deste documento`}` });
       }
     }
     for (const m of l.matchAll(PLACEHOLDER_RE)) {
       if (['data', 'data_br', 'hora'].includes(m[1])) continue;
-      const seg = lookup(m[1], m[2] || '', scope);
+      if (key(m[1]) === ITER_VAR && !its.items.length) { out.push({ line: i, message: `{{${m[1]}${m[2] ? `.${m[2]}` : ''}}}: o caso não tem iterações — crie a seção "## Iterações" (uma linha por execução) ou use "iterar: <grupo>" no cabeçalho` }); continue; }
+      const seg = lookup(m[1], m[2] || '', scope, outer);
       if (seg.missing) out.push({ line: i, message: `{{${m[1]}${m[2] ? `.${m[2]}` : ''}}}: dado não encontrado nos compartilhados do escopo` });
     }
   });
   return out;
+}
+
+// ---------------------------------------------------------------- casos com dados (11.2)
+
+/** O dado da iteração no texto dos passos: {{dado}}, {{dado.email}}, {{dado.senha}}… */
+export const ITER_VAR = 'dado';
+/** Escopo vazio (caso com iterações e nenhum compartilhado na pasta). */
+export const emptyScope = (): SharedScopeResult => ({ docs: [], vars: new Map(), blocks: new Map(), beforeAll: [], beforeEach: [] });
+
+export interface Iterations {
+  /** uma execução por item, na ordem */
+  items: SharedVar[];
+  /** de onde vêm: "Iterações" (tabela do caso), o grupo ("Logins") ou a lista do iterar: */
+  from: string;
+  /** nomes do iterar: que não existem no escopo */
+  missing: string[];
+}
+
+/**
+ * As iterações do caso (o mesmo caso executado uma vez por linha de dados — data-driven):
+ *  - a seção `## Iterações` do caso (tabela: Chave | E-mail | Senha | Perfil…; uma linha por execução); ou
+ *  - `iterar: Logins` no cabeçalho — todos os dados do grupo "Dados: Logins" compartilhado no escopo; ou
+ *  - `iterar: [admin, cliente]` — esses dados do escopo.
+ * Nos passos, {{dado}} / {{dado.campo}} é a linha da vez.
+ */
+export function iterationsOf(text: string, scope: SharedScopeResult | null): Iterations {
+  if (isShared(text)) return { items: [], from: '', missing: [] };
+  const lines = text.split('\n');
+  const hs = headings(lines);
+  const sec = hs.findIndex((h) => /^(iteracoes|iteracao|dados de teste|dados por iteracao|massa por iteracao)\b/.test(key(h.text)));
+  if (sec >= 0) {
+    const h = hs[sec];
+    const end = hs.slice(sec + 1).find((x) => x.level <= h.level)?.line ?? lines.length;
+    const id = String(meta(text).id ?? '').trim();
+    const items = tablesIn(lines, h.line + 1, end).flatMap((t) => varsFromTable(t, 'Iterações', id || 'caso'));
+    if (items.length) return { items, from: 'Iterações', missing: [] };
+  }
+  const m = meta(text);
+  const want = listOf(m.iterar ?? m.iteracoes ?? m['iterar-com']);
+  if (!want.length) return { items: [], from: '', missing: [] };
+  const all = scope ? [...scope.vars.values()] : [];
+  if (want.length === 1) {
+    const g = all.filter((v) => v.group && key(v.group) === key(want[0]));
+    if (g.length) return { items: g, from: g[0].group, missing: [] };
+  }
+  const items: SharedVar[] = [];
+  const missing: string[] = [];
+  for (const w of want) {
+    const v = scope?.vars.get(key(slug(w)));
+    if (v) items.push(v);
+    else {
+      const g = all.filter((x) => x.group && key(x.group) === key(w));
+      if (g.length) items.push(...g); else missing.push(w);
+    }
+  }
+  return { items, from: want.join(', '), missing };
+}
+
+/** Binding da iteração: {{dado}} → a linha. */
+export const iterBinding = (v: SharedVar | null | undefined): Binding => (v ? { [ITER_VAR]: { var: v } } : {});
+
+/** Rótulo da iteração no histórico: "admin (1/3)". */
+export const iterLabel = (v: SharedVar, i: number, n: number): string => `${v.label || v.name} (${i + 1}/${n})`;
+/** "admin (1/3)" → { name: 'admin', index: 0, total: 3 } */
+export function parseIterLabel(s: string): { name: string; index: number; total: number } | null {
+  const m = /^(.*?)\s*\((\d+)\s*\/\s*(\d+)\)\s*$/.exec((s || '').replace(/`/g, '').trim());
+  return m ? { name: m[1].trim(), index: Number(m[2]) - 1, total: Number(m[3]) } : null;
 }
 
 /** Quantos dados/blocos o escopo tem (para o rótulo do botão). */

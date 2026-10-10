@@ -95,6 +95,14 @@ Login, URL do ambiente e preparação que se repetem em vários casos ficam **um
 - `## Passos: Fazer login` + `Parâmetros: usuario` + tabela de passos com `{{usuario}}` / `{{usuario.senha}}`. No caso, **um** passo com a ação `↪ Fazer login (admin)` (vários parâmetros: `↪ Transferir (origem=admin, destino=cliente)`) — vale um status; no painel de execução aparecem os passos do bloco com os dados para copiar. Dois logins no mesmo caso = duas linhas `↪`.
 - **Nunca escreva senha num caso**: use `{{nome.senha}}`. A senha fica só no compartilhado (o app mostra `••••` e não a exporta).
 
+### Casos com dados (data-driven)
+
+O mesmo caso para vários perfis/massas **não** é copiado: vira um caso com iterações — uma execução por linha.
+
+- No caso: `## Iterações` com uma tabela `| Chave | E-mail | Senha | Perfil |` (uma linha por execução); ou, no cabeçalho, `iterar: Logins` (todas as linhas de `## Dados: Logins` do compartilhado do escopo) / `iterar: [admin, cliente]`.
+- Nos passos: `{{dado}}`, `{{dado.campo}}` (`{{dado.e-mail}}`, `{{dado.perfil}}`) e `↪ Fazer login (dado)`. Senha: `{{dado.senha}}` — prefira `iterar:` com os logins do compartilhado a escrever senhas na tabela de Iterações.
+- O histórico ganha a coluna **Dados** (`admin (1/3)`); o caso só está feito na rodada quando todas as iterações foram concluídas, com o pior resultado entre elas.
+
 ### Status geral e resumo automático
 
 - O `status:` do cabeçalho resume os passos: algum `FAIL` → `FAIL`; senão algum `BLOCKED` → `BLOCKED`; senão algum passo vazio/`PENDING` → `PENDING`; senão `PASS` (todos `SKIP` → `SKIP`). O editor recalcula ao marcar status e ao salvar.
