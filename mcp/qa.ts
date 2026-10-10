@@ -36,7 +36,7 @@ import {
 import type { CaseLookup } from '../src/markdown/cycle.ts';
 import { planSharedSweep, sharedDocText, applyCasePlan, sharedSweepReport } from '../src/markdown/sharedSweep.ts';
 import { approvalOf, approvalText, approvalKey, setApproval, normalizeApproval, isApprovable } from '../src/markdown/approval.ts';
-import { parseShared, scopeFor, parseInclude, expandInclude, resolveText, sharedWarnings, maskSecretColumns, iterationsOf, iterBinding, iterLabel, parseIterLabel, SHARED_TYPE, type SharedDoc, type SharedScopeResult, type Segment, type SharedVar } from '../src/markdown/shared.ts';
+import { parseShared, scopeFor, parseInclude, expandInclude, resolveText, sharedWarnings, maskSecretColumns, iterationsOf, iterBinding, iterLabel, parseIterLabel, normEnv, envLabel, envCoverage, prepareEnvSections, ENVS, SHARED_TYPE, type SharedDoc, type SharedScopeResult, type Segment, type SharedVar } from '../src/markdown/shared.ts';
 import { buildReports, linkReports, REPORT_TYPES } from '../src/markdown/reports.ts';
 import { readLinks } from '../src/markdown/linkTypes.ts';
 import { findBrokenLinks } from '../src/markdown/brokenLinks.ts';
@@ -536,7 +536,7 @@ export class QaWorkspace {
 
   // ---------------------------------------------------------------- execução
   /** Marca status (e obtido) de passos; `concluir` registra a rodada no Histórico de execuções. */
-  markSteps(o: { doc: string; passos: Array<{ passo: string; status?: string; obtido?: string }>; concluir?: boolean; iteracao?: string }): Promise<string> {
+  markSteps(o: { doc: string; passos: Array<{ passo: string; status?: string; obtido?: string }>; concluir?: boolean; iteracao?: string; ambiente?: string }): Promise<string> {
     return this.exclusive(() => this.markStepsNow(o));
   }
 
@@ -544,11 +544,12 @@ export class QaWorkspace {
    * Conclui a rodada do caso (logRun). Caso com dados (11.2 — ## Iterações ou iterar:): registra a iteração da vez
    * ("admin (1/3)" na coluna Dados) e, se faltar alguma, arquiva a tabela e deixa pronta para a próxima.
    */
-  private concludeRun(text: string, e: { path: string; app?: string; tags?: string[]; id?: string; jira?: string; epico?: string }, iteracao?: string, plain = (round: number, overall: string) => ` Rodada ${round} registrada (${overall}).`): { text: string; detail: string } {
+  private concludeRun(text: string, e: { path: string; app?: string; tags?: string[]; id?: string; jira?: string; epico?: string; ambiente?: string }, iteracao?: string, ambiente?: string, plain = (round: number, overall: string) => ` Rodada ${round} registrada (${overall}).`): { text: string; detail: string } {
     const now = new Date();
-    const its = iterationsOf(text, this.scopeOfEntry(e)).items;
+    const amb = ambiente ? envLabel(normEnv(ambiente)) : undefined;
+    const its = iterationsOf(text, this.scopeOfEntry(e, ambiente)).items;
     if (!its.length) {
-      const res = logRun(text, { start: now, end: now, elapsed: 0 });
+      const res = logRun(text, { start: now, end: now, elapsed: 0, ambiente: amb });
       return { text: res.source, detail: plain(res.round, res.overall) };
     }
     const n = its.length;
@@ -564,7 +565,7 @@ export class QaWorkspace {
       i = p && p.total === n && p.index < n - 1 ? p.index + 1 : 0;
     }
     const label = iterLabel(its[i], i, n);
-    const res = logRun(text, { start: now, end: now, elapsed: 0, iteration: label });
+    const res = logRun(text, { start: now, end: now, elapsed: 0, iteration: label, ambiente: amb });
     if (i < n - 1) {
       const nr = newRound(res.source, -1, now, label);
       const next = its[i + 1];
@@ -579,7 +580,7 @@ export class QaWorkspace {
     return f.length ? f.join(', ') : `{{dado}} = ${v.value}`;
   }
 
-  private async markStepsNow(o: { doc: string; passos: Array<{ passo: string; status?: string; obtido?: string }>; concluir?: boolean; iteracao?: string }): Promise<string> {
+  private async markStepsNow(o: { doc: string; passos: Array<{ passo: string; status?: string; obtido?: string }>; concluir?: boolean; iteracao?: string; ambiente?: string }): Promise<string> {
     const e = await this.find(o.doc);
     const doc = await this.readDoc(e.path);
     let text = doc.text;
@@ -603,7 +604,7 @@ export class QaWorkspace {
     text = syncExecution(text, { onlyExecuted: true });
     let extra = '';
     if (o.concluir) {
-      const r = this.concludeRun(text, e, o.iteracao);
+      const r = this.concludeRun(text, e, o.iteracao, o.ambiente);
       text = r.text;
       extra = r.detail;
     }
@@ -930,11 +931,11 @@ export class QaWorkspace {
    * Registra o resultado de um caso na rodada: com `passos`, marca os passos no caso (arquivando a rodada antiga se as
    * marcas eram de antes) e conclui a rodada do caso; sem passos, grava o status do caso inteiro na execução.
    */
-  roundRecord(o: { execucao?: string; caso: string; status?: string; passos?: Array<{ passo: string; status?: string; obtido?: string }>; observacao?: string; iteracao?: string }): Promise<string> {
+  roundRecord(o: { execucao?: string; caso: string; status?: string; passos?: Array<{ passo: string; status?: string; obtido?: string }>; observacao?: string; iteracao?: string; ambiente?: string }): Promise<string> {
     return this.exclusive(() => this.roundRecordNow(o));
   }
 
-  private async roundRecordNow(o: { execucao?: string; caso: string; status?: string; passos?: Array<{ passo: string; status?: string; obtido?: string }>; observacao?: string; iteracao?: string }): Promise<string> {
+  private async roundRecordNow(o: { execucao?: string; caso: string; status?: string; passos?: Array<{ passo: string; status?: string; obtido?: string }>; observacao?: string; iteracao?: string; ambiente?: string }): Promise<string> {
     const ex = await this.execOf(o.execucao || '');
     const exDoc = await this.readDoc(ex.path);
     if (cycleClosed(exDoc.text)) throw new Error(`${ex.path} já foi finalizada — não muda mais`);
@@ -967,7 +968,7 @@ export class QaWorkspace {
       text = syncExecution(text, { onlyExecuted: true });
       const counts = countStatuses(text);
       if (counts.pending === 0) {
-        const r = this.concludeRun(text, c, o.iteracao, (round, overall) => ` Rodada ${round} do caso concluída (${overall}).`);
+        const r = this.concludeRun(text, c, o.iteracao, o.ambiente, (round, overall) => ` Rodada ${round} do caso concluída (${overall}).`);
         text = r.text;
         detail += r.detail;
       } else detail += ` ${counts.total - counts.pending}/${counts.total} passos marcados (falta concluir os outros).`;
@@ -1218,15 +1219,33 @@ export class QaWorkspace {
   private sharedAll(): SharedDoc[] {
     return this.index.all().filter((e) => e.tipo === SHARED_TYPE).map((e) => parseShared(e.text || '', e.path)).filter((x): x is SharedDoc => !!x);
   }
-  private scopeOfEntry(e: { path: string; app?: string; tags?: string[]; id?: string; jira?: string; epico?: string }): SharedScopeResult {
-    return scopeFor({ path: e.path, app: e.app, tags: e.tags, id: e.id, jira: e.jira, epico: e.epico }, this.sharedAll());
+  /** Escopo dos compartilhados de um documento; ambiente: o informado ou o ambiente: do cabeçalho. */
+  private scopeOfEntry(e: { path: string; app?: string; tags?: string[]; id?: string; jira?: string; epico?: string; ambiente?: string }, ambiente?: string): SharedScopeResult {
+    return scopeFor({ path: e.path, app: e.app, tags: e.tags, id: e.id, jira: e.jira, epico: e.epico, env: normEnv(ambiente || e.ambiente || '') }, this.sharedAll());
+  }
+
+  /**
+   * Prepara a massa por ambiente num compartilhado: para cada "## Dados…", a mesma tabela por ambiente (as chaves e a
+   * observação iguais, os valores em branco para o QA preencher).
+   */
+  prepareEnvs(o: { doc: string; ambientes?: string[] }): Promise<string> {
+    return this.exclusive(async () => {
+      const e = await this.find(o.doc);
+      const doc = await this.readDoc(e.path);
+      if (String(meta(doc.text).tipo || '') !== SHARED_TYPE) throw new Error(`${e.path} não é um compartilhado (tipo: compartilhado)`);
+      const envs = (o.ambientes?.length ? o.ambientes : ['dev', 'hml', 'prod']).map(normEnv).filter(Boolean);
+      const r = prepareEnvSections(doc.text, envs);
+      if (!r.added.length) return `${e.path}: nada a criar — as seções de ${envs.map(envLabel).join(', ')} já existem (ou não há "## Dados" com tabela).`;
+      await this.writeDoc(e.path, r.text, doc);
+      return `${e.path}: criadas ${r.added.length} seção(ões) — ${r.added.join(', ')}. As chaves estão prontas e os valores em branco: o QA preenche (em branco, vale o valor geral). Não invente e-mails nem senhas.`;
+    });
   }
 
   /**
    * Passos e dados compartilhados (11.1) que valem para um documento ou uma pasta: dados (sem as senhas), blocos de
    * passos com parâmetros, "antes de cada caso" e "antes da rodada"; num documento, as inclusões dele expandidas.
    */
-  async shared(o: { documento?: string; pasta?: string }): Promise<string> {
+  async shared(o: { documento?: string; pasta?: string; ambiente?: string }): Promise<string> {
     await this.refresh(true);
     const all = this.sharedAll();
     const where = (d: SharedDoc) => (d.escopo === 'global' ? 'tudo' : d.escopo === 'app' ? `aplicação ${d.app || '?'}` : `pasta ${d.dir || '/'}`);
@@ -1245,17 +1264,21 @@ export class QaWorkspace {
       target = { path: `${dir}/novo.md`, app: /^aplicacoes\/([^/]+)/.exec(dir)?.[1] || '' };
       label = `a pasta ${dir}`;
     }
-    const scope = this.scopeOfEntry(target);
+    const scope = this.scopeOfEntry(target, o.ambiente);
     if (!scope.docs.length) return `Nenhum compartilhado vale para ${label}.${all.length ? ` Na pasta há ${all.length} (escopos: ${all.map((d) => `${d.id} → ${where(d)}`).join('; ')}).` : ''}`;
     const plain = (segs: Segment[]) => segs.map((x) => (typeof x === 'string' ? x : x.missing ? `{{${x.name}${x.field ? `.${x.field}` : ''}}}` : x.secret ? '••••' : x.value)).join('');
     const out = [`Compartilhados que valem para ${label} (do mais de fora para o mais perto; o mais perto ganha):`, ...scope.docs.map((d) => `- ${d.id} — ${d.titulo} · escopo: ${where(d)}${d.aplicaA.length ? ` · só ${d.aplicaA.join(', ')}` : ''} · ${d.path}`)];
+    if (scope.envs?.length || scope.env) out.push('', `Ambiente: ${scope.env ? envLabel(scope.env) : 'nenhum (só os dados gerais)'} — ambientes com massa própria: ${scope.envs?.length ? scope.envs.map(envLabel).join(', ') : 'nenhum'}. O app troca a massa pelo ambiente ativo (🌐); os passos continuam {{nome.campo}}. Outro ambiente: qa_compartilhados { ambiente }.`);
+    const cov = scope.envs?.length ? envCoverage(scope) : null;
     if (scope.vars.size) {
       out.push('', 'Dados — nos passos use {{nome}} ou {{nome.campo}}; NUNCA escreva a senha no caso (o QA copia no app):');
       let group = '\u0000';
       for (const v of [...scope.vars.values()].sort((a, b) => (a.group || '').localeCompare(b.group || ''))) {
         if ((v.group || '') !== group) { group = v.group || ''; if (group) out.push(`  ${group}:`); }
         const fields = Object.entries(v.fields).filter(([k, val]) => val && k !== 'valor').map(([k, val]) => (v.secret.includes(k) ? `${k}: (definida)` : `${k}: ${val}`));
-        out.push(`- ${v.name}${v.fields.valor !== undefined ? ` = ${v.secret.includes('valor') ? '(oculto)' : v.value}` : ''}${fields.length ? ` · ${fields.join(' · ')}` : ''} [${v.source}]`);
+        const has = cov?.get(v.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()) || [];
+        const miss = cov && !has.includes('*') ? (scope.envs || []).filter((x) => !has.includes(x)) : [];
+        out.push(`- ${v.name}${v.fields.valor !== undefined ? ` = ${v.secret.includes('valor') ? '(oculto)' : v.value}` : ''}${fields.length ? ` · ${fields.join(' · ')}` : ''} [${v.source}${v.env ? ` · ${envLabel(v.env)}` : ''}]${miss.length ? ` — sem valor em ${miss.map(envLabel).join(', ')}` : ''}`);
       }
     }
     if (scope.blocks.size) {

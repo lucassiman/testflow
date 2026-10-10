@@ -59,6 +59,7 @@ Como trabalhar:
 - Bug de um caso que já tem bug ligado: qa_bug_do_caso devolve os bugs; pergunte ao usuário se é reincidência (reincidencia: "BUG-…") ou bug novo (novo: true).
 - Evolução da qualidade (sprint, % de sucesso no tempo, casos que mais falham): qa_tendencia.
 - Aprovação do caso (rascunho → em-revisao → aprovado): casos novos nascem "rascunho"; qa_aprovacao muda (aprovar só quando o usuário pedir); consulta "aprovacao: em-revisao, alterado" lista o que falta revisar; qa_rodada_criar so_aprovados=true deixa de fora os não aprovados.
+- Massa por ambiente: no compartilhado, "## Dados: Logins (hml)" / "(prod)"… com as mesmas chaves (sem ambiente = vale para todos); o caso continua {{admin.e-mail}} e o app troca pelo ambiente ativo. qa_preparar_ambientes cria as seções com as chaves e os valores em branco para o QA preencher; qa_compartilhados { ambiente } mostra o que falta em cada ambiente.
 - Caso com dados (o mesmo caso para vários perfis/massas): seção "## Iterações" no caso (tabela Chave | campos…, uma linha por execução) ou "iterar: <grupo de Dados compartilhado>" no cabeçalho; nos passos {{dado}} / {{dado.campo}} e "↪ Bloco (dado)". qa_compartilhados { documento } lista as iterações; registre uma a uma (iteracao: nome ou número) em qa_marcar_passos concluir=true / qa_rodada_registrar.
 - Login, URLs e preparação repetidos em vários casos: veja qa_compartilhados (pasta ou documento) antes de escrever casos — use "↪ Bloco (param)" como um passo e {{dado}} / {{dado.senha}} em vez de repetir passos ou escrever senhas; se não houver, sugira criar um compartilhado (qa_criar tipo compartilhado, escopo pasta | app | global). Casos antigos com login repetido ou senha escrita: qa_varredura { modo: "compartilhados" } relata e, com o OK, converte.
 - Segmento = tudo o que nasceu de um épico/ticket/execução/ciclo/#tag (filtro segmento em qa_listar/qa_consultar/qa_validar/qa_rastreabilidade).
@@ -198,6 +199,7 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
       passos: z.array(z.object({ passo: z.string().describe('número/ID do passo (coluna #)'), status: z.string().optional(), obtido: z.string().optional() })).min(1),
       concluir: z.boolean().optional(),
       iteracao: z.string().optional().describe('Caso com dados (## Iterações ou iterar:): qual iteração está sendo concluída — nome (admin) ou número (1). Sem ela: a seguinte à última registrada.'),
+      ambiente: z.string().optional().describe('ambiente em que rodou (local, dev, hml, prod) — vai para o histórico e escolhe a massa do compartilhado'),
     }, annotations: RW,
   }, async (a) => run(() => ws.markSteps(a), text));
 
@@ -266,6 +268,7 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
       passos: z.array(z.object({ passo: z.string(), status: z.string().optional(), obtido: z.string().optional() })).optional(),
       status: z.string().optional().describe('PASS, FAIL, BLOCKED ou SKIP do caso inteiro (quando não há passos)'),
       observacao: z.string().optional().describe('comentário de revisão no caso, com o ID da rodada'),
+      ambiente: z.string().optional().describe('ambiente em que rodou (vai para o histórico)'),
       iteracao: z.string().optional().describe('Caso com dados (## Iterações ou iterar:): a iteração destes passos — nome ou número. Sem ela: a seguinte à última registrada. Cada iteração é registrada e a tabela fica pronta para a próxima; o caso fica feito na última (pior resultado).'),
     }, annotations: RW,
   }, async (a) => run(() => ws.roundRecord(a), text));
@@ -309,8 +312,13 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
 
   server.registerTool('qa_compartilhados', {
     title: 'Passos e dados compartilhados', description: 'O que vale para um documento ou uma pasta (escopo, como beforeEach/beforeAll): dados (logins, URLs — sem as senhas) para usar como {{nome}} / {{nome.campo}}, blocos de passos para incluir como UM passo "↪ Nome (parâmetro)", e os "antes de cada caso" / "antes da rodada". Sem argumentos, lista os compartilhados da pasta. Use ANTES de escrever casos para não repetir login/setup.',
-    inputSchema: { documento: z.string().optional().describe('caso/bug/etc. (ID ou caminho)'), pasta: z.string().optional().describe('pasta onde o caso vai ficar, ex.: aplicacoes/Portal/casos/PORTAL-10') }, annotations: RO,
+    inputSchema: { documento: z.string().optional().describe('caso/bug/etc. (ID ou caminho)'), pasta: z.string().optional().describe('pasta onde o caso vai ficar, ex.: aplicacoes/Portal/casos/PORTAL-10'), ambiente: z.string().optional().describe('local, dev, hml, prod… (sem ele: o ambiente: do documento) — a massa daquele ambiente') }, annotations: RO,
   }, async (a) => run(() => ws.shared(a), text));
+
+  server.registerTool('qa_preparar_ambientes', {
+    title: 'Preparar a massa por ambiente', description: 'Num compartilhado, cria para cada "## Dados…" a mesma tabela por ambiente ("## Dados: Logins (hml)"), com as chaves prontas e os valores em branco para o QA preencher (em branco vale o valor geral). Nunca invente valores.',
+    inputSchema: { doc: docArg, ambientes: z.array(z.string()).optional().describe('padrão: dev, hml, prod') }, annotations: RW,
+  }, async (a) => run(() => ws.prepareEnvs(a), text));
 
   server.registerTool('qa_tendencia', {
     title: 'Tendência entre rodadas', description: 'Como a qualidade evolui: % de sucesso por rodada (e a variação para a anterior) e por sprint, casos que mais falham no histórico (com o tempo médio) e bugs por mês de abertura (ainda abertos × fechados). Use para o resumo da sprint ou para achar casos instáveis.',

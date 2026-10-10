@@ -376,6 +376,28 @@ Login, URL do ambiente e preparação que se repetem em vários casos ficam **um
 - No **Preview** o bloco aparece como `↪ Fazer login · admin` — **passe o mouse** (ou `Tab` até ele) e aparece um cartão com os passos já com os dados e os botões 📋 de e-mail e senha — e o dado aparece com o valor: **clique copia**. Ao editar, volta o texto original. Bloco ou dado que não existe no escopo vira **aviso** no rodapé.
 - No **painel de execução** (também minimizado e no ⧉ Flutuar), o passo `↪` mostra os passos do bloco com o **e-mail e a senha em botões de copiar**; **🔑** no topo do painel abre todos os dados do caso para copiar.
 
+**Massa por ambiente (local, dev, hml, prod).** O mesmo caso, testado em ambientes diferentes, com os dados de cada um — sem mudar o caso:
+
+```markdown
+## Dados: Logins                ← vale para todos (o geral)
+| Chave | E-mail | Senha |
+| admin | admin@loja.com | 123 |
+
+## Dados: Logins (hml)          ← só em homologação
+| Chave | E-mail | Senha |
+| admin | admin@hml.loja.com | Hml#1 |
+
+## Dados: Logins (prod)
+| Chave | E-mail | Senha |
+| admin | qa.prod@loja.com | Prd#9 |
+```
+
+- O caso continua com `{{admin.e-mail}}`; o app pega o valor do **ambiente ativo** e, se ali estiver em branco, o geral. Nomes aceitos no parêntese: `local`, `dev`, `hml` (homologação, staging), `prod` (produção) — ou outro, como `(ambiente: sandbox)`. `## Antes de cada caso (prod)` também vale só naquele ambiente.
+- **🌐 no topo** mostra o ambiente ativo e troca na hora (Preview, painel 🔑 e painel de execução acompanham). Ele começa pelo `ambiente:` do cabeçalho do caso; escolhido no 🌐, vale para todos os documentos até **Usar o do cabeçalho**. Borda tracejada = diferente do cabeçalho; PROD fica em vermelho.
+- **✓ Concluir** grava o ambiente usado na coluna *Ambiente* do Histórico de execuções — dá para rodar o mesmo caso em HML e depois em PROD e ver as duas rodadas.
+- **Preparar:** abrindo o compartilhado, **🌐 → Preparar a massa por ambiente…** cria `## Dados… (dev)`, `(hml)`, `(prod)` com as mesmas chaves e os valores em branco — é só preencher. No painel 🔑, cada dado mostra **falta PROD** quando não tem valor naquele ambiente nem um geral.
+- **Com o Claude:** `qa_preparar_ambientes` deixa as seções prontas (sem inventar valores) e `qa_compartilhados { ambiente: "prod" }` mostra a massa e o que falta; ao registrar pelo MCP, `ambiente` vai para o histórico.
+
 **Painel 🔑 Dados** (botão **🔑** no topo ou `Alt+K`; independe da barra lateral — dá para executar com ela fechada): só os dados e blocos que **valem para o documento aberto** (o de outra aplicação ou pasta não aparece), **agrupados por tabela** (Logins, Colaboradores…), com o nome inteiro, **📋 copiar** em cada campo, **👁** para ver uma senha, os "antes de" e de onde vem cada um. Flutua à direita e fica ao lado do painel de execução quando ele está encaixado; `Esc` ou `Alt+K` fecha. **☐ mostrar senhas** (no topo do painel) mostra as senhas no painel, no painel de execução e nos `{{…senha}}` do Preview.
 
 > [!IMPORTANT]

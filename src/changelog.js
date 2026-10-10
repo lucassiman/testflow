@@ -8,6 +8,14 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.43.0', date: '10/10/2026',
+    items: [
+      { icon: '🌐', text: '**Massa por ambiente**: no compartilhado, `## Dados: Logins (hml)`, `(prod)`, `(dev)`, `(local)` — mesmas chaves, valores de cada ambiente. O caso continua `{{admin.e-mail}}`; o **🌐 no topo** troca o ambiente e o Preview, o painel 🔑 e a execução acompanham.', manual: '6.8 Passos e dados compartilhados' },
+      { icon: '📜', text: 'Começa pelo `ambiente:` do caso; ✓ Concluir grava o ambiente usado no histórico. PROD aparece em vermelho.', manual: '6.8 Passos e dados compartilhados' },
+      { icon: '➕', text: '**Preparar a massa por ambiente**: 🌐 → cria as seções com as chaves e os valores em branco. O Claude também (`qa_preparar_ambientes`), sem inventar valores.', manual: '6.8 Passos e dados compartilhados' },
+    ],
+  },
+  {
     version: '1.42.0', date: '10/10/2026',
     items: [
       { icon: '📥', text: '**Importar casos de uma planilha**: CSV ou Excel do TestRail, Zephyr, Xray, qTest ou feito à mão — **um documento por caso**, com passos, esperado, dados, prioridade, pré-condições, Jira e a seção virando pasta. Prévia antes, pula os já importados, **Desfazer**. Novo ▾ → *Casos de uma planilha…*', manual: '10.3 Importar' },

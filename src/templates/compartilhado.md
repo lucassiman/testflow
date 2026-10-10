@@ -24,6 +24,15 @@ No caso: `{{admin}}` usa o valor e `{{admin.senha}}` a senha (no app, um clique 
 | cliente | cliente@exemplo.com | troque-aqui | Cliente comum |
 | url | https://hml.exemplo.com | | Ambiente de homologação |
 
+## Dados: Logins (prod)
+
+Massa por **ambiente**: a mesma tabela com `(local)`, `(dev)`, `(hml)` ou `(prod)` no título — mesmas chaves, valores daquele ambiente. O app usa a do ambiente ativo (🌐 no topo; começa pelo `ambiente:` do caso) e, o que estiver em branco, o valor geral acima. O caso não muda: continua `{{admin}}`. Para criar as seções de uma vez: 🌐 → *Preparar a massa por ambiente…*
+
+| Nome | Valor | Senha | Observação |
+| --- | --- | --- | --- |
+| admin | | | Administrador |
+| url | https://www.exemplo.com | | Produção |
+
 ## Dados: Colaboradores
 
 Outras massas de dados ficam em outras tabelas (uma seção `## Dados: <nome>` para cada). A coluna **Chave** é o nome usado no caso — `{{colab-ativo.nome}}`, `{{colab-ativo.matricula}}`.

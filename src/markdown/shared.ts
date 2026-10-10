@@ -36,8 +36,8 @@ import { headings, stepTable } from './runs.ts';
 export const SHARED_TYPE = 'compartilhado';
 export type SharedScope = 'pasta' | 'app' | 'global';
 
-export interface SharedVar { name: string; value: string; fields: Record<string, string>; secret: string[]; obs: string; source: string; /** tabela de onde veio ("Logins", "Colaboradores") */ group: string; /** como está escrito na tabela ("João Silva"); name é o que vai no {{}} */ label: string }
-export interface SharedStep { acao: string; esperado: string }
+export interface SharedVar { name: string; value: string; fields: Record<string, string>; secret: string[]; obs: string; source: string; /** tabela de onde veio ("Logins", "Colaboradores") */ group: string; /** como está escrito na tabela ("João Silva"); name é o que vai no {{}} */ label: string; /** ambiente ("hml", "prod"…) — vazio: vale para todos */ env?: string }
+export interface SharedStep { acao: string; esperado: string; /** só neste ambiente (vazio: todos) */ env?: string }
 export interface SharedBlock { name: string; params: string[]; steps: SharedStep[]; source: string }
 export interface SharedDoc {
   id: string; titulo: string; path: string; dir: string; app: string; escopo: SharedScope; aplicaA: string[];
@@ -50,9 +50,13 @@ export interface SharedScopeResult {
   blocks: Map<string, SharedBlock>;
   beforeAll: Array<SharedStep & { source: string }>;
   beforeEach: Array<SharedStep & { source: string }>;
+  /** ambiente usado para escolher os dados ("" = só os gerais) */
+  env?: string;
+  /** ambientes com dados próprios nos compartilhados do escopo */
+  envs?: string[];
 }
 /** O documento que pede o escopo. */
-export interface ScopeTarget { path: string; app?: string; tags?: string[]; id?: string; jira?: string; epico?: string }
+export interface ScopeTarget { path: string; app?: string; tags?: string[]; id?: string; jira?: string; epico?: string; /** ambiente ativo (local, dev, hml, prod…) */ env?: string }
 
 const SECRET_RE = /^(senha|password|pass|pwd|token|segredo|secret|chave|pin)\b/;
 const VAR_NAME = /[\p{L}\p{N}_-]+/u;
@@ -172,10 +176,12 @@ export function parseShared(text: string, path: string): SharedDoc | null {
     const title = key(h.text);
     if (/^(dados|variaveis|massa de dados)\b/.test(title)) {
       // "## Dados: Colaboradores" → grupo Colaboradores; várias tabelas na mesma seção também valem
-      const group = h.text.includes(':') ? h.text.replace(/^[^:]*:\s*/, '').trim() : '';
-      for (const t of tablesIn(lines, h.line + 1, end)) doc.vars.push(...varsFromTable(t, group, id));
-    } else if (/^antes da rodada\b|^antes de tudo\b/.test(title)) doc.beforeAll.push(...stepsOf(tableIn(lines, h.line + 1, end)));
-    else if (/^antes de cada( caso)?\b/.test(title)) doc.beforeEach.push(...stepsOf(tableIn(lines, h.line + 1, end)));
+      // "## Dados: Logins (hml)" → grupo Logins, só no ambiente hml
+      const { text: base, env } = splitEnv(h.text);
+      const group = base.includes(':') ? base.replace(/^[^:]*:\s*/, '').trim() : '';
+      for (const t of tablesIn(lines, h.line + 1, end)) doc.vars.push(...varsFromTable(t, group, id).map((v) => (env ? { ...v, env } : v)));
+    } else if (/^antes da rodada\b|^antes de tudo\b/.test(title)) { const env = splitEnv(h.text).env; doc.beforeAll.push(...stepsOf(tableIn(lines, h.line + 1, end)).map((x) => (env ? { ...x, env } : x))); }
+    else if (/^antes de cada( caso)?\b/.test(title)) { const env = splitEnv(h.text).env; doc.beforeEach.push(...stepsOf(tableIn(lines, h.line + 1, end)).map((x) => (env ? { ...x, env } : x))); }
     else if (/^(passos|bloco)\s*:/.test(title)) {
       const name = h.text.replace(/^[^:]*:\s*/, '').trim();
       if (!name) return;
@@ -196,6 +202,93 @@ export function parseShared(text: string, path: string): SharedDoc | null {
   return doc;
 }
 
+// ---------------------------------------------------------------- ambientes (local, dev, hml, prod)
+
+/** O dado tem algum valor (fora a observação)? */
+export const hasValue = (v: SharedVar): boolean => Object.entries(v.fields).some(([k, x]) => x.trim() && !/^(observacao|obs|descricao)$/.test(k)) || (!Object.keys(v.fields).length && !!v.value.trim());
+
+/** Ambientes conhecidos, na ordem em que aparecem nos menus. */
+export const ENVS = ['local', 'dev', 'hml', 'prod'];
+/** "Homologação", "HML", "staging" → hml; "Produção" → prod; "desenvolvimento" → dev; outro nome → minúsculo, sem acento. */
+export function normEnv(s: string): string {
+  const k = key(String(s || '')).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  if (!k) return '';
+  if (/^(local|localhost|maquina)$/.test(k)) return 'local';
+  if (/^(dev|desenv|desenvolvimento|development|develop)$/.test(k)) return 'dev';
+  if (/^(hml|homolog|homologacao|homologa|staging|stg|stage|uat)$/.test(k)) return 'hml';
+  if (/^(prod|prd|producao|production)$/.test(k)) return 'prod';
+  return k;
+}
+/** Nome para mostrar: hml → HML. */
+export const envLabel = (e: string): string => (e ? e.toUpperCase() : '');
+/** Os conhecidos primeiro (local, dev, hml, prod), depois os outros. */
+export const sortEnvs = (list: string[]): string[] => [...new Set(list.filter(Boolean))].sort((a, b) => {
+  const ia = ENVS.indexOf(a); const ib = ENVS.indexOf(b);
+  return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
+});
+/** "Dados: Logins (hml)" → { text: "Dados: Logins", env: "hml" } (só quando o parêntese é um ambiente). */
+export function splitEnv(heading: string): { text: string; env: string } {
+  const m = /^(.*?)\s*[([]\s*(?:amb(?:iente)?\s*[:=]?\s*)?([^)\]]+?)\s*[)\]]\s*$/i.exec(heading.trim());
+  if (!m) return { text: heading.trim(), env: '' };
+  const env = normEnv(m[2]);
+  const known = ENVS.includes(env) || /^amb/i.test(heading.slice(heading.lastIndexOf('(') + 1));
+  return known ? { text: m[1].trim(), env } : { text: heading.trim(), env: '' };
+}
+
+/**
+ * Prepara a massa por ambiente: para cada `## Dados…` geral, cria `## Dados… (amb)` com as mesmas chaves e colunas e os
+ * valores em branco (para o QA só preencher). Seções que já existem ficam como estão.
+ */
+export function prepareEnvSections(text: string, envs: string[]): { text: string; added: string[] } {
+  const lines = text.split('\n');
+  const hs = headings(lines);
+  const want = sortEnvs(envs.map(normEnv));
+  const existing = new Set(hs.map((h) => { const s = splitEnv(h.text); return `${key(s.text)}|${s.env}`; }));
+  const added: string[] = [];
+  const inserts: Array<{ at: number; block: string[] }> = [];
+  hs.forEach((h, i) => {
+    const title = key(h.text);
+    if (!/^(dados|variaveis|massa de dados)\b/.test(title) || splitEnv(h.text).env) return;
+    const end = hs.slice(i + 1).find((x) => x.level <= h.level)?.line ?? lines.length;
+    const tables = tablesIn(lines, h.line + 1, end);
+    if (!tables.length) return;
+    const block: string[] = [];
+    for (const env of want) {
+      if (existing.has(`${key(h.text)}|${env}`)) continue;
+      block.push('', `${'#'.repeat(h.level)} ${h.text} (${env})`, '');
+      for (const t of tables) {
+        // a chave (e a observação) vêm iguais; os valores ficam em branco para preencher
+        const ki = t.head.findIndex((x) => /^(chave|id|variavel|apelido|dado)$/.test(x));
+        const ni = ki >= 0 ? ki : Math.max(0, t.head.indexOf('nome'));
+        const keep = (k: number) => k === ni || /^(observacao|obs|descricao)$/.test(t.head[k]);
+        block.push(`| ${t.rawHead.join(' | ')} |`, `| ${t.rawHead.map(() => '---').join(' | ')} |`);
+        for (const r of t.rows) block.push(`| ${t.rawHead.map((_, k) => (keep(k) ? r[k] || '' : '')).join(' | ')} |`);
+        block.push('');
+      }
+      added.push(`${h.text} (${env})`);
+    }
+    if (block.length) {
+      let at = end;
+      while (at > h.line && !lines[at - 1].trim()) at--;
+      inserts.push({ at, block: block[block.length - 1] === '' ? block.slice(0, -1) : block });
+    }
+  });
+  for (const ins of inserts.sort((a, b) => b.at - a.at)) lines.splice(ins.at, 0, ...ins.block);
+  return { text: lines.join('\n'), added };
+}
+
+/** Em quais ambientes cada dado tem valor (para mostrar o que falta preencher). */
+export function envCoverage(scope: SharedScopeResult): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  for (const d of scope.docs) for (const v of d.vars) {
+    const k = key(v.name);
+    const list = out.get(k) || [];
+    if (hasValue(v)) list.push(v.env || '*');
+    out.set(k, list);
+  }
+  return out;
+}
+
 /** O compartilhado vale para este documento? */
 export function appliesTo(s: SharedDoc, t: ScopeTarget): boolean {
   if (key(t.path) === key(s.path)) return false;
@@ -214,17 +307,24 @@ export function appliesTo(s: SharedDoc, t: ScopeTarget): boolean {
 export function scopeFor(t: ScopeTarget, all: SharedDoc[]): SharedScopeResult {
   const rank = (s: SharedDoc): number => (s.escopo === 'global' ? 0 : s.escopo === 'app' ? 1 : 2 + s.dir.split('/').length);
   const docs = all.filter((s) => appliesTo(s, t)).sort((a, b) => rank(a) - rank(b) || a.path.localeCompare(b.path));
+  const env = normEnv(t.env || '');
   const vars = new Map<string, SharedVar>();
   const blocks = new Map<string, SharedBlock>();
   const beforeAll: SharedScopeResult['beforeAll'] = [];
   const beforeEach: SharedScopeResult['beforeEach'] = [];
+  const envs = new Set<string>();
+  const fits = (x: { env?: string }) => !x.env || x.env === env;
   for (const s of docs) {
-    for (const v of s.vars) vars.set(key(v.name), v);
+    // em cada compartilhado: os gerais e, por cima, os do ambiente ativo; o compartilhado mais perto ganha
+    for (const v of s.vars) { if (v.env) envs.add(v.env); if (!v.env) vars.set(key(v.name), v); }
+    // linha do ambiente ainda em branco (preparada para preencher) não apaga o valor geral
+    if (env) for (const v of s.vars) if (v.env === env && hasValue(v)) vars.set(key(v.name), v);
     for (const b of s.blocks) blocks.set(key(b.name), b);
-    beforeAll.push(...s.beforeAll.map((x) => ({ ...x, source: s.id })));
-    beforeEach.push(...s.beforeEach.map((x) => ({ ...x, source: s.id })));
+    for (const x of [...s.beforeAll, ...s.beforeEach]) if (x.env) envs.add(x.env);
+    beforeAll.push(...s.beforeAll.filter(fits).map((x) => ({ ...x, source: s.id })));
+    beforeEach.push(...s.beforeEach.filter(fits).map((x) => ({ ...x, source: s.id })));
   }
-  return { docs, vars, blocks, beforeAll, beforeEach };
+  return { docs, vars, blocks, beforeAll, beforeEach, env, envs: sortEnvs([...envs]) };
 }
 
 export interface Include { name: string; args: string[]; named: Record<string, string> }
@@ -327,6 +427,8 @@ export function sharedWarnings(text: string, scope: SharedScopeResult): Array<{ 
       if (['data', 'data_br', 'hora'].includes(m[1])) continue;
       if (key(m[1]) === ITER_VAR && !its.items.length) { out.push({ line: i, message: `{{${m[1]}${m[2] ? `.${m[2]}` : ''}}}: o caso não tem iterações — crie a seção "## Iterações" (uma linha por execução) ou use "iterar: <grupo>" no cabeçalho` }); continue; }
       const seg = lookup(m[1], m[2] || '', scope, outer);
+      const other = seg.missing ? scope.docs.flatMap((d) => d.vars).filter((v) => v.env && key(v.name) === key(m[1])).map((v) => envLabel(v.env || '')) : [];
+      if (seg.missing && other.length) { out.push({ line: i, message: `{{${m[1]}${m[2] ? `.${m[2]}` : ''}}}: sem valor ${scope.env ? `em ${envLabel(scope.env)}` : 'geral'} — só em ${[...new Set(other)].join(', ')}` }); continue; }
       if (seg.missing) out.push({ line: i, message: `{{${m[1]}${m[2] ? `.${m[2]}` : ''}}}: dado não encontrado nos compartilhados do escopo` });
     }
   });

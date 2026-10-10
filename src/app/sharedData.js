@@ -7,7 +7,7 @@
 import { app } from './context.js';
 import { docIndex, menu } from './shared.js';
 import { openDocOverrides, currentWorkspacePath, openWikiTarget } from './links.js';
-import { parseShared, scopeFor, parseInclude, expandInclude, resolveSegments, resolveText, sharedWarnings, includeText, scopeSize, SHARED_TYPE, iterationsOf, iterBinding, emptyScope, ITER_VAR } from '../markdown/shared.ts';
+import { parseShared, scopeFor, parseInclude, expandInclude, resolveSegments, resolveText, sharedWarnings, includeText, scopeSize, SHARED_TYPE, iterationsOf, iterBinding, emptyScope, ITER_VAR, normEnv, envLabel, sortEnvs, ENVS, prepareEnvSections, envCoverage, isShared } from '../markdown/shared.ts';
 import { headerOf } from '../markdown/segment.ts';
 import { detectFrontMatter, parseFrontMatter } from '../markdown/frontmatter.ts';
 import { splitRow } from '../markdown/status.ts';
@@ -59,7 +59,81 @@ export function scopeOf(doc = {}) {
   const text = doc.text ?? (doc.path ? openDocOverrides().get(doc.path) ?? docIndex.get(doc.path)?.text ?? '' : app.store.source);
   const h = headerOf(text);
   const m = meta(text);
-  return scopeFor({ path, app: String(m.app || '').trim() || docIndex.get(path)?.app || '', tags: h.tags, id: h.id, jira: h.jira.join(','), epico: h.epico.join(',') }, all);
+  return scopeFor({ path, app: String(m.app || '').trim() || docIndex.get(path)?.app || '', tags: h.tags, id: h.id, jira: h.jira.join(','), epico: h.epico.join(','), env: envOf(text) }, all);
+}
+
+// ---------------------------------------------------------------- ambiente ativo (local, dev, hml, prod)
+/** Ambiente escolhido no 🌐 (vale para todos os documentos); "" = o do cabeçalho de cada um. */
+export const envOverride = () => normEnv(String(loadPrefs().activeEnv || ''));
+/** Ambiente de um documento: o escolhido no 🌐 ou o ambiente: do cabeçalho. @param {string} [text] */
+export function envOf(text = app.store.source) {
+  return envOverride() || normEnv(String(meta(text).ambiente || ''));
+}
+/** Ambiente do documento aberto, para mostrar (HML) — "" sem ambiente. */
+export const activeEnvLabel = () => envLabel(envOf());
+
+/** Troca o ambiente ativo ("" = volta ao do cabeçalho) e redesenha o que usa os dados. @param {string} env */
+export function setActiveEnv(env) {
+  savePrefs({ activeEnv: normEnv(env) || null });
+  renderEnvChip();
+  renderSharedPanel();
+  app.runner?.refresh();
+  app.preview?.render(app.store.source, { force: true });
+  const e = activeEnvLabel();
+  app.toast(e ? `🌐 Ambiente ${e}${envOverride() ? '' : ' (do cabeçalho)'} — os dados compartilhados agora são os de ${e}` : '🌐 Sem ambiente: valem só os dados gerais dos compartilhados');
+}
+
+/** O chip 🌐 do topo. */
+export function renderEnvChip() {
+  const chip = document.getElementById('envChip');
+  if (!chip) return;
+  const scope = app.workspaceDir && docIndex.ready ? scopeOf() : null;
+  const head = normEnv(String(meta(app.store.source).ambiente || ''));
+  const show = !!app.workspaceDir && (!!scope?.envs?.length || !!envOverride() || !!head);
+  chip.hidden = !show;
+  if (!show) return;
+  const e = envOf();
+  /** @type {HTMLElement} */ (chip.querySelector('.env-name')).textContent = e ? envLabel(e) : 'ambiente';
+  chip.setAttribute('aria-label', `${e ? envLabel(e) : 'ambiente'} — ambiente ativo`);
+  chip.classList.toggle('env-prod', e === 'prod');
+  chip.classList.toggle('env-override', !!envOverride() && !!head && envOverride() !== head);
+  chip.title = `Ambiente ativo: ${e ? envLabel(e) : 'nenhum'}${envOverride() ? ' (escolhido aqui)' : head ? ' (do cabeçalho)' : ''}${envOverride() && head && envOverride() !== head ? ` — o cabeçalho diz ${envLabel(head)}` : ''}. Os dados compartilhados (logins, URLs, massas) são os deste ambiente; o histórico registra o ambiente em que rodou. Clique para trocar.`;
+}
+
+/** Menu do 🌐: escolher o ambiente; num compartilhado, preparar a massa por ambiente. */
+export function envMenu() {
+  const scope = scopeOf();
+  const head = normEnv(String(meta(app.store.source).ambiente || ''));
+  const cur = envOf();
+  const list = sortEnvs([...ENVS, ...(scope?.envs || []), ...(head ? [head] : [])]);
+  /** @type {Array<{ id: string, icon: string, label: string, hint?: string, act: string }>} */
+  const items = list.map((e) => ({ id: `env-${e}`, icon: e === cur ? '✓' : '🌐', label: envLabel(e), hint: scope?.envs?.includes(e) ? 'tem dados próprios' : 'usa os dados gerais', act: e }));
+  if (envOverride()) items.push({ id: 'env-head', icon: '↩', label: head ? `Usar o do cabeçalho (${envLabel(head)})` : 'Sem ambiente (só os dados gerais)', act: '' });
+  if (isShared(app.store.source)) items.push({ id: 'env-prep', icon: '➕', label: 'Preparar a massa por ambiente…', hint: 'cria "## Dados… (hml)" etc. com as mesmas chaves, em branco', act: '#prep' });
+  menu.open({
+    x: window.innerWidth / 2 - 200, y: 90, wide: true,
+    title: `🌐 Ambiente: ${cur ? envLabel(cur) : 'nenhum'}`,
+    items,
+    onPick: (it) => { if (it.act === '#prep') prepareEnvs(); else setActiveEnv(it.act); },
+  });
+}
+
+/** No compartilhado aberto: cria as seções de dados por ambiente (as que faltam), com as chaves e os valores em branco. */
+async function prepareEnvs() {
+  const { showDialog } = await import('../ui/dialog.js');
+  const res = await showDialog({
+    title: 'Preparar a massa por ambiente', icon: '🌐',
+    message: 'Para cada "## Dados…" deste compartilhado, cria a mesma tabela por ambiente, com as chaves e os valores em branco — é só preencher. O que ficar em branco usa o valor geral.',
+    checks: ENVS.map((e) => ({ id: e, label: envLabel(e), checked: e !== 'local' })),
+    buttons: [{ id: 'cancel', label: 'Cancelar' }, { id: 'ok', label: 'Criar as seções', kind: 'primary' }], cancelId: 'cancel',
+  });
+  if (!res || res.id !== 'ok') return;
+  const envs = ENVS.filter((e) => res.checks[e]);
+  const r = prepareEnvSections(app.store.source, envs);
+  if (!r.added.length) { app.toast('Nada a criar: as seções desses ambientes já existem (ou não há "## Dados" com tabela).'); return; }
+  app.store.history.breakGroup();
+  app.store.setSource(r.text, { origin: 'command' });
+  app.toast(`🌐 ${r.added.length} seção(ões) criada(s): ${r.added.join(', ')} — preencha os valores (Ctrl+Z desfaz).`, 'info', { duration: 9000 });
 }
 
 // ---------------------------------------------------------------- copiar
@@ -113,7 +187,9 @@ if (loadPrefs().sharedPanelOpen) requestAnimationFrame(() => toggleSharedPanel(t
 export function renderSharedPanel(force = false) {
   if (!isOpen() && !force) return;
   const secrets = showSecrets();
+  const envNow = app.workspaceDir && docIndex.ready ? envOf() : '';
   const head = `<div class="sh-panel-head"><strong>🔑 Dados compartilhados</strong>
+    <button type="button" class="sh-env${envNow === 'prod' ? ' env-prod' : ''}" data-sh="env" title="Ambiente dos dados — clique para trocar">🌐 ${esc(envNow ? envLabel(envNow) : 'ambiente')}</button>
     <label class="sh-show" title="Mostra as senhas aqui, no painel de execução e no Preview (ao exportar, a senha continua protegida)"><input type="checkbox" data-sh="secrets"${secrets ? ' checked' : ''}> mostrar senhas</label>
     <button type="button" class="sh-close" data-sh="close" title="Fechar (Alt+K)" aria-label="Fechar o painel de dados">×</button></div>`;
   /** @param {string} html */
@@ -135,6 +211,15 @@ export function renderSharedPanel(force = false) {
       <div class="sh-actions">${newBtn}</div>`);
     return;
   }
+  // em quais ambientes cada dado tem valor (quando os compartilhados têm massa por ambiente)
+  const cov = scope.envs?.length ? envCoverage(scope) : null;
+  /** @param {string} name */
+  const envsHtml = (name) => {
+    if (!cov || !scope.envs) return '';
+    const has = cov.get(name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()) || [];
+    const missing = scope.envs.filter((e) => !has.includes(e));
+    return missing.length && !has.includes('*') ? ` · <span class="sh-env-miss" title="Sem valor nestes ambientes (e sem valor geral)">falta ${esc(missing.map(envLabel).join(', '))}</span>` : '';
+  };
   /** @param {import('../markdown/shared.ts').SharedVar} v */
   const varHtml = (v) => {
     const row = (/** @type {string} */ field, /** @type {string} */ value, /** @type {boolean} */ secret) => {
@@ -145,7 +230,7 @@ export function renderSharedPanel(force = false) {
     };
     const fields = Object.entries(v.fields).filter(([k]) => !/^(observacao|obs|descricao)$/.test(k));
     return `<li class="sh-var-item"><div class="sh-var-name"><b>${esc(v.name)}</b>${v.label && v.label !== v.name ? ` <span class="sh-obs">${esc(v.label)}</span>` : ''}</div>${v.obs ? `<div class="sh-obs sh-var-obs">${esc(v.obs)}</div>` : ''}
-      ${fields.length ? fields.map(([k, val]) => row(k, val, v.secret.includes(k))).join('') : row('valor', v.value, false)}<div class="sh-src" title="Do compartilhado ${esc(v.source)}">${esc(v.source)}</div></li>`;
+      ${fields.length ? fields.map(([k, val]) => row(k, val, v.secret.includes(k))).join('') : row('valor', v.value, false)}<div class="sh-src" title="Do compartilhado ${esc(v.source)}">${esc(v.source)}${v.env ? ` · <b>${esc(envLabel(v.env))}</b>` : scope.envs?.length && scope.env ? ' · geral' : ''}${envsHtml(v.name)}</div></li>`;
   };
   /** @type {Map<string, import('../markdown/shared.ts').SharedVar[]>} */
   const groups = new Map();
@@ -180,6 +265,7 @@ panel.addEventListener('click', (event) => {
   if (!b || b.tagName === 'INPUT') return;
   const act = b.dataset.sh;
   if (act === 'close') { toggleSharedPanel(false); return; }
+  if (act === 'env') { envMenu(); return; }
   if (act === 'reveal') { const id = b.dataset.id || ''; if (revealed.has(id)) revealed.delete(id); else revealed.add(id); renderSharedPanel(true); return; }
   if (act === 'copy') {
     const scope = scopeOf();
@@ -301,6 +387,15 @@ const DECOR = 'data-shared-src';
  */
 export function decorateShared(root) {
   if (root.id !== 'preview') return;
+  // o que já estava desenhado volta ao texto original (o ambiente ou a senha podem ter mudado)
+  /** @type {Set<Node>} */
+  const parents = new Set();
+  root.querySelectorAll(`[${DECOR}]`).forEach((el) => {
+    if (el.closest('.md-block.editing')) return;
+    if (el.parentNode) parents.add(el.parentNode);
+    el.replaceWith(document.createTextNode(el.getAttribute(DECOR) || ''));
+  });
+  parents.forEach((p) => p.normalize());
   const scope = scopeOf() || emptyScope();
   const its = iterationsOf(app.store.source, scope);
   if (!scopeSize(scope) && !its.items.length) return;

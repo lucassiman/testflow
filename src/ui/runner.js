@@ -32,6 +32,8 @@ import { runsOf } from '../markdown/cycle.ts';
  *   beforeEach: () => Array<{ acao: string, esperado: string, source: string }>,
  *   copy: (value: string, label: string, secret: boolean, win: Window) => void,
  *   secrets?: () => boolean,
+ *   env?: () => string,
+ *   pickEnv?: () => void,
  * }} SharedDeps
  */
 /** @typedef {{ floating: boolean }} PasteOpts */
@@ -276,6 +278,11 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     const R = /** @type {Record<string, number>} */ ({ FAIL: 5, BLOCKED: 4, PENDING: 3, SKIP: 2, PASS: 1 });
     return (R[b] || 0) > (R[a] || 0) ? b : a;
   }
+  /** Ambiente ativo (🌐 HML) — clique troca (os dados do passo mudam junto). */
+  function envChip() {
+    const e = shared?.env?.() || '';
+    return e ? `<button type="button" data-act="env" class="run-env${e === 'PROD' ? ' env-prod' : ''}" title="Ambiente: os dados compartilhados são os de ${esc(e)}; o histórico registra este ambiente — clique para trocar">🌐 ${esc(e)}</button>` : '';
+  }
   /** Falta alguma iteração depois da da vez? */
   const moreIters = () => !!curIter() && (ex().iter || 0) < iters().length - 1;
   /** Rótulo da iteração da vez no topo do painel. @param {boolean} [mini] */
@@ -359,7 +366,8 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     const its = exec.revisit ? [] : iters();
     const i = Math.min(exec.iter || 0, Math.max(0, its.length - 1));
     const label = its.length ? iterLabel(its[i], i, its.length) : undefined;
-    const res = exec.revisit ? reviseRun(store.source, when) : { ...logRun(store.source, { ...when, iteration: label }), revised: false };
+    const ambiente = shared?.env?.() || undefined;
+    const res = exec.revisit ? reviseRun(store.source, when) : { ...logRun(store.source, { ...when, iteration: label, ambiente }), revised: false };
     if (its.length && i < its.length - 1) { nextIteration(res, its, i, label || ''); return; }
     if (its.length) res.overall = /** @type {typeof res.overall} */ (worseOf(exec.iterWorst || '', res.overall));
     write(res.source, res.revised ? `Rodada ${res.round} atualizada no Histórico de execuções — ${res.overall}` : `Rodada ${res.round} registrada no Histórico de execuções — ${res.overall}`);
@@ -514,7 +522,7 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     el.innerHTML = `
       <div class="run-head">
         <strong>▶ Execução</strong>
-        <span class="run-step">Antes de começar</span>${iterChip()}
+        <span class="run-step">Antes de começar</span>${iterChip()}${envChip()}
         <span class="run-grow"></span>
         ${keysBtn()}${floatBtn()}
         <button type="button" data-act="compact" class="run-x run-min" title="Minimizar (M)" aria-label="Minimizar o painel">▁</button>
@@ -550,7 +558,7 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     el.innerHTML = `
       <div class="run-mini">
         <div class="run-mini-top">
-          <button type="button" data-act="compact" class="run-mini-step" title="Expandir o painel (M)">▶ Passo ${esc(label)} <small>${run.index + 1}/${rows.length}</small></button>${iterChip(true)}
+          <button type="button" data-act="compact" class="run-mini-step" title="Expandir o painel (M)">▶ Passo ${esc(label)} <small>${run.index + 1}/${rows.length}</small></button>${iterChip(true)}${envChip()}
           <span class="run-progress" title="${done} de ${rows.length} com status"><span style="width:${Math.round((done / rows.length) * 100)}%"></span></span>
           <span class="run-clock${run.runningSince ? '' : ' paused'}" title="Tempo de execução (sem as pausas)">${clock(timerElapsed(run))}</span>
           <button type="button" data-act="compact" class="run-x run-expand" title="Expandir o painel (M)" aria-label="Expandir o painel">⤢</button>
@@ -593,7 +601,7 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     el.innerHTML = `
       <div class="run-head">
         <strong>▶ Execução</strong>
-        <span class="run-step">Passo ${esc(label)} <small>(${run.index + 1} de ${rows.length})</small></span>${iterChip()}
+        <span class="run-step">Passo ${esc(label)} <small>(${run.index + 1} de ${rows.length})</small></span>${iterChip()}${envChip()}
         <span class="run-progress" title="${done} de ${rows.length} com status"><span style="width:${Math.round((done / rows.length) * 100)}%"></span></span>
         ${keysBtn()}${floatBtn()}
         <button type="button" data-act="compact" class="run-x run-min" title="Minimizar (M): fica só o passo, o tempo e os status — mais tela para o sistema testado" aria-label="Minimizar o painel">▁</button>
@@ -916,6 +924,7 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     if (b.dataset.copy !== undefined) { const ct = copyTargets[Number(b.dataset.copy)]; if (ct && shared) shared.copy(ct.value, ct.label, ct.secret, win()); return; }
     if (act === 'close') close();
     else if (act === 'vars') { showVars = !showVars; render(); fitPip(); }
+    else if (act === 'env') { saveActual(); shared?.pickEnv?.(); }
     else if (act === 'preDone') { pre = false; render(); fitPip(); }
     else if (act === 'compact') toggleCompact();
     else if (act === 'cancel') cancelExec();
