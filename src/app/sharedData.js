@@ -12,6 +12,7 @@ import { headerOf } from '../markdown/segment.ts';
 import { detectFrontMatter, parseFrontMatter } from '../markdown/frontmatter.ts';
 import { splitRow } from '../markdown/status.ts';
 import { loadPrefs, savePrefs } from '../io/drafts.js';
+import { roundOfOpenCase } from './cycle.js';
 
 /** @typedef {import('../markdown/shared.ts').SharedDoc} SharedDoc */
 /** @typedef {import('../markdown/shared.ts').SharedScopeResult} SharedScopeResult */
@@ -67,7 +68,9 @@ export function scopeOf(doc = {}) {
 export const envOverride = () => normEnv(String(loadPrefs().activeEnv || ''));
 /** Ambiente de um documento: o escolhido no 🌐 ou o ambiente: do cabeçalho. @param {string} [text] */
 export function envOf(text = app.store.source) {
-  return envOverride() || normEnv(String(meta(text).ambiente || ''));
+  // caso aberto dentro de uma rodada com ambiente (matriz: HML · Chrome): vale o da rodada
+  const round = text === app.store.source ? roundOfOpenCase() : null;
+  return envOverride() || normEnv(round?.ambiente || '') || normEnv(String(meta(text).ambiente || ''));
 }
 /** Ambiente do documento aberto, para mostrar (HML) — "" sem ambiente. */
 export const activeEnvLabel = () => envLabel(envOf());

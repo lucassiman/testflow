@@ -258,6 +258,8 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
       reteste: z.string().optional().describe('ID de uma execução (EXEC-…): cria o reteste só com os casos FAIL/BLOCKED dela (herda vínculos, tags + reteste, dispositivo)'),
       reteste_skip: z.boolean().optional().describe('com reteste: inclui também os SKIP'),
       so_aprovados: z.boolean().optional().describe('só os casos aprovados (aprovacao: aprovado, sem mudança depois); os outros ficam de fora e são listados'),
+      ambientes: z.array(z.string()).optional().describe('matriz: uma execução por combinação de ambientes × navegadores × dispositivos (ex.: ["HML", "PROD"])'),
+      navegadores: z.array(z.string()).optional(), dispositivos: z.array(z.string()).optional(),
     }, annotations: RW,
   }, async (a) => run(() => ws.roundCreate(a), text));
 

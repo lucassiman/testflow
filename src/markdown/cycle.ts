@@ -75,16 +75,59 @@ export const cycleClosed = (text: string): boolean => !!String(meta(text).fim ||
 
 export interface CycleCase { key: string; titulo: string }
 
+// ---------------------------------------------------------------- matriz de configurações (11.3)
+export interface RunConfig { label: string; ambiente: string; navegador: string; dispositivo: string }
+const cfgKey = (s: string): string => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').replace(/\s*[·|/,]\s*/g, '·').trim();
+/** Mesma configuração? ("HML · Chrome" = "hml/chrome") */
+export const sameConfig = (a: string, b: string): boolean => cfgKey(a) === cfgKey(b);
+/** Configuração da execução (campo `configuracao:`); vazio = rodada comum. */
+export const configOf = (text: string): string => String(meta(text).configuracao || '').trim();
+
+/** Todas as combinações: ambientes × navegadores × dispositivos (dimensão vazia não multiplica). */
+export function combos(o: { ambientes?: string[]; navegadores?: string[]; dispositivos?: string[] }): RunConfig[] {
+  const clean = (l?: string[]) => [...new Set((l || []).map((x) => x.trim()).filter(Boolean))];
+  const A = clean(o.ambientes);
+  const N = clean(o.navegadores);
+  const D = clean(o.dispositivos);
+  const out: RunConfig[] = [];
+  for (const ambiente of A.length ? A : ['']) for (const navegador of N.length ? N : ['']) for (const dispositivo of D.length ? D : ['']) {
+    const label = [ambiente, navegador, dispositivo].filter(Boolean).join(' · ');
+    if (label) out.push({ label, ambiente, navegador, dispositivo });
+  }
+  return out;
+}
+
+const BROWSERS = /^(chrome|chromium|firefox|safari|edge|opera|brave|samsung internet|ie|internet explorer|webkit)\b/i;
+const ENV_RE = /^(local|localhost|dev|desenv\w*|hml|homolog\w*|staging|stg|stage|uat|qa|prod|prd|produ\w*|sandbox)$/i;
+/** "HML · Chrome · Windows" → { ambiente: HML, navegador: Chrome, dispositivo: Windows } (pelo jeito de cada parte). */
+export function configFromLabel(label: string): RunConfig {
+  const parts = label.split(/\s*[·|/]\s*/).map((x) => x.trim()).filter(Boolean);
+  const out: RunConfig = { label: parts.join(' · '), ambiente: '', navegador: '', dispositivo: '' };
+  for (const p of parts) {
+    if (!out.ambiente && ENV_RE.test(p)) out.ambiente = p;
+    else if (!out.navegador && BROWSERS.test(p)) out.navegador = p;
+    else out.dispositivo = out.dispositivo ? `${out.dispositivo} · ${p}` : p;
+  }
+  return out;
+}
+
+/** "HML · Chrome · Windows" de volta para as partes (pelos valores do cabeçalho, quando houver). */
+export function parseConfigs(list: unknown): string[] {
+  return (Array.isArray(list) ? list.map(String) : String(list ?? '').split(/[,;\n]+/)).map((x) => x.replace(/^\[|\]$/g, '').trim()).filter(Boolean);
+}
+
 /** O documento de um ciclo novo. */
-export function cycleDoc(o: { titulo: string; app?: string; versao?: string; origem?: string; cases: CycleCase[]; start?: Date; responsavel?: string; ciclo?: string; numero?: number; links?: Record<string, string[]>; dispositivo?: string; tags?: string[] }): string {
+export function cycleDoc(o: { titulo: string; app?: string; versao?: string; origem?: string; cases: CycleCase[]; start?: Date; responsavel?: string; ciclo?: string; numero?: number; links?: Record<string, string[]>; dispositivo?: string; tags?: string[]; config?: RunConfig; matriz?: string; /** várias criadas no mesmo segundo (matriz): -1, -2… no ID */ seq?: number }): string {
   const start = o.start || new Date();
-  const id = `EXEC-${start.getFullYear()}${pad(start.getMonth() + 1)}${pad(start.getDate())}-${pad(start.getHours())}${pad(start.getMinutes())}${pad(start.getSeconds())}`;
+  const id = `EXEC-${start.getFullYear()}${pad(start.getMonth() + 1)}${pad(start.getDate())}-${pad(start.getHours())}${pad(start.getMinutes())}${pad(start.getSeconds())}${o.seq ? `-${o.seq}` : ''}`;
   const fm = [
     '---', `tipo: ${EXEC_TYPE}`, `id: ${id}`, `titulo: ${formatValue(o.titulo)}`,
     ...(o.ciclo ? [`ciclo: ${formatValue(o.ciclo)}`, `numero: ${o.numero || 1}`] : []),
     ...(o.app ? [`app: ${formatValue(o.app)}`] : []),
     `versao: ${o.versao ? formatValue(o.versao) : ''}`,
-    ...(o.dispositivo ? [`dispositivo: ${formatValue(o.dispositivo)}`] : []),
+    ...(o.config ? [`configuracao: ${formatValue(o.config.label)}`, ...(o.config.ambiente ? [`ambiente: ${formatValue(o.config.ambiente)}`] : []), ...(o.config.navegador ? [`browser: ${formatValue(o.config.navegador)}`] : [])] : []),
+    ...(o.matriz ? [`matriz: ${formatValue(o.matriz)}`] : []),
+    ...(o.dispositivo || o.config?.dispositivo ? [`dispositivo: ${formatValue(o.config?.dispositivo || o.dispositivo || '')}`] : []),
     ...(o.responsavel ? [`responsavel: ${formatValue(o.responsavel)}`] : []),
     ...linksHeader(o.links || {}),
     `inicio: ${iso(start)}`, 'status: PENDING', `tags: ${tagsField(o.tags)}`, 'qa-md: 1', '---',
@@ -92,7 +135,7 @@ export function cycleDoc(o: { titulo: string; app?: string; versao?: string; ori
   const rows = o.cases.map((c, i) => `| ${i + 1} | [[${c.key}]] | ${cellEsc(c.titulo)} |  |  |  |`);
   return [
     ...fm, '', `# ${o.titulo}`, '',
-    `${o.ciclo ? `Execução #${o.numero || 1} do ciclo [[${o.ciclo}]]` : o.cases.length ? 'Rodada avulsa' : 'Execução'} ${o.cases.length ? `com ${o.cases.length} caso(s)` : 'só de testes automatizados'}${o.origem ? ` (${o.origem})` : ''}, iniciada em ${dmy(start)} às ${hm(start)}. `
+    `${o.ciclo ? `Execução #${o.numero || 1} do ciclo [[${o.ciclo}]]` : o.cases.length ? 'Rodada avulsa' : 'Execução'} ${o.cases.length ? `com ${o.cases.length} caso(s)` : 'só de testes automatizados'}${o.config ? ` na configuração **${o.config.label}**` : ''}${o.origem ? ` (${o.origem})` : ''}, iniciada em ${dmy(start)} às ${hm(start)}. `
       + (o.cases.length
         ? 'O status de cada caso vem da execução dele (▶ Executar → ✓ Concluir); **▶ Próximo caso** abre o próximo pendente. Status marcado à mão aqui (ex.: `SKIP`) fica. O relatório de testes automatizados (🤖) entra na seção "Testes automatizados", separado dos manuais.'
         : 'O resultado está na seção "Testes automatizados" (relatório importado). Dá para somar casos manuais depois, editando a tabela "Casos do ciclo".'),
@@ -175,15 +218,15 @@ export interface CaseResult {
 }
 
 /** Rodadas concluídas (tabela "Rodada | Data | Início | … | Resultado" do Histórico de execuções). */
-export function runsOf(text: string): Array<{ round: number; at: Date; status: StatusWord | null; dur: string; label: string }> {
+export function runsOf(text: string): Array<{ round: number; at: Date; status: StatusWord | null; dur: string; label: string; config: string }> {
   const lines = text.split('\n');
   const sec = findSection(lines, HISTORY_TITLE);
   if (!sec) return [];
-  const out: Array<{ round: number; at: Date; status: StatusWord | null; dur: string; label: string }> = [];
+  const out: Array<{ round: number; at: Date; status: StatusWord | null; dur: string; label: string; config: string }> = [];
   for (let i = sec.start; i < sec.end - 1; i++) {
     if (!lines[i].includes('|') || !/^\s*\|?\s*:?-{2,}/.test(lines[i + 1])) continue;
     const head = splitRow(lines[i]).map(normHeader);
-    const c = { round: head.indexOf('rodada'), date: head.indexOf('data'), start: head.indexOf('inicio'), end: head.indexOf('fim'), result: head.indexOf('resultado'), dur: head.indexOf('duracao'), data: head.indexOf('dados') };
+    const c = { round: head.indexOf('rodada'), date: head.indexOf('data'), start: head.indexOf('inicio'), end: head.indexOf('fim'), result: head.indexOf('resultado'), dur: head.indexOf('duracao'), data: head.indexOf('dados'), config: head.indexOf('configuracao') };
     if (c.round < 0 || c.date < 0 || c.result < 0) continue;
     for (let j = i + 2; j < sec.end && lines[j].includes('|') && lines[j].trim(); j++) {
       const cells = splitRow(lines[j]);
@@ -197,7 +240,7 @@ export function runsOf(text: string): Array<{ round: number; at: Date; status: S
       const start = new Date(...day, t ? Number(t[1]) : 0, t ? Number(t[2]) : 0);
       let at = f ? new Date(...day, Number(f[1]), Number(f[2])) : start;
       if (at < start) at = new Date(at.getTime() + 24 * 3600_000);
-      out.push({ round: Number(cells[c.round]) || 0, at, status: kind ? (kind.toUpperCase() as StatusWord) : null, dur: c.dur >= 0 ? (cells[c.dur] || '').trim() : '', label: c.data >= 0 ? (cells[c.data] || '').trim() : '' });
+      out.push({ round: Number(cells[c.round]) || 0, at, status: kind ? (kind.toUpperCase() as StatusWord) : null, dur: c.dur >= 0 ? (cells[c.dur] || '').trim() : '', label: c.data >= 0 ? (cells[c.data] || '').trim() : '', config: c.config >= 0 ? (cells[c.config] || '').replace(/\\\|/g, '|').trim() : '' });
     }
     i = sec.end;
   }
@@ -225,9 +268,9 @@ export function archivedRounds(text: string): Array<{ round: number; day: Date; 
  * Passos marcados sem rodada concluída só contam como "em andamento" se começaram neste ciclo (aqui, ou arquivando a
  * rodada antiga num dia do ciclo — outro QA ou o Claude); marcas de antes são o **último resultado**, não andamento.
  */
-export function caseResult(text: string, since: Date, counts: StatusCounts, modified = 0, started = false): CaseResult {
+export function caseResult(text: string, since: Date, counts: StatusCounts, modified = 0, started = false, /** matriz (11.3): só as rodadas desta configuração */ config = ''): CaseResult {
   const from = new Date(since.getFullYear(), since.getMonth(), since.getDate(), since.getHours(), since.getMinutes()).getTime();
-  const runs = runsOf(text).filter((r) => r.at.getTime() >= from).sort((a, b) => a.at.getTime() - b.at.getTime() || a.round - b.round);
+  const runs = runsOf(text).filter((r) => r.at.getTime() >= from && (!config || sameConfig(r.config, config))).sort((a, b) => a.at.getTime() - b.at.getTime() || a.round - b.round);
   const last = runs.at(-1);
   // caso com dados (11.2): cada iteração é uma rodada "admin (1/3)"; o caso está feito quando todas foram concluídas,
   // com o pior resultado entre elas
@@ -273,9 +316,9 @@ export function lastResultBefore(text: string, since: Date, counts: StatusCounts
  * O caso tem passos marcados e nenhuma rodada concluída neste ciclo: as marcas são de antes (arquivar numa nova rodada
  * antes de executar). Quem chama não pergunta isso para um caso que já começou a executar neste ciclo.
  */
-export function needsFreshRound(text: string, since: Date, counts: StatusCounts): boolean {
+export function needsFreshRound(text: string, since: Date, counts: StatusCounts, config = ''): boolean {
   if (!counts.total || counts.pending === counts.total) return false;
-  return caseResult(text, since, counts, 0).state !== 'feito';
+  return caseResult(text, since, counts, 0, false, config).state !== 'feito';
 }
 
 export interface CaseLookup { result: CaseResult; bugs: string[] }
@@ -461,7 +504,7 @@ export function cycleSummary(text: string, now = new Date()): CycleSummary | nul
 const EXECS_TITLE = /^execu[cç][oõ]es\b/i;
 
 /** O documento de um ciclo (definição): os casos que fazem parte da regressão e a lista das execuções. Sem estado de execução. */
-export function cycleDefDoc(o: { titulo: string; app?: string; versao?: string; origem?: string; cases: CycleCase[]; now?: Date; responsavel?: string; links?: Record<string, string[]>; tags?: string[] }): string {
+export function cycleDefDoc(o: { titulo: string; app?: string; versao?: string; origem?: string; cases: CycleCase[]; now?: Date; responsavel?: string; links?: Record<string, string[]>; tags?: string[]; /** matriz: cada execução do ciclo roda uma vez em cada configuração */ configuracoes?: string[] }): string {
   const now = o.now || new Date();
   const id = `CICLO-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
   const fm = [
@@ -470,11 +513,12 @@ export function cycleDefDoc(o: { titulo: string; app?: string; versao?: string; 
     `versao: ${o.versao ? formatValue(o.versao) : ''}`,
     ...(o.responsavel ? [`responsavel: ${formatValue(o.responsavel)}`] : []),
     ...linksHeader(o.links || {}),
+    ...(o.configuracoes?.length ? [`configuracoes: ${formatValue(o.configuracoes)}`] : []),
     `tags: ${tagsField(o.tags)}`, 'qa-md: 1', '---',
   ];
   return [
     ...fm, '', `# ${o.titulo}`, '',
-    `Ciclo de regressão com ${o.cases.length} caso(s)${o.origem ? ` (${o.origem})` : ''}, criado em ${dmy(now)}. É só a **definição** (os casos); cada vez que você o executa nasce uma **execução** (#1, #2…) com o resultado daquela vez. `
+    `Ciclo de regressão com ${o.cases.length} caso(s)${o.configuracoes?.length ? ` em ${o.configuracoes.length} configuração(ões) (${o.configuracoes.join('; ')})` : ''}${o.origem ? ` (${o.origem})` : ''}, criado em ${dmy(now)}. É só a **definição** (os casos); cada vez que você o executa nasce uma **execução** (#1, #2…) com o resultado daquela vez. `
       + 'Para tirar ou pôr casos, edite a tabela (uma linha por `[[caso]]`).',
     '', '## Casos do ciclo', '',
     '| # | Caso | Título |', '| --- | --- | --- |',
@@ -509,7 +553,7 @@ export function defCases(text: string): CycleCase[] {
 }
 
 /** Uma execução de um ciclo, como aparece na tabela "Execuções" do ciclo. */
-export interface ExecInfo { key: string; numero: number; inicio: Date | null; fim: Date | null; resultado: string; pct: number | null }
+export interface ExecInfo { key: string; numero: number; inicio: Date | null; fim: Date | null; resultado: string; pct: number | null; /** configuração (matriz) */ config?: string; /** os casos e o status de cada um */ casos?: Array<{ key: string; status: StatusWord | null }> }
 
 /** Dados de uma execução a partir do texto dela (null se não é uma execução). `key`: como o ciclo a referencia ([[key]]). */
 export function execInfo(text: string, key: string): ExecInfo | null {
@@ -517,7 +561,7 @@ export function execInfo(text: string, key: string): ExecInfo | null {
   const s = cycleSummary(text);
   if (!s) return null;
   const status = String(meta(text).status || '').trim().toUpperCase();
-  return { key, numero: execNumber(text), inicio: s.inicio, fim: s.fim, resultado: s.fim ? status || 'PENDING' : 'em andamento', pct: s.sucessoPct ?? (s.total === 0 ? s.auto?.sucessoPct ?? null : null) };
+  return { key, numero: execNumber(text), inicio: s.inicio, fim: s.fim, resultado: s.fim ? status || 'PENDING' : 'em andamento', pct: s.sucessoPct ?? (s.total === 0 ? s.auto?.sucessoPct ?? null : null), config: configOf(text), casos: s.casos };
 }
 
 /** Próximo número de execução do ciclo. */
@@ -526,11 +570,15 @@ export const nextExecNumber = (execs: Array<{ numero: number }>): number => Math
 /** Atualiza a tabela "Execuções" do ciclo (definição) com as execuções existentes; igual → devolve o mesmo texto. */
 export function syncDefExecutions(text: string, execs: ExecInfo[]): string {
   const lines = text.split('\n');
-  const rows = [...execs].sort((a, b) => a.numero - b.numero || (a.inicio?.getTime() || 0) - (b.inicio?.getTime() || 0)).map((e) => {
+  const withCfg = execs.some((e) => e.config);
+  const sorted = [...execs].sort((a, b) => a.numero - b.numero || (a.config || '').localeCompare(b.config || '') || (a.inicio?.getTime() || 0) - (b.inicio?.getTime() || 0));
+  const rows = sorted.map((e) => {
     const res = e.resultado === 'em andamento' ? 'em andamento' : `\`${e.resultado}\``;
-    return `| ${e.numero || '—'} | [[${e.key}]] | ${e.inicio ? `${dmy(e.inicio)} ${hm(e.inicio)}` : '—'} | ${e.fim ? `${dmy(e.fim)} ${hm(e.fim)}` : '—'} | ${res} | ${e.pct == null ? '—' : `${e.pct}%`} |`;
+    return `| ${e.numero || '—'} | [[${e.key}]] |${withCfg ? ` ${cellEsc(e.config || '—')} |` : ''} ${e.inicio ? `${dmy(e.inicio)} ${hm(e.inicio)}` : '—'} | ${e.fim ? `${dmy(e.fim)} ${hm(e.fim)}` : '—'} | ${res} | ${e.pct == null ? '—' : `${e.pct}%`} |`;
   });
-  const block = [EXECS_HEAD, '| --- | --- | --- | --- | --- | --- |', ...rows, ''];
+  const block = withCfg
+    ? ['| # | Execução | Configuração | Início | Fim | Resultado | % sucesso |', '| --- | --- | --- | --- | --- | --- | --- |', ...rows, '', ...matrixGrid(sorted)]
+    : [EXECS_HEAD, '| --- | --- | --- | --- | --- | --- |', ...rows, ''];
   const sec = findSection(lines, EXECS_TITLE);
   if (sec) lines.splice(sec.start, sec.end - sec.start, '', ...block);
   else {
@@ -538,6 +586,26 @@ export function syncDefExecutions(text: string, execs: ExecInfo[]): string {
     lines.push('', '## Execuções', '', ...block);
   }
   return lines.join('\n').replace(/\n*$/, '\n');
+}
+
+/**
+ * Grade da matriz (a execução mais recente de cada configuração): uma linha por caso, uma coluna por configuração.
+ * Vazio sem configurações.
+ */
+export function matrixGrid(execs: ExecInfo[]): string[] {
+  const latest = new Map<string, ExecInfo>();
+  for (const e of execs) if (e.config) { const k = cfgKey(e.config); const cur = latest.get(k); if (!cur || e.numero >= cur.numero) latest.set(k, e); }
+  if (!latest.size) return [];
+  const cols = [...latest.values()];
+  const keys: string[] = [];
+  for (const e of cols) for (const c of e.casos || []) if (!keys.some((k) => k.toLowerCase() === c.key.toLowerCase())) keys.push(c.key);
+  const ICON: Record<string, string> = { PASS: '✅', FAIL: '❌', BLOCKED: '⛔', SKIP: '⏭' };
+  const cell = (e: ExecInfo, k: string) => { const st = e.casos?.find((c) => c.key.toLowerCase() === k.toLowerCase())?.status; return st ? `${ICON[st] || ''} \`${st}\`` : '⏳'; };
+  return [
+    `**Matriz** (a execução mais recente de cada configuração${cols[0]?.numero ? ` — #${Math.max(...cols.map((c) => c.numero))}` : ''}):`, '',
+    `| Caso | ${cols.map((e) => cellEsc(e.config || '')).join(' | ')} |`, `| --- | ${cols.map(() => '---').join(' | ')} |`,
+    ...keys.map((k) => `| [[${k}]] | ${cols.map((e) => cell(e, k)).join(' | ')} |`), '',
+  ];
 }
 
 /** Marca SKIP (feito à mão com **Pular caso**) nos casos indicados que ainda não têm resultado. */

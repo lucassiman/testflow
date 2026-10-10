@@ -1400,6 +1400,15 @@ button { font: inherit; color: inherit; }
 .cp-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cp-x { border: 0; background: none; cursor: pointer; color: var(--muted); font-size: 15px; padding: 0 4px; }
 .cp-x:hover { color: var(--text); }
+.cp-matrix { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 0 12px 6px; font-size: 11.5px; }
+.cp-cfg { font-size: 11.5px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg); white-space: nowrap; }
+.cp-cfg.on { background: var(--accent-soft); border-color: var(--accent); font-weight: 600; }
+.cp-cfg.done { border-color: color-mix(in srgb, var(--pass, #2e7d32) 60%, transparent); }
+.cp-cfg small { color: var(--muted); }
+.cpk-mx { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 6px 0; }
+.cpk-mx label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted); }
+.cpk-mx-note { margin: 0; font-size: 12px; color: var(--muted); }
+@media (max-width: 640px) { .cpk-mx { grid-template-columns: 1fr; } }
 .cp-who { flex: none; font-size: 10px; font-weight: 700; min-width: 20px; height: 20px; padding: 0 4px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: var(--bg-soft); border: 1px solid var(--border); color: var(--muted); cursor: pointer; margin-left: 4px; }
 .cp-who.mine { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
 .cp-load { font-size: 11.5px; color: var(--muted); padding: 0 12px 4px; }
@@ -1542,8 +1551,8 @@ button { font: inherit; color: inherit; }
 .lk-fields { display: flex; flex-direction: column; gap: 8px; }
 .lk-field { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted); }
 .lk-field input { font: inherit; font-size: 13px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
-.cpk-links { padding: 4px 14px 6px; border-top: 1px solid var(--border); font-size: 12px; }
-.cpk-links summary { cursor: pointer; color: var(--muted); padding: 4px 0; }
+.cpk-links, .cpk-matrix { padding: 4px 14px 6px; border-top: 1px solid var(--border); font-size: 12px; }
+.cpk-links summary, .cpk-matrix summary { cursor: pointer; color: var(--muted); padding: 4px 0; }
 .cpk-links .lk-fields { flex-direction: row; flex-wrap: wrap; padding: 4px 0 6px; }
 .cpk-links .lk-field { flex: 1 1 160px; }
 .cp-links { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 10px 6px; }

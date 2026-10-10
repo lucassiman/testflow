@@ -4,7 +4,7 @@
  * em andamento e pendente. Clicar num caso abre ele (um concluído abre para revisão e volta para o caso em foco
  * ao concluir). Aparece no ciclo e em qualquer caso dele; recolhe para uma faixa estreita.
  */
-import { cycleChecklist, attachAutomation, editDevice, markWhole, goToCycleCase, nextCycleCase, openCycle, finishCycle, showRoundSummary, skipCycleCase, runCycle, openCycleDef, editLinks, rerunFailed } from './cycle.js';
+import { switchConfig, cycleChecklist, attachAutomation, editDevice, markWhole, goToCycleCase, nextCycleCase, openCycle, finishCycle, showRoundSummary, skipCycleCase, runCycle, openCycleDef, editLinks, rerunFailed } from './cycle.js';
 import { assignRound, reassignCase, initials } from './assign.js';
 import { samePerson } from '../markdown/assign.ts';
 import { approxDuration } from '../markdown/forecast.ts';
@@ -82,6 +82,7 @@ export function refreshCyclePanel() {
       <strong class="cp-title" title="${esc(data.title)}">${data.ciclo ? '🔁' : '▶'} ${esc(data.title)}</strong>
       <button type="button" class="cp-x" data-cp="toggle" title="Recolher a checklist" aria-label="Recolher">⟩</button>
     </div>
+    ${data.matrix.length > 1 ? `<div class="cp-matrix" role="group" aria-label="Configurações da matriz">🧮 ${data.matrix.map((m) => `<button type="button" class="cp-cfg${m.current ? ' on' : ''}${m.total && m.done === m.total ? ' done' : ''}" data-cp="cfg" data-path="${esc(m.path)}" aria-pressed="${m.current}" title="${esc(m.label)}: ${m.done}/${m.total}${m.current ? ' (esta)' : ' — clique para trocar'}">${esc(m.label)} <small>${m.done}/${m.total}</small></button>`).join('')}</div>` : data.config ? `<div class="cp-matrix">🧮 <span class="cp-cfg on">${esc(data.config)}</span></div>` : ''}
     ${data.links.length ? `<div class="cp-links">${data.links.map((l, i) => (l.url ? `<a class="cp-chip" href="${esc(l.url)}" target="_blank" rel="noopener" title="${esc(l.typeLabel)}: abrir no Jira">${l.icon} ${esc(l.label)}</a>` : l.doc ? `<button type="button" class="cp-chip" data-cp="linkdoc" data-i="${i}" title="${esc(l.typeLabel)}: abrir o documento">${l.icon} ${esc(l.label)}</button>` : `<span class="cp-chip" title="${esc(l.typeLabel)}">${l.icon} ${esc(l.label)}</span>`)).join('')}</div>` : ''}
     <div class="cp-progress" title="${data.done} de ${data.total} concluídos${data.failed ? ` · ${data.failed} com falha` : ''}">
       <div class="cp-bar cp-bar-seg" role="img" aria-label="${data.done} de ${data.total} concluídos (${pct}%)">${bar}</div>
@@ -139,6 +140,7 @@ el.addEventListener('click', (event) => {
   else if (act === 'again') { const ciclo = data0()?.ciclo; if (ciclo) runCycle(ciclo.path); }
   else if (act === 'skip' && b.dataset.key) skipCycleCase(b.dataset.key);
   else if (act === 'assign') assignRound();
+  else if (act === 'cfg' && b.dataset.path) switchConfig(b.dataset.path);
 });
 
 // ⏮ Antes da rodada: marcar o que já foi feito (fica lembrado por rodada)

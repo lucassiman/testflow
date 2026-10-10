@@ -55,12 +55,13 @@ import { runsOf } from '../markdown/cycle.ts';
  *   onStateChange?: () => void,
  *   onFinish?: (res: { overall: string, round: number, revised?: boolean }) => boolean | void,
  *   onCancel?: (res: { reverted: boolean }) => void,
+ *   roundConfig?: () => string,
  *   shared?: SharedDeps,
  *   docKey?: () => string,
  *   prefs: import('../types').PrefsApi,
  * }} deps
  */
-export function createRunner({ store, preview, toast: appToast, root, onPastePrint, onPasteFiles, onSavePrints, onReadClipboardImages, onNewBug, onCapture, onRecord, isRecording, onStateChange, onFinish, onCancel, docKey: docKeyDep, prefs, shared }) {
+export function createRunner({ store, preview, toast: appToast, root, onPastePrint, onPasteFiles, onSavePrints, onReadClipboardImages, onNewBug, onCapture, onRecord, isRecording, onStateChange, onFinish, onCancel, docKey: docKeyDep, prefs, shared, roundConfig }) {
   const el = document.createElement('div');
   el.className = 'runner';
   el.setAttribute('role', 'region');
@@ -367,7 +368,8 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     const i = Math.min(exec.iter || 0, Math.max(0, its.length - 1));
     const label = its.length ? iterLabel(its[i], i, its.length) : undefined;
     const ambiente = shared?.env?.() || undefined;
-    const res = exec.revisit ? reviseRun(store.source, when) : { ...logRun(store.source, { ...when, iteration: label, ambiente }), revised: false };
+    const config = roundConfig?.() || undefined;
+    const res = exec.revisit ? reviseRun(store.source, when) : { ...logRun(store.source, { ...when, iteration: label, ambiente, config }), revised: false };
     if (its.length && i < its.length - 1) { nextIteration(res, its, i, label || ''); return; }
     if (its.length) res.overall = /** @type {typeof res.overall} */ (worseOf(exec.iterWorst || '', res.overall));
     write(res.source, res.revised ? `Rodada ${res.round} atualizada no Histórico de execuções — ${res.overall}` : `Rodada ${res.round} registrada no Histórico de execuções — ${res.overall}`);

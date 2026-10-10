@@ -65,7 +65,7 @@ import { drawViews, syncViewsForSave, newView, saveFiltersAsView, viewDocs } fro
 import { addComment, commentAction, listComments } from './app/comments.js';
 import { exportJiraCsv, importJiraKeys } from './app/jiraExport.js';
 import { startCollab, collabDocChanged, officialMenu, updateAllFromOfficial, paintOfficialButton } from './app/collab.js';
-import { newCycle, newRun, newAutoRun, attachAutomation, editDevice, runCycle, editLinks, nextCycleCase, finishCycle, showRoundSummary, openCycle, onCaseFinished, refreshCycleDoc, syncCycleForSave, rerunFailed } from './app/cycle.js';
+import { newCycle, newRun, newAutoRun, attachAutomation, editDevice, runCycle, editLinks, nextCycleCase, finishCycle, showRoundSummary, openCycle, onCaseFinished, refreshCycleDoc, syncCycleForSave, rerunFailed, roundOfOpenCase } from './app/cycle.js';
 import { goNextCase, offerNextCase } from './app/nextCase.js';
 import { bindLinkPicker } from './app/linkPicker.js';
 import { pendingIdChange, prepareSave, afterSave, checkOutsideRenames } from './app/idSync.js';
@@ -236,6 +236,7 @@ runner = createRunner({
   },
   // ✕ Cancelar execução: na rodada, o caso volta a "não começado"
   onCancel: () => { import('./app/cycle.js').then((m) => m.cancelCaseStart()); },
+  roundConfig: () => roundOfOpenCase()?.config || '',
   onNewBug: (nearLine) => {
     const bug = findBugTemplate();
     if (bug) createLinkedDoc(bug, { where: 'preview', nearLine });

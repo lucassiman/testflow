@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.46.0', date: '10/10/2026',
+    items: [
+      { icon: '🧮', text: '**Matriz de configurações**: na nova rodada (ou ciclo), 🧮 Configurações → ambientes × navegadores × dispositivos — uma execução por combinação. Chips no painel com o progresso de cada uma; o caso usa o ambiente da rodada e só conta como feito na configuração em que rodou.', manual: '7.8 Ciclo de regressão' },
+      { icon: '📋', text: 'Ciclo salvo com configurações: *Executar este ciclo* cria a #N em cada uma, e o ciclo mostra a **grade caso × configuração**. Com o Claude: `qa_rodada_criar { ambientes, navegadores, dispositivos }`.', manual: '7.8 Ciclo de regressão' },
+    ],
+  },
+  {
     version: '1.45.0', date: '10/10/2026',
     items: [
       { icon: '👥', text: '**Atribuir casos na rodada**: 👥 Atribuir divide os pendentes entre os testadores, equilibrando pelo tempo previsto; as iniciais de cada um aparecem no caso (clique para trocar), o filtro **Minhas** mostra só os seus e a linha 👥 a carga de cada um.', manual: '7.8 Ciclo de regressão' },

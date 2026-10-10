@@ -33,7 +33,7 @@ import { suggestDestination, runDestination, INBOX_DIR, fillApp, fillJira, fillF
 import { inheritHeader, segmentMembers, commonHeader, headerOf } from '../src/markdown/segment.ts';
 import {
   cycleDoc, cycleTable, isCycle, isCycleDef, cycleStart, cycleClosed, syncCycle, caseResult, needsFreshRound, closeCycle, skipPending, cycleSummary,
-  defCases, execNumber, cicloOf, nextExecNumber, cycleProgress, unexecuted, nextCase, execInfo, syncDefExecutions, retestCases, runsOf,
+  configOf, configFromLabel, combos, parseConfigs, defCases, execNumber, cicloOf, nextExecNumber, cycleProgress, unexecuted, nextCase, execInfo, syncDefExecutions, retestCases, runsOf,
 } from '../src/markdown/cycle.ts';
 import type { CaseLookup } from '../src/markdown/cycle.ts';
 import { planSharedSweep, sharedDocText, applyCasePlan, sharedSweepReport } from '../src/markdown/sharedSweep.ts';
@@ -546,12 +546,12 @@ export class QaWorkspace {
    * Conclui a rodada do caso (logRun). Caso com dados (11.2 — ## Iterações ou iterar:): registra a iteração da vez
    * ("admin (1/3)" na coluna Dados) e, se faltar alguma, arquiva a tabela e deixa pronta para a próxima.
    */
-  private concludeRun(text: string, e: { path: string; app?: string; tags?: string[]; id?: string; jira?: string; epico?: string; ambiente?: string }, iteracao?: string, ambiente?: string, plain = (round: number, overall: string) => ` Rodada ${round} registrada (${overall}).`): { text: string; detail: string } {
+  private concludeRun(text: string, e: { path: string; app?: string; tags?: string[]; id?: string; jira?: string; epico?: string; ambiente?: string }, iteracao?: string, ambiente?: string, plain = (round: number, overall: string) => ` Rodada ${round} registrada (${overall}).`, config = ''): { text: string; detail: string } {
     const now = new Date();
     const amb = ambiente ? envLabel(normEnv(ambiente)) : undefined;
     const its = iterationsOf(text, this.scopeOfEntry(e, ambiente)).items;
     if (!its.length) {
-      const res = logRun(text, { start: now, end: now, elapsed: 0, ambiente: amb });
+      const res = logRun(text, { start: now, end: now, elapsed: 0, ambiente: amb, config: config || undefined });
       return { text: res.source, detail: plain(res.round, res.overall) };
     }
     const n = its.length;
@@ -567,7 +567,7 @@ export class QaWorkspace {
       i = p && p.total === n && p.index < n - 1 ? p.index + 1 : 0;
     }
     const label = iterLabel(its[i], i, n);
-    const res = logRun(text, { start: now, end: now, elapsed: 0, iteration: label, ambiente: amb });
+    const res = logRun(text, { start: now, end: now, elapsed: 0, iteration: label, ambiente: amb, config: config || undefined });
     if (i < n - 1) {
       const nr = newRound(res.source, -1, now, label);
       const next = its[i + 1];
@@ -839,7 +839,7 @@ export class QaWorkspace {
   }
 
   /** Resultado de cada caso na rodada (como o app: rodada concluída depois do início; bugs abertos ligados). */
-  private lookup(since: Date): (key: string) => CaseLookup | null {
+  private lookup(since: Date, config = ''): (key: string) => CaseLookup | null {
     const docs = this.viewDocs();
     return (key) => {
       const e = this.index.resolve(key);
@@ -847,14 +847,14 @@ export class QaWorkspace {
       const counts = e.counts;
       const row = docs.find((d) => d.path === e.path);
       const bugs = row ? bugsFor(row, docs).filter(bugOpen).map((b) => b.id || b.name.replace(/\.(md|markdown)$/i, '')) : [];
-      return { result: caseResult(e.text || '', since, counts, e.lastModified || 0), bugs };
+      return { result: caseResult(e.text || '', since, counts, e.lastModified || 0, false, config), bugs };
     };
   }
 
   /** Texto da execução com o resultado dos casos em dia. */
   private synced(text: string): string {
     const since = cycleStart(text);
-    return since ? syncCycle(text, this.lookup(since)) : text;
+    return since ? syncCycle(text, this.lookup(since, configOf(text))) : text;
   }
 
   /** Como está a rodada: progresso, pendentes, falhas com bugs, tempo. */
@@ -868,7 +868,7 @@ export class QaWorkspace {
     const ms = s.duracaoMs ?? 0;
     const pend = t.rows.filter((r) => !r.status || r.status === 'PENDING').map((r) => {
       const c = this.index.resolve(r.key);
-      const res = c && since ? caseResult(c.text || '', since, c.counts, c.lastModified || 0) : null;
+      const res = c && since ? caseResult(c.text || '', since, c.counts, c.lastModified || 0, false, configOf(text)) : null;
       return `${r.key}${res?.state === 'andamento' ? ' (em andamento)' : ''}${c && c.counts.total === 0 ? ' (como um todo)' : ''}`;
     });
     return [
@@ -888,11 +888,11 @@ export class QaWorkspace {
    * Nova rodada: os casos vêm da lista, de um segmento (épico, ticket, #tag, execução…), de uma consulta (sintaxe das
    * visões) ou de um ciclo salvo (vira a execução #N dele). A execução herda o que os casos têm em comum.
    */
-  roundCreate(o: { nome?: string; casos?: string[]; segmento?: string; consulta?: string; ciclo?: string; app?: string; vinculos?: Record<string, string>; reteste?: string; reteste_skip?: boolean; so_aprovados?: boolean }): Promise<string> {
+  roundCreate(o: { nome?: string; casos?: string[]; segmento?: string; consulta?: string; ciclo?: string; app?: string; vinculos?: Record<string, string>; reteste?: string; reteste_skip?: boolean; so_aprovados?: boolean; ambientes?: string[]; navegadores?: string[]; dispositivos?: string[] }): Promise<string> {
     return this.exclusive(() => this.roundCreateNow(o));
   }
 
-  private async roundCreateNow(o: { nome?: string; casos?: string[]; segmento?: string; consulta?: string; ciclo?: string; app?: string; vinculos?: Record<string, string>; reteste?: string; reteste_skip?: boolean; so_aprovados?: boolean }): Promise<string> {
+  private async roundCreateNow(o: { nome?: string; casos?: string[]; segmento?: string; consulta?: string; ciclo?: string; app?: string; vinculos?: Record<string, string>; reteste?: string; reteste_skip?: boolean; so_aprovados?: boolean; ambientes?: string[]; navegadores?: string[]; dispositivos?: string[] }): Promise<string> {
     await this.refresh(true);
     const all = this.index.all();
     const isCaseDoc = (e: DocEntry) => CASE_TYPES.includes(e.tipo);
@@ -961,9 +961,31 @@ export class QaWorkspace {
     const now = new Date();
     const titulo = o.nome || retestTitle || (link ? `${String(meta(defText).titulo || link.ciclo)} — Execução #${link.numero}` : `Rodada${appName ? ` ${appName}` : ''} — ${now.toLocaleDateString('pt-BR')}`);
     const start = link && link.numero > 1 ? new Date(Math.ceil((now.getTime() + 1) / 60000) * 60000) : now;
+    // matriz: as combinações pedidas ou as configurações salvas no ciclo; o reteste fica na configuração de origem
+    const configs = combos({ ambientes: o.ambientes, navegadores: o.navegadores, dispositivos: o.dispositivos });
+    if (!configs.length && defText) configs.push(...parseConfigs(meta(defText).configuracoes).map(configFromLabel));
+    if (configs.length && !retestText) {
+      const matriz = link ? `${link.ciclo} #${link.numero}` : `MAT-${now.toISOString().replace(/\D/g, '').slice(0, 12)}`;
+      const created: string[] = [];
+      let seq = 0;
+      for (const config of configs) {
+        seq++;
+        const t = cycleDoc({
+          titulo: `${titulo} — ${config.label}`, app: appName, origem, cases: picked.map((e) => ({ key: e.id || e.name.replace(/\.(md|markdown)$/i, ''), titulo: e.titulo || e.heading || e.name })),
+          start, responsavel: this.opts.who || '', links, tags: fromDef ? [...fromDef.tags] : common.tags, ...(link ? { ciclo: link.ciclo, numero: link.numero } : {}), config, matriz, seq,
+        });
+        const sibs2 = all.filter((e) => (e.tipo === 'execucao' || e.tipo === 'relatorio-execucao') && (!appName || (e.app || '').toLowerCase() === appName.toLowerCase())).map((e) => e.path);
+        const slug2 = `${titulo} ${config.label}`.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 70) || 'rodada';
+        const p = await this.createDoc(runDestination({ tipo: 'execucao', app: appName }, this.dirs, sibs2).dir, `${slug2}.md`, t);
+        created.push(`${p} (${String(meta(t).id || '')}) — ${config.label}`);
+      }
+      return `Matriz ${matriz}: ${created.length} execução(ões) com ${picked.length} caso(s) cada:\n${created.map((x) => `- ${x}`).join('\n')}\n${leftOut} Registre cada caso em cada execução com qa_rodada_registrar { execucao } (a configuração vai para o histórico do caso); no fim, qa_rodada_finalizar em cada uma.`;
+    }
+    const retestCfg = retestText ? configOf(retestText) : '';
     let text = cycleDoc({
       titulo, app: appName, origem, cases: picked.map((e) => ({ key: e.id || e.name.replace(/\.(md|markdown)$/i, ''), titulo: e.titulo || e.heading || e.name })),
       start, responsavel: this.opts.who || '', links, tags: fromDef ? [...fromDef.tags, ...(retestText ? ['reteste'] : [])] : common.tags, ...(link ? { ciclo: link.ciclo, numero: link.numero } : {}),
+      ...(retestCfg ? { config: configFromLabel(retestCfg) } : {}),
     });
     const dispositivo = defText || retestText ? String(meta(defText || retestText).dispositivo || '') : '';
     if (dispositivo) text = setFrontMatterFields(text, { dispositivo });
@@ -998,7 +1020,7 @@ export class QaWorkspace {
       const cdoc = await this.readDoc(c.path);
       let text = cdoc.text;
       // marcas de antes desta rodada: vão para o Histórico antes (como o ▶ Próximo caso do app)
-      if (needsFreshRound(text, since, countStatuses(text))) { const nr = newRound(text); if (nr) { text = nr.source; detail += ` Rodada antiga ${nr.round} (${nr.overall}) arquivada.`; } }
+      if (needsFreshRound(text, since, countStatuses(text), configOf(exDoc.text))) { const nr = newRound(text); if (nr) { text = nr.source; detail += ` Rodada antiga ${nr.round} (${nr.overall}) arquivada.`; } }
       for (const p of o.passos) {
         const st = stepTable(text);
         if (!st) throw new Error(`${c.path} não tem tabela de passos com coluna Status`);
@@ -1016,7 +1038,7 @@ export class QaWorkspace {
       text = syncExecution(text, { onlyExecuted: true });
       const counts = countStatuses(text);
       if (counts.pending === 0) {
-        const r = this.concludeRun(text, c, o.iteracao, o.ambiente, (round, overall) => ` Rodada ${round} do caso concluída (${overall}).`);
+        const r = this.concludeRun(text, c, o.iteracao, o.ambiente || String(meta(exDoc.text).ambiente || ''), (round, overall) => ` Rodada ${round} do caso concluída (${overall}).`, configOf(exDoc.text));
         text = r.text;
         detail += r.detail;
       } else detail += ` ${counts.total - counts.pending}/${counts.total} passos marcados (falta concluir os outros).`;

@@ -11,7 +11,7 @@ import { forecast, caseAvgMs } from '../markdown/forecast.ts';
 import { filterApproved, onlyApproved } from './approval.js';
 import {
   CYCLE_TYPE, cycleDoc, cycleStart, cycleClosed, cycleProgress, nextCase, syncCycle, closeCycle, caseResult, lastResultBefore, needsFreshRound, cycleTable, isCycle, unexecuted, skipPending, cycleSummary,
-  EXEC_TYPE, isCycleDef, cycleDefDoc, defCases, retestCases, execInfo, nextExecNumber, syncDefExecutions, applySkipped, applyWhole, cicloOf, execNumber, attachAutomation as attachAutoToText,
+  EXEC_TYPE, configOf, configFromLabel, parseConfigs, isCycleDef, cycleDefDoc, defCases, retestCases, execInfo, nextExecNumber, syncDefExecutions, applySkipped, applyWhole, cicloOf, execNumber, attachAutomation as attachAutoToText,
 } from '../markdown/cycle.ts';
 import { autoSummary } from '../markdown/cycleAuto.ts';
 import { buildAutomationBlock } from '../markdown/automationReport.js';
@@ -87,8 +87,8 @@ export function cycleMark() {
 }
 
 // ---------------------------------------------------------------- resultado de cada caso
-/** @param {Date} since @param {string} [cyclePath] execução (para saber quais casos começaram nela) @returns {(key: string) => import('../markdown/cycle.ts').CaseLookup | null} */
-function lookupFor(since, cyclePath = '') {
+/** @param {Date} since @param {string} [cyclePath] execução (para saber quais casos começaram nela) @param {string} [config] configuração da execução (matriz) @returns {(key: string) => import('../markdown/cycle.ts').CaseLookup | null} */
+function lookupFor(since, cyclePath = '', config = '') {
   const started = cyclePath ? startedIn(cyclePath) : [];
   const docs = viewDocs();
   const open = openDocOverrides();
@@ -102,7 +102,7 @@ function lookupFor(since, cyclePath = '') {
     const modified = e.path === active && app.store.dirty ? Date.now() : open.has(e.path) && text !== e.text ? Date.now() : e.lastModified || 0;
     const row = docs.find((d) => d.path === e.path);
     const bugs = row ? bugsFor(row, docs).filter(bugOpen).map((b) => b.id || b.name.replace(/\.(md|markdown)$/i, '')) : [];
-    return { result: caseResult(text, since, counts, modified, started.includes(key.toLowerCase()) || started.includes((e.id || '').toLowerCase())), bugs };
+    return { result: caseResult(text, since, counts, modified, started.includes(key.toLowerCase()) || started.includes((e.id || '').toLowerCase()), config), bugs };
   };
 }
 
@@ -113,7 +113,7 @@ export function syncedCycle(text) {
   if (!isCycle(text)) return text;
   const since = cycleStart(text);
   if (!since) return text;
-  const synced = syncCycle(text, lookupFor(since, currentCycleKey(text)));
+  const synced = syncCycle(text, lookupFor(since, currentCycleKey(text), configOf(text)));
   return cycleClosed(synced) ? synced : applyMarks(synced, currentCycleKey(text));
 }
 
@@ -243,7 +243,7 @@ export async function skipCycleCase(key) {
 /**
  * Dados do painel da rodada: um item por caso, na ordem do ciclo (null = não há ciclo a mostrar).
  * Leve de propósito (roda a cada mudança no documento): usa o texto do ciclo e o dos casos, sem recalcular bugs.
- * @returns {{ path: string, title: string, closed: boolean, onCycle: boolean, counts: { PASS: number, FAIL: number, BLOCKED: number, SKIP: number }, done: number, total: number, failed: number, next: string | null, items: ChecklistItem[], ciclo: { path: string, titulo: string } | null, numero: number, links: import('../markdown/linkTypes.ts').LinkChip[], auto: import('../markdown/cycleAuto.ts').AutoSummary | null, whole: { key: string, done: number, total: number } | null, before: Array<{ acao: string, esperado: string, source: string }>, beforeDone: number[], forecast: import('../markdown/forecast.ts').Forecast | null, me: string, workload: import('../markdown/assign.ts').Workload[] } | null}
+ * @returns {{ path: string, title: string, closed: boolean, onCycle: boolean, counts: { PASS: number, FAIL: number, BLOCKED: number, SKIP: number }, done: number, total: number, failed: number, next: string | null, items: ChecklistItem[], ciclo: { path: string, titulo: string } | null, numero: number, links: import('../markdown/linkTypes.ts').LinkChip[], auto: import('../markdown/cycleAuto.ts').AutoSummary | null, whole: { key: string, done: number, total: number } | null, before: Array<{ acao: string, esperado: string, source: string }>, beforeDone: number[], forecast: import('../markdown/forecast.ts').Forecast | null, me: string, workload: import('../markdown/assign.ts').Workload[], config: string, matrix: Array<{ path: string, label: string, done: number, total: number, current: boolean }> } | null}
  */
 export function cycleChecklist() {
   const c = currentCycle();
@@ -259,6 +259,7 @@ export function cycleChecklist() {
   const active = currentWorkspacePath();
   const started = startedIn(c.path);
   const who = assignees(c.text);
+  const cfg = configOf(c.text);
   /** @type {ChecklistItem[]} */
   const items = t.rows.map((r) => {
     const titulo = (t.cols.caso + 1 < r.cells.length ? r.cells[t.cols.caso + 1] : '').replace(/\[\[|\]\]/g, '').replace(/\\\|/g, '|').trim() || docIndex.resolve(r.key)?.titulo || '';
@@ -274,7 +275,7 @@ export function cycleChecklist() {
       // concluído: a duração da rodada dele neste ciclo (coluna Duração do histórico do caso)
       const e = docIndex.resolve(r.key);
       const text = e ? open.get(e.path) ?? e.text ?? '' : '';
-      if (text) dur = caseResult(text, since, describeDoc(text).counts, 0).dur || '';
+      if (text) dur = caseResult(text, since, describeDoc(text).counts, 0, false, cfg).dur || '';
     }
     if (!status) {
       const e = docIndex.resolve(r.key);
@@ -282,7 +283,7 @@ export function cycleChecklist() {
         const text = open.get(e.path) ?? e.text ?? '';
         const counts = text === e.text ? e.counts : describeDoc(text).counts;
         const modified = e.path === active && app.store.dirty ? Date.now() : open.has(e.path) && text !== e.text ? Date.now() : e.lastModified || 0;
-        const res = caseResult(text, since, counts, modified, started.includes(r.key.toLowerCase()) || started.includes((e.id || '').toLowerCase()));
+        const res = caseResult(text, since, counts, modified, started.includes(r.key.toLowerCase()) || started.includes((e.id || '').toLowerCase()), cfg);
         if (res.state === 'feito' && res.status) { status = res.status; when = res.when; state = 'feito'; dur = res.dur || ''; }
         else if (res.state === 'andamento') state = 'andamento';
         else last = lastResultBefore(text, since, counts);
@@ -308,8 +309,29 @@ export function cycleChecklist() {
     // previsão: a duração média de cada caso pendente (histórico dele)
     forecast: cycleClosed(c.text) ? null : forecast(items.map((i) => ({ done: i.state === 'feito', avgMs: avgOf(i.key, open) }))),
     me: me(),
+    config: configOf(c.text),
+    matrix: matrixOf(c),
     workload: workload(applyMarks(c.text, c.path), (k) => avgOf(k, open)),
   };
+}
+
+/**
+ * As execuções da mesma matriz (campo matriz:), na ordem da configuração, com o progresso de cada uma.
+ * @param {{ path: string, text: string }} c
+ */
+function matrixOf(c) {
+  const m = /^matriz:\s*(.+)$/m.exec(c.text.split(/\n---/)[0] || '')?.[1]?.replace(/^["']|["']$/g, '').trim();
+  if (!m) return [];
+  return docIndex.all().filter((e) => e.text && isCycle(e.text) && /^matriz:\s*(.+)$/m.exec(e.text.split(/\n---/)[0] || '')?.[1]?.replace(/^["']|["']$/g, '').trim() === m)
+    .map((e) => { const text = e.path === c.path ? c.text : textAt(e.path) || e.text || ''; const p = cycleProgress(syncedCycle(text)); return { path: e.path, label: configOf(text) || e.titulo || e.name, done: p?.done || 0, total: p?.total || 0, current: e.path === c.path }; })
+    .sort((a, b) => COLL.compare(a.path, b.path));
+}
+/** 🧮 Trocar de configuração na matriz: ativa e abre a execução escolhida. @param {string} path */
+export async function switchConfig(path) {
+  setActive(path);
+  await openWikiTarget(path, { entry: docIndex.get(path) || undefined });
+  const c = currentCycle();
+  app.toast(`🧮 Configuração ${c ? configOf(c.text) : ''} — ▶ Próximo caso continua nela.`, 'info', { duration: 5000, action: { label: '▶ Próximo caso', run: () => nextCycleCase() } });
 }
 
 /** @type {Map<string, { text: string, ms: number | null }>} */
@@ -431,7 +453,7 @@ export async function goToCycleCase(key) {
   const first = !startedIn(c.path).includes(key.toLowerCase());
   const base = app.store.source; // ✕ Cancelar volta para cá (inclusive a rodada arquivada abaixo)
   // primeira vez neste ciclo com passos marcados de antes: arquiva essa rodada (Ctrl+Z desfaz) e começa limpo
-  if (first && needsFreshRound(app.store.source, since, counts)) doNewRound();
+  if (first && needsFreshRound(app.store.source, since, counts, configOf(text))) doNewRound();
   // execução guardada de antes do ciclo: não retoma o cronômetro/início antigo
   if (first) app.runner?.discardSaved();
   markStarted(c.path, key);
@@ -602,15 +624,16 @@ export function cycleMenu() {
 }
 
 /**
- * A rodada do caso aberto (para o bug achado nela herdar a origem): ID da execução, do ciclo e do plano. null fora de rodada.
- * @returns {{ execucao: string, ciclo: string, plano: string } | null}
+ * A rodada do caso aberto (para o bug achado nela herdar a origem): ID da execução, do ciclo e do plano; na matriz, a
+ * configuração e o ambiente dela. null fora de rodada.
+ * @returns {{ execucao: string, ciclo: string, plano: string, config: string, ambiente: string } | null}
  */
 export function roundOfOpenCase() {
   if (!inCycleCase()) return null;
   const c = /** @type {{ path: string, text: string }} */ (currentCycle());
   const e = docIndex.get(c.path);
   const h = headerOf(c.text);
-  return { execucao: h.id || e?.id || '', ciclo: h.ciclo, plano: h.plano };
+  return { execucao: h.id || e?.id || '', ciclo: h.ciclo, plano: h.plano, config: configOf(c.text), ambiente: String(/^ambiente:\s*(.*)$/m.exec(c.text.split(/\n---/)[0] || '')?.[1] || '').replace(/^["']|["']$/g, '').trim() };
 }
 
 /** O documento aberto é um caso do ciclo ativo? (aí "próximo caso" segue o ciclo, não a pasta) */
@@ -710,17 +733,17 @@ export function pickerShortcuts(cases) {
 
 /**
  * Janela de seleção dos casos (filtro, atalhos, intervalo) e o que fazer com a escolha.
- * @param {{ title: string, confirmLabel: string, defaultName: string, onPick: (picked: DocEntry[], name: string, origem: string, appName: string, links: Record<string, string[]>) => Promise<unknown> | unknown }} o
+ * @param {{ title: string, confirmLabel: string, defaultName: string, onPick: (picked: DocEntry[], name: string, origem: string, appName: string, links: Record<string, string[]>, configs: import('../markdown/cycle.ts').RunConfig[]) => Promise<unknown> | unknown, matrix?: boolean }} o
  */
-function pickCases({ title, confirmLabel, defaultName, onPick }) {
+function pickCases({ title, confirmLabel, defaultName, onPick, matrix = false }) {
   if (!app.workspaceDir) { app.toast('Abra a pasta de trabalho primeiro (☰ → Arquivos → Abrir…).', 'error'); return; }
   if (!docIndex.ready) { app.toast('Ainda lendo os documentos da pasta… tente de novo em instantes.'); return; }
   const cases = docIndex.all().filter(isCase);
   if (!cases.length) { app.toast('Nenhum caso de teste na pasta ainda (tipo: caso-de-teste, cenario-bdd ou checklist).', 'error'); return; }
-  openCasePicker({ cases, shortcuts: pickerShortcuts(cases), title, confirmLabel, defaultName, approved: { on: onlyApproved(), toggle: (on) => savePrefs({ onlyApproved: on }) } }).then((res) => {
+  openCasePicker({ cases, shortcuts: pickerShortcuts(cases), title, confirmLabel, defaultName, matrix, approved: { on: onlyApproved(), toggle: (on) => savePrefs({ onlyApproved: on }) } }).then((res) => {
     if (!res) return;
     const appNames = [...new Set(res.picked.map((e) => e.app).filter(Boolean))];
-    return onPick(res.picked, res.name, res.origem, appNames.length === 1 ? appNames[0] : '', res.links);
+    return onPick(res.picked, res.name, res.origem, appNames.length === 1 ? appNames[0] : '', res.links, res.configs);
   });
 }
 
@@ -749,7 +772,8 @@ export function newCycle() {
   pickCases({
     title: 'Novo ciclo de regressão — quais casos?', confirmLabel: 'Salvar ciclo',
     defaultName: `Regressão${onlyAppName() ? ` ${onlyAppName()}` : ''} — ${new Date().toLocaleDateString('pt-BR')}`,
-    onPick: (picked, name, origem, appName, links) => { const h = inherited(picked, links); return createDefinition(picked, appName, origem, name, h.links, h.tags); },
+    onPick: (picked, name, origem, appName, links, configs) => { const h = inherited(picked, links); return createDefinition(picked, appName, origem, name, h.links, h.tags, configs.map((c) => c.label)); },
+    matrix: true,
   });
 }
 
@@ -758,7 +782,12 @@ export function newRun() {
   pickCases({
     title: 'Nova rodada de execução — quais casos?', confirmLabel: 'Criar e começar',
     defaultName: `Rodada${onlyAppName() ? ` ${onlyAppName()}` : ''} — ${new Date().toLocaleDateString('pt-BR')}`,
-    onPick: (picked, name, origem, appName, links) => { const h = inherited(picked, links); return createExecution(picked.map(caseRef), appName, origem, name, null, h.links, undefined, h.tags); },
+    onPick: (picked, name, origem, appName, links, configs) => {
+      const h = inherited(picked, links);
+      if (configs.length) return createMatrix(picked.map(caseRef), appName, origem, name, null, h.links, h.tags, configs);
+      return createExecution(picked.map(caseRef), appName, origem, name, null, h.links, undefined, h.tags);
+    },
+    matrix: true,
   });
 }
 
@@ -774,10 +803,10 @@ function inherited(picked, links) {
   return { links: out, tags: c.tags };
 }
 
-/** @param {DocEntry[]} pick @param {string} appName @param {string} origem @param {string} titulo @param {Record<string, string[]>} [links] @param {string[]} [tags] */
-async function createDefinition(pick, appName, origem, titulo, links = {}, tags = []) {
+/** @param {DocEntry[]} pick @param {string} appName @param {string} origem @param {string} titulo @param {Record<string, string[]>} [links] @param {string[]} [tags] @param {string[]} [configuracoes] */
+async function createDefinition(pick, appName, origem, titulo, links = {}, tags = [], configuracoes = []) {
   const list = [...pick].sort((a, b) => COLL.compare(keyOf(a), keyOf(b)));
-  const text = cycleDefDoc({ titulo, app: appName, origem, cases: list.map(caseRef), responsavel: loadPrefs().publisherName || '', links, tags });
+  const text = cycleDefDoc({ titulo, app: appName, origem, cases: list.map(caseRef), responsavel: loadPrefs().publisherName || '', links, tags, configuracoes });
   const dir = runDir(CYCLE_TYPE, appName, (e) => !!e.text && isCycleDef(e.text));
   const path = await createDocIn(dir, text, `${slugOf(titulo)}.md`);
   if (!path) return;
@@ -792,7 +821,7 @@ async function createDefinition(pick, appName, origem, titulo, links = {}, tags 
  * @param {(text: string) => string} [transform] ajuste final do texto (ex.: já anexar o relatório automatizado)
  * @param {string[]} [tags] tags herdadas (dos casos em comum ou do ciclo), além de regressao
  */
-async function createExecution(cases, appName, origem, titulo, link, links = {}, transform = (/** @type {string} */ t) => t, tags = /** @type {string[]} */ ([])) {
+async function createExecution(cases, appName, origem, titulo, link, links = {}, transform = (/** @type {string} */ t) => t, tags = /** @type {string[]} */ ([]), extra = /** @type {{ config?: import('../markdown/cycle.ts').RunConfig, matriz?: string, seq?: number, quiet?: boolean }} */ ({})) {
   // preferência "só casos aprovados entram na rodada" (aprovação do caso)
   if (cases.length) {
     const { keep, left } = filterApproved(cases);
@@ -803,10 +832,11 @@ async function createExecution(cases, appName, origem, titulo, link, links = {},
   let d = new Date();
   // nova execução de um ciclo que já rodou: começa no minuto seguinte, para as rodadas das execuções anteriores (gravadas só com hora e minuto) não contarem nela
   if (link && link.numero > 1) d = new Date(Math.ceil((d.getTime() + 1) / 60000) * 60000);
-  const text = transform(cycleDoc({ titulo, app: appName, origem, cases, start: d, responsavel: loadPrefs().publisherName || '', links, tags, ...(link ? { ciclo: link.ciclo, numero: link.numero } : {}) }));
+  const text = transform(cycleDoc({ titulo, app: appName, origem, cases, start: d, responsavel: loadPrefs().publisherName || '', links, tags, ...(link ? { ciclo: link.ciclo, numero: link.numero } : {}), config: extra.config, matriz: extra.matriz, seq: extra.seq }));
   const dir = runDir(EXEC_TYPE, appName, (e) => e.tipo === EXEC_TYPE || e.tipo === 'relatorio-execucao');
   const path = await createDocIn(dir, text, `${slugOf(titulo)}.md`);
   if (!path) return;
+  if (extra.quiet) return path;
   setActive(path);
   if (!cases.length) { app.toast(`🤖 Execução automatizada criada em ${path}. Para somar casos manuais, edite a tabela "Casos do ciclo".`, 'info', { duration: 8000 }); return; }
   app.toast(`▶ ${link ? `Execução #${link.numero}` : 'Rodada'} criada em ${path} — ▶ Próximo caso abre o primeiro e já começa a execução.`, 'info', { duration: 8000, action: { label: '▶ Começar', run: () => nextCycleCase() } });
@@ -861,8 +891,37 @@ export async function runCycle(defPath = '') {
   const numero = nextExecNumber(execs);
   const titulo = `${def.titulo || def.name.replace(/\.(md|markdown)$/i, '')} — Execução #${numero}`;
   const dispositivo = readDevice(text);
+  // matriz: uma execução #N por configuração do ciclo
+  const configs = parseConfigs(/^configuracoes:\s*(.*)$/m.exec(text.split(/\n---/)[0] || '')?.[1] || '').map(configFromLabel);
+  if (configs.length) { await createMatrix(cases, def.app || '', `ciclo ${def.titulo || def.name}`, titulo, { ciclo: keyOf(def), numero }, readLinks(text), headerOf(text).tags, configs); return; }
   // a execução herda do ciclo: vínculos, dispositivo e tags
   await createExecution(cases, def.app || '', `ciclo ${def.titulo || def.name}`, titulo, { ciclo: keyOf(def), numero }, readLinks(text), (t) => (dispositivo ? setDevice(t, dispositivo) : t), headerOf(text).tags);
+}
+
+/**
+ * Matriz (11.3): uma execução por configuração (ambiente · navegador · dispositivo), com os mesmos casos; a primeira
+ * fica ativa. Cada caso registra a rodada com a configuração, e o ciclo mostra a grade caso × configuração.
+ * @param {Array<{ key: string, titulo: string }>} cases @param {string} appName @param {string} origem @param {string} titulo
+ * @param {{ ciclo: string, numero: number } | null} link @param {Record<string, string[]>} links @param {string[]} tags
+ * @param {import('../markdown/cycle.ts').RunConfig[]} configs
+ */
+async function createMatrix(cases, appName, origem, titulo, link, links, tags, configs) {
+  const { filterApproved } = await import('./approval.js');
+  const { keep, left } = filterApproved(cases);
+  if (!keep.length) { app.toast('Nenhum caso aprovado — com "só aprovados" ligado a rodada não foi criada.', 'error'); return; }
+  const matriz = link ? `${link.ciclo} #${link.numero}` : `MAT-${new Date().toISOString().replace(/\D/g, '').slice(0, 12)}`;
+  /** @type {string[]} */
+  const paths = [];
+  let seq = 0;
+  for (const config of configs) {
+    seq++;
+    const p = await createExecution(keep, appName, origem, `${titulo} — ${config.label}`, link, links, undefined, tags, { config, matriz, seq, quiet: true });
+    if (p) paths.push(p);
+  }
+  if (!paths.length) return;
+  setActive(paths[0]);
+  await openWikiTarget(paths[0], { entry: docIndex.get(paths[0]) || undefined });
+  app.toast(`🧮 ${paths.length} execução(ões) — uma por configuração: ${configs.map((c) => c.label).join(' · ')}${left.length ? ` (${left.length} não aprovado(s) fora)` : ''}. Começando pela ${configs[0].label}: ▶ Próximo caso.`, 'info', { duration: 10000, action: { label: '▶ Começar', run: () => nextCycleCase() } });
 }
 
 /**
@@ -896,8 +955,9 @@ export async function rerunFailed(execPath = '') {
   const base = (tituloAtual || 'Execução').replace(/\s+—\s+Reteste( \d+)?$/i, '');
   const titulo = `${base} — Reteste`;
   const dispositivo = readDevice(c.text);
+  const cfgLabel = configOf(c.text);
   await createExecution(cases, e?.app || '', `reteste das falhas de [[${id}]]`, titulo, null, readLinks(c.text),
-    (t) => (dispositivo ? setDevice(t, dispositivo) : t), [...h.tags, 'reteste']);
+    (t) => (dispositivo ? setDevice(t, dispositivo) : t), [...h.tags, 'reteste'], cfgLabel ? { config: configFromLabel(cfgLabel) } : {});
 }
 
 /** Abre o ciclo (definição) a que esta execução pertence. */

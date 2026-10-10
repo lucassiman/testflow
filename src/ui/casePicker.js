@@ -8,6 +8,7 @@
 /** @typedef {import('../types').DocEntry} DocEntry */
 /** @typedef {{ label: string, hint?: string, paths: string[], origem: string }} CaseShortcut */
 import { linkFields } from './linksDialog.js';
+import { combos } from '../markdown/cycle.ts';
 
 /** @param {unknown} s */
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => /** @type {Record<string, string>} */ ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -26,10 +27,10 @@ export function folderOf(path) {
 }
 
 /**
- * @param {{ cases: DocEntry[], shortcuts?: CaseShortcut[], title?: string, defaultName: string, preselected?: string[], confirmLabel?: string, links?: Record<string, string[]>, approved?: { on: boolean, toggle: (on: boolean) => void }, named?: boolean }} opts `named: false` = sem o campo Nome nem os vínculos (ex.: edição em massa)
- * @returns {Promise<{ picked: DocEntry[], name: string, origem: string, links: Record<string, string[]> } | null>} null = cancelado
+ * @param {{ cases: DocEntry[], shortcuts?: CaseShortcut[], title?: string, defaultName: string, preselected?: string[], confirmLabel?: string, links?: Record<string, string[]>, approved?: { on: boolean, toggle: (on: boolean) => void }, named?: boolean, matrix?: boolean }} opts `matrix`: mostra a matriz de configurações (ambientes × navegadores × dispositivos) `named: false` = sem o campo Nome nem os vínculos (ex.: edição em massa)
+ * @returns {Promise<{ picked: DocEntry[], name: string, origem: string, links: Record<string, string[]>, configs: import('../markdown/cycle.ts').RunConfig[] } | null>} null = cancelado
  */
-export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada — quais casos?', defaultName, preselected = [], confirmLabel = 'Criar e começar', links = {}, approved, named = true }) {
+export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada — quais casos?', defaultName, preselected = [], confirmLabel = 'Criar e começar', links = {}, approved, named = true, matrix = false }) {
   return new Promise((resolve) => {
     const list = [...cases].sort((a, b) => COLL.compare(a.app || '', b.app || '') || COLL.compare(keyOf(a), keyOf(b)));
     const selected = new Set(preselected);
@@ -55,6 +56,13 @@ export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada —
         ${shortcuts.length ? `<div class="cpk-chips"><span class="cpk-chips-label">Atalhos:</span>${shortcuts.map((s, i) => `<button type="button" class="cpk-chip" data-chip="${i}" title="${esc(s.hint || 'Adiciona estes casos à seleção')}">${esc(s.label)}${s.hint ? ` <small>${esc(s.hint)}</small>` : ''}</button>`).join('')}</div>` : ''}
         <div class="cpk-head cpk-row"><label class="cpk-chk"><input type="checkbox" data-cpk="head" aria-label="Selecionar todos os casos visíveis"></label><span>Caso</span><span>Aplicação / pasta</span><span>Tags</span><span>Último</span></div>
         <div class="cpk-list" data-cpk="list" role="listbox" aria-multiselectable="true" aria-label="Casos de teste"></div>
+        ${matrix ? `<details class="cpk-matrix" data-cpk="matrix"><summary>🧮 Configurações (matriz) — o mesmo caso em vários ambientes, navegadores ou dispositivos</summary>
+          <div class="cpk-mx">
+            <label>Ambientes <input type="text" data-mx="ambientes" placeholder="HML, PROD" spellcheck="false"></label>
+            <label>Navegadores <input type="text" data-mx="navegadores" placeholder="Chrome, Safari" spellcheck="false"></label>
+            <label>Dispositivos / SO <input type="text" data-mx="dispositivos" placeholder="Windows, macOS, Android 15" spellcheck="false"></label>
+          </div>
+          <p class="cpk-mx-note" data-cpk="mxnote">Vazio = uma execução só. Preenchido: uma execução por combinação.</p></details>` : ''}
         <details class="cpk-links" data-cpk="links"${named ? '' : ' hidden'}><summary>🔗 Vínculos (opcional) — Jira, Épico, Sprint…</summary></details>
         <div class="review-foot">
           <label class="cpk-name"${named ? '' : ' hidden'}>Nome <input type="text" data-cpk="name" value="${esc(defaultName)}" spellcheck="false"></label>
@@ -113,15 +121,21 @@ export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada —
       return `seleção manual (${selected.size} caso${selected.size === 1 ? '' : 's'})`;
     }
 
-    /** @param {{ picked: DocEntry[], name: string, origem: string, links: Record<string, string[]> } | null} result */
+    /** @param {{ picked: DocEntry[], name: string, origem: string, links: Record<string, string[]>, configs: import('../markdown/cycle.ts').RunConfig[] } | null} result */
     function done(result) {
       document.removeEventListener('keydown', onKey, true);
       overlay.remove();
       resolve(result);
     }
+    /** Combinações da matriz preenchida (vazio = sem matriz). */
+    function configs() {
+      if (!matrix) return [];
+      const v = (/** @type {string} */ k) => (/** @type {HTMLInputElement | null} */ (overlay.querySelector(`[data-mx="${k}"]`))?.value || '').split(/[,;]+/);
+      return combos({ ambientes: v('ambientes'), navegadores: v('navegadores'), dispositivos: v('dispositivos') });
+    }
     function confirm() {
       if (okBtn.disabled) return;
-      done({ picked: list.filter((e) => selected.has(e.path)), name: nameInput.value.trim(), origem: origemOf(), links: lk.read() });
+      done({ picked: list.filter((e) => selected.has(e.path)), name: nameInput.value.trim(), origem: origemOf(), links: lk.read(), configs: configs() });
     }
 
     /** @param {KeyboardEvent} event */
@@ -170,6 +184,10 @@ export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada —
       anchor = -1; focusAt = 0; renderList();
     });
     nameInput.addEventListener('input', refreshCount);
+    overlay.querySelector('[data-cpk="matrix"]')?.addEventListener('input', () => {
+      const c = configs();
+      q('[data-cpk="mxnote"]').textContent = c.length ? `${c.length} execução(ões): ${c.map((x) => x.label).join(' · ')}` : 'Vazio = uma execução só. Preenchido: uma execução por combinação.';
+    });
     headChk.addEventListener('change', () => { visible.forEach((_, i) => setAt(i, headChk.checked)); renderList(); });
     overlay.addEventListener('click', (event) => {
       const t = /** @type {HTMLElement} */ (event.target);

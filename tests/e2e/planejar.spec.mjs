@@ -62,3 +62,34 @@ test('atribuir: 👥 distribui os pendentes, chip do testador, filtro Minhas, ca
   await page.locator('.cp-btn[data-cp="next"]').click();
   await expect(page.locator('#preview h1')).toHaveText('TC-1');
 });
+
+test('matriz: nova rodada em HML e PROD cria uma execução por configuração; o caso feito em HML segue pendente em PROD', async ({ page }) => {
+  await workspace(page, 'ws-matriz', [
+    ['aplicacoes/Portal/casos/TC-1.md', tc('TC-1')],
+  ]);
+  await page.click('button[data-menu="newMenu"]');
+  await page.click('#newMenu [data-cmd="newRun"]');
+  const picker = page.locator('.cpk-dialog');
+  await picker.locator('button', { hasText: 'Selecionar visíveis' }).click();
+  await picker.locator('[data-cpk="matrix"] summary').click();
+  await picker.locator('[data-mx="ambientes"]').fill('HML, PROD');
+  await picker.locator('[data-mx="navegadores"]').fill('Chrome');
+  await expect(picker.locator('[data-cpk="mxnote"]')).toContainText('2 execução(ões): HML · Chrome · PROD · Chrome');
+  await picker.locator('button', { hasText: 'Criar e começar' }).click();
+  await expect(page.locator('#toast')).toContainText('2 execução(ões) — uma por configuração');
+  const cfg = page.locator('.cp-cfg');
+  await expect(cfg).toHaveCount(2);
+  await expect(cfg.nth(0)).toHaveClass(/on/);
+  await page.locator('.cp-btn[data-cp="next"]').click();
+  await expect(page.locator('#envChip')).toContainText('HML'); // o ambiente vem da rodada
+  await expect(page.locator('.runner .run-step')).toBeVisible();
+  await page.keyboard.press('1');
+  await page.locator('.runner [data-act="finish"]').click();
+  await expect(page.locator('.cp-cfg', { hasText: 'HML' })).toContainText('1/1');
+  await page.locator('.cp-cfg', { hasText: 'PROD' }).click();
+  await expect(page.locator('.cp-cfg', { hasText: 'PROD' })).toHaveClass(/on/);
+  await expect(page.locator('.cp-item', { hasText: 'TC-1' })).toHaveClass(/cp-pendente|cp-atual/);
+  await page.locator('.cp-btn[data-cp="next"]').click();
+  await expect(page.locator('#envChip')).toContainText('PROD');
+  await expect(page.locator('#preview td', { hasText: /HML · Chrome/ })).toHaveCount(1); // histórico da rodada em HML
+});

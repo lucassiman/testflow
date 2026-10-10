@@ -172,6 +172,8 @@ Ida e volta pela área de transferência (sem chave de API, nada sai do editor s
 
 ✅ **Feito na 1.12.0 — Dispositivo/ambiente:** substituir/expandir o campo atual *Browser* por **Dispositivo/Ambiente**: WEB, Mobile iOS, Mobile Android, Mobile — Todos; para mobile informar a versão (ex.: Mobile iOS — iOS 18, Mobile Android — Android 15). Deve aparecer nas tags, no cabeçalho do caso, nos modelos de criação de casos e nas informações da execução, para rastrear em que dispositivo/plataforma cada caso foi validado.
 
+**1.46.0 (10/10) — matriz de configurações e o mesmo caso em vários ambientes (11.3).** `cycle.ts`: `RunConfig`, `combos`, `configFromLabel` (ambiente/navegador/dispositivo pelo jeito da parte), `sameConfig`, `configOf`, `parseConfigs`; `cycleDoc({ config, matriz, seq })` (`configuracao:`, `ambiente:`, `browser:`, `dispositivo:`, `matriz:`, ID com `-seq`); `cycleDefDoc({ configuracoes })`; `runsOf().config`; `caseResult(…, config)`/`needsFreshRound(…, config)` só com as rodadas da configuração; `ExecInfo.config/casos`, `syncDefExecutions` com a coluna Configuração e `matrixGrid`. `runs.ts`: colunas extras genéricas no histórico (Dados, Configuração). App: picker `matrix` (🧮 com prévia das combinações), `createMatrix`, `runCycle` com `configuracoes:`, reteste na configuração de origem, `matrixOf`/`switchConfig` (chips `.cp-cfg`), `roundOfOpenCase().config/ambiente`, runner `roundConfig` → `logRun({ config })`, `envOf` usa o ambiente da rodada. MCP: `qa_rodada_criar { ambientes, navegadores, dispositivos }` (ou as do ciclo), registro/status com a configuração. Testes `matriz.test`, `planejar.spec` (matriz).
+
 **1.45.0 (10/10) — atribuir casos na rodada (11.3).** `assign.ts`: coluna **Testador** na tabela "Casos do ciclo" (`cycleTable().cols.tester`, criada na 1ª atribuição), `assign`, `distribute(text, pessoas, { avgMs, todos })` (o maior primeiro para quem está com menos; sem tempos, pela quantidade; soma à carga existente), `workload`, `pendingOf`, `assignees`, `testers`, `samePerson` (nome inteiro ou primeiro nome). `nextCase(text, current, who)`: os da pessoa, depois os livres. App `app/assign.js` (`assignRound`, `reassignCase`, `me()` = publisherName), painel: chip `.cp-who` (clique troca), filtro Minhas, linha `.cp-load`, botão 👥 Atribuir; próximo caso por pessoa em todo o fluxo; Início com **👤 Minhas pendências**. MCP `qa_rodada_atribuir`, `qa_pendencias`, carga no `qa_rodada_status`. Correção: a previsão (1.44) arredonda o fim ao minuto — o painel não redesenha a cada instante. Testes `assign.test`, `planejar.spec`.
 
 **1.44.0 (10/10) — previsão de tempo da rodada (11.3).** `forecast.ts`: `caseAvgMs` (média das últimas 5 durações do histórico × iterações), `forecast(items)` (pendentes com a média própria; sem histórico → média da rodada ou 10 min), `forecastText`/`forecastDetail`/`approxDuration`. Painel da rodada `.cp-forecast` (`cycleChecklist().forecast`, cache por texto); `qa_rodada_status` com a linha Previsão. Testes `forecast.test`, `planejar.spec`.
@@ -501,12 +503,12 @@ Levantada comparando com TestRail, Zephyr, Xray, Qase, Testmo e as extensões de
 | **Edição em massa** | ✅ 1.41.0 — Selecionar vários casos e mudar prioridade, tags, épico ou responsável de uma vez. | M |
 | **Importação em massa** | ✅ 1.42.0 — De TestRail/Zephyr (CSV) ou Excel com um caso por linha → um documento por caso. | M |
 
-#### 11.3 — Planejar e executar *(M)* — em andamento: ✅ 1.44.0 previsão · ✅ 1.45.0 atribuir
+#### 11.3 — Planejar e executar *(M)* — em andamento: ✅ 1.44.0 previsão · ✅ 1.45.0 atribuir · ✅ 1.46.0 matriz
 
 | Item | Detalhe | Esforço |
 |---|---|---|
-| **Mesmo caso em vários ambientes** | `ambientes: [hml, prod]` no caso → uma execução por ambiente, como as iterações dos casos com dados (pedido em 10/10, para depois da 1.43.0). | M |
-| **Matriz de configurações** | Chrome/Safari × Windows/macOS × Mobile: a rodada gera um caso por combinação. | M |
+| **Mesmo caso em vários ambientes** | ✅ 1.46.0 (pela matriz: ambientes como uma das dimensões) — `ambientes: [hml, prod]` no caso → uma execução por ambiente, como as iterações dos casos com dados (pedido em 10/10, para depois da 1.43.0). | M |
+| **Matriz de configurações** | ✅ 1.46.0 — Chrome/Safari × Windows/macOS × Mobile: a rodada gera um caso por combinação. | M |
 | **Atribuir casos na rodada** | ✅ 1.45.0 — Cada caso com um testador; "minhas pendências" e carga por pessoa. | M |
 | **Previsão de tempo da rodada** | ✅ 1.44.0 — Quanto falta, pela duração média que cada caso já teve. | P |
 | **Releases / milestones** | Rodadas e planos agrupados por versão do produto, com o progresso da release. | M |

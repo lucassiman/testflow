@@ -225,9 +225,9 @@ function meta(source: string): Record<string, FrontMatterValue> {
 /** Registra uma rodada no histórico (cria a seção e a tabela se preciso). */
 export function logRun(
   source: string,
-  run: { start: Date; end: Date; round?: number; elapsed?: number; /** caso com dados (11.2): "admin (1/3)" na coluna Dados */ iteration?: string; /** ambiente em que rodou (vale mais que o ambiente: do cabeçalho) */ ambiente?: string },
+  run: { start: Date; end: Date; round?: number; elapsed?: number; /** caso com dados (11.2): "admin (1/3)" na coluna Dados */ iteration?: string; /** ambiente em que rodou (vale mais que o ambiente: do cabeçalho) */ ambiente?: string; /** configuração da matriz (11.3): "HML · Chrome · Windows" na coluna Configuração */ config?: string },
 ): { source: string; round: number; overall: StatusWord } {
-  const { start, end, round, elapsed, iteration, ambiente } = run;
+  const { start, end, round, elapsed, iteration, ambiente, config } = run;
   const data = meta(source);
   const overall = deriveOverall(countStatuses(source)) || 'PENDING';
   const lines = source.split('\n');
@@ -235,15 +235,25 @@ export function logRun(
   const sec = ensureSection(lines, HISTORY_TITLE, 'Histórico de execuções');
   let row = `| ${n} | ${fmtDate(start)} | ${fmtTime(start)} | ${fmtTime(end)} | ${fmtDuration(elapsed ?? Number(end) - Number(start))} | ${cellText(ambiente || data.ambiente || '')} | \`${overall}\` | ${cellText(data.responsavel || '')} |`;
   const log = tablesIn(lines, sec.start, sec.end).find((t) => normHeader(t.cols[0] || '') === 'rodada');
-  // coluna Dados (iteração): criada quando a primeira rodada com dados é registrada
-  let dataCol = log ? log.cols.findIndex((c) => normHeader(c) === 'dados') : -1;
-  if (log && iteration && dataCol < 0) {
-    lines[log.header] = `${lines[log.header].replace(/\s*$/, '')} Dados |`;
-    lines[log.header + 1] = `${lines[log.header + 1].replace(/\s*$/, '')} --- |`;
-    for (let i = log.header + 2; i < log.end; i++) lines[i] = `${lines[i].replace(/\s*$/, '')}  |`;
-    dataCol = log.cols.length;
+  // colunas extras, criadas quando a primeira rodada com elas é registrada: Dados (iteração) e Configuração (matriz)
+  const extras: Array<[string, string, string | undefined]> = [['dados', 'Dados', iteration], ['configuracao', 'Configuração', config]];
+  const head = log ? [...log.cols] : [];
+  const added: string[] = [];
+  for (const [norm, title, value] of extras) {
+    if (log && value && head.findIndex((c) => normHeader(c) === norm) < 0) {
+      lines[log.header] = `${lines[log.header].replace(/\s*$/, '')} ${title} |`;
+      lines[log.header + 1] = `${lines[log.header + 1].replace(/\s*$/, '')} --- |`;
+      for (let i = log.header + 2; i < log.end; i++) lines[i] = `${lines[i].replace(/\s*$/, '')}  |`;
+      head.push(title);
+    }
+    if (!log && value) added.push(title);
   }
-  if (dataCol >= 0 || (!log && iteration)) row = `${row} ${cellText(iteration || '')} |`;
+  // a linha nova na ordem das colunas que existem (ou que a tabela nova vai ter)
+  const order = log ? head.slice(8) : extras.filter(([, t]) => added.includes(t)).map(([, t]) => t);
+  for (const col of order) {
+    const hit = extras.find(([n]) => n === normHeader(col));
+    row = `${row} ${cellText(hit?.[2] || '')} |`;
+  }
   if (log) {
     // a mesma rodada concluída de novo: atualiza a linha dela
     let existing = -1;
@@ -252,7 +262,7 @@ export function logRun(
   } else {
     // tabela de registro fica no topo da seção
     const at = sec.start;
-    const block = ['', iteration ? `${HISTORY_HEAD} Dados |` : HISTORY_HEAD, `| --- | --- | --- | --- | --- | --- | --- | --- |${iteration ? ' --- |' : ''}`, row];
+    const block = ['', `${HISTORY_HEAD}${added.map((t) => ` ${t} |`).join('')}`, `| --- | --- | --- | --- | --- | --- | --- | --- |${added.map(() => ' --- |').join('')}`, row];
     if ((lines[at] ?? '').trim() !== '') block.push('');
     lines.splice(at, 0, ...block);
   }
