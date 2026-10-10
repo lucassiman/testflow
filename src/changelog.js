@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.41.0', date: '10/10/2026',
+    items: [
+      { icon: '✎', text: '**Edição em massa**: escolha vários casos (pela pasta, filtro, épico, visão…) e mude **prioridade, responsável, épico, sprint, versão, tags e aprovação** de uma vez — com prévia e **Desfazer**. Clique direito na pasta → *Editar os casos desta pasta em massa…*', manual: '10.1 Organizar' },
+      { icon: '🤖', text: 'Com o Claude: `qa_editar_em_massa` (prévia primeiro, grava com o seu OK).', manual: '10.1 Organizar' },
+    ],
+  },
+  {
     version: '1.40.0', date: '10/10/2026',
     items: [
       { icon: '◫', text: '**Versões lado a lado**: no Histórico de versões, a versão à esquerda e o documento (ou outra versão — **Comparar com**) à direita, com as palavras alteradas marcadas; **≡ No texto** volta ao modo antigo.', manual: '10.4 Publicar' },

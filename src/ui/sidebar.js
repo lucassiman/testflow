@@ -16,7 +16,7 @@
 /** @typedef {{ name: string, path: string, dirs: Map<string, TreeNode>, files: WorkspaceFile[] }} TreeNode */
 /** @typedef {import('../io/fsOps.js').TrashItem} TrashItem */
 /** @typedef {{ kind: 'file' | 'dir', path: string }} Entry */
-/** @typedef {'open' | 'rename' | 'move' | 'trash' | 'newFolder' | 'structure' | 'newApp' | 'newHere' | 'quickNote' | 'moveSuggested' | 'importNotion' | 'openSide' | 'byTicket' | 'pin' | 'unpin' | 'segment'} EntryAction */
+/** @typedef {'open' | 'rename' | 'move' | 'trash' | 'newFolder' | 'structure' | 'newApp' | 'newHere' | 'quickNote' | 'moveSuggested' | 'importNotion' | 'openSide' | 'byTicket' | 'pin' | 'unpin' | 'segment' | 'bulkEdit'} EntryAction */
 
 const DRAG_TYPE = 'application/x-mdqa-entry';
 
@@ -649,6 +649,7 @@ export function createSidebar({ root, onOpenFile, onOpenRecent, onRemoveRecent, 
           .../** @type {Array<[EntryAction, string, string]>} */ (entry.path === 'aplicacoes' ? [['newApp', '🧩 Nova aplicação…', '']] : []),
           .../** @type {Array<[EntryAction, string, string]>} */ (/^aplicacoes\/[^/]+\/casos$/.test(entry.path) ? [['byTicket', '🎫 Organizar por épico e ticket…', '']] : []),
           ['segment', '🧩 Reunir o segmento (tudo o que nasceu dele)', ''],
+          ['bulkEdit', '✎ Editar os casos desta pasta em massa…', ''],
           ['rename', '✎ Renomear…', 'F2'], ['move', '↪ Mover para…', ''], ['trash', '🗑 Mover para a lixeira', 'Delete']]
         : [...(() => { const s = suggest?.(entry.path); return s ? [/** @type {[EntryAction, string, string]} */ (['moveSuggested', `✨ Mover para ${s}/`, ''])] : []; })(),
           ['open', '📄 Abrir', 'Enter'], isPinned(entry.path) ? ['unpin', '☆ Desafixar do topo', ''] : ['pin', '★ Fixar no topo', ''], ['openSide', '◫ Abrir ao lado (para consultar)', ''], ['segment', '🧩 Reunir o segmento (tudo o que nasceu dele)', ''], ['rename', '✎ Renomear…', 'F2'], ['move', '↪ Mover para…', ''], ['trash', '🗑 Mover para a lixeira', 'Delete']];

@@ -172,6 +172,8 @@ Ida e volta pela área de transferência (sem chave de API, nada sai do editor s
 
 ✅ **Feito na 1.12.0 — Dispositivo/ambiente:** substituir/expandir o campo atual *Browser* por **Dispositivo/Ambiente**: WEB, Mobile iOS, Mobile Android, Mobile — Todos; para mobile informar a versão (ex.: Mobile iOS — iOS 18, Mobile Android — Android 15). Deve aparecer nas tags, no cabeçalho do caso, nos modelos de criação de casos e nas informações da execução, para rastrear em que dispositivo/plataforma cada caso foi validado.
 
+**1.41.0 (10/10) — edição em massa (11.2).** `bulkEdit.ts`: `applyBulk(text, { prioridade, responsavel, epico, sprint, versao, addTags, removeTags, aprovacao, clear })` (só o cabeçalho; `setRaw` troca a linha e tira a lista em bloco; igual → texto idêntico), `describeBulk`, `normalizePriority`, `splitTags`. App `app/bulkEdit.js`: `openCasePicker({ named: false, preselected })` + formulário `.bulk-dialog` (tags dos casos para clicar e tirar, prévia "muda N de M"), grava (aberto → edição; fechados → `snapshotBeforeSave` + `writeText` + `docIndex.update`; outra aba → fica de fora), **Desfazer** (só os que não mudaram depois). Entradas: paleta `bulkEdit`, clique direito na pasta (`bulkEdit` em `EntryAction`). `pickerShortcuts` exportado. MCP `qa_editar_em_massa` (casos/segmento/consulta, prévia sem `aplicar`). Testes `bulkEdit.test`, `edicaoMassa.spec`.
+
 **1.40.0 (10/10) — versões com comparação (11.2).** `versionDiff.ts`: `lineDiff` (LCS por linha, prefixo/sufixo aparados, removidas antes das novas), `sideBySide` (eq · del · ins · mod pareadas · skip com contexto 3), `changedLines`, `caseChanges` (cabeçalho sem os campos voláteis, passos pelo `#`, seções via `definitionText`, título; histórico/evidências e subseções fora), `unifiedDiff`. `ui/history.js`: ◫ Lado a lado (`sideBySideHtml`, palavras com `diffWords`) / ≡ No texto, **Comparar com** (outra versão), lista "O que mudou no caso", `select`/`note` para abrir já escolhido, cache das versões lidas. `versionName(…, aprovada)` → `_aprovada.md` (`parseVersionName().aprovada`; `pruneVersions` não apaga); aprovar no app salva e guarda a versão aprovada; `openVersionHistory({ sinceApproval })` (pela marca ou pelo `aprovado_hash`), item "Ver o que mudou desde a aprovação" no menu da aprovação. MCP: `qa_comparar_versoes`, `qa_restaurar_versao`, `(aprovada)` no `qa_versoes`. Testes `versionDiff.test`, `aprovacao.spec` (versões).
 
 **1.39.0 (10/10) — aprovação do caso (11.2).** `approval.ts`: `aprovacao:` rascunho · em-revisao · aprovado (`normalizeApproval`), `revisor`, `aprovado_por/em/hash`; `definitionText`/`definitionHash` (corpo sem Status/Obtido, histórico, evidências, comentários, resumo e prints; células e espaços normalizados) → `approvalOf().changed`; `approvalKey` (… · alterado) no índice (`DocInfo.aprovacao`); `setApproval`. Pílula `approval` em `stateMarks` (✍ em elaboração · 👀 · ✅ · ⚠) → `app/approval.js` (`approvalMenu`, enviar para revisão com revisor, aprovar, voltar; pref `onlyApproved`, `filterApproved` em `createExecution`). `casePicker`: ícone de aprovação e ☐ só aprovados. Visões/busca: filtro e coluna `aprovacao`, atalho 👀 Para revisar. Modelos de caso e cenário com `aprovacao: rascunho`. MCP: `qa_aprovacao`, `qa_rodada_criar { so_aprovados }`, linha "Aprovação" no `qa_ler`. Testes `approval.test`, `aprovacao.spec`.
@@ -480,14 +482,14 @@ Levantada comparando com TestRail, Zephyr, Xray, Qase, Testmo e as extensões de
 | **Reexecutar só falhas e bloqueados** | ✅ 1.33.0 — A partir de uma rodada, criar outra só com os casos FAIL/BLOCKED (validar correções). | P–M |
 | **Tendência entre rodadas** | ✅ 1.34.0 — % de sucesso por rodada/sprint, bugs abertos × fechados no tempo, casos que mais falham, tempo médio por caso. | M |
 
-#### 11.2 — Escrever casos *(M)* — em andamento: ✅ 1.38.0 casos com dados · ✅ 1.39.0 aprovação · ✅ 1.40.0 versões com comparação
+#### 11.2 — Escrever casos *(M)* — em andamento: ✅ 1.38.0 casos com dados · ✅ 1.39.0 aprovação · ✅ 1.40.0 versões com comparação · ✅ 1.41.0 edição em massa
 
 | Item | Detalhe | Esforço |
 |---|---|---|
 | **Casos com dados (data-driven)** | ✅ 1.38.0 — Uma tabela de dados no caso (usuário A, B, C…): na rodada vira uma execução por linha. | M |
 | **Aprovação do caso** | ✅ 1.39.0 — Rascunho → em revisão → aprovado; só aprovado entra na rodada (opcional). | M |
 | **Versões com comparação** | ✅ 1.40.0 — Ver o que mudou num caso entre versões, lado a lado, e voltar a uma anterior. | M |
-| **Edição em massa** | Selecionar vários casos e mudar prioridade, tags, épico ou responsável de uma vez. | M |
+| **Edição em massa** | ✅ 1.41.0 — Selecionar vários casos e mudar prioridade, tags, épico ou responsável de uma vez. | M |
 | **Importação em massa** | De TestRail/Zephyr (CSV) ou Excel com um caso por linha → um documento por caso. | M |
 
 #### 11.3 — Planejar e executar *(M)*

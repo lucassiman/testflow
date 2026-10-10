@@ -15,6 +15,7 @@ import { createDocIndex, describe } from '../src/io/docIndex.ts';
 import { readText, writeText, writeBytes, namesIn, hasName, kindAt } from '../src/io/fsOps.js';
 import { snapshotBeforeSave, listVersions, readVersion, saveVersion } from '../src/io/versions.js';
 import { caseChanges, unifiedDiff } from '../src/markdown/versionDiff.ts';
+import { applyBulk, describeBulk, emptyBulk, splitTags, type BulkChange } from '../src/markdown/bulkEdit.ts';
 import { IGNORE } from '../src/io/workspace.js';
 import { detectFrontMatter, parseFrontMatter, TYPE_LABELS } from '../src/markdown/frontmatter.ts';
 import { parseView, runView, viewMarkdown, VIEW_PRESETS, findViewBlocks, viewMatches, bugsFor, bugOpen } from '../src/markdown/views.ts';
@@ -1325,6 +1326,46 @@ export class QaWorkspace {
       ...changes.map((x) => `- ${x}`),
       '', 'Diff (- versão, + depois):', ...diff.slice(0, 200), ...(diff.length > 200 ? [`… (${diff.length - 200} linhas a mais)`] : []),
     ].join('\n');
+  }
+
+  /**
+   * Edição em massa: muda campos do cabeçalho de vários casos (escolhidos como na rodada: IDs, segmento, consulta —
+   * combinados, a interseção). Sem `aplicar`: só mostra o que mudaria.
+   */
+  bulkEdit(o: { casos?: string[]; segmento?: string; consulta?: string; prioridade?: string; responsavel?: string; epico?: string; sprint?: string; versao?: string; tags_por?: string; tags_tirar?: string; aprovacao?: string; limpar?: string[]; aplicar?: boolean }): Promise<string> {
+    return this.exclusive(async () => {
+      await this.refresh(true);
+      const all = this.index.all();
+      const isCaseDoc = (e: DocEntry) => CASE_TYPES.includes(e.tipo);
+      const sets: DocEntry[][] = [];
+      if (o.casos?.length) { const list: DocEntry[] = []; for (const c of o.casos) list.push(await this.find(c)); sets.push(list); }
+      if (o.segmento) sets.push(segmentMembers(o.segmento, all).filter(isCaseDoc));
+      if (o.consulta) {
+        const { spec, errors } = parseView(o.consulta);
+        if (errors.length) throw new Error(`consulta: ${errors.join(' · ')}`);
+        const docs = this.viewDocs();
+        const ok = new Set(docs.filter((d) => viewMatches(d, spec, docs)).map((d) => d.path));
+        sets.push(all.filter((e) => ok.has(e.path) && isCaseDoc(e)));
+      }
+      if (!sets.length) throw new Error('informe os casos: casos (IDs), segmento ou consulta');
+      const picked = sets.reduce((acc, s) => acc.filter((x) => s.some((y) => y.path === x.path)));
+      const ap = o.aprovacao ? normalizeApproval(o.aprovacao) : undefined;
+      if (o.aprovacao && !ap) throw new Error(`aprovacao "${o.aprovacao}" inválida — rascunho, em-revisao ou aprovado`);
+      const clear = (o.limpar || []).filter((x): x is 'responsavel' | 'epico' | 'sprint' | 'versao' => ['responsavel', 'epico', 'sprint', 'versao'].includes(x));
+      const change: BulkChange = { prioridade: o.prioridade, responsavel: o.responsavel, epico: o.epico, sprint: o.sprint, versao: o.versao, addTags: splitTags(o.tags_por || ''), removeTags: splitTags(o.tags_tirar || ''), aprovacao: ap || undefined, clear };
+      if (emptyBulk(change)) throw new Error('nada a mudar: informe prioridade, responsavel, epico, sprint, versao, tags_por, tags_tirar, aprovacao ou limpar');
+      const changes: Array<{ e: DocEntry; doc: DocText; next: string }> = [];
+      for (const e of picked) {
+        const doc = await this.readDoc(e.path);
+        const next = applyBulk(doc.text, change, { who: this.opts.who || '' });
+        if (next !== doc.text) changes.push({ e, doc, next });
+      }
+      const what = describeBulk(change).join(' · ');
+      const names = changes.map((c) => c.e.id || c.e.name).join(', ');
+      if (!o.aplicar) return `Prévia (nada gravado): ${what} — muda ${changes.length} de ${picked.length} caso(s)${changes.length ? `: ${names}` : ''}. Para gravar, repita com aplicar: true (confirme com o usuário).`;
+      for (const c of changes) await this.writeDoc(c.e.path, c.next, c.doc);
+      return `Editados ${changes.length} de ${picked.length} caso(s) — ${what}${changes.length ? `: ${names}` : ''}. A versão anterior de cada um ficou em .versoes/.`;
+    });
   }
 
   /** Volta o documento a uma versão (a atual fica guardada em .versoes/). */

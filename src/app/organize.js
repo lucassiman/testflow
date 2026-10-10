@@ -138,6 +138,7 @@ export async function organizeAction(action, entry) {
   else if (action === 'importNotion') await importNotion();
   else if (action === 'byTicket') await organizeCasesByTicket(entry.path);
   else if (action === 'segment') gatherSegment(entry);
+  else if (action === 'bulkEdit') import('./bulkEdit.js').then((m) => m.bulkEdit({ dir: entry.path }));
   else if (action === 'moveSuggested') {
     const dest = suggestionFor(entry.path);
     if (dest !== null) { await organizer.move(entry, dest); app.sidebar.expandFolder(dest); }

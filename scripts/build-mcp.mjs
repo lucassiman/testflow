@@ -49,6 +49,7 @@ const TOOLS = [
   ['qa_marcar_passos', 'Marcar status/obtido dos passos'],
   ['qa_nova_rodada', 'Arquivar a rodada e limpar os passos'],
   ['qa_aprovacao', 'Aprovação do caso: rascunho, em revisão, aprovado'],
+  ['qa_editar_em_massa', 'Mudar prioridade, tags, épico, responsável de vários casos'],
   ['qa_comparar_versoes', 'O que mudou entre versões (passos, cabeçalho, diff)'],
   ['qa_restaurar_versao', 'Voltar o documento a uma versão guardada'],
   ['qa_anexar_evidencia', 'Copiar um arquivo para evidencias/ e ligar'],

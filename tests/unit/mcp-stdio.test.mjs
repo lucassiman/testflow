@@ -24,7 +24,7 @@ test('MCP pelo stdio: ferramentas, instruções e uma leitura (npm run mcp; e o 
     await withServer(args, async (client) => {
       const { tools } = await client.listTools();
       const names = tools.map((t) => t.name);
-      for (const n of ['qa_visao_geral', 'qa_ler', 'qa_criar', 'qa_bug_do_caso', 'qa_marcar_passos', 'qa_para_jira', 'qa_rodada_criar', 'qa_rodada_registrar', 'qa_rodada_finalizar', 'qa_relatorios', 'qa_validar', 'qa_rastreabilidade', 'qa_tendencia', 'qa_compartilhados', 'qa_aprovacao', 'qa_comparar_versoes', 'qa_restaurar_versao']) assert.ok(names.includes(n), `${n} em ${args[0]}`);
+      for (const n of ['qa_visao_geral', 'qa_ler', 'qa_criar', 'qa_bug_do_caso', 'qa_marcar_passos', 'qa_para_jira', 'qa_rodada_criar', 'qa_rodada_registrar', 'qa_rodada_finalizar', 'qa_relatorios', 'qa_validar', 'qa_rastreabilidade', 'qa_tendencia', 'qa_compartilhados', 'qa_aprovacao', 'qa_comparar_versoes', 'qa_restaurar_versao', 'qa_editar_em_massa']) assert.ok(names.includes(n), `${n} em ${args[0]}`);
       assert.equal(tools.find((t) => t.name === 'qa_ler').annotations.readOnlyHint, true);
       assert.match(client.getInstructions() || '', /QA-MD/);
       const r = await client.callTool({ name: 'qa_ler', arguments: { doc: 'TC-001', so_resumo: true } });

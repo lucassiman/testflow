@@ -26,10 +26,10 @@ export function folderOf(path) {
 }
 
 /**
- * @param {{ cases: DocEntry[], shortcuts?: CaseShortcut[], title?: string, defaultName: string, preselected?: string[], confirmLabel?: string, links?: Record<string, string[]>, approved?: { on: boolean, toggle: (on: boolean) => void } }} opts
+ * @param {{ cases: DocEntry[], shortcuts?: CaseShortcut[], title?: string, defaultName: string, preselected?: string[], confirmLabel?: string, links?: Record<string, string[]>, approved?: { on: boolean, toggle: (on: boolean) => void }, named?: boolean }} opts `named: false` = sem o campo Nome nem os vínculos (ex.: edição em massa)
  * @returns {Promise<{ picked: DocEntry[], name: string, origem: string, links: Record<string, string[]> } | null>} null = cancelado
  */
-export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada — quais casos?', defaultName, preselected = [], confirmLabel = 'Criar e começar', links = {}, approved }) {
+export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada — quais casos?', defaultName, preselected = [], confirmLabel = 'Criar e começar', links = {}, approved, named = true }) {
   return new Promise((resolve) => {
     const list = [...cases].sort((a, b) => COLL.compare(a.app || '', b.app || '') || COLL.compare(keyOf(a), keyOf(b)));
     const selected = new Set(preselected);
@@ -55,9 +55,9 @@ export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada —
         ${shortcuts.length ? `<div class="cpk-chips"><span class="cpk-chips-label">Atalhos:</span>${shortcuts.map((s, i) => `<button type="button" class="cpk-chip" data-chip="${i}" title="${esc(s.hint || 'Adiciona estes casos à seleção')}">${esc(s.label)}${s.hint ? ` <small>${esc(s.hint)}</small>` : ''}</button>`).join('')}</div>` : ''}
         <div class="cpk-head cpk-row"><label class="cpk-chk"><input type="checkbox" data-cpk="head" aria-label="Selecionar todos os casos visíveis"></label><span>Caso</span><span>Aplicação / pasta</span><span>Tags</span><span>Último</span></div>
         <div class="cpk-list" data-cpk="list" role="listbox" aria-multiselectable="true" aria-label="Casos de teste"></div>
-        <details class="cpk-links" data-cpk="links"><summary>🔗 Vínculos (opcional) — Jira, Épico, Sprint…</summary></details>
+        <details class="cpk-links" data-cpk="links"${named ? '' : ' hidden'}><summary>🔗 Vínculos (opcional) — Jira, Épico, Sprint…</summary></details>
         <div class="review-foot">
-          <label class="cpk-name">Nome <input type="text" data-cpk="name" value="${esc(defaultName)}" spellcheck="false"></label>
+          <label class="cpk-name"${named ? '' : ' hidden'}>Nome <input type="text" data-cpk="name" value="${esc(defaultName)}" spellcheck="false"></label>
           <span class="review-grow"></span>
           <button type="button" data-act="close">Cancelar</button>
           <button type="button" data-act="ok" class="primary" disabled>${esc(confirmLabel)}</button>
@@ -76,7 +76,7 @@ export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada —
 
     function refreshCount() {
       q('[data-cpk="count"]').textContent = `${selected.size} de ${list.length} selecionado${selected.size === 1 ? '' : 's'}`;
-      okBtn.disabled = !selected.size || !nameInput.value.trim();
+      okBtn.disabled = !selected.size || (named && !nameInput.value.trim());
       const n = visible.filter((e) => selected.has(e.path)).length;
       headChk.checked = !!visible.length && n === visible.length;
       headChk.indeterminate = n > 0 && n < visible.length;

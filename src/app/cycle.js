@@ -644,7 +644,7 @@ async function advanceAfterFinish(cyclePath, key, res) {
 
 // ---------------------------------------------------------------- criar: ciclo (definição), rodada avulsa e execução de um ciclo
 /** Atalhos de seleção (regressão por aplicação, aplicações, visões) para a janela de casos. @param {DocEntry[]} cases */
-function pickerShortcuts(cases) {
+export function pickerShortcuts(cases) {
   const tagged = cases.filter((e) => e.tags.some((t) => t.toLowerCase() === 'regressao' || t.toLowerCase() === 'regressão'));
   const apps = [...new Set(cases.map((e) => e.app).filter(Boolean))].sort(COLL.compare);
   /** @type {import('../ui/casePicker.js').CaseShortcut[]} */

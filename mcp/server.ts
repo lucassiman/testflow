@@ -138,6 +138,18 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
     inputSchema: { doc: docArg }, annotations: RO,
   }, async (a) => run(() => ws.versions(a.doc), text));
 
+  server.registerTool('qa_editar_em_massa', {
+    title: 'Edição em massa', description: 'Muda campos do cabeçalho de vários casos de uma vez — prioridade, responsavel, epico, sprint, versao, tags (por/tirar), aprovacao; limpar esvazia campos. Casos por IDs, segmento ou consulta (interseção). Sem aplicar: só a prévia; aplicar=true grava (confirme com o usuário).',
+    inputSchema: {
+      casos: z.array(z.string()).optional(), segmento: z.string().optional(), consulta: z.string().optional(),
+      prioridade: z.string().optional().describe('Crítica, Alta, Média, Baixa'), responsavel: z.string().optional(), epico: z.string().optional(), sprint: z.string().optional(), versao: z.string().optional(),
+      tags_por: z.string().optional().describe('tags a acrescentar, separadas por vírgula'), tags_tirar: z.string().optional(),
+      aprovacao: z.string().optional().describe('rascunho, em-revisao ou aprovado (aprovar só com o pedido do usuário)'),
+      limpar: z.array(z.enum(['responsavel', 'epico', 'sprint', 'versao'])).optional(),
+      aplicar: z.boolean().optional(),
+    }, annotations: RW,
+  }, async (a) => run(() => ws.bulkEdit(a), text));
+
   server.registerTool('qa_comparar_versoes', {
     title: 'Comparar versões', description: 'O que mudou entre uma versão guardada e o documento atual (ou outra versão): resumo do caso (cabeçalho, passos novos/removidos/alterados, seções) e o diff. versao: nome de qa_versoes, "anterior" (padrão) ou "aprovada" (a última aprovação).',
     inputSchema: { doc: docArg, versao: z.string().optional(), com: z.string().optional().describe('outra versão (sem ela: o documento atual)') }, annotations: RO,
