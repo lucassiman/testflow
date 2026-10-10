@@ -25,6 +25,38 @@ export function statusKind(text: unknown): StatusKind | null {
   return STATUS_OF.get(String(text).trim().toUpperCase()) || null;
 }
 
+// ---------------------------------------------------------------- status personalizados (11.3)
+/** Status a mais da pasta (ex.: RETESTE, FALHA CONHECIDA): a palavra, como conta (um dos 5), a cor e a descrição. */
+export interface CustomStatus { word: string; kind: StatusKind; color: string; label: string }
+const BASE_STATUS = new Map(STATUS_OF);
+let custom: CustomStatus[] = [];
+let customSig = '';
+/** Registra os status personalizados (troca os anteriores). As palavras valem em toda contagem como o tipo delas. */
+export function setCustomStatuses(list: CustomStatus[]): boolean {
+  // as 5 palavras de sempre não mudam; sinônimos (ex.: RETESTE) podem ganhar cor e outra regra
+  const clean = list.filter((c) => c.word.trim() && !['PASS', 'FAIL', 'BLOCKED', 'SKIP', 'PENDING'].includes(c.word.trim().toUpperCase()));
+  const sig = JSON.stringify(clean);
+  if (sig === customSig) return false;
+  customSig = sig;
+  STATUS_OF.clear();
+  BASE_STATUS.forEach((k, w) => STATUS_OF.set(w, k));
+  custom = clean.map((c) => ({ ...c, word: c.word.trim().toUpperCase() }));
+  for (const c of custom) STATUS_OF.set(c.word, c.kind);
+  return true;
+}
+export const customStatuses = (): CustomStatus[] => custom;
+/** O status personalizado desta palavra (ou undefined). */
+export const customOf = (word: unknown): CustomStatus | undefined => custom.find((c) => c.word === String(word ?? '').replace(/[`*_]/g, '').trim().toUpperCase());
+/** Muda quando os status personalizados mudam (o Preview redesenha as etiquetas). */
+export const statusSig = (): string => customSig;
+/** Etiqueta HTML de um status (com a cor do personalizado). */
+export function badgeHtml(word: string, esc: (s: string) => string): string {
+  const kind = statusKind(word);
+  if (!kind) return esc(word);
+  const c = customOf(word);
+  return c ? `<code class="badge badge-${kind} badge-custom" style="--badge:${esc(c.color)}" title="${esc(c.label || word)} — conta como ${kind.toUpperCase()}">${esc(word)}</code>` : `<code class="badge badge-${kind}">${esc(word)}</code>`;
+}
+
 export type AlertType = 'NOTE' | 'TIP' | 'IMPORTANT' | 'WARNING' | 'CAUTION';
 
 export const ALERTS: Record<AlertType, { label: string; icon: string }> = {
@@ -43,7 +75,7 @@ export function qaPlugin(md: MarkdownIt): void {
   const defaultCode = md.renderer.rules.code_inline as RendererRule;
   md.renderer.rules.code_inline = (tokens, idx, options, env, self) => {
     const kind = statusKind(tokens[idx].content);
-    if (kind) return `<code class="badge badge-${kind}">${md.utils.escapeHtml(tokens[idx].content)}</code>`;
+    if (kind) return badgeHtml(tokens[idx].content, md.utils.escapeHtml);
     return defaultCode(tokens, idx, options, env, self);
   };
 

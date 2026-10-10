@@ -1,5 +1,6 @@
 // @ts-check
 import { STATUS_ORDER, KIND_OF, cellStatus, collectStatusTables } from '../markdown/status.ts';
+import { customStatuses } from '../markdown/qa.ts';
 import { applyEnv, describeEnv, mergeEnv, missingEnv, readEnv } from '../markdown/lastEnv.ts';
 import {
   stepTable, setActual, setStepStatus, cellToText, logRun, reviseRun, newRound, fmtDuration, NOTE_TAGS, parseNote,
@@ -279,6 +280,8 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     const R = /** @type {Record<string, number>} */ ({ FAIL: 5, BLOCKED: 4, PENDING: 3, SKIP: 2, PASS: 1 });
     return (R[b] || 0) > (R[a] || 0) ? b : a;
   }
+  /** A célula de status tem um status personalizado? @param {string} st */
+  const customOfCell = (st) => customStatuses().some((c) => c.word === st.replace(/`/g, '').trim().toUpperCase());
   /** Ambiente ativo (🌐 HML) — clique troca (os dados do passo mudam junto). */
   function envChip() {
     const e = shared?.env?.() || '';
@@ -568,7 +571,7 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
         <div class="run-mini-action" title="${esc(action)}${expected ? `\n\nEsperado: ${esc(expected)}` : ''}">${(shared && action && shared.step(action, curIter())?.include ? actionHtml(action).replace(/<\/?(ol|li|div)[^>]*>/g, ' ') : textHtml(action)) || '<em>—</em>'}</div>
         ${showVars ? varsHtml() : ''}
         <div class="run-mini-bar">
-          ${STATUS_ORDER.map((w, i) => `<button type="button" data-word="${w}" class="run-mini-st st-${KIND_OF[w]}${kind === KIND_OF[w] ? ' current' : ''}" aria-pressed="${kind === KIND_OF[w]}" title="${w} (${i + 1})" aria-label="${w}">${ICON[w] || ''}<kbd>${i + 1}</kbd></button>`).join('')}
+          ${STATUS_ORDER.map((w, i) => `<button type="button" data-word="${w}" class="run-mini-st st-${KIND_OF[w]}${kind === KIND_OF[w] && !customOfCell(st) ? ' current' : ''}" aria-pressed="${kind === KIND_OF[w] && !customOfCell(st)}" title="${w} (${i + 1})" aria-label="${w}">${ICON[w] || ''}<kbd>${i + 1}</kbd></button>`).join('')}${customStatuses().slice(0, 4).map((c, i) => `<button type="button" data-word="${esc(c.word)}" class="run-mini-st st-custom${st.toUpperCase() === c.word ? ' current' : ''}" style="--badge:${esc(c.color)}" title="${esc(c.word)}${c.label ? ` — ${esc(c.label)}` : ''} (${i + 6})" aria-label="${esc(c.word)}">${esc(c.word.slice(0, 2))}<kbd>${i + 6}</kbd></button>`).join('')}
           <span class="run-grow"></span>
           <button type="button" data-act="prev" class="run-mini-nav" title="Passo anterior (←)" aria-label="Passo anterior">◀</button>
           <button type="button" data-act="next" class="run-mini-nav" title="Próximo passo (→)" aria-label="Próximo passo">▶</button>
@@ -625,7 +628,7 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
           <span class="run-print-info">${prints ? `${prints} print${prints > 1 ? 's' : ''} neste passo` : (pip ? 'ou Ctrl+V nesta janela' : 'ou Ctrl+V com o foco fora do Raw')}</span>
         </div>
         ${(kind === 'fail' || kind === 'blocked') && onNewBug ? `<div class="run-bug"><button type="button" data-act="bug" class="run-btn" title="Cria o bug ligado a este documento, já com os passos até aqui, esperado, obtido e os prints do passo (abre numa aba nova)">🐞 Abrir bug deste passo</button></div>` : ''}
-        <div class="run-status">${STATUS_ORDER.map((w, i) => `<button type="button" data-word="${w}" class="${kind === KIND_OF[w] ? 'current' : ''}" aria-pressed="${kind === KIND_OF[w]}" title="${w} (${i + 1})"><kbd>${i + 1}</kbd><code class="badge badge-${KIND_OF[w]}">${w}</code></button>`).join('')}</div>
+        <div class="run-status">${STATUS_ORDER.map((w, i) => `<button type="button" data-word="${w}" class="${kind === KIND_OF[w] && !customOfCell(st) ? 'current' : ''}" aria-pressed="${kind === KIND_OF[w] && !customOfCell(st)}" title="${w} (${i + 1})"><kbd>${i + 1}</kbd><code class="badge badge-${KIND_OF[w]}">${w}</code></button>`).join('')}${customStatuses().slice(0, 4).map((c, i) => `<button type="button" data-word="${esc(c.word)}" class="${st.toUpperCase() === c.word ? 'current' : ''}" aria-pressed="${st.toUpperCase() === c.word}" title="${esc(c.word)}${c.label ? ` — ${esc(c.label)}` : ''} · conta como ${c.kind.toUpperCase()} (${i + 6})"><kbd>${i + 6}</kbd><code class="badge badge-${c.kind} badge-custom" style="--badge:${esc(c.color)}">${esc(c.word)}</code></button>`).join('')}</div>
       </div>
       <div class="run-foot">
         <button type="button" data-act="prev" title="Passo anterior (←)">◀</button>
@@ -983,6 +986,7 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     if (a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT' || a.isContentEditable)) return;
     if (d === document && document.querySelector('.status-pop:not([hidden]), .annot-overlay, .cmd-menu:not([hidden]), .lightbox, .evp-overlay, .app-dialog-overlay')) return;
     const i = '12345'.indexOf(event.key);
+    const ci = '6789'.indexOf(event.key);
     let handled = true;
     if (pre) {
       // antes de cada caso: Enter / → vão ao 1º passo; os status ainda não valem
@@ -993,6 +997,7 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
       return;
     }
     if (i >= 0) setStatus(STATUS_ORDER[i]);
+    else if (ci >= 0 && customStatuses()[ci]) setStatus(customStatuses()[ci].word);
     else if (event.key === 'ArrowRight') go(1);
     else if (event.key === 'ArrowLeft') go(-1);
     else if (event.key === 'm' || event.key === 'M') toggleCompact();

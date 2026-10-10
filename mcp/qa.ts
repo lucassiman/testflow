@@ -15,6 +15,8 @@ import { createDocIndex, describe } from '../src/io/docIndex.ts';
 import { readText, writeText, writeBytes, namesIn, hasName, kindAt } from '../src/io/fsOps.js';
 import { snapshotBeforeSave, listVersions, readVersion, saveVersion } from '../src/io/versions.js';
 import { caseChanges, unifiedDiff } from '../src/markdown/versionDiff.ts';
+import { setCustomStatuses, customStatuses, customOf } from '../src/markdown/qa.ts';
+import { parseStatusDoc, STATUS_DOC_TYPE } from '../src/markdown/statusConfig.ts';
 import { syncReleaseBlock, releaseSummary, releaseLine, releaseInfo, isRelease, versionIn, type ReleaseDoc } from '../src/markdown/release.ts';
 import { forecast, caseAvgMs, forecastText, forecastDetail, approxDuration } from '../src/markdown/forecast.ts';
 import { assign, distribute, workload, pendingOf, assignees, samePerson } from '../src/markdown/assign.ts';
@@ -191,6 +193,8 @@ export class QaWorkspace {
     this.dirs = dirs;
     await this.index.build(files);
     this.scannedAt = Date.now();
+    // status personalizados da pasta (tipo: status)
+    setCustomStatuses(this.index.all().filter((e) => e.tipo === STATUS_DOC_TYPE).flatMap((e) => parseStatusDoc(e.text || '').list));
   }
 
   // ---------------------------------------------------------------- achar documentos
@@ -599,7 +603,7 @@ export class QaWorkspace {
       if (p.obtido !== undefined && t.actual >= 0) text = setActual(text, row.line, t.actual, p.obtido);
       if (p.status !== undefined) {
         const word = p.status.trim().toUpperCase();
-        if (word && !['PASS', 'FAIL', 'BLOCKED', 'SKIP', 'PENDING'].includes(word)) throw new Error(`status "${p.status}" inválido (PASS, FAIL, BLOCKED, SKIP, PENDING ou vazio)`);
+        if (word && !['PASS', 'FAIL', 'BLOCKED', 'SKIP', 'PENDING'].includes(word) && !customOf(word)) throw new Error(`status "${p.status}" inválido (PASS, FAIL, BLOCKED, SKIP, PENDING${customStatuses().length ? `, ${customStatuses().map((c) => c.word).join(', ')}` : ''} ou vazio)`);
         text = setStepStatus(text, row.line, t.status, word || null);
       }
       done.push(`${p.passo}${p.status ? `=${p.status.toUpperCase()}` : ''}`);
@@ -1064,7 +1068,7 @@ export class QaWorkspace {
         if (p.obtido !== undefined && st.actual >= 0) text = setActual(text, r.line, st.actual, p.obtido);
         if (p.status !== undefined) {
           const w = p.status.trim().toUpperCase();
-          if (w && !['PASS', 'FAIL', 'BLOCKED', 'SKIP', 'PENDING'].includes(w)) throw new Error(`status "${p.status}" inválido`);
+          if (w && !['PASS', 'FAIL', 'BLOCKED', 'SKIP', 'PENDING'].includes(w) && !customOf(w)) throw new Error(`status "${p.status}" inválido (PASS, FAIL, BLOCKED, SKIP, PENDING${customStatuses().length ? `, ${customStatuses().map((c) => c.word).join(', ')}` : ''})`);
           text = setStepStatus(text, r.line, st.status, w || null);
         }
       }

@@ -66,6 +66,7 @@ import { addComment, commentAction, listComments } from './app/comments.js';
 import { exportJiraCsv, importJiraKeys } from './app/jiraExport.js';
 import { startCollab, collabDocChanged, officialMenu, updateAllFromOfficial, paintOfficialButton } from './app/collab.js';
 import { syncReleaseBlock } from './markdown/release.ts';
+import { refreshStatuses, editStatuses } from './app/statuses.js';
 import { newCycle, newRun, newAutoRun, attachAutomation, editDevice, runCycle, editLinks, nextCycleCase, finishCycle, showRoundSummary, openCycle, onCaseFinished, refreshCycleDoc, syncCycleForSave, rerunFailed, roundOfOpenCase } from './app/cycle.js';
 import { goNextCase, offerNextCase } from './app/nextCase.js';
 import { bindLinkPicker } from './app/linkPicker.js';
@@ -178,7 +179,7 @@ const preview = createPreview({
   store,
   getTheme: effectiveTheme,
   toast,
-  onLint: (list) => { baseWarnings = list; linkWarnings = [...brokenLinkWarnings(), ...sharedLintWarnings()]; updateLint(); scheduleEvidenceCheck(); renderSharedPanel(); renderEnvChip(); },
+  onLint: (list) => { baseWarnings = list; linkWarnings = [...brokenLinkWarnings(), ...sharedLintWarnings()]; updateLint(); scheduleEvidenceCheck(); renderSharedPanel(); renderEnvChip(); refreshStatuses(); },
   onJumpToLine: (line) => {
     if (mode === 'preview') setMode('split');
     raw.goToLine(line);
@@ -558,6 +559,7 @@ async function readWorkspaceOnce() {
     updateLint();
     renderSharedPanel(); // 🔑 Dados com os compartilhados da pasta
     renderEnvChip();
+    refreshStatuses();
     if (files.length) hintTree();
     checkOutsideRenames(); // código trocado fora do editor (uid igual, ID outro): links acompanham
     paintOfficialButton(); // ⇅ Sincronizar: o que enviar depende dos documentos lidos
@@ -1454,7 +1456,7 @@ const PALETTE_ACTIONS = [
   ['Próximo caso da pasta (salva e abre o próximo não executado)', 'nextCase', null, 'Alt+Shift+→'], ['Próximo caso da pasta e já executar', 'nextCase', 'run', ''],
   ['Organizar por épico e ticket (casos/<ÉPICO>/<TICKET>/, pelos campos epico: e jira:)…', 'byTicket', null, ''], ['Edição em massa: prioridade, tags, épico, responsável… de vários casos', 'bulkEdit', null, ''],
   ['Ciclo de regressão: novo (salvar os casos)…', 'newCycle', null, ''], ['Rodada de execução: nova (avulsa, escolher os casos)…', 'newRun', null, ''], ['Ciclo de regressão: executar um ciclo salvo (nova execução)…', 'runCycle', null, ''], ['Execução: anexar relatório de testes automatizados (Playwright, JUnit, Newman)…', 'attachAutomation', null, ''], ['Execução só automatizada: criar a partir de um relatório…', 'newAutoRun', null, ''], ['Ciclo de regressão: próximo caso', 'nextCycleCase', null, ''], ['Ciclo de regressão: voltar ao ciclo', 'openCycle', null, ''], ['Vínculos: Jira, Épico, Sprint deste documento…', 'editLinks', null, ''], ['Dispositivo / ambiente: WEB, Mobile iOS, Mobile Android… deste documento', 'editDevice', null, ''], ['Ciclo de regressão: finalizar execução…', 'finishCycle', null, ''], ['Reteste das falhas: nova rodada só com os FAIL/BLOCKED desta execução', 'rerunFailed', null, ''], ['Tendência entre rodadas: % de sucesso, casos que mais falham, bugs no tempo', 'trend', null, ''], ['Ciclo de regressão: como está / como foi a rodada', 'roundSummary', null, ''], ['Relatórios da execução: gerar / regerar (Encerramento e Go/No-Go, Defeitos, Rastreabilidade, Log)', 'execReports', null, ''], ['Início: rodada em andamento, pendências, fixados e atalhos', 'home', null, ''], ['Árvore: mostrar ID · título ou o nome do arquivo', 'treeLabels', null, ''], ['Ao abrir documento: Preview ou o último modo usado', 'openMode', null, ''], ['Aprovação do caso: enviar para revisão, aprovar, voltar a rascunho…', 'approval', null, ''], ['Rodadas: só casos aprovados entram (liga/desliga)', 'onlyApproved', null, ''], ['Modo foco: só o documento (esconde topo, barras e barra lateral)', 'focusMode', 'Ctrl+Shift+.', ''], ['Barra de formatação no Preview: só ao editar / sempre', 'toolbarMode', null, ''],
-  ['Comentar (comentário de revisão no documento)', 'comment', null, 'Alt+M'], ['Dados compartilhados: logins, URLs e passos que valem para este documento (copiar)', 'sharedPanel', null, 'Alt+K'], ['Ambiente ativo (local, dev, hml, prod): trocar a massa de dados', 'envMenu', null, ''], ['Incluir passos compartilhados (↪ Fazer login…)', 'includeShared', null, ''], ['Comentários do documento (pendentes e resolvidos)…', 'listComments', null, ''],
+  ['Comentar (comentário de revisão no documento)', 'comment', null, 'Alt+M'], ['Dados compartilhados: logins, URLs e passos que valem para este documento (copiar)', 'sharedPanel', null, 'Alt+K'], ['Ambiente ativo (local, dev, hml, prod): trocar a massa de dados', 'envMenu', null, ''], ['Status personalizados (RETESTE, FALHA CONHECIDA…): criar / editar', 'customStatus', null, ''], ['Incluir passos compartilhados (↪ Fazer login…)', 'includeShared', null, ''], ['Comentários do documento (pendentes e resolvidos)…', 'listComments', null, ''],
   ['Exportar bugs para o Jira (CSV do importador do Jira Cloud)…', 'jiraCsv', null, ''], ['Trazer chaves do Jira (CSV exportado do Jira)…', 'jiraKeys', null, ''],
   ['Ver outro documento ao lado (consulta)…', 'sideOpen', null, ''], ['Fechar o documento ao lado', 'sideClose', null, ''],
   ['Capturar a tela (print da janela do sistema testado)', 'capture', null, 'Ctrl+Alt+P'], ['Capturar a tela: escolher outra janela', 'captureChoose', null, ''], ['Capturar a tela: parar', 'captureStop', null, ''],
@@ -1475,7 +1477,7 @@ const PALETTE_ACTIONS = [
 /** Categoria e ícone de cada ação da paleta (as que não estão aqui ficam em "Ações"). */
 const PALETTE_GROUPS = /** @type {Array<[string, string, string[]]>} */ ([
   ['Documento', '📄', ['newCase', 'new', 'newFromTemplate', 'open', 'save', 'saveAs', 'rename', 'saveTemplate', 'history', 'toggleAutoSave', 'quickNote', 'newBug', 'sharedPanel', 'envMenu', 'includeShared', 'newView', 'importSheet', 'pdf', 'exportHtml', 'sensitive']],
-  ['Execução e rodadas', '▶', ['newRun', 'newCycle', 'runCycle', 'newAutoRun', 'attachAutomation', 'nextCycleCase', 'openCycle', 'finishCycle', 'rerunFailed', 'onlyApproved', 'trend', 'roundSummary', 'execReports', 'nextCase', 'editLinks', 'editDevice']],
+  ['Execução e rodadas', '▶', ['newRun', 'newCycle', 'runCycle', 'newAutoRun', 'attachAutomation', 'nextCycleCase', 'openCycle', 'finishCycle', 'rerunFailed', 'onlyApproved', 'customStatus', 'trend', 'roundSummary', 'execReports', 'nextCase', 'editLinks', 'editDevice']],
   ['Pasta de trabalho', '📂', ['pickWorkspace', 'home', 'dashboard', 'searchAll', 'structure', 'newApp', 'newFolder', 'moveDoc', 'byTicket', 'bulkEdit', 'undoOrganize', 'importNotion', 'importCases', 'backup', 'backupPref', 'loadDiag', 'diskRoot', 'officialFolder', 'officialUpdate', 'publish']],
   ['Evidências e prints', '📸', ['capture', 'captureChoose', 'captureStop', 'record', 'evidencePanel', 'reuseEvidence', 'cleanPrints', 'bigPrint', 'pickFolder']],
   ['Compartilhar e revisar', '📤', ['approval', 'copyAll', 'copyClaude', 'review', 'reviewApply', 'copyJira', 'openJira', 'copyNotion', 'notionZip', 'hubZip', 'jiraCsv', 'jiraKeys', 'comment', 'listComments']],
@@ -1644,6 +1646,7 @@ function run(cmd, value, event) {
     case 'comment': addComment(); return true;
     case 'sharedPanel': showSharedPanel(); return true;
     case 'envMenu': envMenu(); return true;
+    case 'customStatus': editStatuses(); return true;
     case 'approval': approvalMenu(); return true;
     case 'onlyApproved': toggleOnlyApproved(); return true;
     case 'includeShared': includeMenu(); return true;

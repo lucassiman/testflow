@@ -1,4 +1,5 @@
 // @ts-check
+import { statusSig } from '../markdown/qa.ts';
 import { parseBlocks, renderTokens } from '../markdown/parser.js';
 import { sanitizeHtml } from '../markdown/sanitize.js';
 import { htmlToMarkdown } from '../markdown/toMarkdown.js';
@@ -155,7 +156,7 @@ export function createPreview({
     const fragmentOrder = parsed.blocks.map((block) => {
       const autoBlock = isAuto(block);
       const historyBlock = isHistory(block);
-      const key = `${block.type}${autoBlock ? '\u0000auto' : ''}${historyBlock ? '\u0000hist' : ''}\u0000${refsSig}\u0000${block.text}`;
+      const key = `${block.type}${autoBlock ? '\u0000auto' : ''}${historyBlock ? '\u0000hist' : ''}\u0000${refsSig}\u0000${statusSig()}\u0000${block.text}`;
       let el = pool.get(key)?.shift();
       if (!el) el = createBlockElement(block, key, parsed.env, autoBlock || historyBlock);
       el.dataset.start = String(block.start);

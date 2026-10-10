@@ -1,4 +1,5 @@
 // @ts-check
+import { customStatuses, statusSig } from '../markdown/qa.ts';
 import {
   STATUS_ORDER, KIND_OF, WORD_OF, isStatusHeader, cellStatus, countStatuses, countTasks,
   collectStatusTables, deriveOverall, findSummaryBlocks, summaryIsStale,
@@ -106,9 +107,19 @@ export function createStatusPopover({ onPick }) {
   el.hidden = true;
   el.setAttribute('role', 'dialog');
   el.setAttribute('aria-label', 'Status do passo');
-  el.innerHTML = `${STATUS_ORDER.map((w, i) => `<button type="button" data-word="${w}" title="${LABELS[KIND_OF[w]]} (${i + 1})"><kbd>${i + 1}</kbd><code class="badge badge-${KIND_OF[w]}">${w}</code></button>`).join('')}`
-    + '<button type="button" data-word="" class="status-clear" title="Limpar (0 / Delete)"><kbd>0</kbd>Limpar</button>'
-    + '<div class="status-pop-hint">1–5 escolhe e vai para a próxima linha · ↑↓ muda de linha · Esc fecha</div>';
+  /** @param {unknown} s */
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => /** @type {Record<string, string>} */ ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  let drawnSig = '';
+  // os status personalizados entram depois dos 5 (teclas 6–9)
+  const draw = () => {
+    drawnSig = statusSig();
+    const cs = customStatuses().slice(0, 4);
+    el.innerHTML = `${STATUS_ORDER.map((w, i) => `<button type="button" data-word="${w}" title="${LABELS[KIND_OF[w]]} (${i + 1})"><kbd>${i + 1}</kbd><code class="badge badge-${KIND_OF[w]}">${w}</code></button>`).join('')}`
+      + cs.map((c, i) => `<button type="button" data-word="${esc(c.word)}" title="${esc(c.word)}${c.label ? ` — ${esc(c.label)}` : ''} · conta como ${c.kind.toUpperCase()} (${i + 6})"><kbd>${i + 6}</kbd><code class="badge badge-${c.kind} badge-custom" style="--badge:${esc(c.color)}">${esc(c.word)}</code></button>`).join('')
+      + '<button type="button" data-word="" class="status-clear" title="Limpar (0 / Delete)"><kbd>0</kbd>Limpar</button>'
+      + `<div class="status-pop-hint">1–5${cs.length ? ` (e ${cs.map((_, i) => i + 6).join(', ')})` : ''} escolhe e vai para a próxima linha · ↑↓ muda de linha · Esc fecha</div>`;
+  };
+  draw();
   document.body.appendChild(el);
 
   /** @type {{ td: HTMLTableCellElement } | null} */
@@ -141,6 +152,7 @@ export function createStatusPopover({ onPick }) {
     if (current?.td) current.td.classList.remove('status-active');
     current = { td };
     td.classList.add('status-active');
+    if (drawnSig !== statusSig()) draw();
     const kind = cellStatus(td.textContent);
     el.querySelectorAll('button[data-word]').forEach((b) => b.classList.toggle('current', !!/** @type {HTMLElement} */ (b).dataset.word && KIND_OF[/** @type {StatusWord} */ (/** @type {HTMLElement} */ (b).dataset.word)] === kind && !!(td.textContent || '').trim()));
     td.scrollIntoView({ block: 'nearest' });
@@ -159,6 +171,8 @@ export function createStatusPopover({ onPick }) {
     const { key } = event;
     if (key === 'Escape') { close(); return true; }
     const idx = '12345'.indexOf(key);
+    const cidx = '6789'.indexOf(key);
+    if (cidx >= 0 && customStatuses()[cidx]) { onPick(current.td, customStatuses()[cidx].word, { advance: true }); return true; }
     if (idx >= 0 || key === '0' || key === 'Delete' || key === 'Backspace') {
       const td = current.td;
       onPick(td, idx >= 0 ? STATUS_ORDER[idx] : null, { advance: true });

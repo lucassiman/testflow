@@ -47,6 +47,7 @@ export const TYPE_LABELS: Record<string, string> = {
   historia: 'História de usuário',
   compartilhado: 'Passos e dados compartilhados',
   release: 'Release',
+  status: 'Status personalizados',
   'ciclo-regressao': 'Ciclo de regressão',
   execucao: 'Execução',
   'relatorio-encerramento': 'Relatório de encerramento (Go/No-Go)',

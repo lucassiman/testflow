@@ -1400,6 +1400,9 @@ button { font: inherit; color: inherit; }
 .cp-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cp-x { border: 0; background: none; cursor: pointer; color: var(--muted); font-size: 15px; padding: 0 4px; }
 .cp-x:hover { color: var(--text); }
+.badge.badge-custom { background: var(--badge) !important; color: #fff !important; border-color: var(--badge) !important; }
+.run-mini-st.st-custom { background: color-mix(in srgb, var(--badge) 18%, transparent); font-size: 10px; font-weight: 700; }
+.run-mini-st.st-custom.current { background: var(--badge); color: #fff; }
 .home-rel-item { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 6px 0; cursor: pointer; }
 .home-rel-item + .home-rel-item { border-top: 1px solid var(--border); }
 .cp-matrix { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 0 12px 6px; font-size: 11.5px; }

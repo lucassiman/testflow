@@ -457,6 +457,8 @@ Em qualquer tabela com coluna **Status**, clique na célula: **1** PASS · **2**
 
 O **status geral** do cabeçalho é recalculado: algum `FAIL` → `FAIL`; senão `BLOCKED`; senão pendente → `PENDING`; tudo `SKIP` → `SKIP`; senão `PASS`. Tabelas de bugs (com coluna *Severidade*) e o *Histórico de execuções* não contam.
 
+**Status personalizados** (ex.: `RETESTE`, `FALHA CONHECIDA`, `NÃO TESTÁVEL`): `Ctrl+Shift+P` → *Status personalizados* abre (ou cria) `configuracao/status.md`, com uma tabela **Palavra · Conta como · Cor · Descrição**. *Conta como* é um dos 5 (PASS, FAIL, BLOCKED, SKIP, PENDING) — é assim que a palavra entra nas contagens, no status geral, na rodada e nos relatórios (na tabela da rodada o caso aparece com o status base). Ao salvar, as palavras viram etiquetas com a cor escolhida, aparecem no seletor de status e no painel de execução depois dos 5, com as teclas **6–9**, e valem para o Claude também. As 5 palavras de sempre não mudam.
+
 ### 7.2 Barra Execução
 
 Status geral, barra de progresso e contagem por status. **Clique num status** para ver só essas linhas (clique de novo desfaz); **☑** mostra só itens de checklist não marcados. Cada título mostra `feitos/total` do checklist da seção. O filtro não vai para o PDF.

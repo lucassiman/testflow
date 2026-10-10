@@ -8,6 +8,12 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.48.0', date: '10/10/2026',
+    items: [
+      { icon: '🏷', text: '**Status personalizados**: `Ctrl+Shift+P` → *Status personalizados* cria `configuracao/status.md` — palavra, como conta (um dos 5), cor e descrição. Viram etiquetas coloridas, entram no seletor de status e no painel de execução (teclas 6–9) e contam nas rodadas e relatórios pela regra.', manual: '7.1 Status clicável' },
+    ],
+  },
+  {
     version: '1.47.0', date: '10/10/2026',
     items: [
       { icon: '🚀', text: '**Releases**: um documento por versão do produto (modelo *Release*) mostra o progresso de tudo com o mesmo `versao:` — casos executados, % de sucesso, falhas, bugs abertos, critérios de saída, dias até a data prevista e se está pronta para liberar.', manual: '7.10 Releases' },

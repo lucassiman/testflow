@@ -117,3 +117,29 @@ test('release: o documento da release mostra o progresso de tudo com a mesma ver
   await expect(view.locator('.qa-view-group', { hasText: 'Execuções' })).toBeVisible();
   await expect(view).toContainText('1 caso(s) sem resultado'.replace('1', '2'));
 });
+
+test('status personalizados: a paleta cria configuracao/status.md; as palavras viram etiquetas, teclas 6–9 e contam como o tipo', async ({ page }) => {
+  await workspace(page, 'ws-status', [
+    ['aplicacoes/Portal/casos/TC-1.md', tc('TC-1').replace('| 1 | Abrir | Abre | | |\n', '| 1 | Abrir | Abre | | |\n| 2 | Entrar | Painel | | |\n')],
+  ]);
+  await page.keyboard.press('Control+Shift+P');
+  await page.keyboard.type('Status personalizados');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#preview h1')).toHaveText('Status personalizados');
+  await expect(page.locator('#preview .badge-custom', { hasText: 'FALHA CONHECIDA' })).toHaveCount(0); // a tabela usa a palavra sem crase
+  await page.locator('[data-side="wsList"] .side-file', { hasText: 'TC-1' }).first().click();
+  await page.locator('#preview td.status-cell[data-row="0"]').click();
+  const pop = page.locator('.status-pop');
+  await expect(pop.locator('.badge-custom')).toHaveCount(3);
+  await page.keyboard.press('7'); // FALHA CONHECIDA → próxima linha
+  await page.keyboard.press('Escape');
+  const badge = page.locator('#preview td .badge-custom', { hasText: 'FALHA CONHECIDA' });
+  await expect(badge).toHaveCount(1);
+  await expect(badge).toHaveClass(/badge-fail/);
+  await expect(page.locator('.exec-bar')).toContainText('FAIL 1');
+  // painel de execução: os botões dos personalizados
+  await page.locator('.exec-bar [data-act="run"]').click();
+  await expect(page.locator('.runner .run-status .badge-custom')).toHaveCount(3);
+  await page.keyboard.press('6');
+  await expect(page.locator('#preview td .badge-custom', { hasText: 'RETESTE' })).toHaveCount(1);
+});
