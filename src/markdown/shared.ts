@@ -36,7 +36,7 @@ import { headings, stepTable } from './runs.ts';
 export const SHARED_TYPE = 'compartilhado';
 export type SharedScope = 'pasta' | 'app' | 'global';
 
-export interface SharedVar { name: string; value: string; fields: Record<string, string>; secret: string[]; obs: string; source: string }
+export interface SharedVar { name: string; value: string; fields: Record<string, string>; secret: string[]; obs: string; source: string; /** tabela de onde veio ("Logins", "Colaboradores") */ group: string; /** como está escrito na tabela ("João Silva"); name é o que vai no {{}} */ label: string }
 export interface SharedStep { acao: string; esperado: string }
 export interface SharedBlock { name: string; params: string[]; steps: SharedStep[]; source: string }
 export interface SharedDoc {
@@ -63,6 +63,18 @@ const INCLUDE_RE = /^\s*(?:\*\*)?\s*↪\s*([^(]+?)\s*(?:\(([^)]*)\))?\s*(?:\*\*)
 
 const key = (s: string): string => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 const unesc = (s: string): string => s.replace(/\\\|/g, '|').replace(/<br\s*\/?>/gi, ' ').trim();
+/**
+ * Valor de uma célula de dados como texto puro: link Markdown vira só o texto ([x@y.com](mailto:x@y.com) → x@y.com),
+ * <x@y.com> / <https://…> e "mailto:" saem, e sem `código` / **negrito**. É o que o QA cola no campo do sistema.
+ */
+export const cleanValue = (s: string): string => unesc(s)
+  .replace(/\[([^\]]*)\]\((?:[^)\\]|\\.)*\)/g, '$1')
+  .replace(/<((?:mailto:|https?:\/\/)?[^<>\s]+)>/g, '$1')
+  .replace(/\bmailto:/gi, '')
+  .replace(/^(\*\*|__|`)(.*)\1$/, '$2')
+  .trim();
+/** Nome usável no {{}}: "João Silva" → joao-silva (sem espaço). */
+const slug = (s: string): string => (/\s/.test(s.trim()) ? key(s).replace(/[^\p{L}\p{N}_-]+/gu, '-').replace(/^-+|-+$/g, '') : s.trim());
 const dirOf = (p: string): string => p.split('/').slice(0, -1).join('/');
 const listOf = (v: unknown): string[] => (Array.isArray(v) ? v : String(v ?? '').split(/[,;]/)).map((x) => String(x).replace(/^#/, '').trim()).filter(Boolean);
 
@@ -72,6 +84,21 @@ function meta(text: string): Record<string, unknown> {
 }
 
 export const isShared = (text: string): boolean => String(meta(text).tipo || '').trim().toLowerCase() === SHARED_TYPE;
+
+/** Todas as tabelas entre as linhas [start, end). */
+function tablesIn(lines: string[], start: number, end: number): Array<{ head: string[]; rawHead: string[]; rows: string[][] }> {
+  const out: Array<{ head: string[]; rawHead: string[]; rows: string[][] }> = [];
+  for (let i = start; i < end - 1; i++) {
+    if (!lines[i].includes('|') || !/^\s*\|?\s*:?-{2,}/.test(lines[i + 1])) continue;
+    const rawHead = splitRow(lines[i]);
+    const rows: string[][] = [];
+    let j = i + 2;
+    for (; j < end && lines[j].includes('|') && lines[j].trim(); j++) rows.push(splitRow(lines[j]));
+    out.push({ head: rawHead.map(normHeader), rawHead, rows });
+    i = j;
+  }
+  return out;
+}
 
 /** Primeira tabela entre as linhas [start, end): cabeçalho normalizado e linhas. */
 function tableIn(lines: string[], start: number, end: number): { head: string[]; rawHead: string[]; rows: string[][] } | null {
@@ -110,24 +137,35 @@ export function parseShared(text: string, path: string): SharedDoc | null {
     const end = hs.slice(i + 1).find((x) => x.level <= h.level)?.line ?? lines.length;
     const title = key(h.text);
     if (/^(dados|variaveis|massa de dados)\b/.test(title)) {
-      const t = tableIn(lines, h.line + 1, end);
-      if (!t) return;
-      const ni = Math.max(0, t.head.findIndex((x) => /^(nome|variavel|chave)$/.test(x)));
-      const vi = t.head.findIndex((x, k) => k !== ni && /^(valor|usuario|e-?mail|login)$/.test(x));
-      const oi = t.head.findIndex((x) => /^(observacao|obs|descricao)$/.test(x));
-      for (const r of t.rows) {
-        const name = unesc(r[ni] || '').replace(/[`*]/g, '');
-        if (!name || !VAR_NAME.test(name)) continue;
-        const fields: Record<string, string> = {};
-        const secret: string[] = [];
-        t.head.forEach((col, k) => {
-          if (k === ni) return;
-          const f = key(t.rawHead[k]).replace(/[`*_]/g, '').replace(/\s+/g, '-');
-          fields[f] = unesc(r[k] || '');
-          if (SECRET_RE.test(f)) secret.push(f);
-        });
-        const value = unesc(r[vi >= 0 ? vi : t.head.findIndex((_, k) => k !== ni && k !== oi)] || '');
-        doc.vars.push({ name, value, fields, secret, obs: oi >= 0 ? unesc(r[oi] || '') : '', source: id });
+      // "## Dados: Colaboradores" → grupo Colaboradores; várias tabelas na mesma seção também valem
+      const group = h.text.includes(':') ? h.text.replace(/^[^:]*:\s*/, '').trim() : '';
+      for (const t of tablesIn(lines, h.line + 1, end)) {
+        // coluna do nome do dado: Chave / ID / Variável; sem ela, Nome (no formato Nome | Valor | Senha)
+        let ni = t.head.findIndex((x) => /^(chave|id|variavel|apelido|dado)$/.test(x));
+        const viAny = t.head.findIndex((x) => /^(valor|usuario|e-?mail|login)$/.test(x));
+        const keyIsName = ni < 0;
+        if (ni < 0) ni = Math.max(0, t.head.findIndex((x) => /^nome$/.test(x)));
+        const vi = viAny !== ni ? viAny : -1;
+        const oi = t.head.findIndex((x) => /^(observacao|obs|descricao)$/.test(x));
+        // "Nome" é o nome da pessoa (não há coluna Valor): continua como campo, e a chave sai dele (joao-silva)
+        const nameIsField = keyIsName && t.head[ni] === 'nome' && vi < 0;
+        for (const r of t.rows) {
+          const label = cleanValue(r[ni] || '').replace(/[`*]/g, '');
+          const name = slug(label);
+          if (!name || !VAR_NAME.test(name)) continue;
+          const fields: Record<string, string> = {};
+          const secret: string[] = [];
+          t.head.forEach((col, k) => {
+            if (k === ni && !nameIsField) return;
+            const f = key(t.rawHead[k]).replace(/[`*_]/g, '').replace(/\s+/g, '-');
+            if (!f || f === '#') return;
+            fields[f] = cleanValue(r[k] || '');
+            if (SECRET_RE.test(f)) secret.push(f);
+          });
+          const vIdx = vi >= 0 ? vi : t.head.findIndex((_, k) => k !== ni && k !== oi && !SECRET_RE.test(t.head[k]));
+          const value = cleanValue(r[vIdx] || '');
+          doc.vars.push({ name, value, fields, secret, obs: oi >= 0 ? cleanValue(r[oi] || '') : '', source: id, group, label });
+        }
       }
     } else if (/^antes da rodada\b|^antes de tudo\b/.test(title)) doc.beforeAll.push(...stepsOf(tableIn(lines, h.line + 1, end)));
     else if (/^antes de cada( caso)?\b/.test(title)) doc.beforeEach.push(...stepsOf(tableIn(lines, h.line + 1, end)));

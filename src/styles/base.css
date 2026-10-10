@@ -1708,3 +1708,65 @@ input[type='checkbox']:focus-visible, input[type='radio']:focus-visible { outlin
 .cp-before ul { list-style: none; margin: 0; padding: 0 8px 6px; display: grid; gap: 3px; }
 .cp-before label { display: flex; gap: 6px; align-items: flex-start; cursor: pointer; }
 .cp-before small { color: var(--muted); }
+
+/* ---------- abas da barra lateral: ícone + nome; estreita, só o ícone ---------- */
+.side-tabs { container-type: inline-size; }
+.side-tabs button { display: inline-flex; align-items: center; gap: 4px; }
+.side-tab-ic { font-size: 12px; line-height: 1; }
+/* estreita: só a aba aberta mostra o nome; as outras, o ícone (o nome fica na dica) */
+@container (max-width: 340px) {
+  .side-tabs button:not([aria-selected='true']) .side-tab-label { display: none; }
+  .side-tabs button { padding-left: 7px; padding-right: 7px; }
+}
+@container (max-width: 200px) {
+  .side-tab-label { display: none; }
+}
+
+/* ---------- painel 🔑 Dados compartilhados (fora da barra lateral) ---------- */
+.sh-top-btn[aria-pressed='true'] { background: var(--accent-soft); }
+.sh-panel {
+  position: fixed; z-index: 59; top: calc(var(--dock-top, 96px) + 8px); right: 18px; width: min(330px, calc(100vw - 36px));
+  max-height: calc(100vh - var(--dock-top, 96px) - 60px); display: flex; flex-direction: column;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); font-size: 12.5px;
+}
+.sh-panel[hidden] { display: none; }
+body.cp-open .sh-panel { right: 286px; }
+body.cp-mini .sh-panel { right: 62px; }
+/* encaixa ao lado do painel de execução encaixado */
+body.runner-docked .sh-panel { right: 392px; top: calc(var(--dock-top, 96px) + 44px); max-height: calc(100vh - var(--dock-top, 96px) - 96px); }
+body.runner-docked.cp-open .sh-panel { right: 661px; }
+body.runner-docked.cp-mini .sh-panel { right: 437px; }
+body.home-open .sh-panel { display: none; }
+.sh-panel-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--border); background: var(--bg-soft); border-radius: 12px 12px 0 0; flex: none; }
+.sh-panel-head strong { flex: 1; font-size: 12.5px; white-space: nowrap; }
+.sh-show { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.sh-close { border: 0; background: none; font-size: 17px; line-height: 1; cursor: pointer; color: var(--muted); padding: 0 4px; border-radius: 5px; }
+.sh-close:hover { color: var(--text); background: var(--hover); }
+.sh-body { overflow-y: auto; overscroll-behavior: contain; padding: 8px 10px 12px; min-height: 0; }
+.sh-for { color: var(--muted); font-size: 11.5px; margin-bottom: 4px; overflow-wrap: anywhere; }
+.sh-empty { color: var(--muted); margin: 6px 0; }
+.sh-panel .sh-var-name { display: block; margin-bottom: 2px; }
+.sh-panel .sh-var-name b { white-space: normal; overflow-wrap: anywhere; overflow: visible; }
+.sh-var-obs { margin: -1px 0 3px; }
+.sh-panel .sh-field { display: grid; grid-template-columns: minmax(48px, auto) minmax(0, 1fr) auto; align-items: center; gap: 4px; margin: 1px 0; }
+.sh-panel .sh-k { width: auto; max-width: 92px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sh-panel .sh-v { min-width: 0; }
+.sh-btns { display: inline-flex; gap: 1px; }
+.sh-panel .sh-src { display: block; text-align: right; margin-top: 2px; }
+.sh-row { display: flex; align-items: center; gap: 6px; }
+.sh-row .sh-src { margin-left: auto; }
+/* cartão do ↪ no Preview */
+.sh-pop { position: fixed; z-index: 95; padding: 8px 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); font-size: 12.5px; }
+.sh-pop[hidden] { display: none; }
+.sh-pop-head { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }
+.sh-pop-head .sh-src { margin-left: auto; }
+.sh-pop ol { margin: 0 0 2px 18px; padding: 0; }
+.sh-pop li { margin: 2px 0; }
+.sh-pop-var { font: inherit; font-size: 12px; padding: 0 5px; margin: 1px; border-radius: 5px; cursor: copy; border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border)); background: color-mix(in srgb, var(--accent) 8%, var(--bg)); color: var(--text); }
+.sh-pop-var:hover { border-color: var(--accent); }
+.sh-pop-miss, .sh-pop-warn { color: var(--warn); }
+.markdown-body .sh-inc:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* painel de execução: rótulo dos campos */
+.run-var-group { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-top: 3px; }
+.run-var-f { display: inline-flex; align-items: center; gap: 2px; }
+.run-var-k { font-size: 10.5px; color: var(--muted); }

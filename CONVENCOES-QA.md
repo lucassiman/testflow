@@ -90,7 +90,7 @@ Passos sempre em **tabela**, com estas colunas (nesta ordem):
 Login, URL do ambiente e preparação que se repetem em vários casos ficam **uma vez** num documento `compartilhado`, com **escopo** — como o `beforeEach`/`beforeAll` da automação:
 
 - `escopo: pasta` (os documentos da pasta onde ele está e das de dentro — ex.: na pasta do épico) · `app` (a aplicação toda) · `global` (tudo); `aplica-a: [tag, ID, ticket ou épico]` restringe. O mais perto do caso ganha quando o nome se repete.
-- `## Dados`: tabela `Nome | Valor | Senha | Observação` (colunas a mais viram campos). No caso: `{{admin}}` (o valor), `{{admin.senha}}`, `{{admin.perfil}}`.
+- `## Dados` (ou várias: `## Dados: Logins`, `## Dados: Colaboradores`…): logins em `Nome | Valor | Senha | Observação`; outras massas com uma coluna **`Chave`** (o nome usado no caso) e os campos — `| Chave | Nome | Matrícula |` → `{{colab-ativo.nome}}`, `{{colab-ativo.matricula}}`. Colunas a mais viram campos. **Valores em texto puro**: nada de `[e-mail](mailto:…)` ou `<…>` — é o que o QA cola no campo.
 - `## Antes da rodada` / `## Antes de cada caso`: tabelas `# | Ação | Resultado esperado` — o app mostra uma vez no painel da rodada / antes do 1º passo de cada caso. **Não repita esses passos nos casos.**
 - `## Passos: Fazer login` + `Parâmetros: usuario` + tabela de passos com `{{usuario}}` / `{{usuario.senha}}`. No caso, **um** passo com a ação `↪ Fazer login (admin)` (vários parâmetros: `↪ Transferir (origem=admin, destino=cliente)`) — vale um status; no painel de execução aparecem os passos do bloco com os dados para copiar. Dois logins no mesmo caso = duas linhas `↪`.
 - **Nunca escreva senha num caso**: use `{{nome.senha}}`. A senha fica só no compartilhado (o app mostra `••••` e não a exporta).

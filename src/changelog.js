@@ -8,6 +8,15 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.37.0', date: '10/10/2026',
+    items: [
+      { icon: '🔑', text: '**Painel 🔑 Dados fora da barra lateral**: botão 🔑 no topo ou `Alt+K`, também com a barra fechada; fica ao lado do painel de execução, rola, mostra o nome inteiro de cada dado e os botões de copiar sempre à vista. **☐ mostrar senhas** vale para o painel, a execução e o Preview.', manual: '6.8 Passos e dados compartilhados' },
+      { icon: '🗂', text: '**Várias massas de dados**: `## Dados: Logins`, `## Dados: Colaboradores`… com a coluna **Chave** (`{{colab-ativo.matricula}}`), agrupadas no painel. E-mail escrito como link vira só o e-mail.', manual: '6.8 Passos e dados compartilhados' },
+      { icon: '↪', text: '**Cartão ao passar o mouse** no `↪ Bloco` do Preview: os passos com os dados e os botões de copiar. A tabela do compartilhado não é mais mascarada no app (só ao exportar).', manual: '6.8 Passos e dados compartilhados' },
+      { icon: '📁', text: 'Abas da barra lateral com ícone; estreita, só a aberta mostra o nome.', manual: '4. A tela' },
+    ],
+  },
+  {
     version: '1.36.0', date: '09/10/2026',
     items: [
       { icon: '🧹', text: '**Converter casos antigos para compartilhados**: a varredura do Claude acha o login/preparação repetidos em vários casos e os e-mails, senhas e URLs escritos à mão, propõe o compartilhado e, com o seu OK, troca por `↪ Fazer login (admin)` e `{{dado}}` (versão anterior guardada).', manual: '6.8 Passos e dados compartilhados' },

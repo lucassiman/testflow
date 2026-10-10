@@ -11,7 +11,7 @@ import { parseShared, scopeFor, parseInclude, expandInclude, resolveSegments, re
 import { headerOf } from '../markdown/segment.ts';
 import { detectFrontMatter, parseFrontMatter } from '../markdown/frontmatter.ts';
 import { splitRow } from '../markdown/status.ts';
-import { loadPrefs } from '../io/drafts.js';
+import { loadPrefs, savePrefs } from '../io/drafts.js';
 
 /** @typedef {import('../markdown/shared.ts').SharedDoc} SharedDoc */
 /** @typedef {import('../markdown/shared.ts').SharedScopeResult} SharedScopeResult */
@@ -80,57 +80,106 @@ export async function copyShared(value, label, secret, w = window) {
 /** Rótulo de um pedaço: "e-mail de admin" / "senha de admin". @param {Exclude<Segment, string>} s */
 export const segLabel = (s) => (s.field ? `${s.field} de ${s.name}` : s.name);
 
-// ---------------------------------------------------------------- aba 🔑 Dados
-/** Senhas mostradas (até redesenhar). @type {Set<string>} */
+// ---------------------------------------------------------------- painel 🔑 Dados (fora da barra lateral)
+/** Senhas mostradas uma a uma (até redesenhar). @type {Set<string>} */
 const revealed = new Set();
+/** Preferência "mostrar senhas": no painel, no painel de execução e nos dados do Preview. */
+export const showSecrets = () => !!loadPrefs().showSecrets;
 
-/** Desenha a aba 🔑 Dados (só se ela estiver à vista). */
+/** O painel: flutua à direita e encaixa ao lado do painel de execução (body.sh-open). */
+const panel = document.createElement('aside');
+panel.id = 'sharedPanel';
+panel.className = 'sh-panel';
+panel.setAttribute('role', 'complementary');
+panel.setAttribute('aria-label', 'Dados compartilhados');
+panel.hidden = true;
+document.body.appendChild(panel);
+
+const isOpen = () => !panel.hidden;
+/** Abre/fecha o painel (Alt+K, 🔑 no topo). @param {boolean} [on] */
+export function toggleSharedPanel(on = panel.hidden) {
+  panel.hidden = !on;
+  document.body.classList.toggle('sh-open', on);
+  savePrefs({ sharedPanelOpen: on });
+  document.querySelectorAll('[data-cmd="sharedPanel"]').forEach((b) => b.setAttribute('aria-pressed', String(on)));
+  if (on) renderSharedPanel(true);
+}
+/** Paleta / Alt+K: abre ou fecha. */
+export function showSharedPanel() { toggleSharedPanel(); }
+// volta como estava
+if (loadPrefs().sharedPanelOpen) requestAnimationFrame(() => toggleSharedPanel(true));
+
+/** Desenha o painel 🔑 Dados (só se estiver aberto). */
 export function renderSharedPanel(force = false) {
-  const sb = app.sidebar;
-  const el = sb?.sharedEl;
-  if (!el || (!force && sb.tab !== 'dados')) return;
-  if (!app.workspaceDir) { el.innerHTML = '<p class="side-empty">Abra a pasta de trabalho para ver os dados compartilhados (logins, URLs, passos).</p>'; return; }
-  if (!docIndex.ready) { el.innerHTML = '<p class="side-empty">Lendo a pasta…</p>'; return; }
+  if (!isOpen() && !force) return;
+  const secrets = showSecrets();
+  const head = `<div class="sh-panel-head"><strong>🔑 Dados compartilhados</strong>
+    <label class="sh-show" title="Mostra as senhas aqui, no painel de execução e no Preview (ao exportar, a senha continua protegida)"><input type="checkbox" data-sh="secrets"${secrets ? ' checked' : ''}> mostrar senhas</label>
+    <button type="button" class="sh-close" data-sh="close" title="Fechar (Alt+K)" aria-label="Fechar o painel de dados">×</button></div>`;
+  /** @param {string} html */
+  const draw = (html) => {
+    const top = /** @type {HTMLElement | null} */ (panel.querySelector('.sh-body'))?.scrollTop || 0;
+    panel.innerHTML = `${head}<div class="sh-body">${html}</div>`;
+    /** @type {HTMLElement} */ (panel.querySelector('.sh-body')).scrollTop = top;
+  };
+  if (!app.workspaceDir) { draw('<p class="sh-empty">Abra a pasta de trabalho para ver os dados compartilhados (logins, URLs, passos).</p>'); return; }
+  if (!docIndex.ready) { draw('<p class="sh-empty">Lendo a pasta…</p>'); return; }
   const scope = scopeOf();
   const name = currentWorkspacePath() || app.store.fileName || 'este documento';
   const newBtn = '<button type="button" class="side-mini" data-sh="new" title="Cria um documento compartilhado (dados e passos com escopo) a partir do modelo">＋ Novo compartilhado</button>';
+  const forDoc = `<div class="sh-for" title="${esc(name)}">Valem para <b>${esc(name.split('/').pop())}</b></div>`;
   if (!scope || !scopeSize(scope)) {
     const any = sharedDocs().length;
-    el.innerHTML = `<div class="sh-head"><span class="side-sub" title="${esc(name)}">Para: <b>${esc(name.split('/').pop())}</b></span></div>
-      <p class="side-empty">${any ? 'Nenhum dado ou passo compartilhado vale para este documento (o escopo dos compartilhados da pasta não o inclui).' : 'Nenhum compartilhado na pasta ainda.'}</p>
-      <p class="side-empty sh-help">Um <b>compartilhado</b> guarda logins, URLs e passos usados por vários casos, com um <b>escopo</b> (a pasta onde está, a aplicação toda ou tudo) — como o <i>beforeEach</i> da automação.</p>
-      <div class="sh-actions">${newBtn}</div>`;
+    draw(`${forDoc}<p class="sh-empty">${any ? 'Nenhum dado ou passo compartilhado vale para este documento (o escopo dos compartilhados da pasta não o inclui).' : 'Nenhum compartilhado na pasta ainda.'}</p>
+      <p class="sh-empty sh-help">Um <b>compartilhado</b> guarda logins, URLs, massas de dados e passos usados por vários casos, com um <b>escopo</b> (a pasta onde está, a aplicação toda ou tudo) — como o <i>beforeEach</i> da automação.</p>
+      <div class="sh-actions">${newBtn}</div>`);
     return;
   }
-  const varsHtml = [...scope.vars.values()].map((v) => {
-    const fields = Object.entries(v.fields).filter(([k]) => k !== 'valor' && !/^(observacao|obs|descricao)$/.test(k));
-    const row = (/** @type {string} */ label, /** @type {string} */ value, /** @type {boolean} */ secret, /** @type {string} */ field) => {
+  /** @param {import('../markdown/shared.ts').SharedVar} v */
+  const varHtml = (v) => {
+    const row = (/** @type {string} */ field, /** @type {string} */ value, /** @type {boolean} */ secret) => {
       if (!value) return '';
       const id = `${v.source}:${v.name}:${field}`;
-      const shown = !secret || revealed.has(id);
-      return `<div class="sh-field"><span class="sh-k">${esc(label)}</span><code class="sh-v${secret ? ' secret' : ''}" title="${secret ? 'Senha (oculta)' : esc(value)}">${esc(shown ? value : '••••••')}</code>${secret ? `<button type="button" class="sh-btn" data-sh="reveal" data-id="${esc(id)}" title="${shown ? 'Ocultar' : 'Mostrar'}" aria-label="${shown ? 'Ocultar' : 'Mostrar'} ${esc(label)} de ${esc(v.name)}">${shown ? '🙈' : '👁'}</button>` : ''}<button type="button" class="sh-btn" data-sh="copy" data-var="${esc(v.name)}" data-field="${esc(field)}" title="Copiar ${esc(label)}" aria-label="Copiar ${esc(label)} de ${esc(v.name)}">📋</button></div>`;
+      const shown = !secret || secrets || revealed.has(id);
+      return `<div class="sh-field"><span class="sh-k" title="${esc(field)}">${esc(field)}</span><code class="sh-v${secret ? ' secret' : ''}" title="${shown ? esc(value) : 'Senha (oculta)'}">${esc(shown ? value : '••••••')}</code><span class="sh-btns">${secret && !secrets ? `<button type="button" class="sh-btn" data-sh="reveal" data-id="${esc(id)}" title="${shown ? 'Ocultar' : 'Mostrar'}" aria-label="${shown ? 'Ocultar' : 'Mostrar'} ${esc(field)} de ${esc(v.name)}">${shown ? '🙈' : '👁'}</button>` : ''}<button type="button" class="sh-btn" data-sh="copy" data-var="${esc(v.name)}" data-field="${esc(field === 'valor' ? '' : field)}" title="Copiar ${esc(field)}" aria-label="Copiar ${esc(field)} de ${esc(v.name)}">📋</button></span></div>`;
     };
-    return `<li class="sh-var-item"><div class="sh-var-name"><b>${esc(v.name)}</b>${v.obs ? ` <span class="sh-obs">${esc(v.obs)}</span>` : ''}<span class="sh-src" title="De ${esc(v.source)}">${esc(v.source)}</span></div>
-      ${row('valor', v.value, v.secret.includes('valor'), '')}${fields.map(([k, val]) => row(k, val, v.secret.includes(k), k)).join('')}</li>`;
-  }).join('');
-  const blocksHtml = [...scope.blocks.values()].map((b) => `<li class="sh-block"><div class="sh-var-name"><b>↪ ${esc(b.name)}</b>${b.params.length ? ` <span class="sh-obs">(${esc(b.params.join(', '))})</span>` : ''}<span class="sh-src">${esc(b.source)}</span></div>
-      <ol class="sh-steps">${b.steps.map((s) => `<li>${esc(s.acao)}${s.esperado ? ` <span class="sh-obs">→ ${esc(s.esperado)}</span>` : ''}</li>`).join('')}</ol>
-      <button type="button" class="side-mini" data-sh="insert" data-block="${esc(b.name)}" title="Insere a linha ↪ ${esc(b.name)} na tabela de passos do caso">＋ Inserir no caso</button></li>`).join('');
+    const fields = Object.entries(v.fields).filter(([k]) => !/^(observacao|obs|descricao)$/.test(k));
+    return `<li class="sh-var-item"><div class="sh-var-name"><b>${esc(v.name)}</b>${v.label && v.label !== v.name ? ` <span class="sh-obs">${esc(v.label)}</span>` : ''}</div>${v.obs ? `<div class="sh-obs sh-var-obs">${esc(v.obs)}</div>` : ''}
+      ${fields.length ? fields.map(([k, val]) => row(k, val, v.secret.includes(k))).join('') : row('valor', v.value, false)}<div class="sh-src" title="Do compartilhado ${esc(v.source)}">${esc(v.source)}</div></li>`;
+  };
+  /** @type {Map<string, import('../markdown/shared.ts').SharedVar[]>} */
+  const groups = new Map();
+  for (const v of scope.vars.values()) groups.set(v.group || 'Dados', [...(groups.get(v.group || 'Dados') || []), v]);
+  const varsHtml = [...groups].map(([g, list]) => `<section class="sh-sec"><h4>🔑 ${esc(g)}</h4><ul class="sh-list">${list.map(varHtml).join('')}</ul></section>`).join('');
+  const blocksHtml = [...scope.blocks.values()].map((b) => `<li class="sh-block"><div class="sh-var-name"><b>↪ ${esc(b.name)}</b>${b.params.length ? ` <span class="sh-obs">(${esc(b.params.join(', '))})</span>` : ''}</div>
+      <ol class="sh-steps">${b.steps.map((st) => `<li>${esc(st.acao)}${st.esperado ? ` <span class="sh-obs">→ ${esc(st.esperado)}</span>` : ''}</li>`).join('')}</ol>
+      <div class="sh-row"><button type="button" class="side-mini" data-sh="insert" data-block="${esc(b.name)}" title="Insere a linha ↪ ${esc(b.name)} na tabela de passos do caso">＋ Inserir no caso</button><span class="sh-src">${esc(b.source)}</span></div></li>`).join('');
   const before = (/** @type {string} */ title, /** @type {Array<{ acao: string, esperado: string, source: string }>} */ list, /** @type {string} */ hint) => (list.length
-    ? `<section class="sh-sec"><h4 title="${esc(hint)}">${title}</h4><ol class="sh-steps">${list.map((s) => `<li>${esc(s.acao)}${s.esperado ? ` <span class="sh-obs">→ ${esc(s.esperado)}</span>` : ''} <span class="sh-src">${esc(s.source)}</span></li>`).join('')}</ol></section>` : '');
-  el.innerHTML = `<div class="sh-head"><span class="side-sub" title="${esc(name)}">Valem para: <b>${esc(name.split('/').pop())}</b></span></div>
-    ${varsHtml ? `<section class="sh-sec"><h4>🔑 Dados</h4><ul class="sh-list">${varsHtml}</ul><p class="sh-tip">No caso, <code>{{nome}}</code> e <code>{{nome.senha}}</code> usam o dado.</p></section>` : ''}
+    ? `<section class="sh-sec"><h4 title="${esc(hint)}">${title}</h4><ol class="sh-steps">${list.map((st) => `<li>${esc(st.acao)}${st.esperado ? ` <span class="sh-obs">→ ${esc(st.esperado)}</span>` : ''} <span class="sh-src">${esc(st.source)}</span></li>`).join('')}</ol></section>` : '');
+  draw(`${forDoc}
+    ${varsHtml}
+    ${varsHtml ? '<p class="sh-tip">No caso: <code>{{nome}}</code>, <code>{{nome.senha}}</code>, <code>{{nome.matricula}}</code>…</p>' : ''}
     ${blocksHtml ? `<section class="sh-sec"><h4>↪ Passos compartilhados</h4><ul class="sh-list">${blocksHtml}</ul></section>` : ''}
     ${before('🔁 Antes de cada caso', scope.beforeEach, 'Aparece no painel de execução antes do 1º passo de cada caso do escopo (beforeEach)')}
     ${before('⏮ Antes da rodada', scope.beforeAll, 'Aparece uma vez no painel da rodada (beforeAll)')}
     <section class="sh-sec"><h4>De onde vêm</h4><ul class="sh-docs">${scope.docs.map((d) => `<li><button type="button" class="side-item" data-sh="open" data-path="${esc(d.path)}" title="${esc(d.path)}"><span class="side-name">${esc(d.id)} — ${esc(d.titulo)}</span><span class="side-path">${esc(d.escopo === 'global' ? 'tudo' : d.escopo === 'app' ? `aplicação ${d.app}` : `pasta ${d.dir}`)}${d.aplicaA.length ? ` · só ${d.aplicaA.join(', ')}` : ''}</span></button></li>`).join('')}</ul>
-      <div class="sh-actions">${newBtn}</div></section>`;
+      <div class="sh-actions">${newBtn}</div></section>`);
 }
 
-document.addEventListener('click', (event) => {
+panel.addEventListener('change', (event) => {
+  const t = /** @type {HTMLInputElement} */ (event.target);
+  if (t.dataset.sh !== 'secrets') return;
+  savePrefs({ showSecrets: t.checked });
+  renderSharedPanel(true);
+  app.runner?.refresh();
+  app.preview?.render(app.store.source, { force: true });
+});
+panel.addEventListener('keydown', (event) => { if (event.key === 'Escape') { event.preventDefault(); toggleSharedPanel(false); } });
+panel.addEventListener('click', (event) => {
   const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (event.target).closest('[data-sh]'));
-  if (!b || !b.closest('.side-shared')) return;
+  if (!b || b.tagName === 'INPUT') return;
   const act = b.dataset.sh;
+  if (act === 'close') { toggleSharedPanel(false); return; }
   if (act === 'reveal') { const id = b.dataset.id || ''; if (revealed.has(id)) revealed.delete(id); else revealed.add(id); renderSharedPanel(true); return; }
   if (act === 'copy') {
     const scope = scopeOf();
@@ -208,7 +257,7 @@ function pickVar(title, scope) {
 /** Menu "↪ Incluir passos compartilhados…" (paleta e /). */
 export function includeMenu() {
   const scope = scopeOf();
-  if (!scope || !scope.blocks.size) { app.toast('Nenhum bloco de passos compartilhado vale para este documento — crie um em ＋ Novo compartilhado (aba 🔑 Dados).', 'info'); app.sidebar?.setTab('dados'); return; }
+  if (!scope || !scope.blocks.size) { app.toast('Nenhum bloco de passos compartilhado vale para este documento — crie um em ＋ Novo compartilhado (painel 🔑 Dados, Alt+K).', 'info'); toggleSharedPanel(true); return; }
   menu.open({
     x: window.innerWidth / 2 - 200, y: 110, wide: true, searchable: true, title: '↪ Incluir passos compartilhados',
     items: [...scope.blocks.values()].map((b) => ({ id: b.name, icon: '↪', label: b.name, hint: `${b.steps.length} passo(s)${b.params.length ? ` · ${b.params.join(', ')}` : ''} · ${b.source}`, act: b.name })),
@@ -240,26 +289,21 @@ export function pickVarToInsert(insert) {
   });
 }
 
-/** Abre a aba 🔑 Dados (Alt+D / paleta). */
-export function showSharedPanel() {
-  if (!app.sidebar) return;
-  app.sidebar.setTab('dados');
-  renderSharedPanel(true);
-}
-
 // ---------------------------------------------------------------- Preview: dados e inclusões desenhados
 const DECOR = 'data-shared-src';
 
 /**
- * No Preview (fora da edição): `{{admin}}` vira o valor (clique copia; senha aparece ••••) e `↪ Bloco (x)` vira um
- * rótulo com os passos na dica. O texto original fica em data-shared-src (o editor volta a ele ao editar o bloco).
+ * No Preview (fora da edição): `{{admin}}` vira o valor (clique copia; senha •••• a não ser com "mostrar senhas") e
+ * `↪ Bloco (x)` vira um rótulo; passar o mouse mostra um cartão com os passos e os dados para copiar. O texto original
+ * fica em data-shared-src (o editor volta a ele ao editar o bloco). A tabela do próprio compartilhado aparece como está:
+ * a senha só é protegida ao exportar/copiar para fora (proteção de dados sensíveis).
  * @param {HTMLElement} root
  */
 export function decorateShared(root) {
   if (root.id !== 'preview') return;
-  maskSecretColumns(root);
   const scope = scopeOf();
   if (!scope || !scopeSize(scope)) return;
+  const secrets = showSecrets();
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode: (n) => {
       const t = /** @type {Text} */ (n).data;
@@ -282,10 +326,10 @@ export function decorateShared(root) {
       const span = document.createElement('span');
       span.className = `sh-inc${ex.missing.length ? ' missing' : ''}`;
       span.setAttribute(DECOR, text);
+      span.dataset.shInc = text;
+      span.tabIndex = 0;
+      span.setAttribute('aria-label', `${ex.label}: passos compartilhados (passe o mouse ou Enter para ver)`);
       span.textContent = `↪ ${ex.label}`;
-      span.title = ex.block
-        ? `${ex.steps.map((s, i) => `${i + 1}. ${plain(s.acao)}${s.esperado.length ? ` → ${plain(s.esperado)}` : ''}`).join('\n')}${ex.missing.length ? `\n\n⚠ falta: ${ex.missing.join(', ')}` : ''}\n\n(passos compartilhados de ${ex.block.source})`
-        : `⚠ Nenhum bloco "Passos: ${inc.name}" compartilhado vale para este documento.`;
       frag.appendChild(span);
       node.replaceWith(frag);
       continue;
@@ -297,10 +341,11 @@ export function decorateShared(root) {
       if (typeof s === 'string') { frag.appendChild(document.createTextNode(s)); continue; }
       const span = document.createElement('span');
       const src = `{{${s.name}${s.field ? `.${s.field}` : ''}}}`;
+      const hide = s.secret && !secrets;
       span.setAttribute(DECOR, src);
-      span.className = `sh-var${s.secret ? ' secret' : ''}${s.missing ? ' missing' : ''}`;
-      span.textContent = s.missing ? src : s.secret ? '••••••' : s.value;
-      span.title = s.missing ? `${src}: dado não encontrado nos compartilhados do escopo` : `${src}${s.secret ? '' : ` = ${s.value}`} — clique para copiar`;
+      span.className = `sh-var${hide ? ' secret' : ''}${s.missing ? ' missing' : ''}`;
+      span.textContent = s.missing ? src : hide ? '••••••' : s.value;
+      span.title = s.missing ? `${src}: dado não encontrado nos compartilhados do escopo` : `${src}${hide ? '' : ` = ${s.value}`} — clique para copiar`;
       if (!s.missing) { span.dataset.shVar = s.name; span.dataset.shField = s.field; }
       frag.appendChild(span);
     }
@@ -308,45 +353,76 @@ export function decorateShared(root) {
   }
 }
 
-/**
- * No Preview, a coluna Senha/Token das tabelas aparece ••••••; clicar copia, 👁 no título da coluna não existe de
- * propósito — para ver, abra o Raw. O texto original fica em data-shared-src (editar a tabela mostra o valor).
- * @param {HTMLElement} root
- */
-function maskSecretColumns(root) {
-  for (const table of /** @type {NodeListOf<HTMLTableElement>} */ (root.querySelectorAll('table'))) {
-    if (table.closest('.md-block.editing')) continue;
-    const heads = [...table.querySelectorAll('thead th')].map((th) => (th.textContent || '').trim());
-    const cols = heads.map((h, i) => (/^(senha|password|pass|pwd|token|segredo|secret|pin)\b/i.test(h) ? i : -1)).filter((i) => i >= 0);
-    if (!cols.length) continue;
-    for (const tr of table.querySelectorAll('tbody tr')) {
-      for (const i of cols) {
-        const td = /** @type {HTMLElement | undefined} */ (tr.children[i]);
-        if (!td || td.querySelector(`[${DECOR}]`)) continue;
-        const val = (td.textContent || '').trim();
-        if (!val) continue;
-        const span = document.createElement('span');
-        span.className = 'sh-var secret';
-        span.setAttribute(DECOR, val);
-        span.dataset.shSecret = val;
-        span.textContent = '••••••';
-        span.title = `${heads[i]} (oculta) — clique para copiar`;
-        td.replaceChildren(span);
-      }
-    }
-  }
-}
+/** @param {Segment[]} segs */
+const plain = (segs) => segs.map((s) => (typeof s === 'string' ? s : s.missing ? `{{${s.name}}}` : s.secret && !showSecrets() ? '••••' : s.value)).join('');
 
-document.addEventListener('click', (event) => {
-  const s = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (event.target).closest('#preview .sh-var[data-sh-secret]'));
-  if (!s) return;
-  event.preventDefault();
-  event.stopPropagation();
-  copyShared(s.dataset.shSecret || '', 'Senha', true);
-}, true);
+// ---------------------------------------------------------------- cartão do ↪ (passar o mouse)
+const pop = document.createElement('div');
+pop.className = 'sh-pop';
+pop.setAttribute('role', 'tooltip');
+pop.hidden = true;
+document.body.appendChild(pop);
+/** @type {Array<{ value: string, label: string, secret: boolean }>} */
+let popCopies = [];
+/** @type {ReturnType<typeof setTimeout> | undefined} */
+let popTimer;
+/** @type {HTMLElement | null} */
+let popFor = null;
 
 /** @param {Segment[]} segs */
-const plain = (segs) => segs.map((s) => (typeof s === 'string' ? s : s.missing ? `{{${s.name}}}` : s.secret ? '••••' : s.value)).join('');
+function popSegs(segs) {
+  const secrets = showSecrets();
+  return segs.map((sg) => {
+    if (typeof sg === 'string') return esc(sg);
+    if (sg.missing) return `<span class="sh-pop-miss">${esc(`{{${sg.name}${sg.field ? `.${sg.field}` : ''}}}`)}</span>`;
+    const i = popCopies.push({ value: sg.value, label: segLabel(sg), secret: sg.secret }) - 1;
+    const hide = sg.secret && !secrets;
+    return `<button type="button" class="sh-pop-var${hide ? ' secret' : ''}" data-pop-copy="${i}" title="Copiar ${esc(segLabel(sg))}">${esc(hide ? '••••••' : sg.value)} <span aria-hidden="true">📋</span></button>`;
+  }).join('');
+}
+
+/** @param {HTMLElement} el */
+function showPop(el) {
+  const scope = scopeOf();
+  const inc = parseInclude(el.dataset.shInc || '');
+  if (!scope || !inc) return;
+  const ex = expandInclude(inc, scope);
+  popCopies = [];
+  pop.innerHTML = ex.block
+    ? `<div class="sh-pop-head">↪ <b>${esc(ex.label)}</b><span class="sh-src">${esc(ex.block.source)}</span></div>
+      <ol>${ex.steps.map((st) => `<li>${popSegs(st.acao)}${st.esperado.length ? ` <span class="sh-obs">→ ${popSegs(st.esperado)}</span>` : ''}</li>`).join('')}</ol>
+      ${ex.missing.length ? `<div class="sh-pop-warn">⚠ falta: ${esc(ex.missing.join(', '))}</div>` : ''}`
+    : `<div class="sh-pop-warn">⚠ Nenhum bloco "Passos: ${esc(inc.name)}" compartilhado vale para este documento (veja o escopo no painel 🔑, Alt+K).</div>`;
+  pop.hidden = false;
+  popFor = el;
+  const r = el.getBoundingClientRect();
+  const w = Math.min(420, window.innerWidth - 16);
+  pop.style.width = `${w}px`;
+  pop.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - w - 8))}px`;
+  const below = r.bottom + 6;
+  const h = pop.offsetHeight;
+  pop.style.top = `${below + h > window.innerHeight - 8 ? Math.max(8, r.top - h - 6) : below}px`;
+}
+const hidePop = () => { clearTimeout(popTimer); popTimer = setTimeout(() => { pop.hidden = true; popFor = null; popTimer = undefined; }, 220); };
+document.addEventListener('mouseover', (event) => {
+  const t = /** @type {HTMLElement} */ (event.target);
+  const inc = /** @type {HTMLElement | null} */ (t.closest?.('#preview .sh-inc[data-sh-inc]'));
+  if (inc) { clearTimeout(popTimer); if (popFor !== inc) popTimer = setTimeout(() => showPop(inc), 250); return; }
+  if (t.closest?.('.sh-pop')) { clearTimeout(popTimer); return; }
+  if (!pop.hidden) hidePop();
+  else if (popTimer) { clearTimeout(popTimer); popTimer = undefined; }
+});
+document.addEventListener('focusin', (event) => {
+  const inc = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (event.target).closest?.('#preview .sh-inc[data-sh-inc]'));
+  if (inc) showPop(inc);
+});
+document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !pop.hidden) { pop.hidden = true; popFor = null; } });
+pop.addEventListener('click', (event) => {
+  const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (event.target).closest('[data-pop-copy]'));
+  if (!b) return;
+  const c = popCopies[Number(b.dataset.popCopy)];
+  if (c) copyShared(c.value, c.label, c.secret);
+});
 
 // clique num dado do Preview: copia (não abre a edição do bloco — o Preview ignora .sh-var no mousedown)
 document.addEventListener('click', (event) => {

@@ -105,3 +105,18 @@ test('MCP: qa_compartilhados sem senhas, qa_ler mascara, qa_criar na pasta compa
   // validar
   assert.match(await ws.validate({ doc: 'TC-1' }), /compartilhado \(linha 14\): \{\{gerente\}\}/);
 });
+
+test('1.37: valores sem mailto/links, várias tabelas por grupo, coluna Chave, nome com espaço vira chave usável', async () => {
+  const { cleanValue } = await import('../../src/markdown/shared.ts');
+  assert.equal(cleanValue('[a@b.com](mailto:a@b.com)'), 'a@b.com');
+  assert.equal(cleanValue('<mailto:a@b.com>'), 'a@b.com');
+  assert.equal(cleanValue('mailto:a@b.com'), 'a@b.com');
+  assert.equal(cleanValue('<https://x.com/a>'), 'https://x.com/a');
+  assert.equal(cleanValue('`102030`'), '102030');
+  const t = '---\ntipo: compartilhado\nid: C\nescopo: global\n---\n\n## Dados: Logins\n\n| Nome | Valor | Senha |\n| --- | --- | --- |\n| admin | [a@b.com](mailto:a@b.com) | x1 |\n\n## Dados: Colaboradores\n\n| Chave | Nome | Matrícula |\n| --- | --- | --- |\n| colab-ativo | João Silva | 102030 |\n\n| Nome | Matrícula |\n| --- | --- |\n| Maria Souza | 405060 |\n';
+  const d = parseShared(t, 'c.md');
+  assert.deepEqual(d.vars.map((v) => [v.name, v.group]), [['admin', 'Logins'], ['colab-ativo', 'Colaboradores'], ['maria-souza', 'Colaboradores']]);
+  assert.equal(d.vars[0].value, 'a@b.com');
+  const s = scopeFor({ path: 'x/y.md' }, [d]);
+  assert.equal(resolveText('{{colab-ativo.nome}} {{colab-ativo.matricula}} {{maria-souza.matricula}} {{admin}} {{admin.senha}}', s), 'João Silva 102030 405060 a@b.com ••••');
+});

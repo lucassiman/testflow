@@ -28,6 +28,7 @@ import {
  *   vars: () => import('../markdown/shared.ts').SharedVar[],
  *   beforeEach: () => Array<{ acao: string, esperado: string, source: string }>,
  *   copy: (value: string, label: string, secret: boolean, win: Window) => void,
+ *   secrets?: () => boolean,
  * }} SharedDeps
  */
 /** @typedef {{ floating: boolean }} PasteOpts */
@@ -379,7 +380,8 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
       if (sg.missing) return `<span class="run-var missing" title="Dado não encontrado nos compartilhados do escopo">${esc(src)}</span>`;
       const label = sg.field ? `${sg.field} de ${sg.name}` : sg.name;
       const i = copyTargets.push({ value: sg.value, label, secret: sg.secret }) - 1;
-      return `<button type="button" class="run-var${sg.secret ? ' secret' : ''}" data-copy="${i}" title="Copiar ${esc(label)}${sg.secret ? '' : `: ${esc(sg.value)}`}" aria-label="Copiar ${esc(label)}">${esc(sg.secret ? '••••••' : sg.value)}<span class="run-var-ic" aria-hidden="true">📋</span></button>`;
+      const hide = sg.secret && !shared?.secrets?.();
+      return `<button type="button" class="run-var${hide ? ' secret' : ''}" data-copy="${i}" title="Copiar ${esc(label)}${hide ? '' : `: ${esc(sg.value)}`}" aria-label="Copiar ${esc(label)}">${esc(hide ? '••••••' : sg.value)}<span class="run-var-ic" aria-hidden="true">📋</span></button>`;
     }).join('');
   }
   /** Texto com os {{dados}} trocados por botões de copiar. @param {string} text */
@@ -400,10 +402,17 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
   function varsHtml() {
     const vs = shared ? shared.vars() : [];
     if (!vs.length) return '<div class="run-vars"><em>Nenhum dado compartilhado vale para este documento.</em></div>';
-    return `<div class="run-vars" role="group" aria-label="Dados compartilhados">${vs.map((v) => {
-      const fields = Object.entries(v.fields).filter(([k, val]) => val && k !== 'valor' && !/^(observacao|obs|descricao)$/.test(k));
-      return `<div class="run-var-row"><b title="${esc(v.obs || v.name)}">${esc(v.name)}</b>${segHtml([{ name: v.name, field: '', value: v.value, secret: v.secret.includes('valor'), missing: false }])}${fields.map(([k, val]) => segHtml([{ name: v.name, field: k, value: val, secret: v.secret.includes(k), missing: false }])).join('')}</div>`;
-    }).join('')}</div>`;
+    /** @type {Map<string, typeof vs>} */
+    const groups = new Map();
+    for (const v of vs) groups.set(v.group || '', [...(groups.get(v.group || '') || []), v]);
+    const many = groups.size > 1;
+    return `<div class="run-vars" role="group" aria-label="Dados compartilhados">${[...groups].map(([g, list]) => `${many && g ? `<div class="run-var-group">${esc(g)}</div>` : ''}${list.map((v) => {
+      const fields = Object.entries(v.fields).filter(([k, val]) => val && !/^(observacao|obs|descricao)$/.test(k));
+      const cells = fields.length
+        ? fields.map(([k, val]) => `<span class="run-var-f"><span class="run-var-k">${esc(k)}</span>${segHtml([{ name: v.name, field: k === 'valor' ? '' : k, value: val, secret: v.secret.includes(k), missing: false }])}</span>`).join('')
+        : segHtml([{ name: v.name, field: '', value: v.value, secret: false, missing: false }]);
+      return `<div class="run-var-row"><b title="${esc(v.obs || v.label || v.name)}">${esc(v.name)}</b>${cells}</div>`;
+    }).join('')}`).join('')}</div>`;
   }
   const keysBtn = () => (shared && shared.vars().length
     ? `<button type="button" data-act="vars" class="run-x run-keys${showVars ? ' on' : ''}" title="Dados compartilhados (e-mail, senha, URL…): clique para copiar" aria-label="Dados compartilhados" aria-pressed="${showVars}">🔑</button>`

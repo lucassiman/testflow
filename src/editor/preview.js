@@ -846,7 +846,7 @@ export function createPreview({
     if (blockEl && editing?.el === blockEl && !editing.raw && target.closest('td.status-cell')) { event.preventDefault(); return; }
     if (!blockEl || editing?.el === blockEl) return;
     if (RAW_EDIT_TYPES.has(blockEl.dataset.type || '') || blockEl.dataset.type === 'frontmatter') return; // editor/formulário abre no click
-    if (target.closest('.fold-toggle, .block-tools, .block-add, input.task-checkbox, a[href], .mermaid-svg, img.img-missing, td.status-cell, .summary-label, .sh-var[data-sh-var], .sh-var[data-sh-secret]')) return;
+    if (target.closest('.fold-toggle, .block-tools, .block-add, input.task-checkbox, a[href], .mermaid-svg, img.img-missing, td.status-cell, .summary-label, .sh-var[data-sh-var]')) return;
     if (onImageClick && target.matches('img[data-md-src]:not(.img-pending)')) return; // clique no print amplia (não edita o bloco)
     if (blockEl.classList.contains('auto-block') || blockEl.classList.contains('is-comment')) return;
     startEdit(blockEl, null);

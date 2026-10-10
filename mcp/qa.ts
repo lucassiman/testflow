@@ -1181,9 +1181,11 @@ export class QaWorkspace {
     const out = [`Compartilhados que valem para ${label} (do mais de fora para o mais perto; o mais perto ganha):`, ...scope.docs.map((d) => `- ${d.id} — ${d.titulo} · escopo: ${where(d)}${d.aplicaA.length ? ` · só ${d.aplicaA.join(', ')}` : ''} · ${d.path}`)];
     if (scope.vars.size) {
       out.push('', 'Dados — nos passos use {{nome}} ou {{nome.campo}}; NUNCA escreva a senha no caso (o QA copia no app):');
-      for (const v of scope.vars.values()) {
+      let group = '\u0000';
+      for (const v of [...scope.vars.values()].sort((a, b) => (a.group || '').localeCompare(b.group || ''))) {
+        if ((v.group || '') !== group) { group = v.group || ''; if (group) out.push(`  ${group}:`); }
         const fields = Object.entries(v.fields).filter(([k, val]) => val && k !== 'valor').map(([k, val]) => (v.secret.includes(k) ? `${k}: (definida)` : `${k}: ${val}`));
-        out.push(`- ${v.name} = ${v.secret.includes('valor') ? '(oculto)' : v.value}${fields.length ? ` · ${fields.join(' · ')}` : ''} [${v.source}]`);
+        out.push(`- ${v.name}${v.fields.valor !== undefined ? ` = ${v.secret.includes('valor') ? '(oculto)' : v.value}` : ''}${fields.length ? ` · ${fields.join(' · ')}` : ''} [${v.source}]`);
       }
     }
     if (scope.blocks.size) {

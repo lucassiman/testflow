@@ -21,13 +21,22 @@ async function setup(page, context) {
 }
 const clip = (page) => page.evaluate(() => navigator.clipboard.readText());
 
-test('no caso: ↪ inclusões e {{dados}} desenhados; clique copia; aba 🔑 Dados só com o escopo; aviso de dado que não existe', async ({ page, context }) => {
+test('no caso: ↪ inclusões e {{dados}} desenhados; cartão ao passar o mouse; clique copia; painel 🔑 só com o escopo; aviso de dado que não existe', async ({ page, context }) => {
   await setup(page, context);
   await page.locator('[data-side="wsList"] .side-file', { hasText: 'TC-1' }).first().click();
   const prev = page.locator('#preview');
   await expect(prev.locator('.sh-inc').nth(0)).toHaveText('↪ Fazer login · admin');
   await expect(prev.locator('.sh-inc').nth(1)).toHaveText('↪ Fazer login · cliente');
-  await expect(prev.locator('.sh-inc').nth(0)).toHaveAttribute('title', /Informar admin@loja\.com e a senha ••••/);
+  // passar o mouse: cartão com os passos e os dados para copiar
+  await prev.locator('.sh-inc').nth(0).hover();
+  const pop = page.locator('.sh-pop');
+  await expect(pop).toBeVisible();
+  await expect(pop).toContainText('Informar admin@loja.com');
+  await expect(pop.locator('.sh-pop-var.secret')).toHaveText(/••••••/);
+  await pop.locator('.sh-pop-var.secret').click();
+  await expect.poll(() => clip(page)).toBe('S3nha!Forte');
+  await page.mouse.move(5, 5);
+  await expect(pop).toBeHidden();
   const url = prev.locator('.sh-var', { hasText: 'https://hml.loja.com' });
   await url.click();
   await expect.poll(() => clip(page)).toBe('https://hml.loja.com');
@@ -42,7 +51,8 @@ test('no caso: ↪ inclusões e {{dados}} desenhados; clique copia; aba 🔑 Dad
 
   // 🔑 Dados (Alt+K)
   await page.keyboard.press('Alt+k');
-  const panel = page.locator('.side-shared');
+  const panel = page.locator('#sharedPanel');
+  await expect(panel).toBeVisible();
   await expect(panel).toContainText('admin');
   await expect(panel).toContainText('cliente');
   await expect(panel.locator('.sh-v.secret').first()).toHaveText('••••••');
@@ -56,9 +66,7 @@ test('no caso: ↪ inclusões e {{dados}} desenhados; clique copia; aba 🔑 Dad
   await expect(panel).toContainText('Antes de cada caso');
 
   // fora do escopo (outra aplicação): nada aparece
-  await page.locator('.side-tabs [data-tab="files"]').click();
   await page.locator('[data-side="wsList"] .side-file', { hasText: 'TC-9' }).first().click();
-  await page.locator('.side-tabs [data-tab="dados"]').click();
   await expect(panel).toContainText('Nenhum dado ou passo compartilhado vale para este documento');
 });
 
@@ -111,4 +119,54 @@ test('rodada: "antes da rodada" aparece no painel, com os dados resolvidos e mar
   await expect(before).toContainText('Conferir https://hml.loja.com no ar');
   await before.locator('input[type="checkbox"]').check();
   await expect(page.locator('#cyclePanel .cp-before summary')).toContainText('1/1');
+});
+
+test('painel 🔑 fora da barra lateral, rola, agrupa as tabelas; e-mail sem mailto; "mostrar senhas"; a tabela do compartilhado não é mascarada', async ({ page, context }) => {
+  const MAIS = SHARED.replace('## Antes da rodada', `## Dados: Colaboradores\n\n| Chave | Nome | Matrícula |\n| --- | --- | --- |\n${Array.from({ length: 14 }, (_, i) => `| colab${i} | Pessoa ${i} | 10${i} |`).join('\n')}\n\n## Antes da rodada`)
+    .replace('| admin | admin@loja.com |', '| admin | [admin@loja.com](mailto:admin@loja.com) |');
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.addInitScript(wsInit, 'ws-compartilhados-2');
+  await openEditor(page, { mode: 'preview', prefs: { sidebar: false } });
+  await page.evaluate(async ([s, a]) => {
+    await window.__write('aplicacoes/Portal/compartilhados/portal.md', s);
+    await window.__write('aplicacoes/Portal/casos/TC-1.md', a);
+  }, [MAIS, TC1]);
+  await page.keyboard.press('Control+Shift+E');
+  await page.locator('.sidebar button', { hasText: 'Abrir…' }).first().click();
+  await page.locator('[data-side="wsList"] .side-file', { hasText: 'TC-1' }).first().click();
+  await page.keyboard.press('Control+Shift+E'); // barra lateral fechada: o painel continua acessível
+  await page.locator('button[data-cmd="sharedPanel"]').click();
+  const panel = page.locator('#sharedPanel');
+  await expect(panel).toBeVisible();
+  await expect(page.locator('.side-tabs [data-tab="dados"]')).toHaveCount(0);
+  await expect(panel.locator('h4', { hasText: 'Colaboradores' })).toBeVisible();
+  await expect(panel.locator('.sh-v', { hasText: 'admin@loja.com' }).first()).toHaveText('admin@loja.com'); // sem mailto
+  // rola até o fim
+  const body = panel.locator('.sh-body');
+  expect(await body.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+  await body.evaluate((el) => { el.scrollTop = el.scrollHeight; });
+  await expect(panel.locator('h4', { hasText: 'De onde vêm' })).toBeInViewport();
+  // nome inteiro e botões sempre à vista
+  await expect(panel.locator('.sh-var-name b', { hasText: 'colab13' })).toBeVisible();
+  const copy = panel.locator('[data-sh="copy"][data-var="admin"]').first();
+  const pb = await panel.boundingBox();
+  const cb = await copy.boundingBox();
+  expect(cb.x + cb.width).toBeLessThanOrEqual(pb.x + pb.width);
+  await copy.click();
+  await expect.poll(() => clip(page)).toBe('admin@loja.com');
+  // mostrar senhas: painel, Preview e painel de execução
+  await body.evaluate((el) => { el.scrollTop = 0; });
+  await panel.locator('[data-sh="secrets"]').check();
+  await expect(panel.locator('.sh-v', { hasText: 'S3nha!Forte' })).toBeVisible();
+  await page.locator('.exec-bar [data-act="run"]').click();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.runner .run-inc .run-var', { hasText: 'S3nha!Forte' })).toBeVisible();
+  // Alt+K fecha
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Alt+k');
+  await expect(panel).toBeHidden();
+  // a tabela do próprio compartilhado aparece como está (sem ••••)
+  await page.keyboard.press('Control+Shift+E');
+  await page.locator('[data-side="wsList"] .side-file', { hasText: 'portal' }).first().click();
+  await expect(page.locator('#preview td', { hasText: 'S3nha!Forte' })).toBeVisible();
 });

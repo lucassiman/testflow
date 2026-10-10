@@ -49,7 +49,7 @@ import { formatCommand, insertBlockAfterActive } from './app/editing.js';
 import { backupWorkspace, backupSetting, checkBackupReminder } from './app/backup.js';
 import { addEvidence, annotateExisting, bigPrintSetting, cleanOrphanPrints, openImageViewer, clipboardImages, pastePrintFromClipboard, requestFolder, reuseEvidence, saveEvidenceFiles, updateFolderStatus } from './app/evidence.js';
 import { bindStatusKeys, execBar, refreshSummary, statusPop } from './app/execution.js';
-import { decorateShared, renderSharedPanel, sharedLintWarnings, showSharedPanel, includeMenu, stepShared, scopeVars, scopeOf, copyShared } from './app/sharedData.js';
+import { decorateShared, renderSharedPanel, sharedLintWarnings, showSharedPanel, includeMenu, stepShared, scopeVars, scopeOf, copyShared, showSecrets } from './app/sharedData.js';
 import { brokenLinkWarnings, currentWorkspacePath, linkCardFor, markMissingLinks, openDocLink, openDocOverrides, openWikiTarget, updateLinks } from './app/links.js';
 import { createLinkPreview } from './ui/linkPreview.js';
 import { closeLightbox } from './ui/lightbox.js';
@@ -218,7 +218,7 @@ runner = createRunner({
   store, preview, toast, root: els.preview, prefs: { load: loadPrefs, save: savePrefs },
   docKey: () => currentWorkspacePath() || store.fileName,
   // passos e dados compartilhados (11.1): inclusões ↪, {{dados}} com copiar, "antes de cada caso"
-  shared: { step: (cell) => stepShared(cell), vars: () => scopeVars(), beforeEach: () => scopeOf()?.beforeEach || [], copy: (v, l, s, w) => copyShared(v, l, s, w) },
+  shared: { step: (cell) => stepShared(cell), vars: () => scopeVars(), beforeEach: () => scopeOf()?.beforeEach || [], copy: (v, l, s, w) => copyShared(v, l, s, w), secrets: () => showSecrets() },
   onPastePrint: (clipboard, opts) => pastePrintFromClipboard(clipboard, opts),
   onPasteFiles: (files, opts) => addEvidence(files, 'preview', opts),
   onSavePrints: (files, opts) => saveEvidenceFiles(files, opts),
@@ -321,7 +321,7 @@ const sidebar = createSidebar({
     if (mode === 'raw') raw.goToLine(h.line);
     else preview.scrollToLine(h.line, { align: 'start' });
   },
-  onTabChange: (tab) => { savePrefs({ sideTab: tab }); if (tab === 'outline') updateOutline(); if (tab === 'links') updateLinks(); if (tab === 'dados') renderSharedPanel(true); },
+  onTabChange: (tab) => { savePrefs({ sideTab: tab }); if (tab === 'outline') updateOutline(); if (tab === 'links') updateLinks(); },
   onOpenLink: (e) => { if (e?.missing) toast(`"${e.target}" não foi encontrado na pasta de trabalho.`, 'error'); else if (e) openWikiTarget(e.target || e.id || e.name, e); },
   onSearch: (query, opts) => searchWorkspace(query, opts),
   onOpenHit: (entry, hit, query, opts) => openSearchHit(entry, hit, query, opts),
@@ -1638,7 +1638,7 @@ function run(cmd, value, event) {
     case 'whatsNew': openWhatsNew(true); return true;
     case 'newView': newView(); return true;
     case 'comment': addComment(); return true;
-    case 'sharedPanel': if (els.sidebar.hidden) toggleSidebar(true); showSharedPanel(); return true;
+    case 'sharedPanel': showSharedPanel(); return true;
     case 'includeShared': includeMenu(); return true;
     case 'newCycle': newCycle(); return true;
     case 'newRun': newRun(); return true;

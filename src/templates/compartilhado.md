@@ -14,15 +14,23 @@ qa-md: 1
 
 Dados e passos usados por vários casos. **Escopo** (no cabeçalho): `pasta` = os documentos desta pasta e das de dentro · `app` = a aplicação toda · `global` = a pasta de trabalho toda. `aplica-a: [tag, ID, ticket ou épico]` restringe a quem tem um deles. Um compartilhado mais perto do caso (na pasta do épico, por exemplo) ganha de um mais de fora quando o nome é o mesmo.
 
-## Dados
+## Dados: Logins
 
-No caso: `{{admin}}` usa o valor e `{{admin.senha}}` a senha (no app aparece `••••` e um clique copia). Colunas a mais viram campos: `{{admin.perfil}}`.
+No caso: `{{admin}}` usa o valor e `{{admin.senha}}` a senha (no app, um clique copia; a senha aparece `••••` a não ser com "mostrar senhas"). Colunas a mais viram campos: `{{admin.perfil}}`. Escreva os valores como texto puro (sem link).
 
 | Nome | Valor | Senha | Observação |
 | --- | --- | --- | --- |
 | admin | admin@exemplo.com | troque-aqui | Administrador |
 | cliente | cliente@exemplo.com | troque-aqui | Cliente comum |
 | url | https://hml.exemplo.com | | Ambiente de homologação |
+
+## Dados: Colaboradores
+
+Outras massas de dados ficam em outras tabelas (uma seção `## Dados: <nome>` para cada). A coluna **Chave** é o nome usado no caso — `{{colab-ativo.nome}}`, `{{colab-ativo.matricula}}`.
+
+| Chave | Nome | Matrícula | Cargo |
+| --- | --- | --- | --- |
+| colab-ativo | Nome do colaborador | 000000 | Analista |
 
 ## Antes da rodada
 

@@ -89,7 +89,7 @@ Resumo do roteiro:
 | **Topo** | `☰` barra lateral · nome do arquivo (clique para renomear) · **estado do documento** (ver 4.1) · **Novo ▾** (agrupado: **Documento** — caso de teste, a partir de modelo, nota rápida, em branco, visão · **Execução** — rodada, ciclo, executar ciclo salvo, só automatizada · **Importar** — Notion, relatório de automação, planilha) · **Abrir** · **Salvar ▾** · **Copiar ▾** · **PDF ▾** · modo **Raw / Dividido / Preview** · **A− 100% A+** (tamanho do texto) · **⌘** paleta · **?** manual · **◐** tema claro/escuro |
 | **Abas** | Aparecem quando há 2+ documentos abertos. `●` = não salvo; 🏛/✎/▶/⏱ = estado (ver 4.1). Botão do meio do mouse fecha. **Arraste** uma aba para mudar a ordem. Com abas demais para a largura, elas encolhem e depois **rolam** (roda do mouse sobre as abas, ou **‹ ›** à direita); **⌄ N** abre a lista de todas para escolher. |
 | **Toolbar** | Só o que mais se usa: desfazer/refazer · **B** *I* · **Aa ▾** (tachado, código inline, cor) · **Título ▾** (H1, H2, H3, citação) · **Lista ▾** (lista, numerada, checklist) · Link · **📸 Capturar** · **Tabela ▾** · **{ } Código ▾** · **Status ▾** · **Destaque ▾** · **＋ Inserir** (tudo o que dá para pôr no documento: blocos, modelos, imagem por URL, diagrama… — o mesmo menu do `/`). Todas as ações pelo nome: `Ctrl+Shift+P`. **No Preview, ela só aparece quando você está num bloco** (editando ou com ele selecionado) e fica por cima do documento, sem empurrar o texto; sai com `Esc` (sem editar) ou clicando fora. No Raw e no Dividido fica sempre. Para deixar fixa também no Preview: `Ctrl+Shift+P` → *Barra de formatação no Preview: só ao editar / sempre*. |
-| **Barra lateral** (`☰` ou `Ctrl+Shift+E`) | Abas **Arquivos** (pasta de trabalho em árvore, 📊 Painel, recentes), **Sumário** (títulos), **Links** (quem cita / links de saída), **Buscar** (em todos os arquivos). **Arraste a borda direita** para mudar a largura (duplo clique volta ao padrão; com ela em foco, `←`/`→` ajustam). |
+| **Barra lateral** (`☰` ou `Ctrl+Shift+E`) | Abas (com a barra estreita, só a aberta mostra o nome) **Arquivos** (pasta de trabalho em árvore, 📊 Painel, recentes), **Sumário** (títulos), **Links** (quem cita / links de saída), **Buscar** (em todos os arquivos). **Arraste a borda direita** para mudar a largura (duplo clique volta ao padrão; com ela em foco, `←`/`→` ajustam). |
 | **Barra Execução** (topo do Preview) | Aparece em documentos com passos/checklist, numa linha só: status geral, progresso, contagem **dos status que existem** no documento (clique para filtrar), ☑, **▶ Executar**, **🔁 Nova rodada**, **⏱ Sessão**, **📊 Resumo** |
 | **Painel de execução** | Com espaço (área do documento com 1000 px ou mais), o painel do ▶ Executar fica **encaixado à direita**, numa coluna própria — não cobre mais a tabela de passos. Em tela estreita ele flutua no canto, como antes; **⧉ Flutuar** leva para uma janelinha por cima do sistema testado. |
 | **Cartão do cabeçalho** | Vem **compacto**: tipo · ID · status · prioridade · ambiente · Jira numa linha, e o título. **▾ mais** mostra todos os campos e as tags (**▴ menos** recolhe); a escolha vale para todos os documentos e fica lembrada. Clicar no resto do cartão abre o formulário, como sempre. |
@@ -362,9 +362,9 @@ Login, URL do ambiente e preparação que se repetem em vários casos ficam **um
 
 `aplica-a: [pix, TC-7, PORTAL-10]` restringe a quem tem uma dessas tags, IDs, tickets ou épicos. Se dois compartilhados têm um dado ou bloco com o mesmo nome, **o mais perto do caso ganha** (o da pasta do épico ganha do da aplicação).
 
-**Criar:** aba **🔑** da barra lateral → **＋ Novo compartilhado**, ou **Novo ▾ → A partir de modelo → Passos e dados compartilhados**. O modelo já vem com as seções:
+**Criar:** painel **🔑** (botão 🔑 no topo ou `Alt+K`) → **＋ Novo compartilhado**, ou **Novo ▾ → A partir de modelo → Passos e dados compartilhados**. O modelo já vem com as seções:
 
-- **Dados** — tabela `Nome | Valor | Senha | Observação` (colunas a mais viram campos). Ex.: `admin | admin@loja.com | S3nha! | Administrador`.
+- **Dados** — uma seção para cada massa: `## Dados: Logins` com `Nome | Valor | Senha | Observação` (ex.: `admin | admin@loja.com | S3nha! | Administrador`) e, para outros dados, `## Dados: Colaboradores` com uma coluna **Chave** (o nome usado no caso) e os campos: `| Chave | Nome | Matrícula |` → `{{colab-ativo.nome}}`, `{{colab-ativo.matricula}}`. Colunas a mais viram campos; os valores são texto puro (um e-mail escrito como link vira só o e-mail).
 - **Antes da rodada** — passos feitos uma vez no começo da rodada: aparecem no painel da rodada como **⏮ Antes da rodada**, para marcar.
 - **Antes de cada caso** — aparecem no painel de execução **antes do 1º passo** de cada caso do escopo (**Enter** ou **✓ Pronto** vai ao 1º passo).
 - **Passos: Fazer login** (com `Parâmetros: usuario`) — um bloco de passos com nome, que os casos incluem.
@@ -373,13 +373,13 @@ Login, URL do ambiente e preparação que se repetem em vários casos ficam **um
 
 - **↪ Bloco** — um passo cuja ação é `↪ Fazer login (admin)` vale **um passo e um status**. Caso com dois perfis: duas linhas — `↪ Fazer login (admin)` e `↪ Fazer login (usuario=cliente)`; vários parâmetros: `↪ Transferir (origem=admin, destino=cliente)`. Inserir: `/` ou `Ctrl+Shift+P` → **Incluir passos compartilhados…** (escolha o bloco e o dado), ou **＋ Inserir no caso** na aba 🔑.
 - **{{dado}}** — `{{admin}}` usa o valor; `{{admin.senha}}` a senha; `{{admin.perfil}}` outra coluna. Inserir: `/` → **Dado compartilhado {{…}}…**.
-- No **Preview** o bloco aparece como `↪ Fazer login · admin` (passe o mouse para ver os passos) e o dado aparece com o valor — **clique copia** (a senha aparece `••••••`). Ao editar, volta o texto original. Bloco ou dado que não existe no escopo vira **aviso** no rodapé.
+- No **Preview** o bloco aparece como `↪ Fazer login · admin` — **passe o mouse** (ou `Tab` até ele) e aparece um cartão com os passos já com os dados e os botões 📋 de e-mail e senha — e o dado aparece com o valor: **clique copia**. Ao editar, volta o texto original. Bloco ou dado que não existe no escopo vira **aviso** no rodapé.
 - No **painel de execução** (também minimizado e no ⧉ Flutuar), o passo `↪` mostra os passos do bloco com o **e-mail e a senha em botões de copiar**; **🔑** no topo do painel abre todos os dados do caso para copiar.
 
-**Aba 🔑 Dados** (barra lateral, `Alt+K`): só os dados e blocos que **valem para o documento aberto** (o de outra aplicação ou pasta não aparece), com **📋 copiar** em cada campo, **👁** para ver a senha, os "antes de" e de onde vem cada um.
+**Painel 🔑 Dados** (botão **🔑** no topo ou `Alt+K`; independe da barra lateral — dá para executar com ela fechada): só os dados e blocos que **valem para o documento aberto** (o de outra aplicação ou pasta não aparece), **agrupados por tabela** (Logins, Colaboradores…), com o nome inteiro, **📋 copiar** em cada campo, **👁** para ver uma senha, os "antes de" e de onde vem cada um. Flutua à direita e fica ao lado do painel de execução quando ele está encaixado; `Esc` ou `Alt+K` fecha. **☐ mostrar senhas** (no topo do painel) mostra as senhas no painel, no painel de execução e nos `{{…senha}}` do Preview.
 
 > [!IMPORTANT]
-> **Senhas:** ficam só no compartilhado (no `.md`, que vai para a pasta oficial — use senhas de ambiente de teste). Na tela aparecem `••••••`; copiar não mostra o valor no aviso; ao copiar/exportar o documento (Jira, PDF, Claude) a proteção de dados sensíveis trata a coluna **Senha** como sensível; o Claude (MCP) **nunca recebe** as senhas. Nunca escreva senha num caso — use `{{nome.senha}}`.
+> **Senhas:** ficam só no compartilhado (no `.md`, que vai para a pasta oficial — use senhas de ambiente de teste). Abrindo o compartilhado, a tabela aparece como está; no painel e na execução aparecem `••••••` (a não ser com **mostrar senhas**); copiar não mostra o valor no aviso. Ao copiar/exportar para fora do TestFlow (Jira, PDF, relatórios, Claude) a proteção de dados sensíveis trata a coluna **Senha** como sensível; o Claude (MCP) **nunca recebe** as senhas. Nunca escreva senha num caso — use `{{nome.senha}}`.
 
 **Com o Claude:** ele consulta `qa_compartilhados` antes de escrever casos e usa `↪ Bloco (dado)` e `{{dado}}` em vez de repetir login ou escrever senhas; sugere criar um compartilhado quando o mesmo setup aparece em vários casos.
 
@@ -957,7 +957,7 @@ Ele aplica só o que você aprovar e, para os "confirmar", propõe a resposta: l
 | Painel de execução: passo anterior / próximo | `←` / `→` | igual |
 | Painel de execução: ir ao campo *obtido* / sair dele | `Enter` / `Esc` | igual |
 | Painel de execução: minimizar / expandir | `M` | igual |
-| Aba 🔑 Dados compartilhados (copiar e-mail, senha, URL) | `Alt+K` | `⌥K` |
+| Painel 🔑 Dados compartilhados (abrir/fechar) | `Alt+K` | `⌥K` |
 | Seletor de casos (nova rodada): mover · marcar · marcar intervalo | `↑` `↓` · `Espaço` · `Shift+Espaço` | igual |
 | Navegar pela tela | `Tab` / `Shift+Tab` (o item em foco ganha um contorno; os atalhos dos botões aparecem na dica e são lidos por leitores de tela) | igual |
 | Link para documento (lista para escolher) | `[[` no texto | igual |
