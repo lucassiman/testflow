@@ -141,8 +141,63 @@ export function toXlsx(rows, sheetName = 'Tabela') {
 // ---------------------------------------------------------------- XLSX: ler
 const DATE_FMT_IDS = new Set([14, 15, 16, 17, 18, 19, 20, 21, 22, 45, 46, 47]);
 
-/** @param {string | null} text */
-function parseXml(text) { return new DOMParser().parseFromString(text || '', 'application/xml'); }
+/**
+ * XML → algo com getElementsByTagName / getAttribute / textContent. No navegador, o DOMParser; fora dele (o MCP, no
+ * Node), um leitor mínimo que basta para os XMLs do XLSX.
+ * @param {string | null} text @returns {Document}
+ */
+function parseXml(text) {
+  if (typeof DOMParser !== 'undefined') return new DOMParser().parseFromString(text || '', 'application/xml');
+  return /** @type {Document} */ (/** @type {unknown} */ (miniXml(text || '')));
+}
+
+const XML_ENT = /** @type {Record<string, string>} */ ({ amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" });
+/** @param {string} s */
+const unent = (s) => s.replace(/&(#x[0-9a-f]+|#\d+|\w+);/gi, (m, e) => (e[0] === '#' ? String.fromCodePoint(e[1].toLowerCase() === 'x' ? parseInt(e.slice(2), 16) : Number(e.slice(1))) : XML_ENT[e] ?? m));
+class MiniEl {
+  /** @param {string} name @param {Record<string, string>} attrs */
+  constructor(name, attrs) {
+    this.name = name;
+    this.attrs = attrs;
+    /** @type {Array<MiniEl | string>} */
+    this.children = [];
+  }
+  /** @param {string} a */
+  getAttribute(a) { return this.attrs[a] ?? null; }
+  /** @param {string} _ns @param {string} local */
+  getAttributeNS(_ns, local) { const k = Object.keys(this.attrs).find((x) => x.split(':').pop() === local && x.includes(':')); return k ? this.attrs[k] : null; }
+  /** @param {string} n @returns {MiniEl[]} */
+  getElementsByTagName(n) {
+    /** @type {MiniEl[]} */
+    const out = [];
+    /** @param {MiniEl} el */
+    const walk = (el) => { for (const c of el.children) if (typeof c !== 'string') { if (c.name.split(':').pop() === n) out.push(c); walk(c); } };
+    walk(this);
+    return out;
+  }
+  /** @returns {string} */
+  get textContent() { return this.children.map((/** @type {MiniEl | string} */ c) => (typeof c === 'string' ? c : c.textContent)).join(''); }
+}
+/** @param {string} text */
+function miniXml(text) {
+  const root = new MiniEl('#document', {});
+  const stack = [root];
+  const re = /<!\[CDATA\[([\s\S]*?)\]\]>|<!--[\s\S]*?-->|<\?[\s\S]*?\?>|<!(?:[^>]*)>|<\/([^\s>]+)\s*>|<([^\s/>]+)((?:\s+[^\s=]+\s*=\s*(?:"[^"]*"|'[^']*'))*)\s*(\/?)>|([^<]+)/g;
+  for (let m = re.exec(text); m; m = re.exec(text)) {
+    const top = stack[stack.length - 1];
+    if (m[1] !== undefined) top.children.push(m[1]);
+    else if (m[2]) { if (stack.length > 1) stack.pop(); }
+    else if (m[3]) {
+      /** @type {Record<string, string>} */
+      const attrs = {};
+      for (const a of (m[4] || '').matchAll(/([^\s=]+)\s*=\s*("([^"]*)"|'([^']*)')/g)) attrs[a[1]] = unent(a[3] ?? a[4] ?? '');
+      const el = new MiniEl(m[3], attrs);
+      top.children.push(el);
+      if (!m[5]) stack.push(el);
+    } else if (m[6] !== undefined) top.children.push(unent(m[6]));
+  }
+  return root;
+}
 /** @param {Element | undefined} el */
 function textOf(el) { return el ? [...el.getElementsByTagName('t')].map((t) => t.textContent).join('') : ''; }
 /** @param {string} ref */

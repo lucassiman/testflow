@@ -16,6 +16,8 @@ import { readText, writeText, writeBytes, namesIn, hasName, kindAt } from '../sr
 import { snapshotBeforeSave, listVersions, readVersion, saveVersion } from '../src/io/versions.js';
 import { caseChanges, unifiedDiff } from '../src/markdown/versionDiff.ts';
 import { applyBulk, describeBulk, emptyBulk, splitTags, type BulkChange } from '../src/markdown/bulkEdit.ts';
+import { planImport, caseDocText, sectionDir, importKey } from '../src/markdown/caseImport.ts';
+import { fromCsv, fromXlsx } from '../src/io/sheet.js';
 import { IGNORE } from '../src/io/workspace.js';
 import { detectFrontMatter, parseFrontMatter, TYPE_LABELS } from '../src/markdown/frontmatter.ts';
 import { parseView, runView, viewMarkdown, VIEW_PRESETS, findViewBlocks, viewMatches, bugsFor, bugOpen } from '../src/markdown/views.ts';
@@ -25,7 +27,7 @@ import { stepTable, setActual, setStepStatus, logRun, newRound, addEvidenceToSec
 import { syncExecution, countStatuses, deriveOverall, cellStatus, updateSummaryBlocks, setCell } from '../src/markdown/status.ts';
 import { sourceInfo, failedStep, nextId, idPrefix, buildLinkedDoc, linkLine, addRecurrence, bugClosed } from '../src/markdown/linkedDoc.ts';
 import type { FailedStep } from '../src/markdown/linkedDoc.ts';
-import { suggestDestination, runDestination, INBOX_DIR, fillApp, fillJira, fillField, appOfDir, segmentOfDir, ticketKey, CASE_TYPES } from '../src/markdown/structure.ts';
+import { suggestDestination, runDestination, INBOX_DIR, fillApp, fillJira, fillField, appOfDir, segmentOfDir, ticketKey, CASE_TYPES, matchApp, listApps, ticketDir } from '../src/markdown/structure.ts';
 import { inheritHeader, segmentMembers, commonHeader, headerOf } from '../src/markdown/segment.ts';
 import {
   cycleDoc, cycleTable, isCycle, isCycleDef, cycleStart, cycleClosed, syncCycle, caseResult, needsFreshRound, closeCycle, skipPending, cycleSummary,
@@ -1365,6 +1367,48 @@ export class QaWorkspace {
       if (!o.aplicar) return `Prévia (nada gravado): ${what} — muda ${changes.length} de ${picked.length} caso(s)${changes.length ? `: ${names}` : ''}. Para gravar, repita com aplicar: true (confirme com o usuário).`;
       for (const c of changes) await this.writeDoc(c.e.path, c.next, c.doc);
       return `Editados ${changes.length} de ${picked.length} caso(s) — ${what}${changes.length ? `: ${names}` : ''}. A versão anterior de cada um ficou em .versoes/.`;
+    });
+  }
+
+  /**
+   * Importação em massa: planilha (CSV/XLSX) do TestRail, Zephyr, Xray, qTest ou feita à mão → um caso por documento.
+   * Sem `aplicar`: só mostra o que reconheceu.
+   */
+  importCases(o: { arquivo: string; app: string; pastas?: 'secao' | 'ticket' | 'casos'; tags?: string; pular_importados?: boolean; aplicar?: boolean }): Promise<string> {
+    return this.exclusive(async () => {
+      if (!nodePath.isAbsolute(o.arquivo)) throw new Error('informe o caminho completo da planilha (ex.: C:\\Users\\voce\\Downloads\\casos.csv)');
+      const src = nodePath.resolve(o.arquivo);
+      if (src.split(/[\\/]/).some((p) => p.startsWith('.') && p !== '.' && p !== '..')) throw new Error('arquivos ou pastas ocultos não são lidos');
+      if (!/\.(csv|xlsx)$/i.test(src)) throw new Error('a planilha precisa ser .csv ou .xlsx');
+      const buf = await fs.readFile(src);
+      const rows: string[][] = /\.xlsx$/i.test(src)
+        ? (await fromXlsx(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength))).rows.map((r: unknown[]) => r.map((c) => String(c ?? '')))
+        : fromCsv(buf.toString('utf8').replace(/^\uFEFF/, ''));
+      const plan = planImport(rows);
+      if (!plan.cases.length) throw new Error(`nenhum caso na planilha: ${plan.warnings.join(' · ') || 'vazia'}`);
+      await this.refresh(true);
+      const imported = new Set(this.index.all().map((e) => String(/^importado-de:\s*(.+)$/m.exec(e.text || '')?.[1] || '').replace(/^["']|["']$/g, '').trim().toLowerCase()).filter(Boolean));
+      const skip = o.pular_importados !== false;
+      const todo = plan.cases.filter((c) => !(skip && imported.has(importKey(plan.fonte, c))));
+      const folder = matchApp(o.app, listApps(this.dirs));
+      const casos = `aplicacoes/${folder}/casos`;
+      const tags = splitTags(o.tags ?? 'importado');
+      const layout = o.pastas || 'secao';
+      const where = (c: (typeof plan.cases)[number]) => (layout === 'ticket' && c.jira[0] ? ticketDir(c.jira[0], casos, this.dirs) : layout === 'secao' && sectionDir(c.secao) ? `${casos}/${sectionDir(c.secao)}` : casos);
+      const head = `Planilha ${nodePath.basename(src)} — formato ${plan.fonte}: ${plan.cases.length} caso(s)${plan.cases.length - todo.length ? `, ${plan.cases.length - todo.length} já importado(s) (pulados)` : ''}. Colunas: ${Object.keys(plan.columns).join(', ')}${plan.ignored.length ? `; fora: ${plan.ignored.join(', ')}` : ''}.${plan.warnings.length ? ` Avisos: ${plan.warnings.join(' · ')}.` : ''}`;
+      if (!o.aplicar) {
+        return [head, ...todo.slice(0, 30).map((c) => `- ${c.titulo}${c.origem ? ` (${c.origem})` : ''} · ${c.steps.length} passo(s)${c.prioridade ? ` · ${c.prioridade}` : ''} → ${where(c)}/`), ...(todo.length > 30 ? [`… e mais ${todo.length - 30}`] : []), 'Nada gravado. Para criar, repita com aplicar: true (confirme com o usuário).'].join('\n');
+      }
+      const ids = this.allIds();
+      const created: string[] = [];
+      for (const c of todo) {
+        const id = nextId('TC-', ids);
+        ids.push(id);
+        const text = caseDocText(c, { id, app: o.app, fonte: plan.fonte, tags });
+        created.push(await this.createDoc(where(c), suggestedFileName(text, c.titulo), text));
+      }
+      await this.refresh(true);
+      return `${head}\nCriados ${created.length} caso(s) (aprovação: rascunho ou a situação da origem):\n${created.slice(0, 40).map((p) => `- ${p}`).join('\n')}${created.length > 40 ? `\n… e mais ${created.length - 40}` : ''}`;
     });
   }
 

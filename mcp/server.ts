@@ -150,6 +150,15 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
     }, annotations: RW,
   }, async (a) => run(() => ws.bulkEdit(a), text));
 
+  server.registerTool('qa_importar_casos', {
+    title: 'Importar casos de planilha', description: 'Importa casos de uma planilha (CSV ou XLSX) exportada do TestRail, Zephyr, Xray, qTest ou montada à mão (um caso por linha, ou linhas de passos) — um documento por caso (TC-… novo) em aplicacoes/<app>/casos/ (por seção da origem, pela chave do Jira ou tudo junto). Sem aplicar: só mostra o que reconheceu; aplicar=true cria (confirme com o usuário). Já importados (importado-de:) são pulados.',
+    inputSchema: {
+      arquivo: z.string().describe('caminho completo da planilha no computador'), app: z.string().describe('aplicação (pasta aplicacoes/<App>/)'),
+      pastas: z.enum(['secao', 'ticket', 'casos']).optional(), tags: z.string().optional().describe('tags em todos (padrão: importado)'),
+      pular_importados: z.boolean().optional(), aplicar: z.boolean().optional(),
+    }, annotations: RW,
+  }, async (a) => run(() => ws.importCases(a), text));
+
   server.registerTool('qa_comparar_versoes', {
     title: 'Comparar versões', description: 'O que mudou entre uma versão guardada e o documento atual (ou outra versão): resumo do caso (cabeçalho, passos novos/removidos/alterados, seções) e o diff. versao: nome de qa_versoes, "anterior" (padrão) ou "aprovada" (a última aprovação).',
     inputSchema: { doc: docArg, versao: z.string().optional(), com: z.string().optional().describe('outra versão (sem ela: o documento atual)') }, annotations: RO,

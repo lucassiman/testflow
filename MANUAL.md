@@ -706,6 +706,8 @@ visoes/                    ← visões: consultas salvas (ver 11.1)
 
 ### 10.3 Importar do Notion
 
+> **Casos de outra ferramenta (TestRail, Zephyr, Xray, qTest) ou de uma planilha?** Veja *Importar casos de uma planilha* no fim desta seção.
+
 Traz as páginas do Notion para a pasta de trabalho, já no formato do editor, **sem precisar descompactar**.
 
 1. No Notion: **•••** (no menu da página ou em *Settings → Export all workspace content*) → **Export** → formato **Markdown & CSV**, com **Include subpages** (e *Create folders for subpages*, se aparecer). Baixe o `.zip`.
@@ -725,6 +727,14 @@ Traz as páginas do Notion para a pasta de trabalho, já no formato do editor, *
 Tudo vai para **`_entrada/notion-AAAA-MM-DD/`** — nada fora dessa pasta é alterado. A página-índice lista as páginas em árvore, os links que apontavam para páginas fora do export e os arquivos que nenhuma página usava (guardados em `anexos/`). **Desfazer** (no aviso ou em `Ctrl+Shift+P` → *Desfazer a última organização*) apaga tudo o que a importação criou.
 
 **Depois:** preencha `app:` no cabeçalho das páginas e organize pelo **📊 Painel → 📥 Entrada** (a sugestão move com um clique) ou arrastando na árvore — links e imagens acompanham. Export em HTML não serve: o editor avisa para exportar de novo em *Markdown & CSV*.
+
+**Importar casos de uma planilha (TestRail, Zephyr, Xray, Excel).** **Novo ▾ → 📥 Casos de uma planilha…** (ou `Ctrl+Shift+P` → *Importar casos*) e escolha o **CSV** ou **.xlsx** (1ª aba). Cada caso vira **um documento** `TC-…` (próximo ID livre) em `aplicacoes/<App>/casos/`:
+
+- **Colunas reconhecidas pelo nome** (inglês ou português): ID/Key, Title/Name/Summary/Título, Section/Folder/Section Hierarchy (seção), Priority (High → Alta, Critical → Crítica…), Preconditions, Objective/Description, Step/Action/Passo, Test Data/Dados, Expected Result/Resultado esperado, Labels/Tags, References/Coverage/Jira (as chaves viram `jira:`), Owner, Type (vira tag) e Status do caso (Approved → aprovado, Draft → rascunho).
+- **Passos** em várias linhas da planilha (TestRail "Steps (Separated)", Zephyr, Xray — as linhas sem título continuam o caso de cima) ou numa célula só (`1. Abrir` / `2. Entrar`, alinhados com o esperado pela numeração). Coluna de dados vira a coluna **Dados** na tabela de passos.
+- **Antes de gravar** a janela mostra o formato reconhecido, quantos casos e passos, as colunas que entraram e as que ficaram de fora e os primeiros casos. Escolha a **aplicação**, as **pastas** (uma por seção da origem — `Portal > Login` → `casos/portal/login/` —, pela chave do Jira ou tudo em `casos/`) e as **tags** de todos (padrão `importado`).
+- Cada caso guarda de onde veio (`importado-de: TestRail C101`) e nasce `aprovacao: rascunho` (ou a situação da origem); importar a mesma planilha de novo **pula os já importados**. O aviso traz **Desfazer** (apaga os recém-criados).
+- Com o Claude: `qa_importar_casos { arquivo, app }` mostra a prévia; com o seu OK, `aplicar: true`.
 
 ### 10.4 Publicar (versão oficial) e histórico de versões
 

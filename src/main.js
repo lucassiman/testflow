@@ -1465,7 +1465,7 @@ const PALETTE_ACTIONS = [
   ['Painel lateral (arquivos, sumário, links)', 'toggleSidebar', null, 'Ctrl+Shift+E'],
   ['Modo Raw', 'mode', 'raw', 'Alt+1'], ['Modo Dividido', 'mode', 'split', 'Alt+2'], ['Modo Preview', 'mode', 'preview', 'Alt+3'],
   ['Aumentar texto', 'zoomIn', null, 'Ctrl+Alt+='], ['Diminuir texto', 'zoomOut', null, 'Ctrl+Alt+-'], ['Texto 100%', 'zoomReset', null, 'Ctrl+Alt+0'],
-  ['Tema claro / escuro', 'toggleTheme', null, ''], ['Importar planilha (XLSX/CSV)…', 'importSheet', null, ''],
+  ['Tema claro / escuro', 'toggleTheme', null, ''], ['Importar planilha (XLSX/CSV)…', 'importSheet', null, ''], ['Importar casos de uma planilha (TestRail, Zephyr, Xray, Excel) — um documento por caso…', 'importCases', null, ''],
   ['Escolher pasta de trabalho…', 'pickWorkspace', null, ''], ['Pasta de evidências do documento…', 'pickFolder', null, ''],
 ];
 
@@ -1473,7 +1473,7 @@ const PALETTE_ACTIONS = [
 const PALETTE_GROUPS = /** @type {Array<[string, string, string[]]>} */ ([
   ['Documento', '📄', ['newCase', 'new', 'newFromTemplate', 'open', 'save', 'saveAs', 'rename', 'saveTemplate', 'history', 'toggleAutoSave', 'quickNote', 'newBug', 'sharedPanel', 'includeShared', 'newView', 'importSheet', 'pdf', 'exportHtml', 'sensitive']],
   ['Execução e rodadas', '▶', ['newRun', 'newCycle', 'runCycle', 'newAutoRun', 'attachAutomation', 'nextCycleCase', 'openCycle', 'finishCycle', 'rerunFailed', 'onlyApproved', 'trend', 'roundSummary', 'execReports', 'nextCase', 'editLinks', 'editDevice']],
-  ['Pasta de trabalho', '📂', ['pickWorkspace', 'home', 'dashboard', 'searchAll', 'structure', 'newApp', 'newFolder', 'moveDoc', 'byTicket', 'bulkEdit', 'undoOrganize', 'importNotion', 'backup', 'backupPref', 'loadDiag', 'diskRoot', 'officialFolder', 'officialUpdate', 'publish']],
+  ['Pasta de trabalho', '📂', ['pickWorkspace', 'home', 'dashboard', 'searchAll', 'structure', 'newApp', 'newFolder', 'moveDoc', 'byTicket', 'bulkEdit', 'undoOrganize', 'importNotion', 'importCases', 'backup', 'backupPref', 'loadDiag', 'diskRoot', 'officialFolder', 'officialUpdate', 'publish']],
   ['Evidências e prints', '📸', ['capture', 'captureChoose', 'captureStop', 'record', 'evidencePanel', 'reuseEvidence', 'cleanPrints', 'bigPrint', 'pickFolder']],
   ['Compartilhar e revisar', '📤', ['approval', 'copyAll', 'copyClaude', 'review', 'reviewApply', 'copyJira', 'openJira', 'copyNotion', 'notionZip', 'hubZip', 'jiraCsv', 'jiraKeys', 'comment', 'listComments']],
   ['Exibição', '👁', ['mode', 'openMode', 'focusMode', 'toolbarMode', 'treeLabels', 'toggleSidebar', 'sideOpen', 'sideClose', 'foldAll', 'unfoldAll', 'zoomIn', 'zoomOut', 'zoomReset', 'toggleTheme', 'find', 'replace', 'codeblock', 'moveTabLeft', 'moveTabRight', 'closeTab', 'nextTab', 'prevTab']],
@@ -1661,6 +1661,7 @@ function run(cmd, value, event) {
       preview.commit(); goNextCase({ run: value === 'run' }); return true;
     case 'byTicket': organizeCasesByTicket(); return true;
     case 'bulkEdit': import('./app/bulkEdit.js').then((m) => m.bulkEdit()); return true;
+    case 'importCases': import('./app/caseImport.js').then((m) => m.importCases()); return true;
     case 'evidencePanel': import('./app/evidencePanel.js').then((m) => m.openEvidencePanel()); return true;
     case 'diskRoot': askDiskRoot(); return true;
     case 'officialUpdate': updateAllFromOfficial(); return true;

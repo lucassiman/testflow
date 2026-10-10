@@ -1459,6 +1459,12 @@ button { font: inherit; color: inherit; }
 .bulk-tags { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 12px; color: var(--muted); }
 .bulk-tag { font-size: 12px; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--border); background: var(--bg-soft); }
 .bulk-tag.on { text-decoration: line-through; border-color: var(--fail, #c62828); color: var(--fail, #c62828); }
+.imp-sum { margin: 0; font-size: 13.5px; }
+.imp-warn { margin: 0; font-size: 12.5px; color: var(--warn); }
+.imp-list { margin: 0; padding: 6px 10px 6px 28px; max-height: 170px; overflow: auto; font-size: 12.5px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-soft); }
+.imp-list small { color: var(--muted); }
+.imp-more { list-style: none; color: var(--muted); }
+.imp-chk { flex-direction: row !important; align-items: center; gap: 6px !important; }
 .bulk-preview { font-size: 12.5px; min-height: 2.6em; padding: 6px 10px; border-radius: 6px; background: var(--bg-soft); }
 .bulk-preview:empty { display: none; }
 @media (max-width: 560px) { .bulk-grid { grid-template-columns: 1fr; } }

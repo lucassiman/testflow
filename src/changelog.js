@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.42.0', date: '10/10/2026',
+    items: [
+      { icon: '📥', text: '**Importar casos de uma planilha**: CSV ou Excel do TestRail, Zephyr, Xray, qTest ou feito à mão — **um documento por caso**, com passos, esperado, dados, prioridade, pré-condições, Jira e a seção virando pasta. Prévia antes, pula os já importados, **Desfazer**. Novo ▾ → *Casos de uma planilha…*', manual: '10.3 Importar' },
+      { icon: '🤖', text: 'Com o Claude: `qa_importar_casos` (prévia; cria com o seu OK) — também lê .xlsx.', manual: '10.3 Importar' },
+    ],
+  },
+  {
     version: '1.41.0', date: '10/10/2026',
     items: [
       { icon: '✎', text: '**Edição em massa**: escolha vários casos (pela pasta, filtro, épico, visão…) e mude **prioridade, responsável, épico, sprint, versão, tags e aprovação** de uma vez — com prévia e **Desfazer**. Clique direito na pasta → *Editar os casos desta pasta em massa…*', manual: '10.1 Organizar' },

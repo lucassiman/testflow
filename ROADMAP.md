@@ -172,6 +172,8 @@ Ida e volta pela área de transferência (sem chave de API, nada sai do editor s
 
 ✅ **Feito na 1.12.0 — Dispositivo/ambiente:** substituir/expandir o campo atual *Browser* por **Dispositivo/Ambiente**: WEB, Mobile iOS, Mobile Android, Mobile — Todos; para mobile informar a versão (ex.: Mobile iOS — iOS 18, Mobile Android — Android 15). Deve aparecer nas tags, no cabeçalho do caso, nos modelos de criação de casos e nas informações da execução, para rastrear em que dispositivo/plataforma cada caso foi validado.
 
+**1.42.0 (10/10) — importação em massa (11.2).** `caseImport.ts`: `mapColumns` (sinônimos inglês/português; Section Hierarchy/Test Repository Path valem mais que Section), `planImport(rows)` (fonte TestRail · Zephyr · Xray · qTest · planilha; linhas de continuação sem título/ID = passos do caso de cima; células numeradas `splitNumbered` alinhadas com o esperado; `mapPriority`, `mapState` → aprovação, `JIRA_RE` nas referências, Type → tag), `caseDocText` (front matter com `importado-de`, `aprovacao`, coluna Dados só se houver), `sectionDir`, `importKey`. App `app/caseImport.js`: Novo ▾ / paleta `importCases`, janela `.imp-dialog` (resumo, colunas fora, primeiros casos, aplicação, pastas secao/ticket/casos, tags, pular importados), grava com `writeText` (IDs `nextId('TC-')`, `ensureUid`), Desfazer remove. `sheet.js`: `miniXml` quando não há `DOMParser` (XLSX no Node). MCP `qa_importar_casos` (CSV/XLSX, prévia sem `aplicar`). Testes `caseImport.test`, `importarCasos.spec`.
+
 **1.41.0 (10/10) — edição em massa (11.2).** `bulkEdit.ts`: `applyBulk(text, { prioridade, responsavel, epico, sprint, versao, addTags, removeTags, aprovacao, clear })` (só o cabeçalho; `setRaw` troca a linha e tira a lista em bloco; igual → texto idêntico), `describeBulk`, `normalizePriority`, `splitTags`. App `app/bulkEdit.js`: `openCasePicker({ named: false, preselected })` + formulário `.bulk-dialog` (tags dos casos para clicar e tirar, prévia "muda N de M"), grava (aberto → edição; fechados → `snapshotBeforeSave` + `writeText` + `docIndex.update`; outra aba → fica de fora), **Desfazer** (só os que não mudaram depois). Entradas: paleta `bulkEdit`, clique direito na pasta (`bulkEdit` em `EntryAction`). `pickerShortcuts` exportado. MCP `qa_editar_em_massa` (casos/segmento/consulta, prévia sem `aplicar`). Testes `bulkEdit.test`, `edicaoMassa.spec`.
 
 **1.40.0 (10/10) — versões com comparação (11.2).** `versionDiff.ts`: `lineDiff` (LCS por linha, prefixo/sufixo aparados, removidas antes das novas), `sideBySide` (eq · del · ins · mod pareadas · skip com contexto 3), `changedLines`, `caseChanges` (cabeçalho sem os campos voláteis, passos pelo `#`, seções via `definitionText`, título; histórico/evidências e subseções fora), `unifiedDiff`. `ui/history.js`: ◫ Lado a lado (`sideBySideHtml`, palavras com `diffWords`) / ≡ No texto, **Comparar com** (outra versão), lista "O que mudou no caso", `select`/`note` para abrir já escolhido, cache das versões lidas. `versionName(…, aprovada)` → `_aprovada.md` (`parseVersionName().aprovada`; `pruneVersions` não apaga); aprovar no app salva e guarda a versão aprovada; `openVersionHistory({ sinceApproval })` (pela marca ou pelo `aprovado_hash`), item "Ver o que mudou desde a aprovação" no menu da aprovação. MCP: `qa_comparar_versoes`, `qa_restaurar_versao`, `(aprovada)` no `qa_versoes`. Testes `versionDiff.test`, `aprovacao.spec` (versões).
@@ -482,7 +484,7 @@ Levantada comparando com TestRail, Zephyr, Xray, Qase, Testmo e as extensões de
 | **Reexecutar só falhas e bloqueados** | ✅ 1.33.0 — A partir de uma rodada, criar outra só com os casos FAIL/BLOCKED (validar correções). | P–M |
 | **Tendência entre rodadas** | ✅ 1.34.0 — % de sucesso por rodada/sprint, bugs abertos × fechados no tempo, casos que mais falham, tempo médio por caso. | M |
 
-#### 11.2 — Escrever casos *(M)* — em andamento: ✅ 1.38.0 casos com dados · ✅ 1.39.0 aprovação · ✅ 1.40.0 versões com comparação · ✅ 1.41.0 edição em massa
+#### 11.2 — Escrever casos *(M)* — ✅ feito: 1.38.0 casos com dados · 1.39.0 aprovação · 1.40.0 versões com comparação · 1.41.0 edição em massa · 1.42.0 importação em massa
 
 | Item | Detalhe | Esforço |
 |---|---|---|
@@ -490,7 +492,7 @@ Levantada comparando com TestRail, Zephyr, Xray, Qase, Testmo e as extensões de
 | **Aprovação do caso** | ✅ 1.39.0 — Rascunho → em revisão → aprovado; só aprovado entra na rodada (opcional). | M |
 | **Versões com comparação** | ✅ 1.40.0 — Ver o que mudou num caso entre versões, lado a lado, e voltar a uma anterior. | M |
 | **Edição em massa** | ✅ 1.41.0 — Selecionar vários casos e mudar prioridade, tags, épico ou responsável de uma vez. | M |
-| **Importação em massa** | De TestRail/Zephyr (CSV) ou Excel com um caso por linha → um documento por caso. | M |
+| **Importação em massa** | ✅ 1.42.0 — De TestRail/Zephyr (CSV) ou Excel com um caso por linha → um documento por caso. | M |
 
 #### 11.3 — Planejar e executar *(M)*
 
