@@ -5,6 +5,7 @@
  * ao concluir). Aparece no ciclo e em qualquer caso dele; recolhe para uma faixa estreita.
  */
 import { cycleChecklist, attachAutomation, editDevice, markWhole, goToCycleCase, nextCycleCase, openCycle, finishCycle, showRoundSummary, skipCycleCase, runCycle, openCycleDef, editLinks, rerunFailed } from './cycle.js';
+import { forecastText, forecastDetail } from '../markdown/forecast.ts';
 import { loadPrefs, savePrefs } from '../io/drafts.js';
 import { $ } from './shared.js';
 import { openWikiTarget } from './links.js';
@@ -79,6 +80,7 @@ export function refreshCyclePanel() {
       <div class="cp-bar cp-bar-seg" role="img" aria-label="${data.done} de ${data.total} concluídos (${pct}%)">${bar}</div>
       <div class="cp-count">${data.done}/${data.total}${data.failed ? ` · <span class="cp-fail">${data.failed} com falha</span>` : ''}${data.closed ? ' · encerrado' : ''}</div>
     </div>
+    ${data.forecast && data.forecast.pendentes ? `<div class="cp-forecast" title="${esc(forecastDetail(data.forecast))}">⏱ ${esc(forecastText(data.forecast))}</div>` : ''}
     ${data.before.length && !data.closed ? `<details class="cp-before"${data.beforeDone.length >= data.before.length ? '' : ' open'}><summary title="Passos compartilhados de preparação (beforeAll): uma vez, no começo da rodada">⏮ Antes da rodada <span>${Math.min(data.beforeDone.length, data.before.length)}/${data.before.length}</span></summary><ul>${data.before.map((b, i) => `<li><label><input type="checkbox" data-cp-before="${i}"${data.beforeDone.includes(i) ? ' checked' : ''}> <span>${esc(b.acao)}${b.esperado ? ` <small>→ ${esc(b.esperado)}</small>` : ''}</span></label></li>`).join('')}</ul></details>` : ''}
     ${data.auto ? `<div class="cp-auto" title="${esc(`${data.auto.tool}${data.auto.fonte ? ` — ${data.auto.fonte}` : ''}: resultado separado dos casos manuais`)}">🤖 <b>${data.auto.total}</b> automatizado${data.auto.total > 1 ? 's' : ''}: <span class="cp-ok">${data.auto.pass} PASS</span>${data.auto.fail ? ` · <span class="cp-fail">${data.auto.fail} FAIL</span>` : ''}${data.auto.skip ? ` · ${data.auto.skip} SKIP` : ''}${data.auto.sucessoPct == null ? '' : ` · ${data.auto.sucessoPct}%`}</div>` : ''}
     ${data.total ? '' : '<p class="cp-empty">Sem casos manuais nesta execução.</p>'}

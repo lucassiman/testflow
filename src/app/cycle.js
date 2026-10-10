@@ -5,6 +5,7 @@
  * no fim, ✓ Encerrar grava o resultado, as falhas e os bugs ligados.
  */
 import { app } from './context.js';
+import { forecast, caseAvgMs } from '../markdown/forecast.ts';
 import { filterApproved, onlyApproved } from './approval.js';
 import {
   CYCLE_TYPE, cycleDoc, cycleStart, cycleClosed, cycleProgress, nextCase, syncCycle, closeCycle, caseResult, lastResultBefore, needsFreshRound, cycleTable, isCycle, unexecuted, skipPending, cycleSummary,
@@ -240,7 +241,7 @@ export async function skipCycleCase(key) {
 /**
  * Dados do painel da rodada: um item por caso, na ordem do ciclo (null = não há ciclo a mostrar).
  * Leve de propósito (roda a cada mudança no documento): usa o texto do ciclo e o dos casos, sem recalcular bugs.
- * @returns {{ path: string, title: string, closed: boolean, onCycle: boolean, counts: { PASS: number, FAIL: number, BLOCKED: number, SKIP: number }, done: number, total: number, failed: number, next: string | null, items: ChecklistItem[], ciclo: { path: string, titulo: string } | null, numero: number, links: import('../markdown/linkTypes.ts').LinkChip[], auto: import('../markdown/cycleAuto.ts').AutoSummary | null, whole: { key: string, done: number, total: number } | null, before: Array<{ acao: string, esperado: string, source: string }>, beforeDone: number[] } | null}
+ * @returns {{ path: string, title: string, closed: boolean, onCycle: boolean, counts: { PASS: number, FAIL: number, BLOCKED: number, SKIP: number }, done: number, total: number, failed: number, next: string | null, items: ChecklistItem[], ciclo: { path: string, titulo: string } | null, numero: number, links: import('../markdown/linkTypes.ts').LinkChip[], auto: import('../markdown/cycleAuto.ts').AutoSummary | null, whole: { key: string, done: number, total: number } | null, before: Array<{ acao: string, esperado: string, source: string }>, beforeDone: number[], forecast: import('../markdown/forecast.ts').Forecast | null } | null}
  */
 export function cycleChecklist() {
   const c = currentCycle();
@@ -298,7 +299,23 @@ export function cycleChecklist() {
     // compartilhados "antes da rodada" (beforeAll) dos casos desta rodada, e os já feitos (marcados no painel)
     before: beforeRound(items.map((i) => docIndex.resolve(i.key)?.path || '').filter(Boolean)),
     beforeDone: /** @type {number[]} */ ((loadPrefs().cycleBefore || {})[c.path] || []),
+    // previsão: a duração média de cada caso pendente (histórico dele)
+    forecast: cycleClosed(c.text) ? null : forecast(items.map((i) => ({ done: i.state === 'feito', avgMs: avgOf(i.key, open) }))),
   };
+}
+
+/** @type {Map<string, { text: string, ms: number | null }>} */
+const avgCache = new Map();
+/** Duração média do caso (cache pelo texto). @param {string} key @param {Map<string, string>} open */
+function avgOf(key, open) {
+  const e = docIndex.resolve(key);
+  if (!e) return null;
+  const text = open.get(e.path) ?? e.text ?? '';
+  const hit = avgCache.get(e.path);
+  if (hit && hit.text === text) return hit.ms;
+  const ms = caseAvgMs(text);
+  avgCache.set(e.path, { text, ms });
+  return ms;
 }
 
 /** Documento aberto que é avaliado como um todo e ainda não tem resultado: dados para a barra "Registrar resultado" do painel. @param {{ path: string, text: string }} c @param {string} openKey @param {ChecklistItem[]} items */

@@ -172,6 +172,8 @@ Ida e volta pela área de transferência (sem chave de API, nada sai do editor s
 
 ✅ **Feito na 1.12.0 — Dispositivo/ambiente:** substituir/expandir o campo atual *Browser* por **Dispositivo/Ambiente**: WEB, Mobile iOS, Mobile Android, Mobile — Todos; para mobile informar a versão (ex.: Mobile iOS — iOS 18, Mobile Android — Android 15). Deve aparecer nas tags, no cabeçalho do caso, nos modelos de criação de casos e nas informações da execução, para rastrear em que dispositivo/plataforma cada caso foi validado.
 
+**1.44.0 (10/10) — previsão de tempo da rodada (11.3).** `forecast.ts`: `caseAvgMs` (média das últimas 5 durações do histórico × iterações), `forecast(items)` (pendentes com a média própria; sem histórico → média da rodada ou 10 min), `forecastText`/`forecastDetail`/`approxDuration`. Painel da rodada `.cp-forecast` (`cycleChecklist().forecast`, cache por texto); `qa_rodada_status` com a linha Previsão. Testes `forecast.test`, `planejar.spec`.
+
 **1.43.0 (10/10) — massa por ambiente (pedido em 10/10).** `shared.ts`: `SharedVar.env` / `SharedStep.env` pelo título (`splitEnv`: "(hml)", "(Produção)", "(ambiente: x)"), `normEnv`, `ENVS`, `envLabel`, `sortEnvs`, `hasValue`; `scopeFor({ env })` — em cada compartilhado os gerais e por cima os do ambiente (linha em branco não apaga o geral), "antes de" filtrados, `scope.env`/`scope.envs`; `sharedWarnings` "sem valor em HML — só em PROD"; `prepareEnvSections` (chaves e observação iguais, valores em branco, logo após a seção geral); `envCoverage`. `logRun({ ambiente })`. App: `envOf`/`envOverride` (pref `activeEnv`, senão `ambiente:` do cabeçalho), chip `#envChip` (🌐, `env-prod`, `env-override`), `envMenu` (ambientes, usar o do cabeçalho, preparar), `setActiveEnv` redesenha; `decorateShared` desfaz e redesenha os dados a cada render; painel 🔑 com 🌐 e "falta PROD"; runner `.run-env` e o ambiente no histórico. MCP: `qa_compartilhados { ambiente }` (massa e o que falta), `qa_preparar_ambientes`, `ambiente` em `qa_marcar_passos`/`qa_rodada_registrar`. Modelo do compartilhado com `## Dados: Logins (prod)`. Testes `ambientes.test`, `ambientes.spec`.
 
 **1.42.0 (10/10) — importação em massa (11.2).** `caseImport.ts`: `mapColumns` (sinônimos inglês/português; Section Hierarchy/Test Repository Path valem mais que Section), `planImport(rows)` (fonte TestRail · Zephyr · Xray · qTest · planilha; linhas de continuação sem título/ID = passos do caso de cima; células numeradas `splitNumbered` alinhadas com o esperado; `mapPriority`, `mapState` → aprovação, `JIRA_RE` nas referências, Type → tag), `caseDocText` (front matter com `importado-de`, `aprovacao`, coluna Dados só se houver), `sectionDir`, `importKey`. App `app/caseImport.js`: Novo ▾ / paleta `importCases`, janela `.imp-dialog` (resumo, colunas fora, primeiros casos, aplicação, pastas secao/ticket/casos, tags, pular importados), grava com `writeText` (IDs `nextId('TC-')`, `ensureUid`), Desfazer remove. `sheet.js`: `miniXml` quando não há `DOMParser` (XLSX no Node). MCP `qa_importar_casos` (CSV/XLSX, prévia sem `aplicar`). Testes `caseImport.test`, `importarCasos.spec`.
@@ -497,14 +499,14 @@ Levantada comparando com TestRail, Zephyr, Xray, Qase, Testmo e as extensões de
 | **Edição em massa** | ✅ 1.41.0 — Selecionar vários casos e mudar prioridade, tags, épico ou responsável de uma vez. | M |
 | **Importação em massa** | ✅ 1.42.0 — De TestRail/Zephyr (CSV) ou Excel com um caso por linha → um documento por caso. | M |
 
-#### 11.3 — Planejar e executar *(M)*
+#### 11.3 — Planejar e executar *(M)* — em andamento: ✅ 1.44.0 previsão
 
 | Item | Detalhe | Esforço |
 |---|---|---|
 | **Mesmo caso em vários ambientes** | `ambientes: [hml, prod]` no caso → uma execução por ambiente, como as iterações dos casos com dados (pedido em 10/10, para depois da 1.43.0). | M |
 | **Matriz de configurações** | Chrome/Safari × Windows/macOS × Mobile: a rodada gera um caso por combinação. | M |
 | **Atribuir casos na rodada** | Cada caso com um testador; "minhas pendências" e carga por pessoa. | M |
-| **Previsão de tempo da rodada** | Quanto falta, pela duração média que cada caso já teve. | P |
+| **Previsão de tempo da rodada** | ✅ 1.44.0 — Quanto falta, pela duração média que cada caso já teve. | P |
 | **Releases / milestones** | Rodadas e planos agrupados por versão do produto, com o progresso da release. | M |
 | **Status personalizados** | Além dos 5 (ex.: *Reteste*, *Falha conhecida*), com cor e regra de contagem. | M |
 

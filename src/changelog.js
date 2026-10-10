@@ -8,6 +8,12 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.44.0', date: '10/10/2026',
+    items: [
+      { icon: '⏱', text: '**Previsão de tempo da rodada**: no painel, *faltam ~1 h 20 min (14 casos) · termina ~16:40*, pela duração média que cada caso já teve. O Claude também mostra no status da rodada.', manual: '7.8 Ciclo de regressão' },
+    ],
+  },
+  {
     version: '1.43.0', date: '10/10/2026',
     items: [
       { icon: '🌐', text: '**Massa por ambiente**: no compartilhado, `## Dados: Logins (hml)`, `(prod)`, `(dev)`, `(local)` — mesmas chaves, valores de cada ambiente. O caso continua `{{admin.e-mail}}`; o **🌐 no topo** troca o ambiente e o Preview, o painel 🔑 e a execução acompanham.', manual: '6.8 Passos e dados compartilhados' },

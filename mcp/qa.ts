@@ -15,6 +15,7 @@ import { createDocIndex, describe } from '../src/io/docIndex.ts';
 import { readText, writeText, writeBytes, namesIn, hasName, kindAt } from '../src/io/fsOps.js';
 import { snapshotBeforeSave, listVersions, readVersion, saveVersion } from '../src/io/versions.js';
 import { caseChanges, unifiedDiff } from '../src/markdown/versionDiff.ts';
+import { forecast, caseAvgMs, forecastText, forecastDetail } from '../src/markdown/forecast.ts';
 import { applyBulk, describeBulk, emptyBulk, splitTags, type BulkChange } from '../src/markdown/bulkEdit.ts';
 import { planImport, caseDocText, sectionDir, importKey } from '../src/markdown/caseImport.ts';
 import { fromCsv, fromXlsx } from '../src/io/sheet.js';
@@ -831,6 +832,7 @@ export class QaWorkspace {
       `Casos: ${s.total} — ${s.pass} PASS · ${s.fail} FAIL · ${s.blocked} BLOCKED · ${s.skip} SKIP · ${s.pendente} pendente(s) · sucesso ${s.sucessoPct == null ? '—' : `${s.sucessoPct}%`}`,
       s.problemas.length ? `Falhas/bloqueios: ${s.problemas.map((p) => `${p.key} ${p.status}${p.bugs.length ? ` (${p.bugs.join(', ')})` : ' (sem bug ligado)'}`).join('; ')}` : 'Sem falhas.',
       pend.length ? `Pendentes: ${pend.join(', ')}` : 'Nenhum pendente.',
+      !cycleClosed(text) && pend.length ? (() => { const f = forecast(t.rows.map((r) => ({ done: !!r.status && r.status !== 'PENDING', avgMs: caseAvgMs(this.index.resolve(r.key)?.text || '') }))); return `Previsão: ${forecastText(f)} — ${forecastDetail(f)}`; })() : '',
       s.auto ? `Automatizados (${s.auto.tool}): ${s.auto.total} — ${s.auto.pass} PASS · ${s.auto.fail} FAIL` : '',
       `Vínculos: ${Object.entries(readLinks(text)).map(([k, v]) => `${k}: ${v.join(', ')}`).join(' · ') || 'nenhum'}`,
     ].filter(Boolean).join('\n');
