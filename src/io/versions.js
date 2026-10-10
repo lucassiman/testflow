@@ -24,13 +24,13 @@ export async function listVersions(root, relPath) {
 /**
  * Guarda uma versão.
  * @param {FileSystemDirectoryHandle} root @param {string} relPath @param {string} text
- * @param {{ revisao?: number, date?: Date }} [opts]
+ * @param {{ revisao?: number, date?: Date, aprovada?: boolean }} [opts]
  * @returns {Promise<string>} nome do arquivo da versão
  */
-export async function saveVersion(root, relPath, text, { revisao = 0, date = new Date() } = {}) {
+export async function saveVersion(root, relPath, text, { revisao = 0, date = new Date(), aprovada = false } = {}) {
   const dir = versionsDirFor(relPath);
   const used = await namesIn(root, dir);
-  const name = uniqueName(versionName(date, revisao), (n) => hasName(used, n));
+  const name = uniqueName(versionName(date, revisao, aprovada), (n) => hasName(used, n));
   await writeText(root, `${dir}/${name}`, text);
   return name;
 }

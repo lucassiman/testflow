@@ -138,6 +138,16 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
     inputSchema: { doc: docArg }, annotations: RO,
   }, async (a) => run(() => ws.versions(a.doc), text));
 
+  server.registerTool('qa_comparar_versoes', {
+    title: 'Comparar versões', description: 'O que mudou entre uma versão guardada e o documento atual (ou outra versão): resumo do caso (cabeçalho, passos novos/removidos/alterados, seções) e o diff. versao: nome de qa_versoes, "anterior" (padrão) ou "aprovada" (a última aprovação).',
+    inputSchema: { doc: docArg, versao: z.string().optional(), com: z.string().optional().describe('outra versão (sem ela: o documento atual)') }, annotations: RO,
+  }, async (a) => run(() => ws.compareVersions(a), text));
+
+  server.registerTool('qa_restaurar_versao', {
+    title: 'Restaurar versão', description: 'Volta o documento a uma versão guardada (nome de qa_versoes, "anterior" ou "aprovada"); a atual fica em .versoes/. Confirme com o usuário antes.',
+    inputSchema: { doc: docArg, versao: z.string() }, annotations: { ...RW, destructiveHint: true },
+  }, async (a) => run(() => ws.restoreVersion(a), text));
+
   server.registerTool('qa_criar', {
     title: 'Criar documento', description: 'Cria um documento QA-MD a partir do modelo do tipo (ou do texto completo em "conteudo"), com o próximo ID livre e no lugar certo pelo app: (aplicacoes/<App>/<casos|bugs|planos…>/; casos com chave no jira: vão para casos/<TICKET>/; sem app: _entrada/). Nunca sobrescreve. Devolve o caminho e os avisos da validação.',
     inputSchema: {

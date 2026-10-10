@@ -126,18 +126,19 @@ export function versionsDirFor(relPath: string): string {
 }
 
 /** 2026-09-28_16-10-05.md · com revisão: 2026-09-28_16-10-05_r3.md (ordem alfabética = ordem do tempo) */
-export function versionName(d = new Date(), revisao = 0): string {
+export function versionName(d = new Date(), revisao = 0, aprovada = false): string {
   const base = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
-  return `${base}${revisao ? `_r${revisao}` : ''}.md`;
+  return `${base}${revisao ? `_r${revisao}` : ''}${aprovada ? '_aprovada' : ''}.md`;
 }
 
-export interface VersionInfo { name: string; date: Date | null; revisao: number }
+/** `aprovada`: a versão guardada no momento em que o caso foi aprovado (para comparar "o que mudou desde a aprovação"). */
+export interface VersionInfo { name: string; date: Date | null; revisao: number; aprovada?: boolean }
 
 export function parseVersionName(name: string): VersionInfo {
-  const m = /^(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})(?:_r(\d+))?(?:-\d+)?\.md$/.exec(name);
+  const m = /^(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})(?:_r(\d+))?(_aprovada)?(?:-\d+)?\.md$/.exec(name);
   if (!m) return { name, date: null, revisao: 0 };
-  const [, y, mo, d, h, mi, s, r] = m;
-  return { name, date: new Date(Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi), Number(s)), revisao: r ? Number(r) : 0 };
+  const [, y, mo, d, h, mi, s, r, ap] = m;
+  return { name, date: new Date(Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi), Number(s)), revisao: r ? Number(r) : 0, aprovada: !!ap };
 }
 
 /** Guardar uma versão agora? (no máximo uma a cada `minutes` min por documento) */
@@ -146,9 +147,9 @@ export function shouldSnapshot(names: string[], now = new Date(), minutes = 10):
   return !last || now.getTime() - (last.date as Date).getTime() >= minutes * 60_000;
 }
 
-/** Versões a apagar: fica com as `keep` mais recentes (as publicações — com revisão — nunca saem). */
+/** Versões a apagar: fica com as `keep` mais recentes (as publicações — com revisão — e as aprovações nunca saem). */
 export function pruneVersions(names: string[], keep = 30): string[] {
-  const local = names.map(parseVersionName).filter((v) => v.date && !v.revisao)
+  const local = names.map(parseVersionName).filter((v) => v.date && !v.revisao && !v.aprovada)
     .sort((a, b) => (b.date as Date).getTime() - (a.date as Date).getTime());
   return local.slice(keep).map((v) => v.name);
 }

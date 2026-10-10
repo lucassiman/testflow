@@ -1,6 +1,7 @@
 // @ts-check
 /** Pasta oficial (compartilhada), publicar e histórico de versões. */
 import { app } from './context.js';
+import { definitionHash, approvalOf } from '../markdown/approval.ts';
 import { ensureUid } from '../markdown/idRename.ts';
 import { refreshDocState } from './docState.js';
 import { loadPrefs, savePrefs } from '../io/drafts.js';
@@ -161,8 +162,11 @@ export async function publishDocument() {
   }
 }
 
-/** Histórico de versões do documento aberto (neste computador e na pasta oficial). */
-export async function openVersionHistory() {
+/**
+ * Histórico de versões do documento aberto (neste computador e na pasta oficial).
+ * @param {{ sinceApproval?: boolean }} [opts] `sinceApproval`: já abre comparando a versão aprovada com o documento aberto
+ */
+export async function openVersionHistory({ sinceApproval = false } = {}) {
   app.preview.commit();
   const ws = app.workspaceDir;
   const rel = currentWorkspacePath();
@@ -193,13 +197,29 @@ export async function openVersionHistory() {
   const local = [];
   if (app.store.dirty) local.push({ id: 'disk', label: 'Última versão salva', hint: 'o arquivo como está no disco (sem as alterações não salvas)', load: async () => plain(await (await handle.getFile()).text()) });
   for (const v of await listVersions(ws, rel).catch(() => [])) {
-    local.push({ id: `loc-${v.name}`, label: fmt(v.date), badge: v.revisao ? `publicada r${v.revisao}` : '', hint: v.revisao ? 'o que você publicou' : 'versão anterior a um salvamento', load: async () => plain(await readVersion(ws, rel, v.name)) });
+    local.push({ id: `loc-${v.name}`, label: fmt(v.date), badge: v.revisao ? `publicada r${v.revisao}` : v.aprovada ? '✅ aprovada' : '', hint: v.revisao ? 'o que você publicou' : v.aprovada ? 'como estava quando o caso foi aprovado' : 'versão anterior a um salvamento', load: async () => plain(await readVersion(ws, rel, v.name)) });
+  }
+  // "o que mudou desde a aprovação": a versão aprovada mais recente (pela marca no nome ou pela impressão digital)
+  let select = '';
+  let note = '';
+  if (sinceApproval) {
+    const hash = approvalOf(app.store.source).hash;
+    const marked = local.find((it) => it.badge === '✅ aprovada');
+    if (marked) select = marked.id;
+    else if (hash) {
+      for (const it of local.slice(0, 30)) {
+        try { if (definitionHash(await it.load()) === hash) { select = it.id; break; } } catch { /* ignora */ }
+      }
+    }
+    note = select ? 'Comparando a versão aprovada com o documento aberto.' : 'A versão aprovada não está guardada neste computador — escolha uma versão para comparar.';
   }
   groups.push({ group: 'Neste computador', items: local, empty: 'As versões aparecem depois de salvar alterações (uma a cada 10 min, no máximo).' });
   openHistory({
     title: rel,
     current: () => app.store.source,
     groups,
+    select,
+    note,
     onRestore: (text, item) => {
       app.store.setSource(text, { origin: 'command' });
       app.toast(`Restaurado: ${item.label}${item.badge ? ` (${item.badge})` : ''} — Ctrl+Z desfaz; salve (Ctrl+S) para gravar.`);

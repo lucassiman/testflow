@@ -28,6 +28,8 @@ export interface Approval {
   revisor: string;
   por: string;
   em: string;
+  /** aprovado_hash (impressão digital da definição aprovada) */
+  hash: string;
 }
 
 const key = (s: string): string => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
@@ -108,6 +110,7 @@ export function approvalOf(text: string): Approval {
     revisor: one(m.revisor),
     por: one(m.aprovado_por),
     em: one(m.aprovado_em),
+    hash,
   };
 }
 

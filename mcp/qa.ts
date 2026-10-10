@@ -13,7 +13,8 @@ import { NodeDirHandle, openRoot, asHandle, mimeOf } from './nodefs.ts';
 import { scanWorkspace } from '../src/io/workspace.js';
 import { createDocIndex, describe } from '../src/io/docIndex.ts';
 import { readText, writeText, writeBytes, namesIn, hasName, kindAt } from '../src/io/fsOps.js';
-import { snapshotBeforeSave, listVersions } from '../src/io/versions.js';
+import { snapshotBeforeSave, listVersions, readVersion, saveVersion } from '../src/io/versions.js';
+import { caseChanges, unifiedDiff } from '../src/markdown/versionDiff.ts';
 import { IGNORE } from '../src/io/workspace.js';
 import { detectFrontMatter, parseFrontMatter, TYPE_LABELS } from '../src/markdown/frontmatter.ts';
 import { parseView, runView, viewMarkdown, VIEW_PRESETS, findViewBlocks, viewMatches, bugsFor, bugOpen } from '../src/markdown/views.ts';
@@ -621,6 +622,8 @@ export class QaWorkspace {
       if (!isApprovable(doc.text) && !approvalOf(doc.text).state) throw new Error(`${e.path} não é caso de teste, cenário BDD nem checklist`);
       const next = setApproval(doc.text, state, { who: o.por || this.opts.who || '', revisor: o.revisor });
       await this.writeDoc(e.path, next, doc);
+      // a versão aprovada fica guardada (marcada) para "o que mudou desde a aprovação"
+      if (state === 'aprovado') await saveVersion(this.h, e.path, denormalize(next, doc), { aprovada: true }).catch(() => {});
       return `${e.path}: ${approvalText(approvalOf(next))}.`;
     });
   }
@@ -1294,7 +1297,45 @@ export class QaWorkspace {
     const e = await this.find(ref);
     const list = await listVersions(this.h, e.path);
     if (!list.length) return `${e.path}: nenhuma versão guardada ainda.`;
-    return [`${e.path}: ${list.length} versão(ões) em .versoes/ (mais recente primeiro):`, ...list.slice(0, 30).map((v) => `- ${v.name}${v.revisao ? ` (publicada r${v.revisao})` : ''}`)].join('\n');
+    return [`${e.path}: ${list.length} versão(ões) em .versoes/ (mais recente primeiro; compare com qa_comparar_versoes):`, ...list.slice(0, 30).map((v) => `- ${v.name}${v.revisao ? ` (publicada r${v.revisao})` : ''}${v.aprovada ? ' (aprovada)' : ''}`)].join('\n');
+  }
+
+  /** Texto de uma versão: nome em .versoes/, "aprovada" (a última aprovada) ou "anterior" (a mais recente). */
+  private async versionText(path: string, name: string): Promise<{ name: string; text: string }> {
+    const list = await listVersions(this.h, path);
+    if (!list.length) throw new Error(`${path}: nenhuma versão guardada ainda`);
+    const w = name.trim().toLowerCase();
+    const v = w === 'aprovada' ? list.find((x) => x.aprovada) : w === 'anterior' || !w ? list[0] : list.find((x) => x.name === name.trim() || x.name === `${name.trim()}.md`);
+    if (!v) throw new Error(w === 'aprovada' ? `${path}: nenhuma versão aprovada guardada` : `versão "${name}" não existe — veja qa_versoes`);
+    return { name: v.name, text: normalize(await readVersion(this.h, path, v.name)).text };
+  }
+
+  /** O que mudou entre duas versões (ou uma versão e o documento como está): resumo do caso e diff. */
+  async compareVersions(o: { doc: string; versao?: string; com?: string }): Promise<string> {
+    const e = await this.find(o.doc);
+    const cur = (await this.readDoc(e.path)).text;
+    const a = await this.versionText(e.path, o.versao || 'anterior');
+    const b = o.com ? await this.versionText(e.path, o.com) : { name: 'documento atual', text: cur };
+    if (a.text === b.text) return `${e.path}: ${a.name} é igual a ${b.name}.`;
+    const changes = caseChanges(a.text, b.text);
+    const diff = unifiedDiff(a.text, b.text).split('\n');
+    return [
+      `${e.path}: ${a.name} → ${b.name}`,
+      changes.length ? 'O que mudou no caso:' : 'Sem mudança no caso (cabeçalho de execução/publicação, histórico ou evidências).',
+      ...changes.map((x) => `- ${x}`),
+      '', 'Diff (- versão, + depois):', ...diff.slice(0, 200), ...(diff.length > 200 ? [`… (${diff.length - 200} linhas a mais)`] : []),
+    ].join('\n');
+  }
+
+  /** Volta o documento a uma versão (a atual fica guardada em .versoes/). */
+  restoreVersion(o: { doc: string; versao: string }): Promise<string> {
+    return this.exclusive(async () => {
+      const e = await this.find(o.doc);
+      const doc = await this.readDoc(e.path);
+      const v = await this.versionText(e.path, o.versao);
+      const changed = await this.writeDoc(e.path, v.text, doc);
+      return changed ? `${e.path}: voltou para ${v.name} (a versão de antes ficou em .versoes/).` : `${e.path} já está igual a ${v.name}.`;
+    });
   }
 
   /** Caminho de um documento a partir de outro (para links). */

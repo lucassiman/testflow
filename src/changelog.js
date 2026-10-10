@@ -8,6 +8,14 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.40.0', date: '10/10/2026',
+    items: [
+      { icon: '◫', text: '**Versões lado a lado**: no Histórico de versões, a versão à esquerda e o documento (ou outra versão — **Comparar com**) à direita, com as palavras alteradas marcadas; **≡ No texto** volta ao modo antigo.', manual: '10.4 Publicar' },
+      { icon: '📝', text: '**O que mudou no caso**: em cima da comparação, os campos do cabeçalho, passos novos/removidos e ação/esperado alterados — sem contar a execução.', manual: '10.4 Publicar' },
+      { icon: '✅', text: 'Aprovar guarda a **versão aprovada**; caso alterado depois → pílula → **Ver o que mudou desde a aprovação**. Com o Claude: `qa_comparar_versoes` e `qa_restaurar_versao`.', manual: '6.10 Aprovação do caso' },
+    ],
+  },
+  {
     version: '1.39.0', date: '10/10/2026',
     items: [
       { icon: '✅', text: '**Aprovação do caso**: rascunho → em revisão → aprovado, na pílula do topo. Aprovar grava quem e quando; mudar os passos depois mostra **⚠ aprovado · alterado** (executar não conta).', manual: '6.10 Aprovação do caso' },

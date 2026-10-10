@@ -65,3 +65,45 @@ test('aprovação: rascunho → em revisão → aprovado; mudar o passo pede de 
   await expect(page.locator('.cpk-dialog [data-cpk="approved"]')).toBeChecked();
   await expect(page.locator('.cpk-dialog .cpk-item')).toHaveCount(1);
 });
+
+test('versões: o que mudou desde a aprovação, lado a lado e no texto, comparar duas versões, restaurar', async ({ page }) => {
+  await page.addInitScript(wsInit, 'ws-versoes');
+  await openEditor(page, { mode: 'preview', prefs: { sidebar: true, publisherName: 'Lucas' } });
+  await page.evaluate(async (a) => { await window.__write('aplicacoes/Portal/casos/TC-1.md', a); }, tc('TC-1', 'em-revisao'));
+  await page.locator('.sidebar button', { hasText: 'Abrir…' }).first().click();
+  await page.locator('[data-side="wsList"] .side-file', { hasText: 'TC-1' }).first().click();
+  const pill = page.locator('#docState [data-state="approval"]');
+  await pill.click();
+  await page.locator('.cmd-menu .cmd-item', { hasText: 'grava quem e quando' }).first().click();
+  await expect(pill).toContainText('aprovado');
+  // a aprovação salvou e guardou a versão aprovada
+  await expect.poll(() => page.evaluate(async () => ((await window.__ls('.versoes/aplicacoes/Portal/casos/TC-1.md')) || []).join(','))).toMatch(/_aprovada\.md/);
+
+  await page.locator('#preview td', { hasText: /^Abre$/ }).click();
+  await page.keyboard.press('End');
+  await page.keyboard.type(' o painel');
+  await page.keyboard.press('Control+Enter');
+  await expect(pill).toContainText('alterado');
+  await pill.click();
+  await page.locator('.cmd-menu .cmd-item', { hasText: 'desde a aprovação' }).click();
+  const hist = page.locator('.hist-dialog');
+  await expect(hist.locator('.hist-note')).toContainText('versão aprovada');
+  await expect(hist.locator('.hist-item.on')).toContainText('aprovada');
+  await expect(hist.locator('.hist-changes')).toContainText('Passo 1 · esperado: Abre → Abre o painel');
+  await expect(hist.locator('.hist-sbs tr.sbs-mod')).toHaveCount(1);
+  await expect(hist.locator('.hist-sbs tr.sbs-mod ins')).toContainText('o painel');
+  // no texto
+  await hist.locator('[data-view="inline"]').click();
+  await expect(hist.locator('.hist-sbs')).toHaveCount(0);
+  await expect(hist.locator('.hist-diff ins')).toContainText('o painel');
+  await hist.locator('[data-view="sbs"]').click();
+  // comparar com outra versão: a última salva (igual à aprovada)
+  await hist.locator('[data-hist="with"]').selectOption({ label: 'Última versão salva' });
+  await expect(hist.locator('[data-hist="info"]')).toContainText('é igual a');
+  await hist.locator('[data-hist="with"]').selectOption('');
+  await expect(hist.locator('.hist-sbs tr.sbs-mod')).toHaveCount(1);
+  // restaurar a aprovada
+  await hist.locator('[data-act="restore"]').click();
+  await expect(pill).not.toContainText('alterado');
+  await expect(page.locator('#preview td', { hasText: /^Abre$/ })).toHaveCount(1);
+});

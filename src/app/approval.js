@@ -8,6 +8,8 @@ import { app } from './context.js';
 import { menu, docIndex } from './shared.js';
 import { loadPrefs, savePrefs } from '../io/drafts.js';
 import { showDialog } from '../ui/dialog.js';
+import { saveVersion } from '../io/versions.js';
+import { currentWorkspacePath } from './links.js';
 import { approvalOf, setApproval, approvalText, approvalKey, isApprovable, APPROVAL_LABELS } from '../markdown/approval.ts';
 
 /** @typedef {import('../markdown/approval.ts').ApprovalState} ApprovalState */
@@ -25,11 +27,24 @@ export function toggleOnlyApproved() {
 }
 
 /** @param {ApprovalState} state @param {string} [revisor] */
-function apply(state, revisor) {
+async function apply(state, revisor) {
   const who = loadPrefs().publisherName || '';
   const next = setApproval(app.store.source, state, { who, revisor });
   app.store.setSource(next, { origin: 'command' });
   app.toast(`${state === 'aprovado' ? '✅' : state === 'em-revisao' ? '👀' : '✍'} ${approvalText(approvalOf(next))} — Ctrl+Z desfaz`);
+  // aprovado: salva e guarda esta versão no histórico (marcada "aprovada") — "o que mudou desde a aprovação" compara com ela
+  const rel = currentWorkspacePath();
+  if (state === 'aprovado' && rel && app.workspaceDir && app.store.fileHandle) {
+    try {
+      await app.doSave(false);
+      if (!app.store.dirty) await saveVersion(app.workspaceDir, rel, app.store.source, { aprovada: true });
+    } catch { /* fica só no documento; salvar depois grava */ }
+  }
+}
+
+/** Histórico de versões comparando a versão aprovada com o documento aberto. */
+function sinceApproval() {
+  import('./publishing.js').then((m) => m.openVersionHistory({ sinceApproval: true }));
 }
 
 /** Enviar para revisão: pergunta (opcional) quem revisa. */
@@ -68,6 +83,7 @@ export function approvalMenu() {
   /** @type {Array<{ id: string, icon: string, label: string, hint?: string, act: string }>} */
   const items = [];
   if (a.state !== 'em-revisao') items.push({ id: 'review', icon: '👀', label: 'Enviar para revisão…', hint: 'alguém confere antes de aprovar', act: 'review' });
+  if (a.state === 'aprovado' && a.changed) items.push({ id: 'since', icon: '🕘', label: 'Ver o que mudou desde a aprovação', hint: 'lado a lado, com os passos alterados', act: 'since' });
   if (a.state !== 'aprovado' || a.changed) items.push({ id: 'approve', icon: '✅', label: a.changed ? 'Aprovar de novo' : 'Aprovar', hint: 'grava quem e quando; mudar os passos depois pede nova aprovação', act: 'approve' });
   if (a.state && a.state !== 'rascunho') items.push({ id: 'draft', icon: '✍', label: 'Voltar para rascunho', act: 'draft' });
   if (!a.state) items.push({ id: 'draft', icon: '✍', label: 'Marcar como rascunho', hint: 'entra no fluxo de aprovação', act: 'draft' });
@@ -81,6 +97,7 @@ export function approvalMenu() {
       else if (it.act === 'approve') approve();
       else if (it.act === 'draft') apply('rascunho');
       else if (it.act === 'only') toggleOnlyApproved();
+      else if (it.act === 'since') sinceApproval();
     },
   });
 }
