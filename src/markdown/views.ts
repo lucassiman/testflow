@@ -1,4 +1,5 @@
 import { segmentMembers } from './segment.ts';
+import { releaseSummary, releaseLine, RELEASE_TYPE, type ReleaseDoc } from './release.ts';
 import { parseDevice } from './device.ts';
 import type { StatusCounts, TaskCounts } from '../types';
 import { TYPE_LABELS, formatValue } from './frontmatter.ts';
@@ -25,7 +26,7 @@ import { buildTrend, monthLabel, durLabel } from './trend.ts';
  * Formatos: lista (padrão) · quadro · cobertura (medida: execucao | automacao) · jira · rastreabilidade · tendencia (rodadas ao longo do tempo).
  */
 
-export type ViewFormat = 'lista' | 'quadro' | 'cobertura' | 'jira' | 'rastreabilidade' | 'tendencia';
+export type ViewFormat = 'lista' | 'quadro' | 'cobertura' | 'jira' | 'rastreabilidade' | 'tendencia' | 'release';
 
 export interface ViewSpec {
   titulo: string;
@@ -77,7 +78,7 @@ export interface ViewDoc {
 }
 
 const FILTER_KEYS = ['segmento', 'tipo', 'app', 'status', 'tags', 'jira', 'epico', 'sprint', 'dispositivo', 'versao', 'pasta', 'responsavel', 'prioridade', 'execucao', 'automacao', 'comentarios', 'aprovacao'];
-const FORMATS: ViewFormat[] = ['lista', 'quadro', 'cobertura', 'jira', 'rastreabilidade', 'tendencia'];
+const FORMATS: ViewFormat[] = ['lista', 'quadro', 'cobertura', 'jira', 'rastreabilidade', 'tendencia', 'release'];
 export const VIEW_COLUMNS: Record<string, string> = {
   id: 'ID', titulo: 'Título', tipo: 'Tipo', status: 'Status', app: 'App', prioridade: 'Prioridade', responsavel: 'Responsável',
   jira: 'Jira', tags: 'Tags', progresso: 'Progresso', rodada: 'Última rodada', automacao: 'Automação', pasta: 'Pasta', versao: 'Versão',
@@ -399,6 +400,7 @@ export function runView(spec: ViewSpec, all: ViewDoc[], errors: string[] = []): 
   if (truncated) rows = rows.slice(0, spec.limite);
 
   if (spec.formato === 'tendencia') return trendView(spec, docs, rows, base);
+  if (spec.formato === 'release') return releaseView(rows, docs, base);
 
   if (spec.formato === 'cobertura') {
     const g = spec.agrupar || 'app';
@@ -475,6 +477,40 @@ export function runView(spec: ViewSpec, all: ViewDoc[], errors: string[] = []): 
 // ---------------------------------------------------------------- tendência entre rodadas
 const signed = (n: number | null): string => (n === null ? '—' : n > 0 ? `▲ ${n} pp` : n < 0 ? `▼ ${-n} pp` : '= 0 pp');
 const shortDate = (d: Date | null): string => (d ? `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}` : '—');
+
+/** Release (11.3): o progresso dos documentos da versão (filtro versao: 2.14, e app: se quiser). */
+function releaseView(rows: ViewDoc[], all: ViewDoc[], base: { title: string; format: ViewFormat; total: number; errors: string[] }): ViewResult {
+  const ref = (d: ViewDoc): ReleaseDoc => ({ path: d.path, id: d.id, name: d.name, titulo: d.titulo || d.heading || d.name, tipo: d.tipo, app: d.app, versao: d.versao, text: d.text, link: idCell(d).link, bugOpen: d.tipo === 'bug' ? bugOpen(d) : undefined });
+  const rel = rows.find((d) => d.tipo === RELEASE_TYPE) || null;
+  const members = rows.filter((d) => d.tipo !== RELEASE_TYPE).map(ref);
+  if (!rows.length) return { ...base, tables: [], total: 0, summary: 'Nenhum documento com essa versão — preencha versao: (ex.: versao: 2.14) nos planos, execuções, casos e bugs.' };
+  const s = releaseSummary(members, rel ? ref(rel) : null);
+  void all;
+  const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : '—');
+  const kind = (p: number | null) => (p === null ? undefined : p >= 90 ? 'pass' : p >= 70 ? 'blocked' : 'fail');
+  const tables: ViewTable[] = [{
+    group: s.pronta ? '✅ Pronta para liberar' : '⏳ Ainda não', head: ['Indicador', 'Valor'],
+    rows: [
+      [{ text: 'Casos executados' }, { text: `${s.casos.executados}/${s.casos.total} (${pct(s.casos.executados, s.casos.total)})` }],
+      [{ text: 'Sucesso (PASS ÷ executados que rodaram)' }, { text: s.casos.sucessoPct === null ? '—' : `${s.casos.sucessoPct}%`, badge: kind(s.casos.sucessoPct) }],
+      [{ text: 'PASS · FAIL · BLOCKED · SKIP' }, { text: `${s.casos.pass} · ${s.casos.fail} · ${s.casos.blocked} · ${s.casos.skip}` }],
+      [{ text: 'Execuções' }, { text: `${s.execucoes.length}${s.execucoes.some((e) => e.aberta) ? ` (${s.execucoes.filter((e) => e.aberta).length} em andamento)` : ''}` }],
+      [{ text: 'Bugs abertos · fechados' }, { text: `${s.bugs.abertos.length} · ${s.bugs.fechados}`, badge: s.bugs.abertos.length ? 'fail' : 'pass' }],
+      ...(s.criterios.total ? [[{ text: 'Critérios de saída' }, { text: `${s.criterios.feitos}/${s.criterios.total}`, badge: s.criterios.feitos === s.criterios.total ? 'pass' : 'blocked' }]] : []),
+      ...(s.prevista ? [[{ text: 'Prevista' }, { text: `${shortDate(s.prevista)}${s.diasRestantes === null ? '' : s.diasRestantes > 0 ? ` (faltam ${s.diasRestantes} dia(s))` : s.diasRestantes === 0 ? ' (hoje)' : ` (atrasada ${-s.diasRestantes} dia(s))`}`, badge: s.diasRestantes !== null && s.diasRestantes < 0 ? 'fail' : undefined }]] : []),
+      ...(s.casos.semRodada ? [[{ text: 'Casos da versão fora de qualquer rodada' }, { text: String(s.casos.semRodada) }]] : []),
+      ...(s.motivos.length ? [[{ text: 'Falta' }, { text: s.motivos.join(' · ') }]] : []),
+    ],
+  }];
+  if (s.execucoes.length) tables.push({
+    group: 'Execuções', head: ['Execução', 'Configuração', 'Início', 'Casos', 'PASS', 'FAIL', 'BLOCKED', 'Pendentes', '% sucesso', 'Situação'],
+    rows: [...s.execucoes].reverse().map((e) => [{ text: e.id, link: e.link }, { text: e.config || '—' }, { text: shortDate(e.inicio) }, { text: String(e.total) }, { text: String(e.pass) }, { text: String(e.fail) }, { text: String(e.blocked) }, { text: String(e.pendente) }, { text: e.sucessoPct === null ? '—' : `${e.sucessoPct}%`, badge: kind(e.sucessoPct) }, { text: e.aberta ? 'em andamento' : 'encerrada' }]),
+  });
+  if (s.falhas.length) tables.push({ group: 'Casos com falha', head: ['Caso', 'Resultado'], rows: s.falhas.map((f) => [{ text: f.key, link: f.key }, { text: f.status, badge: statusKind(f.status) || undefined }]) });
+  if (s.bugs.abertos.length) tables.push({ group: 'Bugs abertos', head: ['Bug', 'Título'], rows: s.bugs.abertos.map((b) => [{ text: b.id, link: b.link }, { text: b.titulo }]) });
+  if (s.planos.length) tables.push({ group: 'Planos', head: ['Plano', 'Título'], rows: s.planos.map((p) => [{ text: p.id, link: p.link }, { text: p.titulo }]) });
+  return { ...base, tables, total: members.length, summary: `${s.versao ? `Versão ${s.versao}: ` : ''}${releaseLine(s)}${s.pronta ? ' — ✅ pronta' : ''}` };
+}
 
 function trendView(spec: ViewSpec, docs: ViewDoc[], rows: ViewDoc[], base: { title: string; format: ViewFormat; total: number; errors: string[] }): ViewResult {
   const isExec = (d: ViewDoc): boolean => d.tipo === 'execucao' || d.tipo === 'ciclo-regressao';

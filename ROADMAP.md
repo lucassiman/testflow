@@ -172,6 +172,8 @@ Ida e volta pela área de transferência (sem chave de API, nada sai do editor s
 
 ✅ **Feito na 1.12.0 — Dispositivo/ambiente:** substituir/expandir o campo atual *Browser* por **Dispositivo/Ambiente**: WEB, Mobile iOS, Mobile Android, Mobile — Todos; para mobile informar a versão (ex.: Mobile iOS — iOS 18, Mobile Android — Android 15). Deve aparecer nas tags, no cabeçalho do caso, nos modelos de criação de casos e nas informações da execução, para rastrear em que dispositivo/plataforma cada caso foi validado.
 
+**1.47.0 (10/10) — releases / milestones (11.3).** `release.ts`: `tipo: release` (`versao`, `app`, `prevista`, `situacao`), `releaseInfo`, `versionIn` (2.14 pega 2.14.x), `releaseSummary(members, release)` (cada caso = resultado da execução mais recente; na matriz o pior entre as configurações; casos da versão fora de rodada; bugs abertos/fechados; planos; critérios de saída da checklist; dias até a prevista; `pronta` + `motivos`), `releaseLine`, `syncReleaseBlock` (o bloco `formato: release` acompanha versão/app do cabeçalho — no salvar, no `qa_criar` e no `qa_atualizar_cabecalho`). Visões: `formato: release` (`releaseView`). Modelo `release.md` (pasta `releases/`), `TYPE_LABELS`. Vínculo `versao` (🚀) em `LINK_TYPES`; `cycleDoc`/`cycleDefDoc` sem repetir `versao:`. Início com 🚀 Releases. MCP `qa_release`. Testes `release.test`, `planejar.spec` (release).
+
 **1.46.0 (10/10) — matriz de configurações e o mesmo caso em vários ambientes (11.3).** `cycle.ts`: `RunConfig`, `combos`, `configFromLabel` (ambiente/navegador/dispositivo pelo jeito da parte), `sameConfig`, `configOf`, `parseConfigs`; `cycleDoc({ config, matriz, seq })` (`configuracao:`, `ambiente:`, `browser:`, `dispositivo:`, `matriz:`, ID com `-seq`); `cycleDefDoc({ configuracoes })`; `runsOf().config`; `caseResult(…, config)`/`needsFreshRound(…, config)` só com as rodadas da configuração; `ExecInfo.config/casos`, `syncDefExecutions` com a coluna Configuração e `matrixGrid`. `runs.ts`: colunas extras genéricas no histórico (Dados, Configuração). App: picker `matrix` (🧮 com prévia das combinações), `createMatrix`, `runCycle` com `configuracoes:`, reteste na configuração de origem, `matrixOf`/`switchConfig` (chips `.cp-cfg`), `roundOfOpenCase().config/ambiente`, runner `roundConfig` → `logRun({ config })`, `envOf` usa o ambiente da rodada. MCP: `qa_rodada_criar { ambientes, navegadores, dispositivos }` (ou as do ciclo), registro/status com a configuração. Testes `matriz.test`, `planejar.spec` (matriz).
 
 **1.45.0 (10/10) — atribuir casos na rodada (11.3).** `assign.ts`: coluna **Testador** na tabela "Casos do ciclo" (`cycleTable().cols.tester`, criada na 1ª atribuição), `assign`, `distribute(text, pessoas, { avgMs, todos })` (o maior primeiro para quem está com menos; sem tempos, pela quantidade; soma à carga existente), `workload`, `pendingOf`, `assignees`, `testers`, `samePerson` (nome inteiro ou primeiro nome). `nextCase(text, current, who)`: os da pessoa, depois os livres. App `app/assign.js` (`assignRound`, `reassignCase`, `me()` = publisherName), painel: chip `.cp-who` (clique troca), filtro Minhas, linha `.cp-load`, botão 👥 Atribuir; próximo caso por pessoa em todo o fluxo; Início com **👤 Minhas pendências**. MCP `qa_rodada_atribuir`, `qa_pendencias`, carga no `qa_rodada_status`. Correção: a previsão (1.44) arredonda o fim ao minuto — o painel não redesenha a cada instante. Testes `assign.test`, `planejar.spec`.
@@ -503,7 +505,7 @@ Levantada comparando com TestRail, Zephyr, Xray, Qase, Testmo e as extensões de
 | **Edição em massa** | ✅ 1.41.0 — Selecionar vários casos e mudar prioridade, tags, épico ou responsável de uma vez. | M |
 | **Importação em massa** | ✅ 1.42.0 — De TestRail/Zephyr (CSV) ou Excel com um caso por linha → um documento por caso. | M |
 
-#### 11.3 — Planejar e executar *(M)* — em andamento: ✅ 1.44.0 previsão · ✅ 1.45.0 atribuir · ✅ 1.46.0 matriz
+#### 11.3 — Planejar e executar *(M)* — em andamento: ✅ 1.44.0 previsão · ✅ 1.45.0 atribuir · ✅ 1.46.0 matriz · ✅ 1.47.0 releases
 
 | Item | Detalhe | Esforço |
 |---|---|---|
@@ -511,7 +513,7 @@ Levantada comparando com TestRail, Zephyr, Xray, Qase, Testmo e as extensões de
 | **Matriz de configurações** | ✅ 1.46.0 — Chrome/Safari × Windows/macOS × Mobile: a rodada gera um caso por combinação. | M |
 | **Atribuir casos na rodada** | ✅ 1.45.0 — Cada caso com um testador; "minhas pendências" e carga por pessoa. | M |
 | **Previsão de tempo da rodada** | ✅ 1.44.0 — Quanto falta, pela duração média que cada caso já teve. | P |
-| **Releases / milestones** | Rodadas e planos agrupados por versão do produto, com o progresso da release. | M |
+| **Releases / milestones** | ✅ 1.47.0 — Rodadas e planos agrupados por versão do produto, com o progresso da release. | M |
 | **Status personalizados** | Além dos 5 (ex.: *Reteste*, *Falha conhecida*), com cor e regra de contagem. | M |
 
 #### 11.4 — Captura de bug com console e rede *(G — opcional)*

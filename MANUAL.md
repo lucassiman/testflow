@@ -597,6 +597,15 @@ Sem montar um ciclo: terminou um caso, vá direto para o próximo **da mesma pas
 
 O próximo é o seguinte **pela ordem do nome** (`TC-2` antes de `TC-10`), **pulando os já executados** e dando a volta no fim da pasta; quando todos já foram executados, abre só o seguinte (use 🔁 Nova rodada para executar de novo). O caso atual é salvo antes, e a aba dele fecha para as abas não se acumularem. Num caso do **ciclo de regressão** ativo (7.8), o próximo segue o ciclo.
 
+### 7.10 Releases (versões do produto)
+
+Uma **release** junta tudo o que é de uma versão — planos, execuções (rodadas), casos e bugs com o mesmo `versao:` (ex.: `2.14`, que também pega `2.14.1`) — e mostra o progresso dela.
+
+- **Criar:** Novo ▾ → A partir de modelo → **Release**. Preencha no cabeçalho `versao:`, `app:`, `prevista:` (data) e `situacao:` (planejada · em-teste · liberada · cancelada). O quadro **Progresso** no documento acompanha a versão do cabeçalho (ao salvar).
+- **O quadro mostra:** casos executados e % de sucesso (cada caso vale o resultado da execução mais recente em que apareceu; na matriz, o pior entre as configurações), as execuções da versão, os casos com falha, os bugs abertos, os planos, os **critérios de saída** (a checklist da seção) e os dias até a data prevista — e **✅ Pronta para liberar** quando não falta nada (senão, o que falta).
+- **Pôr na release:** a rodada nasce com a versão pelo campo **🚀 Versão (release)** dos vínculos (na janela de nova rodada ou em 🔗 Vínculos); casos e bugs, pelo `versao:` do cabeçalho (ou pela ✎ Edição em massa).
+- A tela **Início** mostra as releases em andamento com a barra de progresso. Com o Claude: *"como está a release 2.14?"* (`qa_release`).
+
 ## 8. Evidências (prints e arquivos)
 
 | Ação | Como |

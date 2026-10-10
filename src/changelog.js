@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.47.0', date: '10/10/2026',
+    items: [
+      { icon: '🚀', text: '**Releases**: um documento por versão do produto (modelo *Release*) mostra o progresso de tudo com o mesmo `versao:` — casos executados, % de sucesso, falhas, bugs abertos, critérios de saída, dias até a data prevista e se está pronta para liberar.', manual: '7.10 Releases' },
+      { icon: '🔗', text: 'Vínculo **🚀 Versão** na nova rodada; releases em andamento na tela Início. Com o Claude: `qa_release`.', manual: '7.10 Releases' },
+    ],
+  },
+  {
     version: '1.46.0', date: '10/10/2026',
     items: [
       { icon: '🧮', text: '**Matriz de configurações**: na nova rodada (ou ciclo), 🧮 Configurações → ambientes × navegadores × dispositivos — uma execução por combinação. Chips no painel com o progresso de cada uma; o caso usa o ambiente da rodada e só conta como feito na configuração em que rodou.', manual: '7.8 Ciclo de regressão' },

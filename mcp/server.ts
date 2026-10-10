@@ -288,6 +288,11 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
     inputSchema: { pessoa: z.string().optional().describe('sem ela: o usuário do MCP') }, annotations: RO,
   }, async (a) => run(() => ws.pendencies(a), text));
 
+  server.registerTool('qa_release', {
+    title: 'Release / milestone', description: 'Releases da pasta (tipo release) e o progresso de uma: tudo com a mesma versao: (planos, execuções, casos, bugs) — casos executados, % de sucesso, falhas, bugs abertos, critérios de saída, dias até a data prevista e se está pronta (Go). Sem argumentos: lista as releases.',
+    inputSchema: { release: z.string().optional().describe('ID do documento da release (REL-…)'), versao: z.string().optional().describe('ex.: 2.14'), app: z.string().optional() }, annotations: RO,
+  }, async (a) => run(() => ws.release(a), text));
+
   server.registerTool('qa_rodada_finalizar', {
     title: 'Finalizar rodada', description: 'Finaliza a execução: SKIP nos casos não executados, fim:, seção Encerramento, atualiza o ciclo de origem e (padrão) gera os 4 relatórios de fim de execução. Depois de finalizada, a execução não muda mais — confirme com o usuário antes.',
     inputSchema: { execucao: z.string().optional(), relatorios: z.boolean().optional().describe('false = não gera os relatórios') },

@@ -75,6 +75,9 @@ export const cycleClosed = (text: string): boolean => !!String(meta(text).fim ||
 
 export interface CycleCase { key: string; titulo: string }
 
+/** A versão vai na linha versao: própria do documento (não repete pelos vínculos). */
+const withoutVersion = (links: Record<string, string[]> = {}): Record<string, string[]> => Object.fromEntries(Object.entries(links).filter(([k]) => k !== 'versao'));
+
 // ---------------------------------------------------------------- matriz de configurações (11.3)
 export interface RunConfig { label: string; ambiente: string; navegador: string; dispositivo: string }
 const cfgKey = (s: string): string => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').replace(/\s*[·|/,]\s*/g, '·').trim();
@@ -124,12 +127,12 @@ export function cycleDoc(o: { titulo: string; app?: string; versao?: string; ori
     '---', `tipo: ${EXEC_TYPE}`, `id: ${id}`, `titulo: ${formatValue(o.titulo)}`,
     ...(o.ciclo ? [`ciclo: ${formatValue(o.ciclo)}`, `numero: ${o.numero || 1}`] : []),
     ...(o.app ? [`app: ${formatValue(o.app)}`] : []),
-    `versao: ${o.versao ? formatValue(o.versao) : ''}`,
+    `versao: ${o.versao || o.links?.versao?.[0] ? formatValue(o.versao || o.links?.versao?.[0] || '') : ''}`,
     ...(o.config ? [`configuracao: ${formatValue(o.config.label)}`, ...(o.config.ambiente ? [`ambiente: ${formatValue(o.config.ambiente)}`] : []), ...(o.config.navegador ? [`browser: ${formatValue(o.config.navegador)}`] : [])] : []),
     ...(o.matriz ? [`matriz: ${formatValue(o.matriz)}`] : []),
     ...(o.dispositivo || o.config?.dispositivo ? [`dispositivo: ${formatValue(o.config?.dispositivo || o.dispositivo || '')}`] : []),
     ...(o.responsavel ? [`responsavel: ${formatValue(o.responsavel)}`] : []),
-    ...linksHeader(o.links || {}),
+    ...linksHeader(withoutVersion(o.links)),
     `inicio: ${iso(start)}`, 'status: PENDING', `tags: ${tagsField(o.tags)}`, 'qa-md: 1', '---',
   ];
   const rows = o.cases.map((c, i) => `| ${i + 1} | [[${c.key}]] | ${cellEsc(c.titulo)} |  |  |  |`);
@@ -510,9 +513,9 @@ export function cycleDefDoc(o: { titulo: string; app?: string; versao?: string; 
   const fm = [
     '---', `tipo: ${CYCLE_TYPE}`, `id: ${id}`, `titulo: ${formatValue(o.titulo)}`,
     ...(o.app ? [`app: ${formatValue(o.app)}`] : []),
-    `versao: ${o.versao ? formatValue(o.versao) : ''}`,
+    `versao: ${o.versao || o.links?.versao?.[0] ? formatValue(o.versao || o.links?.versao?.[0] || '') : ''}`,
     ...(o.responsavel ? [`responsavel: ${formatValue(o.responsavel)}`] : []),
-    ...linksHeader(o.links || {}),
+    ...linksHeader(withoutVersion(o.links)),
     ...(o.configuracoes?.length ? [`configuracoes: ${formatValue(o.configuracoes)}`] : []),
     `tags: ${tagsField(o.tags)}`, 'qa-md: 1', '---',
   ];

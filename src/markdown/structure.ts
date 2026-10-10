@@ -29,6 +29,7 @@ export const TYPE_FOLDER: Record<string, string> = {
   checklist: 'casos',
   bug: 'bugs',
   'plano-de-teste': 'planos',
+  release: 'releases',
   epico: 'requisitos',
   historia: 'requisitos',
   'ciclo-regressao': 'planos',

@@ -12,6 +12,7 @@ import { isCycle, cycleClosed, cycleProgress, cycleStart } from '../markdown/cyc
 import { execState, bugOpen } from '../markdown/views.ts';
 import { lastRound } from '../markdown/linkInfo.ts';
 import { pendingOf } from '../markdown/assign.ts';
+import { isRelease, releaseInfo, releaseSummary, releaseLine, versionIn } from '../markdown/release.ts';
 
 /** @param {unknown} s */
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => /** @type {Record<string, string>} */ ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -70,6 +71,19 @@ export function createHome(actions) {
       .map((e) => ({ path: e.path, titulo: e.titulo || e.name, keys: pendingOf(e.text || '', who) })).filter((x) => x.keys.length);
   }
 
+  /** Releases em andamento (não liberadas nem canceladas), com o progresso. */
+  function releases() {
+    const all = docIndex.all();
+    return all.filter((e) => e.text && isRelease(e.text)).map((e) => ({ e, i: releaseInfo(e.text || '') }))
+      .filter(({ i }) => i.versao && !['liberada', 'cancelada'].includes(i.situacao))
+      .map(({ e, i }) => {
+        const members = all.filter((d) => d.tipo !== 'release' && d.tipo !== 'visao' && versionIn(d.versao || '', i.versao) && (!i.app || !d.app || d.app.toLowerCase() === i.app.toLowerCase()))
+          .map((d) => ({ path: d.path, id: d.id, name: d.name, titulo: d.titulo || d.name, tipo: d.tipo, app: d.app, versao: d.versao, text: d.text, bugOpen: d.tipo === 'bug' ? bugOpen(/** @type {any} */ ({ ...d, last: lastRound(d.text || '') })) : undefined }));
+        const s = releaseSummary(members, { path: e.path, id: e.id, name: e.name, titulo: e.titulo, tipo: 'release', app: e.app, versao: i.versao, text: e.text });
+        return { path: e.path, titulo: i.titulo, versao: i.versao, s };
+      }).slice(0, 4);
+  }
+
   function pins() {
     const ws = app.workspaceDir?.name || '';
     if (!ws) return [];
@@ -83,6 +97,7 @@ export function createHome(actions) {
     const pend = ready ? pending() : null;
     const pinned = ready ? pins() : [];
     const my = ready ? mine() : [];
+    const rels = ready ? releases() : [];
     const recents = actions.recents().slice(0, 6);
     const label = (/** @type {string} */ p) => { const e = docIndex.get(p); return e ? `${e.id ? `<b>${esc(e.id)}</b> ` : ''}${esc(e.titulo || e.name.replace(/\.(md|markdown)$/i, ''))}` : esc(p.split('/').pop()); };
     const chip = (/** @type {string} */ q, /** @type {string} */ icon, /** @type {number} */ n, /** @type {string} */ text, /** @type {string} */ cls) => `<button type="button" class="home-stat ${cls}${n ? '' : ' zero'}" data-home-search="${esc(q)}" title="Buscar: ${esc(q)}"><span class="home-num">${n}</span><span>${icon} ${esc(text)}</span></button>`;
@@ -98,6 +113,10 @@ export function createHome(actions) {
           ${round.p ? `<div class="home-bar" title="${round.p.done} de ${round.p.total}"><span style="width:${round.p.total ? Math.round((round.p.done / round.p.total) * 100) : 0}%"></span></div>
           <div class="home-muted">${round.p.done}/${round.p.total} casos${round.p.failed ? ` · <span class="home-fail">${round.p.failed} com falha</span>` : ''}${round.p.next ? ` · próximo: <b>${esc(round.p.next)}</b>` : ' · todos com resultado'}</div>` : ''}
           <div class="home-actions">${round.p?.next ? '<button type="button" class="primary" data-home="continue">▶ Continuar</button>' : ''}<button type="button" data-home="openRound">Abrir a execução</button></div>
+        </section>` : ''}
+        ${rels.length ? `<section class="home-card home-rel">
+          <h2>🚀 Releases</h2>
+          ${rels.map((r) => `<button type="button" class="home-rel-item" data-home-open="${esc(r.path)}" title="${esc(releaseLine(r.s))}${r.s.motivos.length ? ` — falta: ${esc(r.s.motivos.join(' · '))}` : ''}"><b>${esc(r.titulo)}</b> <small>${esc(r.versao)}</small><div class="home-bar"><span style="width:${r.s.casos.total ? Math.round((r.s.casos.executados / r.s.casos.total) * 100) : 0}%"></span></div><div class="home-muted">${esc(releaseLine(r.s))}${r.s.pronta ? ' · ✅ pronta' : ''}</div></button>`).join('')}
         </section>` : ''}
         ${my.length ? `<section class="home-card home-mine">
           <h2>👤 Minhas pendências</h2>

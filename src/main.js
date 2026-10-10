@@ -65,6 +65,7 @@ import { drawViews, syncViewsForSave, newView, saveFiltersAsView, viewDocs } fro
 import { addComment, commentAction, listComments } from './app/comments.js';
 import { exportJiraCsv, importJiraKeys } from './app/jiraExport.js';
 import { startCollab, collabDocChanged, officialMenu, updateAllFromOfficial, paintOfficialButton } from './app/collab.js';
+import { syncReleaseBlock } from './markdown/release.ts';
 import { newCycle, newRun, newAutoRun, attachAutomation, editDevice, runCycle, editLinks, nextCycleCase, finishCycle, showRoundSummary, openCycle, onCaseFinished, refreshCycleDoc, syncCycleForSave, rerunFailed, roundOfOpenCase } from './app/cycle.js';
 import { goNextCase, offerNextCase } from './app/nextCase.js';
 import { bindLinkPicker } from './app/linkPicker.js';
@@ -1105,7 +1106,7 @@ async function doSave(asNew = false, { auto = false } = {}) {
   // resumo automático e status geral saem atualizados no arquivo
   // a cópia gerada das visões só é refeita no Ctrl+S (no salvamento automático, o texto não "pula" debaixo do cursor)
   const executed = syncExecution(store.source, { onlyExecuted: true });
-  const synced = auto ? executed : syncViewsForSave(syncCycleForSave(executed));
+  const synced = auto ? executed : syncViewsForSave(syncReleaseBlock(syncCycleForSave(executed)));
   if (synced !== store.source) store.setSource(synced, { origin: 'command' });
   try {
     const opts = { name: store.fileName, handle: store.fileHandle, format: docFormat };

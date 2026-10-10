@@ -93,3 +93,27 @@ test('matriz: nova rodada em HML e PROD cria uma execução por configuração; 
   await expect(page.locator('#envChip')).toContainText('PROD');
   await expect(page.locator('#preview td', { hasText: /HML · Chrome/ })).toHaveCount(1); // histórico da rodada em HML
 });
+
+test('release: o documento da release mostra o progresso de tudo com a mesma versão; a rodada pode nascer com a versão', async ({ page }) => {
+  const rel = `---\ntipo: release\nid: REL-001\ntitulo: Release 2.14\napp: Portal\nversao: 2.14\nprevista: 2099-01-01\nsituacao: em-teste\n---\n\n# REL-001\n\n\`\`\`qa-visao\ntitulo: Progresso\nformato: release\nversao: 2.14\n\`\`\`\n\n## Critérios de saída\n\n- [x] Regressão executada\n`;
+  await workspace(page, 'ws-release', [
+    ['aplicacoes/Portal/casos/TC-1.md', tc('TC-1', 'versao: 2.14\n')],
+    ['aplicacoes/Portal/casos/TC-2.md', tc('TC-2')],
+    ['aplicacoes/Portal/releases/rel-2-14.md', rel],
+  ]);
+  // rodada com a versão (vínculos)
+  await page.click('button[data-menu="newMenu"]');
+  await page.click('#newMenu [data-cmd="newRun"]');
+  const picker = page.locator('.cpk-dialog');
+  await picker.locator('.cpk-search').fill('TC-2');
+  await picker.locator('button', { hasText: 'Selecionar visíveis' }).click();
+  await picker.locator('.cpk-links summary').click();
+  await picker.locator('input[data-link="versao"]').fill('2.14');
+  await picker.locator('button', { hasText: 'Criar e começar' }).click();
+  await expect(page.locator('.cp-chip', { hasText: '2.14' })).toBeVisible();
+  await page.locator('[data-side="wsList"] .side-file', { hasText: 'rel-2-14' }).first().click();
+  const view = page.locator('#preview .qa-view');
+  await expect(view.locator('.qa-view-sum')).toContainText('Versão 2.14: 0/2 casos executados');
+  await expect(view.locator('.qa-view-group', { hasText: 'Execuções' })).toBeVisible();
+  await expect(view).toContainText('1 caso(s) sem resultado'.replace('1', '2'));
+});

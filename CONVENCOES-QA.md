@@ -96,6 +96,11 @@ Login, URL do ambiente e preparação que se repetem em vários casos ficam **um
 - **Massa por ambiente**: a mesma tabela com o ambiente no título — `## Dados: Logins (hml)`, `(prod)`, `(dev)`, `(local)` — mesmas chaves, valores daquele ambiente; sem ambiente = vale para todos. O caso não muda (`{{admin.e-mail}}`); o app usa o ambiente ativo. Prepare as seções com as chaves e os valores em branco (`qa_preparar_ambientes`) — **não invente** e-mails, URLs nem senhas de ambiente.
 - **Nunca escreva senha num caso**: use `{{nome.senha}}`. A senha fica só no compartilhado (o app mostra `••••` e não a exporta).
 
+### Release
+
+- `tipo: release` (id `REL-…`), com `versao:` (a mesma dos planos, execuções, casos e bugs dela), `app:`, `prevista:` (AAAA-MM-DD) e `situacao:` planejada · em-teste · liberada · cancelada. A seção `## Critérios de saída` é uma checklist `- [ ]`. O bloco `qa-visao` com `formato: release` mostra o progresso.
+- Para a rodada entrar na release: `versao:` no cabeçalho da execução (vínculo 🚀 Versão; no MCP, `vinculos: { versao: "2.14" }`).
+
 ### Aprovação do caso
 
 - Caso e cenário novos: `aprovacao: rascunho` no cabeçalho. Fluxo: `rascunho` → `em-revisao` (`revisor: Nome`) → `aprovado` (`aprovado_por`, `aprovado_em`, `aprovado_hash` — gravados pelo app/MCP, não à mão).

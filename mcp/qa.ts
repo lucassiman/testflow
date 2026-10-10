@@ -15,6 +15,7 @@ import { createDocIndex, describe } from '../src/io/docIndex.ts';
 import { readText, writeText, writeBytes, namesIn, hasName, kindAt } from '../src/io/fsOps.js';
 import { snapshotBeforeSave, listVersions, readVersion, saveVersion } from '../src/io/versions.js';
 import { caseChanges, unifiedDiff } from '../src/markdown/versionDiff.ts';
+import { syncReleaseBlock, releaseSummary, releaseLine, releaseInfo, isRelease, versionIn, type ReleaseDoc } from '../src/markdown/release.ts';
 import { forecast, caseAvgMs, forecastText, forecastDetail, approxDuration } from '../src/markdown/forecast.ts';
 import { assign, distribute, workload, pendingOf, assignees, samePerson } from '../src/markdown/assign.ts';
 import { applyBulk, describeBulk, emptyBulk, splitTags, type BulkChange } from '../src/markdown/bulkEdit.ts';
@@ -422,7 +423,7 @@ export class QaWorkspace {
     const dir = o.pasta ? o.pasta.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '') : tipo === SHARED_TYPE ? (appName ? `aplicacoes/${appName}/compartilhados` : 'compartilhados') : RUN_TYPES.includes(tipo) ? runDestination({ tipo, app: appName }, this.dirs, sibs).dir : suggestDestination({ tipo, app: appName, jira: dm.jira, epico: dm.epico, id: String(dm.id || '') }, this.dirs).dir;
     // dentro de aplicacoes/<App>/casos/<ÉPICO>/<TICKET>/: app:, jira: e epico: vazios vêm da pasta; tags e sprint do épico e da história (herança)
     text = this.inheritFromFolder(fillApp(text, appOfDir(dir)), dir, tipo);
-    text = updateSummaryBlocks(text); // resumo automático já calculado
+    text = updateSummaryBlocks(syncReleaseBlock(text)); // resumo automático já calculado; o quadro da release com a versão
     const path = await this.createDoc(dir, suggestedFileName(text, o.titulo || tipo), text);
     const warnings = this.lint(text);
     return [`Criado: ${path}${id ? ` (${id})` : ''}`, warnings.length ? `Avisos da validação: ${warnings.join(' | ')}` : 'Validação: sem avisos.'].join('\n');
@@ -678,6 +679,38 @@ export class QaWorkspace {
     return out.length ? [`Pendências de ${who}:`, ...out].join('\n') : `${who} não tem casos pendentes atribuídos nas execuções em andamento.`;
   }
 
+  /** Os documentos de uma versão (para a release). */
+  private releaseMembers(versao: string, app = ''): ReleaseDoc[] {
+    const docs = this.viewDocs();
+    return docs.filter((d) => d.tipo !== 'release' && d.tipo !== 'visao' && versionIn(d.versao || '', versao) && (!app || !d.app || d.app.toLowerCase() === app.toLowerCase()))
+      .map((d) => ({ path: d.path, id: d.id, name: d.name, titulo: d.titulo || d.name, tipo: d.tipo, app: d.app, versao: d.versao, text: d.text, link: d.id || d.path, bugOpen: d.tipo === 'bug' ? bugOpen(d) : undefined }));
+  }
+
+  /** Release (11.3): sem nada, as releases da pasta; com release (ID) ou versao, o progresso dela. */
+  async release(o: { release?: string; versao?: string; app?: string }): Promise<string> {
+    await this.refresh(true);
+    const rels = this.index.all().filter((e) => isRelease(e.text || ''));
+    if (!o.release && !o.versao) {
+      if (!rels.length) return 'Nenhuma release na pasta. Crie com qa_criar { tipo: "release", app, titulo, campos: { versao: "2.14", prevista: "2026-10-30" } } — tudo com a mesma versao: (planos, execuções, casos, bugs) entra no progresso.';
+      return [`${rels.length} release(s):`, ...rels.map((e) => { const i = releaseInfo(e.text || ''); const s = releaseSummary(this.releaseMembers(i.versao, i.app), { path: e.path, id: e.id, name: e.name, titulo: e.titulo, tipo: 'release', app: e.app, versao: i.versao, text: e.text }); return `- ${e.id || e.name} — ${i.titulo} · versão ${i.versao || '?'} · ${i.situacao}: ${releaseLine(s)}${s.pronta ? ' — pronta' : ''}`; })].join('\n');
+    }
+    const relDoc = o.release ? await this.find(o.release) : rels.find((e) => versionIn(releaseInfo(e.text || '').versao, o.versao || '') && versionIn(o.versao || '', releaseInfo(e.text || '').versao)) || null;
+    const info = relDoc ? releaseInfo(relDoc.text || '') : null;
+    const versao = info?.versao || o.versao || '';
+    if (!versao) throw new Error('a release não tem versao: no cabeçalho');
+    const s = releaseSummary(this.releaseMembers(versao, o.app || info?.app || ''), relDoc ? { path: relDoc.path, id: relDoc.id, name: relDoc.name, titulo: relDoc.titulo, tipo: 'release', app: relDoc.app, versao, text: relDoc.text } : null);
+    return [
+      `**${info?.titulo || `Release ${versao}`}** (versão ${versao}${info ? `, ${info.situacao}` : ''})`,
+      releaseLine(s),
+      `Casos: ${s.casos.total} — ${s.casos.pass} PASS · ${s.casos.fail} FAIL · ${s.casos.blocked} BLOCKED · ${s.casos.skip} SKIP · ${s.casos.pendentes} sem resultado${s.casos.semRodada ? ` (${s.casos.semRodada} fora de qualquer rodada)` : ''}`,
+      s.execucoes.length ? `Execuções: ${s.execucoes.map((e) => `${e.id}${e.config ? ` [${e.config}]` : ''} ${e.aberta ? 'em andamento' : 'encerrada'} ${e.sucessoPct ?? '—'}%`).join('; ')}` : 'Nenhuma execução com essa versão (use vinculos { versao } no qa_rodada_criar).',
+      s.falhas.length ? `Falhas: ${s.falhas.map((f) => `${f.key} ${f.status}`).join(', ')}` : '',
+      s.bugs.abertos.length ? `Bugs abertos: ${s.bugs.abertos.map((b) => `${b.id} ${b.titulo}`).join('; ')}` : 'Nenhum bug aberto.',
+      s.criterios.total ? `Critérios de saída: ${s.criterios.feitos}/${s.criterios.total}` : '',
+      s.pronta ? 'Pronta para liberar (Go).' : `Ainda não: ${s.motivos.join(' · ')}.`,
+    ].filter(Boolean).join('\n');
+  }
+
   /** Nova rodada: arquiva a tabela como está e limpa obtido/status. */
   newRound(ref: string): Promise<string> {
     return this.exclusive(async () => {
@@ -734,7 +767,7 @@ export class QaWorkspace {
       for (const k of jiraValues(fields.jira)) text = addJiraKey(text, k.toUpperCase());
       delete fields.jira;
     }
-    if (Object.keys(fields).length) text = writeFields(text, fields);
+    if (Object.keys(fields).length) text = syncReleaseBlock(writeFields(text, fields));
     // id/titulo mudou: o resto do documento acompanha (título "# ID — …", menções do código antigo)
     const before = headerIds(doc.text);
     const after = headerIds(text);
