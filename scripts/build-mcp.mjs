@@ -48,6 +48,7 @@ const TOOLS = [
   ['qa_bug_do_caso', 'Criar bug ligado a partir do passo que falhou'],
   ['qa_marcar_passos', 'Marcar status/obtido dos passos'],
   ['qa_nova_rodada', 'Arquivar a rodada e limpar os passos'],
+  ['qa_aprovacao', 'Aprovação do caso: rascunho, em revisão, aprovado'],
   ['qa_anexar_evidencia', 'Copiar um arquivo para evidencias/ e ligar'],
   ['qa_atualizar_cabecalho', 'Mudar campos do cabeçalho (ex.: chave do Jira)'],
   ['qa_comentar', 'Comentário de revisão'],

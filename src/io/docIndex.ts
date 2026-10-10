@@ -4,6 +4,7 @@ import { countStatuses, countTasks, deriveOverall } from '../markdown/status.ts'
 import { searchText } from '../markdown/search.ts';
 import { blankSnapshots } from '../markdown/viewBlocks.ts';
 import { countComments } from '../markdown/comments.ts';
+import { approvalKey } from '../markdown/approval.ts';
 import type { DocEntry, DocInfo, SearchHit } from '../types';
 
 const NUMERIC = new Intl.Collator('pt-BR', { numeric: true });
@@ -59,6 +60,7 @@ export function describe(text: string): DocInfo {
     dispositivo: str(data.dispositivo),
     uid: str(data.uid),
     automacao: str(data.automacao),
+    aprovacao: data.aprovacao !== undefined ? approvalKey(text) : '',
     tags: tags.map((x) => x.trim()).filter(Boolean),
     origem: ['ciclo', 'execucao', 'plano'].flatMap((k) => (Array.isArray(data[k]) ? data[k].map(String) : String(data[k] ?? '').split(/[,;]+/))).map((x) => x.replace(/^\[\[|\]\]$/g, '').trim()).filter(Boolean),
     counts,

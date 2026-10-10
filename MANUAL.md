@@ -416,6 +416,16 @@ Nos passos, **`{{dado}}`** é a linha da vez: `{{dado.e-mail}}`, `{{dado.senha}}
 
 **Com o Claude:** `qa_compartilhados { documento }` lista as iterações com os valores (sem senhas); ele registra uma a uma (`qa_marcar_passos concluir=true` ou `qa_rodada_registrar`, com `iteracao: "admin"` ou o número — sem ela, a seguinte à última registrada).
 
+### 6.10 Aprovação do caso
+
+Para o time revisar os casos antes de usá-los nas rodadas: **rascunho → em revisão → aprovado**, no cabeçalho (`aprovacao:`). Casos e cenários BDD novos já nascem **rascunho**; documento sem o campo fica fora do fluxo (nada muda para ele).
+
+- A pílula no topo mostra o estado — **✍ em elaboração** (rascunho), **👀 em revisão**, **✅ aprovado** ou **⚠ aprovado · alterado**. Clique nela (ou `Ctrl+Shift+P` → *Aprovação do caso*) para **Enviar para revisão…** (com o nome de quem revisa), **Aprovar** ou **Voltar para rascunho**.
+- **Aprovar** grava quem (`aprovado_por`, o seu nome das preferências) e quando (`aprovado_em`) e uma impressão digital da **definição** do caso (`aprovado_hash`): título, objetivo, pré-condições, passos (Ação/Esperado), massa de dados… **Executar não tira a aprovação** — status, obtido, histórico, prints e comentários ficam de fora. Mudou um passo depois de aprovado → **⚠ aprovado · alterado** até alguém aprovar de novo.
+- **Só aprovados na rodada** (opcional): na janela de *Nova rodada* / *Novo ciclo*, **☐ só aprovados** esconde os outros (fica lembrado); com ele ligado, *Executar este ciclo* e o *Reteste* também deixam de fora os casos não aprovados, com aviso. Paleta: *Rodadas: só casos aprovados entram*.
+- **Para revisar:** na busca (`Ctrl+Shift+F`) o atalho **👀 Para revisar** (`aprovacao:em-revisao,alterado`); nas visões, o filtro `aprovacao:` (rascunho · em-revisao · aprovado · alterado · pendente = tudo o que não está aprovado · nenhuma) e a coluna `aprovacao`.
+- **Com o Claude:** os casos que ele escreve nascem rascunho; `qa_aprovacao` muda o estado (ele só aprova quando você pede) e `qa_rodada_criar { so_aprovados: true }` monta a rodada só com aprovados.
+
 ## 7. Executar testes
 
 ### 7.1 Status clicável

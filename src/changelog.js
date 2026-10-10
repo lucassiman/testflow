@@ -8,6 +8,14 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.39.0', date: '10/10/2026',
+    items: [
+      { icon: '✅', text: '**Aprovação do caso**: rascunho → em revisão → aprovado, na pílula do topo. Aprovar grava quem e quando; mudar os passos depois mostra **⚠ aprovado · alterado** (executar não conta).', manual: '6.10 Aprovação do caso' },
+      { icon: '▶', text: '**Só aprovados na rodada** (opcional): ☐ só aprovados na janela de nova rodada/ciclo; a busca ganha o atalho **👀 Para revisar** e as visões o filtro `aprovacao:`.', manual: '6.10 Aprovação do caso' },
+      { icon: '🤖', text: 'Os casos do Claude nascem rascunho; `qa_aprovacao` e `qa_rodada_criar { so_aprovados }`.', manual: '6.10 Aprovação do caso' },
+    ],
+  },
+  {
     version: '1.38.0', date: '10/10/2026',
     items: [
       { icon: '🔁', text: '**Casos com dados (data-driven)**: o mesmo caso executado uma vez por linha — `## Iterações` no caso ou `iterar: Logins` (os logins do compartilhado). Nos passos, `{{dado.e-mail}}`, `{{dado.perfil}}` e `↪ Fazer login (dado)`.', manual: '6.9 Casos com dados' },

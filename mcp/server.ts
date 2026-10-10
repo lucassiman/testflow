@@ -58,6 +58,7 @@ Como trabalhar:
 - Rodada de regressão: qa_rodada_criar (por segmento — épico, ticket, #tag —, consulta, lista de casos, ciclo salvo, ou reteste: EXEC-… só com as falhas) → qa_rodada_registrar por caso → qa_rodada_status para ver como está → qa_rodada_finalizar (SKIP nos pendentes e os 4 relatórios: encerramento/Go-No-Go, defeitos, rastreabilidade, log + comparativo). qa_relatorios regera.
 - Bug de um caso que já tem bug ligado: qa_bug_do_caso devolve os bugs; pergunte ao usuário se é reincidência (reincidencia: "BUG-…") ou bug novo (novo: true).
 - Evolução da qualidade (sprint, % de sucesso no tempo, casos que mais falham): qa_tendencia.
+- Aprovação do caso (rascunho → em-revisao → aprovado): casos novos nascem "rascunho"; qa_aprovacao muda (aprovar só quando o usuário pedir); consulta "aprovacao: em-revisao, alterado" lista o que falta revisar; qa_rodada_criar so_aprovados=true deixa de fora os não aprovados.
 - Caso com dados (o mesmo caso para vários perfis/massas): seção "## Iterações" no caso (tabela Chave | campos…, uma linha por execução) ou "iterar: <grupo de Dados compartilhado>" no cabeçalho; nos passos {{dado}} / {{dado.campo}} e "↪ Bloco (dado)". qa_compartilhados { documento } lista as iterações; registre uma a uma (iteracao: nome ou número) em qa_marcar_passos concluir=true / qa_rodada_registrar.
 - Login, URLs e preparação repetidos em vários casos: veja qa_compartilhados (pasta ou documento) antes de escrever casos — use "↪ Bloco (param)" como um passo e {{dado}} / {{dado.senha}} em vez de repetir passos ou escrever senhas; se não houver, sugira criar um compartilhado (qa_criar tipo compartilhado, escopo pasta | app | global). Casos antigos com login repetido ou senha escrita: qa_varredura { modo: "compartilhados" } relata e, com o OK, converte.
 - Segmento = tudo o que nasceu de um épico/ticket/execução/ciclo/#tag (filtro segmento em qa_listar/qa_consultar/qa_validar/qa_rastreabilidade).
@@ -169,6 +170,16 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
     }, annotations: RW,
   }, async (a) => run(() => ws.markSteps(a), text));
 
+  server.registerTool('qa_aprovacao', {
+    title: 'Aprovação do caso', description: 'Muda a aprovação de um caso/cenário/checklist: rascunho → em-revisao (com revisor) → aprovado (grava quem e quando; mudar a definição depois pede nova aprovação). Aprove só quando o usuário pedir — quem aprova é uma pessoa (por).',
+    inputSchema: {
+      doc: docArg,
+      estado: z.enum(['rascunho', 'em-revisao', 'aprovado']),
+      revisor: z.string().optional().describe('quem vai revisar (em-revisao)'),
+      por: z.string().optional().describe('quem aprovou (padrão: o usuário do MCP)'),
+    }, annotations: RW,
+  }, async (a) => run(() => ws.approve(a), text));
+
   server.registerTool('qa_nova_rodada', {
     title: 'Nova rodada', description: 'Arquiva a tabela de passos como está no Histórico de execuções e limpa obtido/status (para reexecutar).',
     inputSchema: { doc: docArg }, annotations: RW,
@@ -213,6 +224,7 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
       app: z.string().optional(), vinculos: z.record(z.string(), z.string()).optional().describe('jira, epico, sprint, plano'),
       reteste: z.string().optional().describe('ID de uma execução (EXEC-…): cria o reteste só com os casos FAIL/BLOCKED dela (herda vínculos, tags + reteste, dispositivo)'),
       reteste_skip: z.boolean().optional().describe('com reteste: inclui também os SKIP'),
+      so_aprovados: z.boolean().optional().describe('só os casos aprovados (aprovacao: aprovado, sem mudança depois); os outros ficam de fora e são listados'),
     }, annotations: RW,
   }, async (a) => run(() => ws.roundCreate(a), text));
 

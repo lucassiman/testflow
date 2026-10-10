@@ -5,6 +5,7 @@
  * no fim, ✓ Encerrar grava o resultado, as falhas e os bugs ligados.
  */
 import { app } from './context.js';
+import { filterApproved, onlyApproved } from './approval.js';
 import {
   CYCLE_TYPE, cycleDoc, cycleStart, cycleClosed, cycleProgress, nextCase, syncCycle, closeCycle, caseResult, lastResultBefore, needsFreshRound, cycleTable, isCycle, unexecuted, skipPending, cycleSummary,
   EXEC_TYPE, isCycleDef, cycleDefDoc, defCases, retestCases, execInfo, nextExecNumber, syncDefExecutions, applySkipped, applyWhole, cicloOf, execNumber, attachAutomation as attachAutoToText,
@@ -691,7 +692,7 @@ function pickCases({ title, confirmLabel, defaultName, onPick }) {
   if (!docIndex.ready) { app.toast('Ainda lendo os documentos da pasta… tente de novo em instantes.'); return; }
   const cases = docIndex.all().filter(isCase);
   if (!cases.length) { app.toast('Nenhum caso de teste na pasta ainda (tipo: caso-de-teste, cenario-bdd ou checklist).', 'error'); return; }
-  openCasePicker({ cases, shortcuts: pickerShortcuts(cases), title, confirmLabel, defaultName }).then((res) => {
+  openCasePicker({ cases, shortcuts: pickerShortcuts(cases), title, confirmLabel, defaultName, approved: { on: onlyApproved(), toggle: (on) => savePrefs({ onlyApproved: on }) } }).then((res) => {
     if (!res) return;
     const appNames = [...new Set(res.picked.map((e) => e.app).filter(Boolean))];
     return onPick(res.picked, res.name, res.origem, appNames.length === 1 ? appNames[0] : '', res.links);
@@ -767,6 +768,13 @@ async function createDefinition(pick, appName, origem, titulo, links = {}, tags 
  * @param {string[]} [tags] tags herdadas (dos casos em comum ou do ciclo), além de regressao
  */
 async function createExecution(cases, appName, origem, titulo, link, links = {}, transform = (/** @type {string} */ t) => t, tags = /** @type {string[]} */ ([])) {
+  // preferência "só casos aprovados entram na rodada" (aprovação do caso)
+  if (cases.length) {
+    const { keep, left } = filterApproved(cases);
+    if (left.length && !keep.length) { app.toast(`Nenhum caso aprovado — com "só aprovados" ligado a rodada não foi criada. Fora: ${left.join(', ')}.`, 'error', { duration: 12000 }); return; }
+    if (left.length) app.toast(`Só aprovados: ${left.length} caso(s) ficaram fora da rodada — ${left.join(', ')}.`, 'info', { duration: 12000 });
+    cases = keep;
+  }
   let d = new Date();
   // nova execução de um ciclo que já rodou: começa no minuto seguinte, para as rodadas das execuções anteriores (gravadas só com hora e minuto) não contarem nela
   if (link && link.numero > 1) d = new Date(Math.ceil((d.getTime() + 1) / 60000) * 60000);

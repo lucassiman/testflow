@@ -52,6 +52,8 @@ export interface DocInfo {
   uid: string;
   /** spec do teste automatizado (campo automacao:) */
   automacao?: string;
+  /** aprovação do caso: rascunho · em-revisao · aprovado · alterado (aprovado e mudou depois) · "" fora do fluxo */
+  aprovacao?: string;
   tags: string[];
   /** origem: campos ciclo:, execucao: e plano: do cabeçalho (IDs dos documentos de onde este veio) */
   origem?: string[];

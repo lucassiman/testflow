@@ -1431,6 +1431,9 @@ button { font: inherit; color: inherit; }
 .cpk-case { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cpk-case span { color: var(--muted); }
 .cpk-jira { color: var(--accent); }
+.cpk-ok { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; white-space: nowrap; }
+.cpk-ap { font-size: 11px; }
+.doc-pill-approval { font-weight: 500; }
 .cpk-where { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 12px; }
 .cpk-tags { display: flex; gap: 4px; flex-wrap: wrap; min-width: 0; overflow: hidden; max-height: 22px; }
 .cpk-tags em { font-style: normal; font-size: 11px; border: 1px solid var(--border); border-radius: 999px; padding: 0 6px; color: var(--muted); }

@@ -1,5 +1,6 @@
 import { readPublishMeta, contentHash } from './publish.ts';
 import { isCycleDef } from './cycle.ts';
+import { approvalOf } from './approval.ts';
 
 /**
  * Estado de publicação de um documento, pelo cabeçalho (sem ler a pasta oficial):
@@ -26,7 +27,7 @@ export function publishInfo(text: string): DocPublishInfo {
 
 export interface StateMark {
   /** chave estável (para comparar e para a classe CSS) */
-  key: 'published' | 'changed' | 'draft' | 'exec' | 'session' | 'prints' | 'behind' | 'editing' | 'comments' | 'cycle' | 'cycledef';
+  key: 'published' | 'changed' | 'draft' | 'exec' | 'session' | 'prints' | 'behind' | 'editing' | 'comments' | 'cycle' | 'cycledef' | 'approval';
   icon: string;
   label: string;
   title: string;
@@ -53,6 +54,11 @@ export function stateMarks(text: string, o: {
   if (o.editing?.length) marks.push({ key: 'editing', icon: '👤', label: `${o.editing[0]}${o.editing.length > 1 ? ` +${o.editing.length - 1}` : ''} editando`, title: `${o.editing.join(', ')} ${o.editing.length > 1 ? 'estão' : 'está'} editando este documento agora (aviso pela pasta oficial). Se você também alterar, compare antes de publicar.` });
   if (o.behind) marks.push({ key: 'behind', icon: '⬇', label: `r${o.behind.official} na oficial`, title: `A pasta oficial tem a revisão ${o.behind.official}${o.behind.por ? ` (${o.behind.por})` : ''}; a sua é ${o.behind.local ? `a ${o.behind.local}` : 'um rascunho'} — clique para comparar ou trazer` });
   if (o.comments) marks.push({ key: 'comments', icon: '💬', label: String(o.comments), title: `${o.comments} comentário(s) de revisão pendente(s) — clique para ver a lista` });
+  const ap = approvalOf(text);
+  if (ap.state === 'aprovado' && ap.changed) marks.push({ key: 'approval', icon: '⚠', label: 'aprovado · alterado', title: `Aprovado${ap.por ? ` por ${ap.por}` : ''}${ap.em ? ` em ${ap.em}` : ''}, mas os passos/texto mudaram depois — clique para aprovar de novo ou mandar para revisão` });
+  else if (ap.state === 'aprovado') marks.push({ key: 'approval', icon: '✅', label: 'aprovado', title: `Caso aprovado${ap.por ? ` por ${ap.por}` : ''}${ap.em ? ` em ${ap.em}` : ''} — clique para mudar` });
+  else if (ap.state === 'em-revisao') marks.push({ key: 'approval', icon: '👀', label: 'em revisão', title: `Em revisão${ap.revisor ? ` com ${ap.revisor}` : ''} — clique para aprovar ou voltar a rascunho` });
+  else if (ap.state === 'rascunho') marks.push({ key: 'approval', icon: '✍', label: 'em elaboração', title: 'Caso em elaboração (aprovação: rascunho) — clique para enviar para revisão ou aprovar' });
   if (o.exec) marks.push({ key: 'exec', icon: '▶', label: 'executando', title: 'Execução passo a passo em andamento — clique para voltar ao painel' });
   if (o.session) marks.push({ key: 'session', icon: '⏱', label: 'sessão', title: 'Sessão exploratória em andamento — clique para voltar ao painel' });
   if (o.pendingPrints) {

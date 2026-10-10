@@ -14,6 +14,7 @@ data: {{data}}
 jira:
 tags: []
 automacao:
+aprovacao: rascunho
 qa-md: 1
 ---
 

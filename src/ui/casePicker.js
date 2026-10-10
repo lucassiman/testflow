@@ -15,6 +15,8 @@ const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => /** @type {Record<s
 const norm = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const COLL = new Intl.Collator('pt-BR', { numeric: true, sensitivity: 'base' });
 const keyOf = (/** @type {DocEntry} */ e) => e.id || e.name.replace(/\.(md|markdown)$/i, '');
+const AP_ICON = /** @type {Record<string, string>} */ ({ rascunho: '✍', 'em-revisao': '👀', aprovado: '✅', alterado: '⚠' });
+const AP_TITLE = /** @type {Record<string, string>} */ ({ rascunho: 'rascunho', 'em-revisao': 'em revisão', aprovado: 'aprovado', alterado: 'alterado depois de aprovado' });
 
 /** Pasta que identifica a funcionalidade/ticket: o que vem depois de casos/ (ex.: PORTAL-120). @param {string} path */
 export function folderOf(path) {
@@ -24,10 +26,10 @@ export function folderOf(path) {
 }
 
 /**
- * @param {{ cases: DocEntry[], shortcuts?: CaseShortcut[], title?: string, defaultName: string, preselected?: string[], confirmLabel?: string, links?: Record<string, string[]> }} opts
+ * @param {{ cases: DocEntry[], shortcuts?: CaseShortcut[], title?: string, defaultName: string, preselected?: string[], confirmLabel?: string, links?: Record<string, string[]>, approved?: { on: boolean, toggle: (on: boolean) => void } }} opts
  * @returns {Promise<{ picked: DocEntry[], name: string, origem: string, links: Record<string, string[]> } | null>} null = cancelado
  */
-export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada — quais casos?', defaultName, preselected = [], confirmLabel = 'Criar e começar', links = {} }) {
+export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada — quais casos?', defaultName, preselected = [], confirmLabel = 'Criar e começar', links = {}, approved }) {
   return new Promise((resolve) => {
     const list = [...cases].sort((a, b) => COLL.compare(a.app || '', b.app || '') || COLL.compare(keyOf(a), keyOf(b)));
     const selected = new Set(preselected);
@@ -35,6 +37,8 @@ export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada —
     let visible = list;
     let anchor = -1;
     let focusAt = 0;   // linha que recebe o Tab (roving tabindex)
+    let onlyOk = !!approved?.on; // "só aprovados": os outros nem aparecem
+    const anyApproval = list.some((e) => e.aprovacao);
 
     const overlay = document.createElement('div');
     overlay.className = 'review-overlay cpk-overlay';
@@ -46,6 +50,7 @@ export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada —
           <input type="search" class="review-extra cpk-search" placeholder="Filtrar por ID, título, aplicação, pasta, #tag, Jira, épico, sprint…" spellcheck="false">
           <button type="button" class="cpk-btn" data-act="all" title="Marca os casos que estão na lista (respeita o filtro)">Selecionar visíveis</button>
           <button type="button" class="cpk-btn" data-act="none">Limpar</button>
+          ${approved && (anyApproval || onlyOk) ? `<label class="cpk-ok" title="Só casos aprovados entram na rodada (aprovação do caso). Fica lembrado neste computador."><input type="checkbox" data-cpk="approved"${onlyOk ? ' checked' : ''}> só aprovados</label>` : ''}
         </div>
         ${shortcuts.length ? `<div class="cpk-chips"><span class="cpk-chips-label">Atalhos:</span>${shortcuts.map((s, i) => `<button type="button" class="cpk-chip" data-chip="${i}" title="${esc(s.hint || 'Adiciona estes casos à seleção')}">${esc(s.label)}${s.hint ? ` <small>${esc(s.hint)}</small>` : ''}</button>`).join('')}</div>` : ''}
         <div class="cpk-head cpk-row"><label class="cpk-chk"><input type="checkbox" data-cpk="head" aria-label="Selecionar todos os casos visíveis"></label><span>Caso</span><span>Aplicação / pasta</span><span>Tags</span><span>Último</span></div>
@@ -80,9 +85,10 @@ export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada —
     function renderList() {
       const f = norm(search.value).split(/\s+/).filter(Boolean);
       visible = list.filter((e) => {
-        const hay = norm([keyOf(e), e.titulo, e.heading, e.app, folderOf(e.path), e.tags.join(' '), e.tags.map((t) => `#${t}`).join(' '), e.jira, e.epico || '', e.sprint || '', e.prioridade, e.overall].join(' '));
-        return f.every((w) => hay.includes(w));
+        const hay = norm([keyOf(e), e.titulo, e.heading, e.app, folderOf(e.path), e.tags.join(' '), e.tags.map((t) => `#${t}`).join(' '), e.jira, e.epico || '', e.sprint || '', e.prioridade, e.overall, e.aprovacao || ''].join(' '));
+        return f.every((w) => hay.includes(w)) && (!onlyOk || e.aprovacao === 'aprovado');
       });
+      if (onlyOk) for (const p of [...selected]) if (list.find((e) => e.path === p)?.aprovacao !== 'aprovado') selected.delete(p);
       if (!visible.length) { listEl.innerHTML = '<div class="cpk-empty">Nenhum caso com esse filtro.</div>'; refreshCount(); return; }
       listEl.innerHTML = visible.map((e, i) => {
         const on = selected.has(e.path);
@@ -90,7 +96,7 @@ export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada —
         const where = [e.app, folderOf(e.path)].filter(Boolean).join(' / ');
         return `<div class="cpk-row cpk-item${on ? ' on' : ''}" role="option" aria-selected="${on}" tabindex="${i === focusAt ? 0 : -1}" data-i="${i}">
           <span class="cpk-chk" aria-hidden="true"><span class="cpk-box"></span></span>
-          <span class="cpk-case"><b>${esc(keyOf(e))}</b> <span>${esc(e.titulo || e.heading || e.name)}</span>${e.counts.total === 0 ? ' <small class="cpk-whole" title="Sem tabela de passos (ex.: checklist): na rodada é avaliado como um todo — você marca os itens e registra PASS/FAIL/BLOCKED">🗒 como um todo</small>' : ''}${e.jira ? ` <small class="cpk-jira">${esc(e.jira)}</small>` : ''}</span>
+          <span class="cpk-case"><b>${esc(keyOf(e))}</b> <span>${esc(e.titulo || e.heading || e.name)}</span>${e.counts.total === 0 ? ' <small class="cpk-whole" title="Sem tabela de passos (ex.: checklist): na rodada é avaliado como um todo — você marca os itens e registra PASS/FAIL/BLOCKED">🗒 como um todo</small>' : ''}${e.jira ? ` <small class="cpk-jira">${esc(e.jira)}</small>` : ''}${e.aprovacao ? ` <small class="cpk-ap cpk-ap-${esc(e.aprovacao)}" title="Aprovação: ${esc(AP_TITLE[e.aprovacao] || e.aprovacao)}">${esc(AP_ICON[e.aprovacao] || '')}</small>` : ''}</span>
           <span class="cpk-where" title="${esc(e.path)}">${esc(where)}</span>
           <span class="cpk-tags">${e.tags.map((t) => `<em>${esc(t)}</em>`).join('')}</span>
           <span class="cpk-last ${last ? `cpk-st-${esc(last.toLowerCase())}` : ''}">${esc(last)}</span>
@@ -158,6 +164,11 @@ export function openCasePicker({ cases, shortcuts = [], title = 'Nova rodada —
       listEl.scrollTop = keep;
     });
     search.addEventListener('input', () => { anchor = -1; focusAt = 0; renderList(); });
+    overlay.querySelector('[data-cpk="approved"]')?.addEventListener('change', (event) => {
+      onlyOk = /** @type {HTMLInputElement} */ (event.target).checked;
+      approved?.toggle(onlyOk);
+      anchor = -1; focusAt = 0; renderList();
+    });
     nameInput.addEventListener('input', refreshCount);
     headChk.addEventListener('change', () => { visible.forEach((_, i) => setAt(i, headChk.checked)); renderList(); });
     overlay.addEventListener('click', (event) => {

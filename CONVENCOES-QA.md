@@ -95,6 +95,11 @@ Login, URL do ambiente e preparação que se repetem em vários casos ficam **um
 - `## Passos: Fazer login` + `Parâmetros: usuario` + tabela de passos com `{{usuario}}` / `{{usuario.senha}}`. No caso, **um** passo com a ação `↪ Fazer login (admin)` (vários parâmetros: `↪ Transferir (origem=admin, destino=cliente)`) — vale um status; no painel de execução aparecem os passos do bloco com os dados para copiar. Dois logins no mesmo caso = duas linhas `↪`.
 - **Nunca escreva senha num caso**: use `{{nome.senha}}`. A senha fica só no compartilhado (o app mostra `••••` e não a exporta).
 
+### Aprovação do caso
+
+- Caso e cenário novos: `aprovacao: rascunho` no cabeçalho. Fluxo: `rascunho` → `em-revisao` (`revisor: Nome`) → `aprovado` (`aprovado_por`, `aprovado_em`, `aprovado_hash` — gravados pelo app/MCP, não à mão).
+- Quem aprova é uma pessoa: o Claude **não aprova** sem o pedido do usuário (`qa_aprovacao`). Mudar a definição (passos, esperado, pré-condições) de um caso aprovado faz ele aparecer como *alterado* até ser aprovado de novo; executar não muda a aprovação.
+
 ### Casos com dados (data-driven)
 
 O mesmo caso para vários perfis/massas **não** é copiado: vira um caso com iterações — uma execução por linha.
