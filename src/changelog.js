@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.54.0', date: '11/10/2026',
+    items: [
+      { icon: '🎫', text: '**Jira pela API**: `Ctrl+Shift+P` → *Jira: criar a issue deste bug* cria a issue direto (descrição em wiki, prints e logs como anexo, prioridade e rótulos) e a chave volta para o campo `jira:`. *Jira: trazer o status* grava o status de cada issue nos bugs (`jira_status`) e lista os concluídos no Jira que aguardam reteste.', manual: '12.7 Jira pela API' },
+      { icon: '🔐', text: 'Pela extensão do navegador (atualize: `git pull` e ↻): configure o Jira no ícone do TestFlow → *Configurar Jira*. O token fica só na extensão — o TestFlow nunca o recebe — e nada vai para o Jira sem você pedir.', manual: '12.7 Jira pela API' },
+    ],
+  },
+  {
     version: '1.53.0', date: '11/10/2026',
     items: [
       { icon: '🤖', text: '**Reporter ao vivo**: os testes automatizados gravam o resultado direto na execução em andamento (ou numa nova), sem baixar e importar o arquivo. Playwright: um reporter no `playwright.config`; Jest, Cypress, pytest: um comando com o JUnit XML. `Ctrl+Shift+P` → *Reporter da automação* mostra o trecho pronto, com a sua pasta.', manual: '9. Resultados de automação' },

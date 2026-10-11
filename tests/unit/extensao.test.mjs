@@ -67,7 +67,7 @@ test('manifesto: MV3, scripts e ícone existem, sem permissões além das necess
   const m = JSON.parse(readFileSync(new URL('manifest.json', dir), 'utf8'));
   assert.equal(m.manifest_version, 3);
   assert.match(m.version, /^\d+\.\d+\.\d+$/);
-  for (const f of [m.background.service_worker, m.action.default_popup, m.icons['128'], ...m.content_scripts.flatMap((c) => c.js)]) assert.ok(existsSync(new URL(f, dir)), f);
+  for (const f of [m.background.service_worker, m.action.default_popup, m.options_ui.page, 'jira.js', 'opcoes.js', m.icons['128'], ...m.content_scripts.flatMap((c) => c.js)]) assert.ok(existsSync(new URL(f, dir)), f);
   assert.deepEqual(m.permissions, ['storage', 'webRequest']);
   assert.equal(m.content_scripts.find((c) => c.js.includes('captura.js')).world, 'MAIN');
 });

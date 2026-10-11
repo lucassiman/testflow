@@ -78,7 +78,7 @@ export const FIELD_BY_KEY: Record<string, FieldDef> = Object.fromEntries(FIELDS.
 /** Rótulos no cartão do cabeçalho para campos que não estão no formulário (execuções e relatórios). */
 const CARD_LABELS: Record<string, string> = {
   execucao: 'Execução', recomendacao: 'Recomendação', gerado: 'Gerado em', inicio: 'Início', fim: 'Fim', ciclo: 'Ciclo', numero: 'Nº',
-  plano: 'Plano', epico: 'Épico', sprint: 'Sprint', origem: 'Origem',
+  plano: 'Plano', epico: 'Épico', sprint: 'Sprint', origem: 'Origem', jira_status: 'Status no Jira',
 };
 
 /** Front-matter no início do texto? → { end } (linhas [0, end) ), senão null. */

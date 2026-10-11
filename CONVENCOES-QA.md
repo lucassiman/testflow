@@ -48,6 +48,7 @@ qa-md: 1
 | `responsavel` | nome | |
 | `data` | `AAAA-MM-DD` | Datas do cabeçalho sempre em ISO. |
 | `jira` | chave(s) do Jira: `QA-123` ou `[QA-123, QA-124]` | No editor, cada chave vira link para o ticket (`jiraBaseUrl` no `branding.json`). |
+| `jira_status` | status da issue no Jira: `Em análise (em andamento)` | Gravado pelo editor (*Jira: trazer o status*). Só informativo: o `status` do bug é do QA (concluído no Jira = falta o reteste). Não edite à mão. |
 | `tags` | lista: `[login, regressao]` | |
 | `automacao` | caminho do teste automatizado (spec) | Liga o caso manual ao automatizado. |
 | `qa-md` | `1` | Versão do formato QA-MD (esta convenção). Vem nos modelos; o editor avisa se o documento for de uma versão mais nova que a dele. |

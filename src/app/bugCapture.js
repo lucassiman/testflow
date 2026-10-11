@@ -7,7 +7,7 @@
  */
 import { app } from './context.js';
 import { loadPrefs, savePrefs } from '../io/drafts.js';
-import { createExtBridge } from '../io/extBridge.js';
+import { extension } from './extension.js';
 import { applyCaptureToBug, captureSummary, consoleLog, harText, tabLabel } from '../markdown/bugCapture.ts';
 import { evidenceBaseName, evidenceStamp } from '../markdown/evidenceName.ts';
 import { showDialog } from '../ui/dialog.js';
@@ -23,10 +23,8 @@ import { errMsg } from './shared.js';
 /** Preferência "Captura de bug pela extensão" (desligada por padrão). */
 export const captureEnabled = () => loadPrefs().bugCapture === true;
 
-/** @type {ReturnType<typeof createExtBridge> | null} */
-let bridge = null;
-/** criada só quando a preferência está ligada (desligada: nem escuta mensagens) */
-const getBridge = () => bridge || (bridge = createExtBridge());
+/** a ponte só é criada quando a preferência está ligada (desligada: nem escuta mensagens) */
+const getBridge = extension;
 let warnedMissing = false;
 
 /**

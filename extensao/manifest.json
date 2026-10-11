@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "TestFlow — captura de bug",
   "short_name": "TestFlow",
-  "version": "1.51.0",
-  "description": "Guarda os erros do console e as requisições com falha das abas testadas e entrega ao TestFlow quando você cria um bug. Tudo local: nada sai do computador.",
+  "version": "1.54.0",
+  "description": "Guarda os erros do console e as requisições com falha das abas testadas e entrega ao TestFlow quando você cria um bug; opcional: cria a issue no Jira e traz o status (o token fica só aqui). Nada sai do computador sem você pedir.",
   "minimum_chrome_version": "111",
   "icons": { "128": "icones/icone.png" },
   "action": {
@@ -13,6 +13,7 @@
   },
   "permissions": ["storage", "webRequest"],
   "host_permissions": ["http://*/*", "https://*/*", "file:///*"],
+  "options_ui": { "page": "opcoes.html", "open_in_tab": true },
   "background": { "service_worker": "fundo.js", "type": "module" },
   "content_scripts": [
     {

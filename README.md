@@ -39,7 +39,7 @@ npm run mcp:build    # extensão do Claude desktop em mcp-dist/ (opcional)
 npm run reporter     # reporter da automação em reporter-dist/ (opcional: resultado direto na execução)
 ```
 
-**Extensão do navegador (opcional, console, rede e contexto no bug):** no Chrome/Edge, `chrome://extensions` → *Modo do desenvolvedor* → **Carregar sem compactação** → pasta `extensao/`; depois, no app, `Ctrl+Shift+P` → *Captura de bug pela extensão*. Atualiza com o `git pull` + ↻ na página de extensões. Manual, seção 8.3.
+**Extensão do navegador (opcional, console, rede e contexto no bug; Jira pela API):** no Chrome/Edge, `chrome://extensions` → *Modo do desenvolvedor* → **Carregar sem compactação** → pasta `extensao/`; depois, no app, `Ctrl+Shift+P` → *Captura de bug pela extensão*. Atualiza com o `git pull` + ↻ na página de extensões. Manual, seção 8.3.
 
 **Atualizar** (salve tudo no app antes; no Terminal do servidor, `Ctrl+C`):
 
@@ -255,6 +255,7 @@ Depois de `npm run skill`, atualize onde você usa:
 | **Notion** | Sem API e sem login — o editor continua offline. **Copiar ▾ → Copiar para o Notion**: cole numa página do Notion (títulos, listas, to-dos, tabelas, código e Mermaid são convertidos pelo próprio Notion); status viram ✅ **PASS** / ❌ **FAIL**, alertas viram citação com ícone, o cabeçalho vira título + tabela de campos. Prints locais viram 📎 *nome.png* (arraste-os para a página). **Copiar ▾ → Pacote para importar no Notion…** (ou **PDF ▾**): salva um `.zip` com o Markdown e os prints (`evidencias/`) — no Notion, **⋯ → Importar → Texto e Markdown** e escolha o `.zip`. O nome do arquivo (ID — título) vira o título da página. |
 | **Exportar HTML** | **PDF ▾ → HTML (página única)**: um `.html` com o mesmo visual do Preview, estilos e imagens embutidos (tema claro, logs recolhidos continuam recolhíveis). Abre em qualquer navegador, sem o editor — bom para anexar no Jira, mandar por e-mail ou publicar. |
 | **Dados sensíveis** | Antes de copiar (Markdown, Jira, Claude, revisão) ou exportar (PDF, HTML), o editor procura CPF, CNPJ, e-mail, telefone, cartão, senhas (`senha: …`, `"password": …`, coluna *Senha* em tabela), tokens (JWT, `Bearer …`, `api_key=…`, chaves AWS/GitHub…) e senha em URL. Se achar, mostra a lista: desmarque o que for dado de teste público e **Mascarar e continuar** (`529.•••.•••-25`, `j•••@empresa.com`, `••••••••`). O documento não muda. Para o Claude (revisão e *Documento + instruções*) vão marcadores `{{EMAIL_1}}` e os valores voltam ao aplicar a resposta. **Copiar ▾ → Dados sensíveis…** mostra o que há no documento, mascara no próprio documento (`Ctrl+Z` desfaz) e define o comportamento: *Perguntar* (padrão), *Mascarar sempre* ou *Não verificar*. |
+| **🎫 Jira pela API** | Com a extensão do navegador e o Jira configurado nela (token guardado só lá): `Ctrl+Shift+P` → *Jira: criar a issue deste bug* (descrição, prioridade, rótulos e anexos; a chave volta para `jira:`) e *Jira: trazer o status* (`jira_status` nos bugs e a lista do reteste). Manual, 12.7. |
 
 ## Testes do editor
 

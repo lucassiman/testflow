@@ -147,6 +147,7 @@ Na árvore, 🏛 marca os documentos publicados e ✎ os alterados desde a publi
 | Mandar os cenários BDD para o repositório da automação | `Ctrl+Shift+P` → **Exportar .feature** (ver 9) |
 | Ver quais testes automatizados são instáveis | Visão **Tendência entre rodadas**, tabela *Testes automatizados instáveis* (ver 9) |
 | Gravar vídeo de um bug intermitente | `Ctrl+Alt+G` ou **⏺ Gravar** no painel de execução (ver 8.1) |
+| Criar a issue no Jira direto do bug (com os anexos) / trazer o status | `Ctrl+Shift+P` → **Jira: criar a issue deste bug** / **Jira: trazer o status** — com a extensão e o Jira configurado nela (ver 12.7) |
 | Erros do console, requisições com falha (HAR), URL, navegador e tela da aba testada no bug | Extensão do navegador (pasta `extensao/`) + `Ctrl+Shift+P` → **Captura de bug pela extensão** (ver 8.3) |
 | Vídeo do que acabou de acontecer (sem ter apertado gravar) | **⏪** no rodapé, `Ctrl+Alt+R` ou **⏪ Replay** no painel de execução — com a captura de tela ligada (ver 8.1) |
 | Ver o que os colegas publicaram / trazer | Barra lateral → **🏛 Oficial · ⬇ N**, ou a pílula **⬇** no topo (ver 10.4) |
@@ -685,7 +686,7 @@ Para mandar a um colega sem o repositório: `npm run extensao` gera `extensao-di
 | **Anexar depois** | `Ctrl+Shift+P` → **Console e contexto da aba testada (extensão): anexar aqui…** — num bug, preenche *Ambiente* e *Console e rede* (troca a seção se já existir); em outro documento, o resumo entra onde você está (ou no passo da execução). |
 | **O que é guardado** | Por aba: `console.error`, `console.warn`, erros não tratados, promises rejeitadas, imagens/scripts que não carregaram e as trocas de página (inclusive em SPA) — os últimos 300 eventos dos últimos 30 min. |
 | **Rede** | Só as requisições que **falharam**: `fetch` e XHR com status 400 ou mais (com os cabeçalhos e até 16 KB da resposta, se for texto/JSON), imagens, scripts e a própria página com erro, e falhas sem resposta (domínio que não existe, conexão recusada, tempo esgotado) com o erro do navegador (`net::ERR_NAME_NOT_RESOLVED`). Até 50 por aba, dos últimos 30 min. No bug: cada uma numa linha (`POST …/api/pedidos → 500 Internal Server Error · 320 ms`; repetidas juntam, `(2×)`), e o **`.har`** com tudo — abre no DevTools (aba *Rede* → importar), no Charles/Fiddler, e vai como anexo no *Copiar para o Jira*. |
-| **Ícone da extensão** | Mostra se está capturando e quanto guardou; **Pausar** (nada é guardado) e **Limpar**. Pausada, o bug sai sem console (o TestFlow avisa). |
+| **Ícone da extensão** | Mostra se está capturando e quanto guardou; **Pausar** (nada é guardado) e **Limpar**. Pausada, o bug sai sem console (o TestFlow avisa). **Configurar Jira…** abre as opções do Jira (12.7). |
 
 > [!NOTE]
 > **Privacidade:** a extensão não manda nada para a internet nem grava em disco — guarda só na memória da sessão do navegador (fechou o navegador, apagou). Só páginas **locais** com o TestFlow (`localhost`, `127.0.0.1`, arquivo) conseguem pedir a captura. **Cookies, `Authorization`, chaves de API e cabeçalhos de token nunca são guardados** (fica só o nome, com `••••`). Antes de ir para o documento, **tokens, senhas, CPF, cartão e e-mails são mascarados** (`••••`) no resumo, nas URLs, no log e nos corpos do HAR.
@@ -1089,6 +1090,21 @@ Ele aplica só o que você aprovar e, para os "confirmar", propõe a resposta: l
 **Jira pelo Claude:** com o conector da Atlassian ligado no Claude, peça *"abra no Jira o BUG-012 e grave a chave"*: o Claude lê o bug com `qa_para_jira`, cria o ticket pelo conector e grava a chave com `qa_atualizar_cabecalho`. Os prints: se o conector não anexar arquivos, o Claude informa os caminhos para você anexar.
 
 **Regras (as mesmas do editor):** nada sai da pasta de trabalho; nada é apagado nem publicado na pasta oficial; antes de cada gravação a versão anterior vai para `.versoes/` (**Salvar ▾ → Histórico de versões** mostra e restaura); só muda o que foi pedido (fim de linha e o resto do arquivo ficam como estavam); se o arquivo foi salvo no editor enquanto o Claude mexia, ele não grava por cima. O editor aberto percebe a mudança e oferece recarregar. Anexos: só arquivos com caminho completo, nunca arquivos ou pastas ocultos (`.ssh`, `.env`…).
+
+### 12.7 Jira pela API (extensão do navegador)
+
+Opcional: com a **extensão do navegador** (8.3) e o Jira configurado nela, o TestFlow cria a issue e traz o status sem copiar e colar. Desligado (sem configurar), nada muda e nada vai para o Jira.
+
+**Configurar (uma vez):** ícone do TestFlow na barra do Chrome/Edge → **Configurar Jira…** → endereço (`https://suaempresa.atlassian.net`), o **e-mail** da sua conta Atlassian e um **token da API** (crie em *id.atlassian.com → Segurança → Tokens da API*) → **Salvar e testar** (mostra *Conectado como …*). O token fica guardado **só na extensão**, neste computador: o TestFlow e os sites nunca o recebem. **Esquecer o token** apaga.
+
+| Ação | Como |
+| --- | --- |
+| **Criar a issue do bug** | Com o bug aberto: `Ctrl+Shift+P` → **Jira: criar a issue deste bug pela API…**. Escolha o **projeto** (lembrado por aplicação) e o **tipo** (padrão *Bug*). Vai: o resumo `[BUG-007] título`, a descrição em wiki markup (a mesma do *Copiar para o Jira*, sem o cabeçalho, com ambiente/versão/browser no rodapé), a **prioridade** (Crítica→Highest, Alta→High, Média→Medium, Baixa→Low; se o seu Jira usa outros nomes, vai sem prioridade e o aviso diz), os **rótulos** (`qa-md`, a aplicação e as tags) e os **anexos** — prints, vídeos, o `.log` e o `.har` citados no bug (até 10 MB cada; o que passar disso fica para anexar à mão). As imagens aparecem na descrição e os links para logs viram links para o anexo. A **chave** volta para o campo `jira:` e o documento é salvo. Antes de mandar, passa pela verificação de **dados sensíveis** (12.4). |
+| **Já tem issue** | Se o campo `jira:` já tem uma chave, ele pergunta antes (abrir a issue ou criar outra). |
+| **Trazer o status** | `Ctrl+Shift+P` → **Jira: trazer o status dos bugs da pasta (pela API)**: para cada bug com `jira:`, grava no cabeçalho `jira_status: Em análise (em andamento)`. Os **concluídos no Jira que aqui continuam abertos** aparecem numa lista — é o reteste a fazer; o status do bug no TestFlow **não muda sozinho** (quem fecha é o QA, depois de retestar). Bugs abertos em outra aba ficam de fora (feche e rode de novo). |
+
+> [!NOTE]
+> O Jira recebe só o que você manda com essas ações. A extensão fala direto com o seu Jira Cloud (sem servidor no meio). O Claude continua podendo usar o conector da Atlassian (12.6) — os dois caminhos convivem.
 
 ## 13. Atalhos
 

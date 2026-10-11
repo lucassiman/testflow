@@ -1,4 +1,4 @@
-// 11.4 (1.50.0 e 1.51.0): a extensão de verdade (pasta extensao/) carregada num Chromium completo: captura o console de uma
+// 11.4 (1.50.0 e 1.51.0) e 11.5 (1.54.0, Jira): a extensão de verdade (pasta extensao/) carregada num Chromium completo: captura o console de uma
 // página "testada" e o TestFlow cria o bug com ele. Fica fora da suíte normal (abre um navegador próprio):
 //   PW_EXTENSAO=1 npx playwright test extensaoReal
 // Sem o Chromium do Playwright instalado, aponte um completo (não o headless shell) em PW_CHROMIUM_FULL.
@@ -106,5 +106,90 @@ test('extensão de verdade: guarda o console da aba testada e o bug criado no Te
     expect(estoque.response.content.text).toBe('sku não encontrado');
   } finally {
     await ctx.close();
+  }
+});
+
+// ---------------------------------------------------------------- 1.54.0: Jira pela API, contra um "Jira" falso nesta máquina
+test('extensão de verdade + Jira falso local: configurar nas opções, criar a issue com o anexo e trazer o status', async ({ baseURL }) => {
+  const http = await import('node:http');
+  const EMAIL = 'qa@teste.local';
+  const TOKEN = 'token-de-teste';
+  const auth = `Basic ${Buffer.from(`${EMAIL}:${TOKEN}`).toString('base64')}`;
+  /** @type {{ issue: any, anexo: { headers: any, body: string } | null }} */
+  const got = { issue: null, anexo: null };
+  const server = http.createServer((req, res) => {
+    let body = '';
+    req.setEncoding('latin1');
+    req.on('data', (c) => { body += c; });
+    req.on('end', () => {
+      const send = (status, json) => { res.writeHead(status, { 'Content-Type': 'application/json' }); res.end(json === undefined ? '' : JSON.stringify(json)); };
+      if (req.headers.authorization !== auth) return send(401, { errorMessages: ['não autorizado'] });
+      const u = req.url || '';
+      if (req.method === 'GET' && u === '/rest/api/2/myself') return send(200, { displayName: 'QA Teste' });
+      if (req.method === 'GET' && u === '/rest/api/2/project') return send(200, [{ key: 'PORT', name: 'Portal' }]);
+      if (req.method === 'POST' && u === '/rest/api/2/issue') { got.issue = JSON.parse(Buffer.from(body, 'latin1').toString('utf8')); return send(201, { key: 'PORT-1' }); }
+      if (req.method === 'POST' && u === '/rest/api/2/issue/PORT-1/attachments') { got.anexo = { headers: req.headers, body }; return send(200, [{ id: '10' }]); }
+      if (req.method === 'GET' && u.startsWith('/rest/api/3/search/jql')) return send(200, { issues: [{ key: 'PORT-1', fields: { status: { name: 'Pronto para teste', statusCategory: { key: 'done' } } } }] });
+      return send(404, { errorMessages: ['não existe'] });
+    });
+  });
+  await new Promise((r) => server.listen(0, '127.0.0.1', () => r(undefined)));
+  const port = /** @type {import('node:net').AddressInfo} */ (server.address()).port;
+
+  const ext = fileURLToPath(new URL('../../extensao', import.meta.url));
+  const ctx = await chromium.launchPersistentContext('', {
+    baseURL, headless: true, executablePath: process.env.PW_CHROMIUM_FULL || undefined, viewport: { width: 1300, height: 900 },
+    args: [`--disable-extensions-except=${ext}`, `--load-extension=${ext}`],
+  });
+  try {
+    const sw = ctx.serviceWorkers()[0] || await ctx.waitForEvent('serviceworker');
+    const extId = new URL(sw.url()).host;
+    // opções da extensão: o token (de teste) fica só nela
+    const opts = await ctx.newPage();
+    await opts.goto(`chrome-extension://${extId}/opcoes.html`);
+    await opts.fill('#site', `http://127.0.0.1:${port}`);
+    await opts.fill('#email', EMAIL);
+    await opts.fill('#token', TOKEN);
+    await opts.click('#save');
+    await expect(opts.locator('#state')).toContainText('✓ Conectado como QA Teste');
+    await expect(opts.locator('#token')).toHaveValue('');
+
+    const page = await ctx.newPage();
+    await page.addInitScript(wsInit, 'ws-jira-real');
+    await openEditor(page, { mode: 'split' });
+    await page.evaluate(async () => {
+      await window.__write('aplicacoes/Portal/bugs/BUG-1.md', '---\ntipo: bug\nid: BUG-1\ntitulo: Pagamento trava\napp: Portal\nstatus: FAIL\nseveridade: Alta\njira:\n---\n\n# BUG-1 — Pagamento trava\n\n## Evidências\n\n![erro](evidencias/erro.png)\n');
+      await window.__write('aplicacoes/Portal/bugs/evidencias/erro.png', 'PNG-DE-TESTE');
+    });
+    await page.click('#sidebarBtn');
+    await page.locator('.sidebar button', { hasText: 'Abrir…' }).first().click();
+    await page.locator('[data-side="wsList"] .side-file', { hasText: 'BUG-1' }).click();
+    await expect(page.locator('#fileName')).toContainText('BUG-1');
+    await page.keyboard.press('Control+Shift+P');
+    await page.keyboard.type('Jira: criar a issue deste bug');
+    await page.keyboard.press('Enter');
+    const dlg = page.locator('.app-dialog');
+    await expect(dlg.locator('select')).toHaveValue('PORT');
+    await dlg.locator('button', { hasText: 'Criar no Jira' }).click();
+    await expect(page.locator('#toast')).toContainText('PORT-1 criada no Jira — 1 anexo(s)');
+    expect(got.issue.fields).toMatchObject({ project: { key: 'PORT' }, issuetype: { name: 'Bug' }, summary: '[BUG-1] Pagamento trava', priority: { name: 'High' } });
+    expect(got.issue.fields.description).toContain('!erro.png|thumbnail!');
+    expect(got.anexo.headers['x-atlassian-token']).toBe('no-check');
+    expect(got.anexo.body).toMatch(/filename="erro\.png"[\s\S]*PNG-DE-TESTE/);
+    await expect.poll(() => page.evaluate(() => window.__read('aplicacoes/Portal/bugs/BUG-1.md'))).toMatch(/^jira: PORT-1$/m);
+    // o TestFlow nunca recebeu o token
+    expect(await page.evaluate(() => JSON.stringify(localStorage) + document.documentElement.outerHTML)).not.toContain('token-de-teste');
+
+    await page.keyboard.press('Control+Shift+P');
+    await page.keyboard.type('Jira: trazer o status');
+    await page.keyboard.press('Enter');
+    await expect(dlg).toContainText('BUG-1 — PORT-1: Pronto para teste');
+    await dlg.locator('button', { hasText: 'OK' }).click();
+    // o bug está aberto: a mudança entra no editor e espera o Ctrl+S
+    await page.keyboard.press('Control+s');
+    await expect.poll(() => page.evaluate(() => window.__read('aplicacoes/Portal/bugs/BUG-1.md'))).toMatch(/^jira_status: Pronto para teste \(concluído\)$/m);
+  } finally {
+    await ctx.close();
+    server.close();
   }
 });

@@ -90,7 +90,7 @@
     const d = ev.data;
     if (ev.source !== window || !d || d.testflow !== 'ext' || d.dir !== 'pedido' || !appPage()) return;
     const target = location.origin === 'null' ? '*' : location.origin;
-    send({ tipo: 'ponte', pedido: { tipo: String(d.tipo || ''), abaId: Number(d.abaId) || 0 } }).then((r) => {
+    send({ tipo: 'ponte', pedido: { tipo: String(d.tipo || ''), abaId: Number(d.abaId) || 0, dados: d.dados } }).then((r) => {
       const res = r && typeof r === 'object' ? r : { ok: false, erro: 'a extensão não respondeu' };
       window.postMessage({ testflow: 'ext', dir: 'resposta', id: d.id, ok: !!res.ok, dados: res.dados, erro: res.erro }, target);
     });

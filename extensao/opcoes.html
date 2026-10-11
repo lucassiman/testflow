@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>TestFlow — Jira</title>
+  <style>
+    :root { color-scheme: light dark; --brand: #b91c47; }
+    body { font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; padding: 28px 16px; display: flex; justify-content: center; }
+    main { width: 100%; max-width: 560px; }
+    h1 { font-size: 18px; display: flex; align-items: center; gap: 10px; margin: 0 0 6px; }
+    h1 img { width: 28px; height: 28px; }
+    p { margin: 8px 0; }
+    .muted { opacity: .75; font-size: 13px; }
+    label { display: block; margin: 14px 0 4px; font-weight: 600; }
+    input { font: inherit; width: 100%; box-sizing: border-box; padding: 7px 9px; border-radius: 6px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); background: transparent; color: inherit; }
+    .row { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
+    button { font: inherit; border-radius: 6px; padding: 6px 14px; cursor: pointer; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); background: transparent; color: inherit; }
+    button.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+    #state { padding: 8px 10px; border-radius: 6px; background: color-mix(in srgb, currentColor 8%, transparent); }
+    #state.ok { background: color-mix(in srgb, #1a7f37 18%, transparent); }
+    #state.err { background: color-mix(in srgb, #cf222e 18%, transparent); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1><img src="icones/icone.png" alt="">TestFlow — Jira</h1>
+    <p class="muted">Opcional. Com o Jira configurado aqui, o TestFlow cria a issue direto do bug (com os prints e os logs como anexo) e traz o status de volta. O token fica guardado só nesta extensão, neste computador — o TestFlow e os sites nunca o recebem.</p>
+    <p id="state">…</p>
+
+    <label for="site">Endereço do Jira</label>
+    <input id="site" type="url" placeholder="https://suaempresa.atlassian.net" autocomplete="off">
+
+    <label for="email">E-mail da sua conta Atlassian</label>
+    <input id="email" type="email" autocomplete="off">
+
+    <label for="token">Token da API</label>
+    <input id="token" type="password" autocomplete="off" placeholder="cole o token (em branco = manter o atual)">
+    <p class="muted">Crie em <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noopener">id.atlassian.com → Segurança → Tokens da API</a>. Ele dá as mesmas permissões da sua conta; dá para revogar lá a qualquer momento.</p>
+
+    <div class="row">
+      <button type="button" id="save" class="primary">Salvar e testar</button>
+      <button type="button" id="forget">Esquecer o token</button>
+    </div>
+  </main>
+  <script src="opcoes.js"></script>
+</body>
+</html>

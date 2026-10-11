@@ -13,8 +13,10 @@ async function ask(acao) {
   $('toggle').textContent = d.pausado ? 'Retomar' : 'Pausar';
   $('toggle').dataset.next = d.pausado ? 'retomar' : 'pausar';
   $('version').textContent = `Versão ${d.versao}`;
+  $('jira').textContent = d.jira ? `Jira: ${d.jira} (criar issue e trazer o status pelo TestFlow)` : 'Jira: não configurado (opcional).';
 }
 
 $('toggle').addEventListener('click', () => ask($('toggle').dataset.next || 'pausar'));
 $('clear').addEventListener('click', () => ask('limpar'));
+$('options').addEventListener('click', () => chrome.runtime.openOptionsPage());
 ask('estado');
