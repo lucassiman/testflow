@@ -518,11 +518,11 @@ Levantada comparando com TestRail, Zephyr, Xray, Qase, Testmo e as extensões de
 | **Releases / milestones** | ✅ 1.47.0 — Rodadas e planos agrupados por versão do produto, com o progresso da release. | M |
 | **Status personalizados** | ✅ 1.48.0 — Além dos 5 (ex.: *Reteste*, *Falha conhecida*), com cor e regra de contagem. | M |
 
-#### 11.4 — Captura de bug com console e rede *(G — opcional)* — em andamento: 1.49.0 replay instantâneo · 1.50.0 extensão (console e contexto)
+#### 11.4 — Captura de bug com console e rede *(G — opcional)* — ✅ feito: 1.49.0 replay instantâneo · 1.50.0 extensão (console e contexto) · 1.51.0 rede (HAR)
 
 | Item | Detalhe | Esforço |
 |---|---|---|
-| **Extensão opcional do navegador** | 🟡 1.50.0 — extensão `extensao/` (MV3, carregar sem compactação) + ponte com o app; **console e contexto** (URL, navegador, sistema, tela) no bug novo, na reincidência e em *anexar aqui*, mascarados; preferência desligada por padrão. Falta a **rede (HAR)** na 1.51.0. — Pedido: quem quiser instala uma extensão: erros do console, requisições com falha (HAR), URL, navegador, sistema e tamanho da tela entram no bug junto com o print. Liga/desliga nas preferências; **desligada (ou sem a extensão), o fluxo continua exatamente como hoje**. | G |
+| **Extensão opcional do navegador** | ✅ 1.50.0 + 1.51.0 — extensão `extensao/` (MV3, carregar sem compactação) + ponte com o app; **console e contexto** (URL, navegador, sistema, tela) e **requisições com falha** (resumo + `.har`, sem cookies/autorização/tokens, corpos mascarados; erro do navegador `net::ERR_…` junto) no bug novo, na reincidência e em *anexar aqui*; preferência desligada por padrão; sem `chrome.debugger`. — Pedido: quem quiser instala uma extensão: erros do console, requisições com falha (HAR), URL, navegador, sistema e tamanho da tela entram no bug junto com o print. Liga/desliga nas preferências; **desligada (ou sem a extensão), o fluxo continua exatamente como hoje**. | G |
 | **Replay instantâneo** | ✅ 1.49.0 — Os últimos 30 s – 2 min da tela já gravados, sem ter apertado gravar. Feito **no app, sem a extensão**: usa o compartilhamento da janela que o 📸 já mantém; dois gravadores defasados guardam entre N e 2N s na memória (um `.webm` não pode ser cortado). ⏪ no rodapé, `Ctrl+Alt+R`, ⏪ Replay no painel; *Levar o replay* no bug novo e na reincidência. Padrão 60 s. | M |
 
 #### 11.5 — Integrações e acompanhamento *(M–G)*
@@ -549,7 +549,7 @@ Fora por ora: papéis, permissões e auditoria (fazem sentido em ferramenta de n
 7. ~~Depois, conforme a necessidade: execução, automação, devolução.~~ ✅ Fases 3 a 8 concluídas (até 28/09).
 8. **Fase 9** (29/09 em diante): 9.1 Consolidar → 9.2 Ler e navegar → 9.3 Visões e rastreabilidade → 9.4 Regressão e trabalho a dois → 9.5 **MCP local** (1.0). QoL pontuais entram entre as rodadas.
 9. ~~**Fase 10**~~ ✅ concluída na 1.30.0.
-10. **Fase 11** (09/10 em diante): 11.1 primeiro (passos e dados compartilhados, reexecutar falhas, tendência); a captura com console e rede (11.4) depois, como extensão opcional.
+10. **Fase 11** (09/10 em diante): 11.1 primeiro (passos e dados compartilhados, reexecutar falhas, tendência); a captura com console e rede (11.4) depois, como extensão opcional — ✅ 11.1 a 11.4 feitos (até a 1.51.0); falta a 11.5.
 
 ---
 

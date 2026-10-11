@@ -166,7 +166,7 @@ Uma nota por item, com horário e etiqueta opcional: `- 14:32 — **BUG:** botã
   `![Evidência passo 2](evidencias/2026-09-24_15-30-12.png)`
 - Nome: `AAAA-MM-DD_HH-MM-SS.ext` (o editor gera ao colar um print).
 - Arquivos não-imagem (HAR, PDF, vídeo, log): `[📎 console.log](evidencias/console.log)`; vídeo (gravação, replay): `[🎬 …](evidencias/….webm)`.
-- Bug com a captura da extensão do navegador: subseção `### Console e rede` no fim de *Evidências* — de onde veio (página, URL, horário), um callout com a contagem e os principais erros do console e o link do log completo (`[📎 Console completo (N eventos)](evidencias/…-console.log)`). URL, navegador, sistema e tela vão para a tabela *Ambiente*. Dados sensíveis já vêm mascarados (`••••`).
+- Bug com a captura da extensão do navegador: subseção `### Console e rede` no fim de *Evidências* — de onde veio (página, URL, horário), um callout com a contagem e os principais erros do console e as requisições com falha (`` `POST …/api/pedidos` → 500 Internal Server Error · 320 ms ``) e os links do log e do HAR (`[📎 Console completo (N eventos)](evidencias/…-console.log) · [📎 Requisições com falha (N, HAR)](evidencias/…-rede.har)`). URL, navegador, sistema e tela vão para a tabela *Ambiente*. Dados sensíveis já vêm mascarados (`••••`).
 - Trechos de log/resposta de API vão em bloco de código; logs longos com `collapsed`:
   ```` ```log collapsed ````, ```` ```json ````, ```` ```xml ````.
 

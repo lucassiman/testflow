@@ -1,8 +1,9 @@
 /**
- * Captura de bug pela extensão do navegador (11.4): o que a extensão manda (contexto da aba testada + eventos do
- * console) vira texto do bug — rótulos de navegador e sistema, linhas da tabela "Ambiente", o resumo em
- * "### Console e rede" e o arquivo `.log` completo. Dados sensíveis (token, senha, CPF, e-mail…) são mascarados
- * ANTES de ir para o documento ou para o disco. Lógica pura (sem tela), testada em tests/unit/bugCapture.test.mjs.
+ * Captura de bug pela extensão do navegador (11.4): o que a extensão manda (contexto da aba testada, eventos do
+ * console e requisições com falha) vira texto do bug — rótulos de navegador e sistema, linhas da tabela "Ambiente",
+ * o resumo em "### Console e rede", o `.log` completo e o `.har` das requisições. Cookies, autorização e tokens
+ * nunca entram; dados sensíveis (senha, CPF, e-mail…) são mascarados ANTES de ir para o documento ou para o disco.
+ * Lógica pura (sem tela), testada em tests/unit/bugCapture.test.mjs.
  */
 import { detectFrontMatter, parseFrontMatter } from './frontmatter.ts';
 import { setFrontMatterFields } from './publish.ts';
@@ -49,6 +50,25 @@ export interface ConsoleEvent {
   n?: number;
 }
 
+/** Requisição que falhou (status ≥ 400 ou erro de rede). Cabeçalhos secretos já vêm como `••••`. */
+export interface NetEntry {
+  t: number;
+  metodo: string;
+  url: string;
+  /** 0 = não teve resposta (erro de rede, DNS, bloqueio…) */
+  status: number;
+  statusTexto?: string;
+  duracao?: number;
+  /** fetch, xhr, documento, img, script… */
+  recurso?: string;
+  erro?: string;
+  reqHeaders?: Array<[string, string]>;
+  reqBody?: string;
+  resHeaders?: Array<[string, string]>;
+  resBody?: string;
+  mime?: string;
+}
+
 /** Aba que a extensão está acompanhando (para escolher a "aba testada"). */
 export interface CaptureTab {
   id: number;
@@ -56,6 +76,8 @@ export interface CaptureTab {
   url: string;
   erros: number;
   avisos: number;
+  /** requisições com falha (extensão 1.51.0 ou mais nova) */
+  falhas?: number;
   /** quando a aba esteve em foco pela última vez (ms) */
   foco: number;
 }
@@ -65,7 +87,12 @@ export interface Capture {
   aba: { id: number; titulo: string; url: string };
   contexto: CaptureContext;
   eventos: ConsoleEvent[];
+  /** requisições com falha; ausente = extensão antiga, que não captura a rede */
+  rede?: NetEntry[];
 }
+
+/** Onde ficaram os arquivos da captura (relativos ao documento; '' = não gravado). */
+export interface CapturePaths { log?: string; har?: string }
 
 const ERROR_KINDS: ConsoleKind[] = ['erro', 'excecao', 'promessa', 'recurso'];
 export const isError = (e: ConsoleEvent): boolean => ERROR_KINDS.includes(e.tipo);
@@ -162,19 +189,25 @@ export function countLabel(events: ConsoleEvent[]): { erros: number; avisos: num
 export function consoleLog(cap: Capture): string {
   const c = cap.contexto;
   const { text } = countLabel(cap.eventos);
+  const rede = cap.rede || [];
   const head = [
     `TestFlow — console da aba "${c.titulo || cap.aba.titulo}"`,
     `URL: ${c.url || cap.aba.url}`,
     `Navegador: ${[browserLabel(c), systemLabel(c)].filter(Boolean).join(' · ')}${screenLabel(c) ? ` · tela ${screenLabel(c)}` : ''}`,
     `Capturado em: ${dateTime(c.quando)}${c.fuso ? ` (${c.fuso})` : ''} pela extensão ${cap.versao}`,
-    `Eventos: ${cap.eventos.length} (${text}) — o mais antigo primeiro`,
+    `Eventos: ${cap.eventos.length} (${text})${rede.length ? ` · ${netCount(rede.length)} (detalhes no .har)` : ''} — o mais antigo primeiro`,
     '',
   ];
-  const body = cap.eventos.flatMap((e) => {
-    const first = `[${hhmmss(e.t)}] ${KIND_LABEL[e.tipo].padEnd(8)} ${e.texto}${e.n && e.n > 1 ? ` (${e.n}×)` : ''}${e.origem ? `  — ${e.origem}` : ''}`;
-    const stack = (e.pilha || '').split('\n').map((l) => l.trim()).filter((l) => l && !e.texto.includes(l)).slice(0, 12).map((l) => `    ${l}`);
-    return [first, ...stack];
-  });
+  const timeline: Array<{ t: number; lines: string[] }> = [
+    ...cap.eventos.map((e) => {
+      const first = `[${hhmmss(e.t)}] ${KIND_LABEL[e.tipo].padEnd(8)} ${e.texto}${e.n && e.n > 1 ? ` (${e.n}×)` : ''}${e.origem ? `  — ${e.origem}` : ''}`;
+      const stack = (e.pilha || '').split('\n').map((l) => l.trim()).filter((l) => l && !e.texto.includes(l)).slice(0, 12).map((l) => `    ${l}`);
+      return { t: e.t, lines: [first, ...stack] };
+    }),
+    ...rede.map((r) => ({ t: r.t, lines: [`[${hhmmss(r.t)}] ${'REDE'.padEnd(8)} ${r.metodo} ${r.url} → ${netResult(r)}`] })),
+  ];
+  // estável: na mesma hora, a ordem de chegada
+  const body = timeline.map((x, i) => ({ ...x, i })).sort((a, b) => a.t - b.t || a.i - b.i).flatMap((x) => x.lines);
   return mask(`${[...head, ...body].join('\n')}\n`);
 }
 
@@ -191,27 +224,130 @@ export function distinctErrors(events: ConsoleEvent[]): Array<{ texto: string; n
   return [...out].map(([texto, n]) => ({ texto, n }));
 }
 
+/** `1 requisição com falha` / `3 requisições com falha` */
+export const netCount = (n: number): string => `${n} requisiç${n === 1 ? 'ão' : 'ões'} com falha`;
+
+/** Resultado de uma requisição: `500 Internal Server Error · 320 ms` / `falhou: net::ERR_NAME_NOT_RESOLVED`. */
+export function netResult(r: NetEntry): string {
+  const head = r.status ? `${r.status}${r.statusTexto ? ` ${r.statusTexto}` : ''}` : `falhou${r.erro ? `: ${r.erro}` : ''}`;
+  return `${head}${r.status && r.erro ? ` (${r.erro})` : ''}${typeof r.duracao === 'number' ? ` · ${r.duracao} ms` : ''}`;
+}
+
+/** Requisições distintas (mesmo método, URL e resultado juntam as repetições), na ordem em que apareceram. */
+export function distinctRequests(rede: NetEntry[]): Array<{ r: NetEntry; n: number }> {
+  const out = new Map<string, { r: NetEntry; n: number }>();
+  for (const r of rede) {
+    const key = `${r.metodo} ${r.url} ${r.status} ${r.erro || ''}`;
+    const hit = out.get(key);
+    if (hit) hit.n++;
+    else out.set(key, { r, n: 1 });
+  }
+  return [...out.values()];
+}
+
 /**
- * Corpo de "### Console e rede": de onde veio, os erros principais e o link do log.
- * @param logPath caminho do .log (relativo ao documento); vazio = sem link
+ * Corpo de "### Console e rede": de onde veio, os erros principais do console, as requisições com falha
+ * e os links do log e do HAR.
  */
-export function captureSummary(cap: Capture, logPath = '', { max = 5 }: { max?: number } = {}): string[] {
+export function captureSummary(cap: Capture, paths: CapturePaths | string = {}, { max = 5 }: { max?: number } = {}): string[] {
+  const p: CapturePaths = typeof paths === 'string' ? { log: paths } : paths;
   const c = cap.contexto;
   const title = inlineText(c.titulo || cap.aba.titulo || 'aba testada', 80);
   const url = inlineText(c.url || cap.aba.url, 200);
   const lines = [`Capturado pela extensão do TestFlow em ${dateTime(c.quando)} — *${title}* (\`${url}\`).`, ''];
   const { erros, text } = countLabel(cap.eventos);
   const distinct = distinctErrors(cap.eventos);
-  if (erros) {
-    lines.push('> [!CAUTION]', `> **Console:** ${text}`);
-    for (const d of distinct.slice(0, max)) lines.push(`> - \`${inlineText(d.texto)}\`${d.n > 1 ? ` (${d.n}×)` : ''}`);
-    if (distinct.length > max) lines.push(`> - … e mais ${distinct.length - max} (no log completo)`);
-  } else {
-    lines.push('> [!NOTE]', `> **Console:** ${text} nos últimos minutos desta aba.`);
+  const rede = cap.rede;
+  const bad = erros > 0 || !!rede?.length;
+  lines.push(bad ? '> [!CAUTION]' : '> [!NOTE]', `> **Console:** ${text}${erros ? '' : ' nos últimos minutos desta aba.'}`);
+  for (const d of distinct.slice(0, max)) lines.push(`> - \`${inlineText(d.texto)}\`${d.n > 1 ? ` (${d.n}×)` : ''}`);
+  if (distinct.length > max) lines.push(`> - … e mais ${distinct.length - max} (no log completo)`);
+  if (rede) {
+    const reqs = distinctRequests(rede);
+    lines.push('>', `> **Rede:** ${rede.length ? netCount(rede.length) : 'nenhuma requisição com falha.'}`);
+    for (const { r, n } of reqs.slice(0, max)) lines.push(`> - \`${inlineText(`${r.metodo} ${r.url}`, 120)}\` → ${inlineText(netResult(r), 120)}${n > 1 ? ` (${n}×)` : ''}`);
+    if (reqs.length > max) lines.push(`> - … e mais ${reqs.length - max} (no HAR)`);
   }
-  if (logPath) lines.push('', `[📎 Console completo (${cap.eventos.length} evento${cap.eventos.length === 1 ? '' : 's'})](${logPath})`);
+  const links = [
+    p.log ? `[📎 Console completo (${cap.eventos.length} evento${cap.eventos.length === 1 ? '' : 's'})](${p.log})` : '',
+    p.har ? `[📎 Requisições com falha (${rede?.length || 0}, HAR)](${p.har})` : '',
+  ].filter(Boolean);
+  if (links.length) lines.push('', links.join(' · '));
   return lines;
 }
+
+// ---------------------------------------------------------------- HAR 1.2 (só as requisições com falha)
+
+/** Cabeçalhos que nunca vão para o HAR (a extensão já corta; aqui é a segunda trava). */
+const SECRET_HEADER = /^(authorization|proxy-authorization|cookie|set-cookie|set-cookie2)$|token|secret|session|passw|senha|api[-_]?key|auth|csrf|xsrf|signature/i;
+const HIDDEN = '••••';
+
+/** Cabeçalhos para o HAR: secretos viram ••••, o resto passa pela máscara. */
+export function harHeaders(list: Array<[string, string]> | undefined): Array<{ name: string; value: string }> {
+  return (list || []).map(([name, value]) => ({ name, value: SECRET_HEADER.test(name) ? HIDDEN : mask(value) }));
+}
+
+/** Parâmetros da URL (mascarados). */
+function queryString(url: string): Array<{ name: string; value: string }> {
+  try { return [...new URL(url).searchParams].map(([name, value]) => ({ name, value: mask(`${name}=${value}`).slice(name.length + 1) })); } catch { return []; }
+}
+
+const headerValue = (list: Array<[string, string]> | undefined, name: string): string => (list || []).find(([k]) => k.toLowerCase() === name)?.[1] || '';
+
+/** O HAR (objeto) das requisições com falha da captura. */
+export function buildHar(cap: Capture): Record<string, unknown> {
+  const c = cap.contexto;
+  const rede = [...(cap.rede || [])].sort((a, b) => a.t - b.t);
+  const browser = browserLabel(c).split(' ');
+  const pageStart = new Date(Math.min(Date.parse(c.quando) || Date.now(), ...rede.map((r) => r.t))).toISOString();
+  return {
+    log: {
+      version: '1.2',
+      creator: { name: 'TestFlow (extensão do navegador)', version: cap.versao, comment: 'Só as requisições com falha. Cookies, autorização e tokens removidos; dados sensíveis mascarados.' },
+      browser: { name: browser[0] || '', version: browser[1] || '' },
+      pages: [{ startedDateTime: pageStart, id: 'pagina_1', title: mask(c.titulo || cap.aba.titulo || c.url), pageTimings: {} }],
+      entries: rede.map((r) => {
+        const reqMime = headerValue(r.reqHeaders, 'content-type');
+        const resMime = r.mime || headerValue(r.resHeaders, 'content-type');
+        const resText = r.resBody !== undefined ? mask(r.resBody) : undefined;
+        return {
+          pageref: 'pagina_1',
+          startedDateTime: new Date(r.t).toISOString(),
+          time: r.duracao ?? 0,
+          request: {
+            method: r.metodo,
+            url: mask(r.url),
+            httpVersion: '',
+            cookies: [],
+            headers: harHeaders(r.reqHeaders),
+            queryString: queryString(r.url),
+            ...(r.reqBody !== undefined ? { postData: { mimeType: reqMime, text: mask(r.reqBody) } } : {}),
+            headersSize: -1,
+            bodySize: r.reqBody !== undefined ? r.reqBody.length : -1,
+          },
+          response: {
+            status: r.status,
+            statusText: r.statusTexto || (r.status ? '' : r.erro || ''),
+            httpVersion: '',
+            cookies: [],
+            headers: harHeaders(r.resHeaders),
+            content: { size: resText !== undefined ? resText.length : 0, mimeType: resMime, ...(resText !== undefined ? { text: resText } : {}) },
+            redirectURL: '',
+            headersSize: -1,
+            bodySize: resText !== undefined ? resText.length : -1,
+            ...(r.erro ? { _error: r.erro } : {}),
+          },
+          cache: {},
+          timings: { send: 0, wait: r.duracao ?? 0, receive: 0 },
+          ...(r.recurso ? { _resourceType: r.recurso } : {}),
+        };
+      }),
+    },
+  };
+}
+
+/** Texto do arquivo `.har`. */
+export const harText = (cap: Capture): string => `${JSON.stringify(buildHar(cap), null, 2)}\n`;
 
 /** Linhas da tabela "Ambiente" vindas da aba: [rótulo, valor]. */
 export function ambienteRows(c: CaptureContext): Array<[string, string]> {
@@ -273,9 +409,9 @@ export function setCaptureSection(text: string, body: string[]): string {
 
 /**
  * Bug com a captura: `browser:`/`dispositivo:` (se vazios), linhas da tabela "Ambiente" e "### Console e rede".
- * @param logPath caminho do .log relativo ao bug ('' = sem arquivo)
+ * @param paths caminhos do .log e do .har relativos ao bug ('' = sem arquivo)
  */
-export function applyCaptureToBug(text: string, cap: Capture, logPath = ''): string {
+export function applyCaptureToBug(text: string, cap: Capture, paths: CapturePaths | string = {}): string {
   const c = cap.contexto;
   let out = text;
   const fm = detectFrontMatter(out);
@@ -287,17 +423,20 @@ export function applyCaptureToBug(text: string, cap: Capture, logPath = ''): str
   }
   const lines = out.split('\n');
   fillAmbiente(lines, ambienteRows(c));
-  return setCaptureSection(lines.join('\n'), captureSummary(cap, logPath));
+  return setCaptureSection(lines.join('\n'), captureSummary(cap, paths));
 }
 
-/** Linhas curtas para a reincidência ("- Console: …", "- Página: …"). */
-export function recurrenceNotes(cap: Capture, logPath = ''): string[] {
+/** Linhas curtas para a reincidência ("- Página: …", "- Console: …", "- Rede: …"). */
+export function recurrenceNotes(cap: Capture, paths: CapturePaths | string = {}): string[] {
+  const p: CapturePaths = typeof paths === 'string' ? { log: paths } : paths;
   const c = cap.contexto;
   const top = distinctErrors(cap.eventos)[0];
   const { text } = countLabel(cap.eventos);
+  const req = cap.rede?.length ? distinctRequests(cap.rede)[0].r : null;
   return [
     `- Página: \`${inlineText(c.url || cap.aba.url, 200)}\` · ${[browserLabel(c), systemLabel(c)].filter(Boolean).join(' · ')}`,
-    `- Console: ${text}${top ? ` — \`${inlineText(top.texto)}\`` : ''}${logPath ? ` ([📎 log](${logPath}))` : ''}`,
+    `- Console: ${text}${top ? ` — \`${inlineText(top.texto)}\`` : ''}${p.log ? ` ([📎 log](${p.log}))` : ''}`,
+    ...(cap.rede?.length ? [`- Rede: ${netCount(cap.rede.length)}${req ? ` — \`${inlineText(`${req.metodo} ${req.url}`, 120)}\` → ${inlineText(netResult(req), 120)}` : ''}${p.har ? ` ([📎 HAR](${p.har}))` : ''}`] : []),
   ];
 }
 
@@ -305,7 +444,7 @@ export function recurrenceNotes(cap: Capture, logPath = ''): string[] {
 export function tabLabel(t: CaptureTab): string {
   let host = '';
   try { host = new URL(t.url).host; } catch { host = t.url; }
-  const counts = [t.erros ? `${t.erros} erro${t.erros > 1 ? 's' : ''}` : '', t.avisos ? `${t.avisos} aviso${t.avisos > 1 ? 's' : ''}` : ''].filter(Boolean).join(', ');
+  const counts = [t.erros ? `${t.erros} erro${t.erros > 1 ? 's' : ''}` : '', t.avisos ? `${t.avisos} aviso${t.avisos > 1 ? 's' : ''}` : '', t.falhas ? `${t.falhas} falha${t.falhas > 1 ? 's' : ''} de rede` : ''].filter(Boolean).join(', ');
   const title = (t.titulo || host).replace(/\s+/g, ' ').trim();
   const short = title.length > 50 ? `${title.slice(0, 49)}…` : title;
   return `${short}${host && host !== title ? ` — ${host}` : ''}${counts ? ` · ${counts}` : ''}`;

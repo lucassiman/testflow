@@ -7,9 +7,9 @@ async function ask(acao) {
   const r = await chrome.runtime.sendMessage({ tipo: 'popup', acao });
   if (!r?.ok) return;
   const d = r.dados;
-  $('state').textContent = d.pausado ? '⏸ Pausada — nada está sendo guardado' : '● Capturando o console das abas';
+  $('state').textContent = d.pausado ? '⏸ Pausada — nada está sendo guardado' : '● Capturando o console e a rede das abas';
   $('state').className = `state${d.pausado ? ' off' : ''}`;
-  $('counts').textContent = d.abas ? `${d.abas} aba(s) com eventos · ${d.erros} erro(s) · ${d.avisos} aviso(s) (últimos 30 min)` : 'Nada guardado ainda.';
+  $('counts').textContent = d.abas || d.falhas ? `${d.abas} aba(s) com eventos · ${d.erros} erro(s) · ${d.avisos} aviso(s) · ${d.falhas} requisição(ões) com falha (últimos 30 min)` : 'Nada guardado ainda.';
   $('toggle').textContent = d.pausado ? 'Retomar' : 'Pausar';
   $('toggle').dataset.next = d.pausado ? 'retomar' : 'pausar';
   $('version').textContent = `Versão ${d.versao}`;

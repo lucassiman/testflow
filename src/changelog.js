@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.51.0', date: '11/10/2026',
+    items: [
+      { icon: '🌐', text: '**Requisições com falha no bug**: com a extensão do navegador (atualize: `git pull` e ↻ em `chrome://extensions`), o bug também leva as requisições que falharam na aba testada — `POST /api/pedidos → 500`, 404, domínio que não responde — no resumo de *Console e rede* e num **`.har`** em `evidencias/` (abre no DevTools e vai como anexo no Jira).', manual: '8.3 Extensão do navegador' },
+      { icon: '🛡', text: 'Cookies, `Authorization` e tokens **nunca** são guardados (só o nome do cabeçalho); senhas, cartões e e-mails nos corpos e URLs saem mascarados. Só as requisições com falha — as que deram certo ficam de fora.', manual: '8.3 Extensão do navegador' },
+    ],
+  },
+  {
     version: '1.50.0', date: '11/10/2026',
     items: [
       { icon: '🧩', text: '**Extensão do navegador (opcional)**: instale a pasta `extensao/` no Chrome/Edge e ligue em `Ctrl+Shift+P` → *Captura de bug pela extensão*. Ao criar um bug, escolha a aba testada: URL, navegador, sistema e tela vão para *Ambiente*, e os erros do console para *Evidências* (com o log completo em `evidencias/`).', manual: '8.3 Extensão do navegador' },

@@ -38,7 +38,7 @@ npm run skill        # skill do Claude em claude-skill/ (opcional)
 npm run mcp:build    # extensão do Claude desktop em mcp-dist/ (opcional)
 ```
 
-**Extensão do navegador (opcional, console e contexto no bug):** no Chrome/Edge, `chrome://extensions` → *Modo do desenvolvedor* → **Carregar sem compactação** → pasta `extensao/`; depois, no app, `Ctrl+Shift+P` → *Captura de bug pela extensão*. Atualiza com o `git pull` + ↻ na página de extensões. Manual, seção 8.3.
+**Extensão do navegador (opcional, console, rede e contexto no bug):** no Chrome/Edge, `chrome://extensions` → *Modo do desenvolvedor* → **Carregar sem compactação** → pasta `extensao/`; depois, no app, `Ctrl+Shift+P` → *Captura de bug pela extensão*. Atualiza com o `git pull` + ↻ na página de extensões. Manual, seção 8.3.
 
 **Atualizar** (salve tudo no app antes; no Terminal do servidor, `Ctrl+C`):
 
@@ -196,7 +196,7 @@ Depois de `npm run skill`, atualize onde você usa:
 | **Ampliar e tamanho** | Clique no print: grande, com setas entre os prints, ✎ anotar e tamanho **P/M/G** no documento (`![legenda\|320](…)`, convenção do Obsidian). `Ctrl+Shift+P` → *Limpar evidências* move para a lixeira os prints que nenhum documento usa. |
 | **📸 Capturar a tela** | Sem PrtSc: escolha a janela do sistema testado uma vez; depois cada **📸** (toolbar, painel de execução, sessão) ou `Ctrl+Alt+P` é um clique. Manual, seção 8.1. |
 | **⏪ Replay instantâneo** | Com a captura ligada, os últimos 60 s da janela ficam guardados só na memória; **⏪** no rodapé ou `Ctrl+Alt+R` salva o vídeo, e o bug criado na hora pode levá-lo. Manual, seção 8.1. |
-| **🧩 Console e contexto (extensão)** | Opcional: com a extensão `extensao/` no Chrome/Edge e a captura ligada, o bug criado leva URL, navegador, sistema, tela e os erros do console da aba testada (mascarados; log em `evidencias/`). Manual, seção 8.3. |
+| **🧩 Console, rede e contexto (extensão)** | Opcional: com a extensão `extensao/` no Chrome/Edge e a captura ligada, o bug criado leva URL, navegador, sistema, tela, os erros do console e as requisições com falha da aba testada (sem cookies nem tokens, mascarados; `.log` e `.har` em `evidencias/`). Manual, seção 8.3. |
 | **Soltar arquivos** | Arraste imagens, logs, HAR, PDF, vídeos para o editor. Imagens viram `![...]`, outros arquivos viram link `[📎 ...]`. |
 | **Onde ficam** | Na pasta `evidencias/` dentro da **pasta do documento**. Na primeira vez o editor pede essa pasta (o seletor já abre na pasta do `.md`). Nome automático com data e hora: `evidencias/2026-09-24_15-30-12.png`. |
 | **No Markdown** | Link relativo: `![Evidência 24/09 15:30](evidencias/2026-09-24_15-30-12.png)` — funciona também no GitHub, VS Code e no hub. |

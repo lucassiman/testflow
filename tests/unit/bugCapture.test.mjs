@@ -1,8 +1,9 @@
-// 11.4 (1.50.0): captura pela extensão — contexto da aba e console viram texto do bug (mascarado).
+// 11.4 (1.50.0 e 1.51.0): captura pela extensão — contexto da aba, console e rede (HAR) viram texto do bug (mascarado).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { applyCaptureToBug, browserLabel, captureSummary, consoleLog, countLabel, deviceLabel, distinctErrors, recurrenceNotes, screenLabel, setCaptureSection, systemLabel, tabLabel } from '../../src/markdown/bugCapture.ts';
+import { applyCaptureToBug, browserLabel, buildHar, harText, netResult, captureSummary, consoleLog, countLabel, deviceLabel, distinctErrors, recurrenceNotes, screenLabel, setCaptureSection, systemLabel, tabLabel } from '../../src/markdown/bugCapture.ts';
 import { addRecurrence } from '../../src/markdown/linkedDoc.ts';
+import { prepareForJira } from '../../src/markdown/jira.ts';
 
 const WIN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
 const at = (h, m, s, ms = 0) => new Date(2026, 9, 11, h, m, s, ms).getTime();
@@ -145,4 +146,75 @@ test('reincidência: linhas de página e console', () => {
 test('rótulo da aba no seletor', () => {
   assert.equal(tabLabel({ id: 1, titulo: 'Loja · Checkout', url: 'https://hml.loja.com/x', erros: 2, avisos: 1, foco: 0 }), 'Loja · Checkout — hml.loja.com · 2 erros, 1 aviso');
   assert.equal(tabLabel({ id: 1, titulo: '', url: 'https://hml.loja.com/x', erros: 0, avisos: 0, foco: 0 }), 'hml.loja.com');
+});
+
+// ---------------------------------------------------------------- 1.51.0: rede (HAR)
+
+const REDE = [
+  {
+    t: at(14, 31, 9, 500), metodo: 'POST', url: 'https://hml.loja.com/api/pedidos?cupom=X&token=abcdef1234567890', status: 500, statusTexto: 'Internal Server Error', duracao: 320, recurso: 'fetch',
+    reqHeaders: [['Content-Type', 'application/json'], ['Authorization', 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.c2lnbmF0dXJlMTIz']],
+    reqBody: '{"usuario":"joao@empresa.com","password":"Segredo123"}',
+    resHeaders: [['content-type', 'application/json'], ['set-cookie', 'sid=abc']], mime: 'application/json', resBody: '{"erro":"estoque indisponível"}',
+  },
+  { t: at(14, 31, 20, 0), metodo: 'GET', url: 'https://cdn.loja.com/app.js', status: 0, erro: 'TypeError: Failed to fetch — net::ERR_NAME_NOT_RESOLVED', recurso: 'script' },
+  { t: at(14, 31, 21, 0), metodo: 'POST', url: 'https://hml.loja.com/api/pedidos?cupom=X&token=abcdef1234567890', status: 500, statusTexto: 'Internal Server Error', duracao: 280, recurso: 'fetch' },
+];
+
+test('HAR 1.2: só as falhas, sem cookie/autorização, corpo e URL mascarados, erro de rede em _error', () => {
+  const har = /** @type {any} */ (buildHar({ ...capture(EVENTS), rede: REDE }));
+  assert.equal(har.log.version, '1.2');
+  assert.equal(har.log.browser.name, 'Chrome');
+  assert.equal(har.log.entries.length, 3);
+  const [e1, e2] = har.log.entries;
+  assert.equal(e1.request.method, 'POST');
+  assert.equal(e1.startedDateTime, new Date(REDE[0].t).toISOString());
+  assert.equal(e1.time, 320);
+  assert.deepEqual(e1.request.headers, [{ name: 'Content-Type', value: 'application/json' }, { name: 'Authorization', value: '••••' }]);
+  assert.deepEqual(e1.response.headers.map((h) => h.value), ['application/json', '••••']);
+  assert.equal(e1.request.postData.mimeType, 'application/json');
+  assert.doesNotMatch(e1.request.postData.text, /Segredo123|joao@empresa\.com/);
+  assert.equal(e1.response.status, 500);
+  assert.equal(e1.response.content.text, '{"erro":"estoque indisponível"}');
+  assert.doesNotMatch(e1.request.url, /abcdef1234567890/);
+  assert.deepEqual(e1.request.queryString.map((q) => q.name), ['cupom', 'token']);
+  assert.doesNotMatch(e1.request.queryString[1].value, /abcdef1234567890/);
+  assert.equal(e2.response.status, 0);
+  assert.equal(e2.response._error, 'TypeError: Failed to fetch — net::ERR_NAME_NOT_RESOLVED');
+  assert.equal(e2._resourceType, 'script');
+  const text = harText({ ...capture(EVENTS), rede: REDE });
+  assert.doesNotMatch(text, /eyJzdWIiOiIxIn0|sid=abc|Segredo123/);
+  assert.doesNotThrow(() => JSON.parse(text));
+});
+
+test('resumo com rede: falha de rede sozinha já é CAUTION; repetições juntas; links do log e do HAR', () => {
+  const md = captureSummary({ ...capture([]), rede: REDE }, { log: 'evidencias/c.log', har: 'evidencias/r.har' }).join('\n');
+  assert.match(md, /> \[!CAUTION\]\n> \*\*Console:\*\* nenhum erro nos últimos minutos desta aba\.\n>\n> \*\*Rede:\*\* 3 requisições com falha\n> - `POST https:\/\/hml\.loja\.com\/api\/pedidos\?cupom=X&token=[^`]*` → 500 Internal Server Error · 320 ms \(2×\)\n> - `GET https:\/\/cdn\.loja\.com\/app\.js` → falhou: TypeError: Failed to fetch — net::ERR_NAME_NOT_RESOLVED/);
+  assert.match(md, /\n\n\[📎 Console completo \(0 eventos\)\]\(evidencias\/c\.log\) · \[📎 Requisições com falha \(3, HAR\)\]\(evidencias\/r\.har\)$/);
+  assert.doesNotMatch(md, /abcdef1234567890/);
+  // extensão antiga (sem rede): não fala de rede
+  assert.doesNotMatch(captureSummary(capture(EVENTS)).join('\n'), /Rede/);
+  // com rede vazia: diz que não houve falha
+  assert.match(captureSummary({ ...capture([]), rede: [] }).join('\n'), /> \[!NOTE\][\s\S]*> \*\*Rede:\*\* nenhuma requisição com falha\./);
+  assert.equal(netResult({ t: 0, metodo: 'GET', url: 'x', status: 404 }), '404');
+});
+
+test('log: a rede entra na linha do tempo, na ordem dos horários', () => {
+  const log = consoleLog({ ...capture(EVENTS), rede: REDE });
+  assert.match(log, /Eventos: 5 \(5 erros · 1 aviso\) · 3 requisições com falha \(detalhes no \.har\)/);
+  assert.match(log, /\[14:31:09\.500\] REDE {5}POST https:\/\/hml\.loja\.com\/api\/pedidos\?cupom=X&token=\S+ → 500 Internal Server Error · 320 ms\n\[14:31:10\.002\] ERRO/);
+  assert.doesNotMatch(log, /abcdef1234567890/);
+});
+
+test('reincidência e seletor de abas com a rede', () => {
+  const notes = recurrenceNotes({ ...capture(EVENTS), rede: REDE }, { log: 'evidencias/l.log', har: 'evidencias/r.har' });
+  assert.equal(notes.length, 3);
+  assert.match(notes[2], /^- Rede: 3 requisições com falha — `POST https:\/\/hml\.loja\.com\/api\/pedidos[^`]*` → 500 Internal Server Error · 320 ms \(\[📎 HAR\]\(evidencias\/r\.har\)\)$/);
+  assert.equal(tabLabel({ id: 1, titulo: 'Loja', url: 'https://hml.loja.com/x', erros: 1, avisos: 0, falhas: 2, foco: 0 }), 'Loja — hml.loja.com · 1 erro, 2 falhas de rede');
+});
+
+test('bug com a captura: o Copiar para o Jira lista o .log e o .har como anexos', () => {
+  const out = applyCaptureToBug(BUG, { ...capture(EVENTS), rede: REDE }, { log: 'evidencias/x-console.log', har: 'evidencias/x-rede.har' });
+  const { attachments } = prepareForJira(out);
+  assert.deepEqual(attachments.filter((a) => /\.(log|har)$/.test(a)), ['evidencias/x-console.log', 'evidencias/x-rede.har']);
 });

@@ -1,4 +1,4 @@
-// 11.4 (1.50.0): captura de bug pela extensão do navegador — com uma ponte falsa no lugar da extensão
+// 11.4 (1.50.0 e 1.51.0): captura de bug pela extensão do navegador — com uma ponte falsa no lugar da extensão
 // (o teste com a extensão de verdade fica em extensaoReal.spec.mjs, ligado por PW_EXTENSAO=1).
 import { test, expect } from '@playwright/test';
 import { openEditor, raw, wsInit } from './helpers.mjs';
@@ -8,7 +8,7 @@ const fakeBridge = () => {
   window.__extPedidos = [];
   const at = (m, s) => new Date(2026, 9, 11, 14, m, s).getTime();
   const abas = [
-    { id: 11, titulo: 'Loja · Checkout', url: 'https://hml.loja.com/checkout', erros: 2, avisos: 1, foco: 2000 },
+    { id: 11, titulo: 'Loja · Checkout', url: 'https://hml.loja.com/checkout', erros: 2, avisos: 1, falhas: 1, foco: 2000 },
     { id: 12, titulo: 'Admin', url: 'https://admin.loja.com/', erros: 0, avisos: 0, foco: 1000 },
   ];
   const captura = (id) => ({
@@ -28,6 +28,9 @@ const fakeBridge = () => {
         { t: at(31, 10), tipo: 'erro', texto: 'TypeError: pedido is undefined', pilha: 'TypeError: pedido is undefined\n    at pagar (app.js:10:5)', n: 2 },
         { t: at(31, 12), tipo: 'aviso', texto: 'API antiga' },
       ]
+      : [],
+    rede: id === 11
+      ? [{ t: at(31, 9), metodo: 'POST', url: 'https://hml.loja.com/api/pedidos', status: 500, statusTexto: 'Internal Server Error', duracao: 320, recurso: 'fetch', reqHeaders: [['Content-Type', 'application/json'], ['Authorization', '••••']], reqBody: '{"cartao":"4111 1111 1111 1111","senha":"Segredo123"}', resHeaders: [['content-type', 'application/json']], mime: 'application/json', resBody: '{"erro":"estoque"}' }]
       : [],
   });
   window.addEventListener('message', (ev) => {
@@ -88,7 +91,7 @@ test('ligada: o bug leva navegador, sistema, tela, URL e o console da aba escolh
   const dlg = page.locator('.app-dialog');
   await expect(dlg).toContainText('Console e contexto da aba testada (extensão)');
   await expect(dlg.locator('select')).toHaveValue('11');
-  await expect(dlg.locator('select option').first()).toHaveText('Loja · Checkout — hml.loja.com · 2 erros, 1 aviso');
+  await expect(dlg.locator('select option').first()).toHaveText('Loja · Checkout — hml.loja.com · 2 erros, 1 aviso, 1 falha de rede');
   await dlg.locator('button', { hasText: 'Criar e abrir' }).click();
   await expect(page.locator('#fileName')).toContainText('BUG-001');
   const bug = await readBug(page);
@@ -108,6 +111,17 @@ test('ligada: o bug leva navegador, sistema, tela, URL e o console da aba escolh
   expect(log).toContain('TestFlow — console da aba "Loja · Checkout"');
   expect(log).toContain('    at pagar (app.js:10:5)');
   expect(log).not.toContain('Segredo123');
+  expect(log).toMatch(/\[14:31:09\.000\] REDE {5}POST https:\/\/hml\.loja\.com\/api\/pedidos → 500 Internal Server Error · 320 ms/);
+  // rede: resumo e HAR (sem senha nem cartão)
+  expect(bug).toContain('> **Rede:** 1 requisição com falha');
+  expect(bug).toContain('> - `POST https://hml.loja.com/api/pedidos` → 500 Internal Server Error · 320 ms');
+  expect(bug).toMatch(/ · \[📎 Requisições com falha \(1, HAR\)\]\(evidencias\/[^)]+_TC-7-rede\.har\)/);
+  const harName = ev.find((n) => n.endsWith('-rede.har'));
+  const har = JSON.parse(await page.evaluate((p) => window.__read(p), `aplicacoes/Loja/bugs/evidencias/${harName}`));
+  expect(har.log.entries).toHaveLength(1);
+  expect(har.log.entries[0].response.status).toBe(500);
+  expect(har.log.entries[0].response.content.text).toBe('{"erro":"estoque"}');
+  expect(JSON.stringify(har)).not.toMatch(/Segredo123|4111 1111 1111 1111/);
   // o Preview mostra o callout e o link
   await expect(page.locator('#preview')).toContainText('Console completo (3 eventos)');
 });

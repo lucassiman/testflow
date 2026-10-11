@@ -2,7 +2,7 @@
 /** Modelos, menu "/" e documentos novos: inserir blocos, salvar como modelo, criar documento na pasta, nota rápida e documento ligado (ex.: bug a partir do caso). */
 import { app } from './context.js';
 import { captureToDocument, capturer, secondsLabel, takeReplay, toggleRecording } from './capture.js';
-import { captureOffer, captureSelect, takeCapture } from './bugCapture.js';
+import { captureOffer, captureSelect, storeCapture, takeCapture } from './bugCapture.js';
 import { TEMPLATES, rawCommand } from '../editor/commands.js';
 import { describe as describeDoc } from '../io/docIndex.ts';
 import { EVIDENCE_DIR, isRelativePath, readEvidence, setFolder } from '../io/evidence.js';
@@ -473,20 +473,20 @@ export async function createLinkedDoc(template, { where = app.target(), nearLine
   // console e contexto da aba escolhida (a sugerida já veio; outra aba é pedida agora)
   /** @type {import('./bugCapture.js').TakenCapture | null} */
   let taken = null;
-  let logPath = '';
+  /** @type {import('../markdown/bugCapture.ts').CapturePaths} */
+  let capPaths = {};
   if (offer && res.choice) {
     taken = res.choice === offer.padrao ? await early : null;
     if (!taken) {
       try { taken = await takeCapture(res.choice, sourceTarget); } catch (err) { app.toast(`A extensão não mandou o console e o contexto (${errMsg(err)}) — o bug é criado mesmo assim.`, 'error'); }
     }
-    if (taken && dest !== null && app.workspaceDir) {
-      try { logPath = (await writeEvidenceFiles(dest, [taken.file]))[0] || ''; } catch (err) { app.toast(`O log do console não foi gravado (${errMsg(err)}) — o bug é criado mesmo assim.`, 'error'); }
-    } else if (taken) downloadBlob(taken.file, taken.file.name);
+    // sem pasta de trabalho, o .log e o .har são baixados (não se perdem)
+    if (taken) capPaths = await storeCapture(taken, (files) => (dest !== null && app.workspaceDir ? writeEvidenceFiles(dest, files).catch((err) => { app.toast(`O log do console e o HAR não foram gravados (${errMsg(err)}) — o bug é criado mesmo assim.`, 'error'); return null; }) : Promise.resolve(null)));
   }
   // achado numa rodada: o bug guarda a execução e o ciclo de onde veio
   const origin = await import('./cycle.js').then((m) => m.roundOfOpenCase()).catch(() => null);
   const built = buildLinkedDoc(fillTemplate(template.text), { id, title, sourceTarget, source: me, step: res.checks.fill === false ? null : step, prints: newPrints, origin: origin || undefined });
-  const text = taken ? applyCaptureToBug(built, taken.cap, logPath) : built;
+  const text = taken ? applyCaptureToBug(built, taken.cap, capPaths) : built;
   const fileName = suggestedFileName(text, template.label);
   // link neste documento (onde o comando foi dado)
   placeEvidence(linkLine(tipo, id || fileName.replace(/\.md$/, ''), title), ctx);
@@ -572,9 +572,8 @@ async function registerRecurrence(bug, { src, me, step, sourceTarget, prints, re
   /** @type {string[]} */
   let notes = [];
   if (taken) {
-    let logPath = '';
-    try { logPath = (await writeEvidenceFiles(dir, [taken.file]))[0] || ''; } catch (err) { app.toast(`O log do console não foi gravado (${errMsg(err)}) — a reincidência é registrada mesmo assim.`, 'error'); }
-    notes = recurrenceNotes(taken.cap, logPath);
+    const paths = await storeCapture(taken, (files) => writeEvidenceFiles(dir, files).catch((err) => { app.toast(`O log do console e o HAR não foram gravados (${errMsg(err)}) — a reincidência é registrada mesmo assim.`, 'error'); return null; }));
+    notes = recurrenceNotes(taken.cap, paths);
   }
   // link neste documento (se ainda não tinha), antes de trocar de aba
   const cited = new Set([...src.matchAll(/\[\[([^\]|#]+)/g)].map((m) => m[1].trim().toLowerCase()));

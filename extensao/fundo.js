@@ -1,11 +1,11 @@
 // @ts-check
 /**
- * Service worker da extensão: guarda (só na memória da sessão do navegador) o que cada aba produziu no console e
- * responde aos pedidos do TestFlow pela ponte: "ola" (está instalada?), "abas" (quais abas acompanhar) e
+ * Service worker da extensão: guarda (só na memória da sessão do navegador) o que cada aba produziu no console e as
+ * requisições que falharam (com o erro de rede do navegador, net::ERR_…) e responde aos pedidos do TestFlow pela ponte: "ola" (está instalada?), "abas" (quais abas acompanhar) e
  * "captura" (contexto + eventos de uma aba). Só páginas locais (localhost, 127.0.0.1, file) falam como TestFlow.
  * Nada sai do computador; fechar o navegador apaga tudo.
  */
-import { addEvent, counts, focusTab, isAppOrigin, prune, tabList } from './buffer.js';
+import { MAX_AGE_MS, addEvent, addRequest, counts, focusTab, isAppOrigin, prune, shrink, tabList } from './buffer.js';
 
 const VERSAO = chrome.runtime.getManifest().version;
 const PROTOCOLO = 1;
@@ -31,7 +31,10 @@ function load() {
 let saveTimer;
 function persist() {
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => { chrome.storage.session.set({ abas: state, apps: [...appTabs] }).catch(() => {}); }, 300);
+  saveTimer = setTimeout(() => {
+    shrink(state);
+    chrome.storage.session.set({ abas: state, apps: [...appTabs] }).catch(() => {});
+  }, 300);
 }
 
 /** @param {number} ms */
@@ -63,8 +66,10 @@ async function bridge(p) {
     if (!tab) return { ok: false, erro: 'a aba foi fechada' };
     const contexto = await tabContext(tab);
     // o que a página ainda tinha no lote chegou junto com o contexto
-    const eventos = prune(state[String(id)]?.eventos || [], Date.now());
-    return { ok: true, dados: { versao: VERSAO, aba: { id, titulo: tab.title || '', url: tab.url || '' }, contexto, eventos } };
+    const now2 = Date.now();
+    const eventos = prune(state[String(id)]?.eventos || [], now2);
+    const rede = (state[String(id)]?.rede || []).filter((r) => now2 - r.t <= MAX_AGE_MS);
+    return { ok: true, dados: { versao: VERSAO, aba: { id, titulo: tab.title || '', url: tab.url || '' }, contexto, eventos, rede } };
   }
   return { ok: false, erro: `pedido desconhecido: ${p.tipo}` };
 }
@@ -80,7 +85,8 @@ async function popup(acao) {
   }
   const tabs = Object.values(state).filter((t) => t.eventos.length);
   const total = tabs.reduce((s, t) => { const c = counts(t.eventos); return { erros: s.erros + c.erros, avisos: s.avisos + c.avisos }; }, { erros: 0, avisos: 0 });
-  return { ok: true, dados: { versao: VERSAO, pausado: paused, abas: tabs.length, ...total } };
+  const falhas = Object.values(state).reduce((s, t) => s + (t.rede?.length || 0), 0);
+  return { ok: true, dados: { versao: VERSAO, pausado: paused, abas: tabs.length, ...total, falhas } };
 }
 
 /** @param {any} msg @param {chrome.runtime.MessageSender} sender */
@@ -128,6 +134,16 @@ chrome.windows.onFocusChanged.addListener((windowId) => {
     if (typeof tab?.id === 'number') load().then(() => { if (!appTabs.has(/** @type {number} */ (tab.id))) { focusTab(state, /** @type {number} */ (tab.id), Date.now()); persist(); } });
   }).catch(() => {});
 });
+// erro de rede visto pelo navegador (DNS, conexão recusada, bloqueado…): só dispara em falha, não acorda a cada requisição.
+// Junta com a falha vista pela página ("Failed to fetch") quando é a mesma requisição.
+chrome.webRequest.onErrorOccurred.addListener((d) => {
+  if (d.tabId < 0 || d.error === 'net::ERR_ABORTED' || d.error === 'net::ERR_BLOCKED_BY_CLIENT') return;
+  load().then(() => {
+    if (paused || appTabs.has(d.tabId)) return;
+    if (addRequest(state, d.tabId, { t: Math.round(d.timeStamp), metodo: d.method, url: d.url, status: 0, erro: d.error, recurso: d.type, fonte: 'navegador' }, Date.now())) persist();
+  });
+}, { urls: ['http://*/*', 'https://*/*'] });
+
 chrome.tabs.onRemoved.addListener((tabId) => {
   load().then(() => { delete state[String(tabId)]; appTabs.delete(tabId); persist(); });
 });

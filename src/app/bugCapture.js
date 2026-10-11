@@ -1,13 +1,14 @@
 // @ts-check
 /**
  * Captura de bug pela extensão do navegador (11.4): com a preferência ligada e a extensão instalada, o bug criado
- * leva o contexto da aba testada (URL, navegador, sistema, tela) e o console dela (resumo + `.log` em evidencias/).
+ * leva o contexto da aba testada (URL, navegador, sistema, tela), o console dela (resumo + `.log` em evidencias/)
+ * e as requisições com falha (resumo + `.har`, sem cookies nem tokens).
  * Desligada — ou sem a extensão — nada muda: nenhum pedido é feito e os diálogos ficam como eram.
  */
 import { app } from './context.js';
 import { loadPrefs, savePrefs } from '../io/drafts.js';
 import { createExtBridge } from '../io/extBridge.js';
-import { applyCaptureToBug, captureSummary, consoleLog, tabLabel } from '../markdown/bugCapture.ts';
+import { applyCaptureToBug, captureSummary, consoleLog, harText, tabLabel } from '../markdown/bugCapture.ts';
 import { evidenceBaseName, evidenceStamp } from '../markdown/evidenceName.ts';
 import { showDialog } from '../ui/dialog.js';
 import { captureInsertion, docLabel, downloadBlob, placeEvidence, saveEvidenceFiles } from './evidence.js';
@@ -16,7 +17,8 @@ import { errMsg } from './shared.js';
 /** @typedef {import('../markdown/bugCapture.ts').Capture} Capture */
 /** @typedef {import('../markdown/bugCapture.ts').CaptureTab} CaptureTab */
 /** @typedef {{ abas: CaptureTab[], padrao: string }} CaptureOffer */
-/** @typedef {{ cap: Capture, file: File }} TakenCapture */
+/** @typedef {import('../markdown/bugCapture.ts').CapturePaths} CapturePaths */
+/** @typedef {{ cap: Capture, log: File, har: File | null }} TakenCapture */
 
 /** Preferência "Captura de bug pela extensão" (desligada por padrão). */
 export const captureEnabled = () => loadPrefs().bugCapture === true;
@@ -57,19 +59,33 @@ export function captureSelect(offer) {
     label: 'Console e contexto da aba testada (extensão)',
     value: offer.padrao,
     options: [...offer.abas.map((t) => ({ value: String(t.id), label: tabLabel(t) })), { value: '', label: 'Não anexar' }],
-    hint: 'URL, navegador, sistema e tela vão para Ambiente; os erros do console para Evidências (dados sensíveis mascarados).',
+    hint: 'URL, navegador, sistema e tela vão para Ambiente; os erros do console e as requisições com falha (HAR) para Evidências — sem cookies nem tokens, dados sensíveis mascarados.',
   };
 }
 
 /**
- * Pede a captura da aba e monta o `.log` (já mascarado).
- * @param {string | number} tabId @param {string} docId vai no nome do arquivo
+ * Pede a captura da aba e monta o `.log` e, se houve falha de rede, o `.har` (já limpos e mascarados).
+ * @param {string | number} tabId @param {string} docId vai no nome dos arquivos
  * @returns {Promise<TakenCapture>}
  */
 export async function takeCapture(tabId, docId) {
   const cap = await getBridge().capture(Number(tabId));
-  const name = `${evidenceBaseName(evidenceStamp(), { docId, step: 'console' })}.log`;
-  return { cap, file: new File([consoleLog(cap)], name, { type: 'text/plain' }) };
+  const stamp = evidenceStamp();
+  const log = new File([consoleLog(cap)], `${evidenceBaseName(stamp, { docId, step: 'console' })}.log`, { type: 'text/plain' });
+  const har = cap.rede?.length ? new File([harText(cap)], `${evidenceBaseName(stamp, { docId, step: 'rede' })}.har`, { type: 'application/json' }) : null;
+  return { cap, log, har };
+}
+
+/**
+ * Grava o `.log` e o `.har` com `write` (devolve os caminhos na mesma ordem); sem onde gravar, baixa os dois.
+ * @param {TakenCapture} taken @param {(files: File[]) => Promise<string[] | null>} write
+ * @returns {Promise<CapturePaths>}
+ */
+export async function storeCapture(taken, write) {
+  const files = [taken.log, ...(taken.har ? [taken.har] : [])];
+  const paths = (await write(files)) || [];
+  if (!paths.length) files.forEach((f) => downloadBlob(f, f.name)); // não se perde
+  return { log: paths[0] || '', har: taken.har ? paths[1] || '' : '' };
 }
 
 /** Ctrl+Shift+P → ligar/desligar. Ao ligar, confere se a extensão responde. */
@@ -103,14 +119,12 @@ export async function attachCaptureHere() {
   /** @type {TakenCapture} */
   let taken;
   try { taken = await takeCapture(res.choice, docLabel()); } catch (err) { app.toast(`A extensão não mandou a captura: ${errMsg(err)}`, 'error'); return; }
-  const paths = await saveEvidenceFiles([taken.file], {});
-  const logPath = paths?.[0] || '';
-  if (!logPath) downloadBlob(taken.file, taken.file.name);
+  const paths = await storeCapture(taken, (files) => saveEvidenceFiles(files, {}));
   if (/^tipo[ \t]*:[ \t]*bug\b/m.test(app.store.source)) {
     app.store.history.breakGroup();
-    app.store.setSource(applyCaptureToBug(app.store.source, taken.cap, logPath), { origin: 'command' });
+    app.store.setSource(applyCaptureToBug(app.store.source, taken.cap, paths), { origin: 'command' });
   } else {
-    placeEvidence(captureSummary(taken.cap, logPath).join('\n'), ctx);
+    placeEvidence(captureSummary(taken.cap, paths).join('\n'), ctx);
   }
-  app.toast(`🧩 Console e contexto de "${taken.cap.contexto.titulo || taken.cap.aba.titulo}" anexados${logPath ? ` — log em ${logPath}` : ' (o log foi baixado)'}.`);
+  app.toast(`🧩 Console${taken.har ? ', rede' : ''} e contexto de "${taken.cap.contexto.titulo || taken.cap.aba.titulo}" anexados${paths.log ? ` — arquivos em ${paths.log.replace(/\/[^/]*$/, '/')}` : ' (os arquivos foram baixados)'}.`);
 }

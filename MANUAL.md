@@ -144,7 +144,7 @@ Na árvore, 🏛 marca os documentos publicados e ✎ os alterados desde a publi
 | Executar a regressão caso a caso | **Novo ▾ → 🔁 Ciclo de regressão…** (salva os casos) → **▶ Executar este ciclo** → **▶ Próximo caso** (ver 7.8); sem ciclo: **Novo ▾ → ▶ Rodada de execução…** |
 | Comentar / revisar o documento de alguém | `Alt+M`; responder e resolver no próprio comentário (ver 6.7) |
 | Gravar vídeo de um bug intermitente | `Ctrl+Alt+G` ou **⏺ Gravar** no painel de execução (ver 8.1) |
-| Erros do console, URL, navegador e tela da aba testada no bug | Extensão do navegador (pasta `extensao/`) + `Ctrl+Shift+P` → **Captura de bug pela extensão** (ver 8.3) |
+| Erros do console, requisições com falha (HAR), URL, navegador e tela da aba testada no bug | Extensão do navegador (pasta `extensao/`) + `Ctrl+Shift+P` → **Captura de bug pela extensão** (ver 8.3) |
 | Vídeo do que acabou de acontecer (sem ter apertado gravar) | **⏪** no rodapé, `Ctrl+Alt+R` ou **⏪ Replay** no painel de execução — com a captura de tela ligada (ver 8.1) |
 | Ver o que os colegas publicaram / trazer | Barra lateral → **🏛 Oficial · ⬇ N**, ou a pílula **⬇** no topo (ver 10.4) |
 | Guardar épicos e histórias de uma aplicação | `aplicacoes/<App>/requisitos/` — cabeçalho `tipo: epico` (ou `historia`) + `app:`, e `Ctrl+S` (ver 10.2) |
@@ -660,9 +660,9 @@ Clique em **📁 …/evidencias** no rodapé (ou `Ctrl+Shift+P` → *Evidências
 | **⬇ Baixar as deste documento (.zip)** | Um `.zip` com os arquivos usados no documento. |
 | **📁 Trocar pasta…** | Escolhe outra pasta de evidências para o documento. |
 
-### 8.3 Extensão do navegador: console e contexto no bug
+### 8.3 Extensão do navegador: console, rede e contexto no bug
 
-**Opcional.** Uma extensão do Chrome/Edge guarda o que as abas testadas mostram no console e entrega ao TestFlow quando você cria um bug: o bug sai com **URL, navegador, sistema e tela** em *Ambiente* e com os **erros do console** em *Evidências → Console e rede* (o log completo vai para `evidencias/…-console.log`). Sem a extensão — ou com a captura desligada, que é o padrão — nada muda.
+**Opcional.** Uma extensão do Chrome/Edge guarda o que as abas testadas mostram no console e as requisições que falharam, e entrega ao TestFlow quando você cria um bug: o bug sai com **URL, navegador, sistema e tela** em *Ambiente* e com os **erros do console** e as **requisições com falha** em *Evidências → Console e rede* (o log completo vai para `evidencias/…-console.log` e as requisições para `evidencias/…-rede.har`). Sem a extensão — ou com a captura desligada, que é o padrão — nada muda.
 
 **Instalar (uma vez, em cada computador — Windows ou Mac):**
 
@@ -671,22 +671,23 @@ Clique em **📁 …/evidencias** no rodapé (ou `Ctrl+Shift+P` → *Evidências
 3. **Carregar sem compactação** → escolha a pasta **`extensao/`** do TestFlow (a mesma do `git pull`).
 4. Fixe o ícone do TestFlow na barra (🧩 → 📌), se quiser ver o estado.
 5. **Recarregue as abas** que já estavam abertas (o sistema testado e o TestFlow) — a extensão só começa a observar as páginas abertas depois dela.
-6. No TestFlow: `Ctrl+Shift+P` → **Captura de bug pela extensão: ligar/desligar**. O aviso confirma *extensão 1.50.0*.
+6. No TestFlow: `Ctrl+Shift+P` → **Captura de bug pela extensão: ligar/desligar**. O aviso confirma a versão da extensão (*1.51.0*).
 
-Para mandar a um colega sem o repositório: `npm run extensao` gera `extensao-dist/testflow-extensao.zip` (descompactar e carregar a pasta). **Atualizar:** `git pull` e o ↻ da extensão em `chrome://extensions`.
+Para mandar a um colega sem o repositório: `npm run extensao` gera `extensao-dist/testflow-extensao.zip` (descompactar e carregar a pasta). **Atualizar:** `git pull` e o ↻ da extensão em `chrome://extensions` (e recarregue as abas testadas).
 
 | No dia a dia | Como |
 | --- | --- |
-| **Bug novo** | `/bug`, **🐞 Bug** no painel de execução ou *Novo bug a partir deste documento*: o diálogo ganha **Console e contexto da aba testada** — já vem a última aba em foco (que não é o TestFlow), com quantos erros ela teve. Escolha outra ou **Não anexar**. |
-| **Reincidência** | No bug já ligado, **Levar console e contexto de …** acrescenta à entrada a página (URL · navegador · sistema) e o console (contagem, o primeiro erro e o link do log). |
+| **Bug novo** | `/bug`, **🐞 Bug** no painel de execução ou *Novo bug a partir deste documento*: o diálogo ganha **Console e contexto da aba testada** — já vem a última aba em foco (que não é o TestFlow), com quantos erros e falhas de rede ela teve. Escolha outra ou **Não anexar**. |
+| **Reincidência** | No bug já ligado, **Levar console e contexto de …** acrescenta à entrada a página (URL · navegador · sistema), o console (contagem, o primeiro erro e o link do log) e a rede (quantas falharam, a primeira e o link do HAR). |
 | **Anexar depois** | `Ctrl+Shift+P` → **Console e contexto da aba testada (extensão): anexar aqui…** — num bug, preenche *Ambiente* e *Console e rede* (troca a seção se já existir); em outro documento, o resumo entra onde você está (ou no passo da execução). |
 | **O que é guardado** | Por aba: `console.error`, `console.warn`, erros não tratados, promises rejeitadas, imagens/scripts que não carregaram e as trocas de página (inclusive em SPA) — os últimos 300 eventos dos últimos 30 min. |
+| **Rede** | Só as requisições que **falharam**: `fetch` e XHR com status 400 ou mais (com os cabeçalhos e até 16 KB da resposta, se for texto/JSON), imagens, scripts e a própria página com erro, e falhas sem resposta (domínio que não existe, conexão recusada, tempo esgotado) com o erro do navegador (`net::ERR_NAME_NOT_RESOLVED`). Até 50 por aba, dos últimos 30 min. No bug: cada uma numa linha (`POST …/api/pedidos → 500 Internal Server Error · 320 ms`; repetidas juntam, `(2×)`), e o **`.har`** com tudo — abre no DevTools (aba *Rede* → importar), no Charles/Fiddler, e vai como anexo no *Copiar para o Jira*. |
 | **Ícone da extensão** | Mostra se está capturando e quanto guardou; **Pausar** (nada é guardado) e **Limpar**. Pausada, o bug sai sem console (o TestFlow avisa). |
 
 > [!NOTE]
-> **Privacidade:** a extensão não manda nada para a internet nem grava em disco — guarda só na memória da sessão do navegador (fechou o navegador, apagou). Só páginas **locais** com o TestFlow (`localhost`, `127.0.0.1`, arquivo) conseguem pedir a captura. Antes de ir para o documento, **tokens, senhas, CPF, cartão e e-mails são mascarados** (`••••`), no resumo, na URL e no log.
+> **Privacidade:** a extensão não manda nada para a internet nem grava em disco — guarda só na memória da sessão do navegador (fechou o navegador, apagou). Só páginas **locais** com o TestFlow (`localhost`, `127.0.0.1`, arquivo) conseguem pedir a captura. **Cookies, `Authorization`, chaves de API e cabeçalhos de token nunca são guardados** (fica só o nome, com `••••`). Antes de ir para o documento, **tokens, senhas, CPF, cartão e e-mails são mascarados** (`••••`) no resumo, nas URLs, no log e nos corpos do HAR.
 
-**Limites:** só Chrome e Edge (Windows e Mac); não observa iframes; o TestFlow como arquivo único (`dist-single`, por `file://`) só fala com a extensão se você ligar *Permitir acesso a URLs de arquivo* nos detalhes dela. Com a extensão, o DevTools mostra `captura.js` como origem dos `console.error` (o erro é o mesmo; a linha original fica na pilha). Requisições com falha (HAR) chegam na próxima versão.
+**Limites:** só Chrome e Edge (Windows e Mac); não observa iframes; o TestFlow como arquivo único (`dist-single`, por `file://`) só fala com a extensão se você ligar *Permitir acesso a URLs de arquivo* nos detalhes dela. Com a extensão, o DevTools mostra `captura.js` como origem dos `console.error` (o erro é o mesmo; a linha original fica na pilha). Na rede: sem os tempos detalhados (DNS, conexão…) e sem o corpo de imagens/scripts; mensagens que só o navegador escreve no console (como o bloqueio de CORS) não são vistas — a requisição aparece como *Failed to fetch*.
 
 ## 9. Resultados de automação
 
