@@ -4,6 +4,8 @@ dist/
 dist-single/
 mcp-dist/
 extensao-dist/
+reporter-dist/
+tests/.tmp/
 claude-skill/
 test-results/
 playwright-report/

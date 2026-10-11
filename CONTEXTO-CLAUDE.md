@@ -34,6 +34,7 @@ antes de gravar por cima, versão anterior em `.versoes/`.
 | `src/templates/*.md` | Modelos de documento. |
 | `mcp/` | Servidor MCP local (Node): `nodefs.ts` adapta o fs do Node à File System Access API para reaproveitar os módulos do app; `qa.ts` (ferramentas), `server.ts` (17 ferramentas `qa_*`). |
 | `scripts/` | builds (MCP, skill, extensão), `run-tests.mjs`, `skill-intro.md` (texto da skill). |
+| `reporter/` | Reporter da automação (11.5): reporter do Playwright e comando `importar` (JUnit/Playwright/Newman) que gravam na execução pelo `QaWorkspace.attachAutomation` do MCP. JUnit no Node: `src/io/miniXml.js`. |
 | `extensao/` | Extensão opcional do Chrome/Edge (11.4): guarda o console das abas testadas e responde ao app pela ponte (`window.postMessage` ↔ `conteudo.js` ↔ `fundo.js`). Só páginas locais com `<meta name="testflow">` falam como TestFlow. Lado do app: `src/io/extBridge.js`, `src/app/bugCapture.js`, `src/markdown/bugCapture.ts`. Teste com a extensão real: `PW_EXTENSAO=1 npx playwright test extensaoReal`. |
 
 Estrutura da pasta de trabalho do usuário: `_entrada/`, `aplicacoes/<App>/{casos[/<TICKET>],bugs,planos,sessoes,relatorios,requisitos,docs}`, `processos/`, `modelos/`, `visoes/`, `.versoes/`, `_lixeira/`.
@@ -55,7 +56,7 @@ O app se chama **TestFlow** (antes: Markdown QA Editor). Nome visível vem de `b
 3. Entrada nova no topo de `src/changelog.js` (cartão "O que mudou"; `manual:` = início do título da seção do MANUAL).
 4. **Atualizar o teste do "O que mudou"** em `tests/e2e/editor.spec.mjs` (prefs `version` = uma versão anterior e os textos esperados) — ele quebra a cada versão.
 5. Documentar: `MANUAL.md` (seção certa + "Onde fica…?" + atalhos), `ROADMAP.md` (nota da versão), `README.md`; se mudar o formato: `CONVENCOES-QA.md` e `scripts/skill-intro.md`; se mudar o MCP: descrição em `mcp/server.ts` e seção 12.6 do MANUAL.
-6. `npm run check` · `npm test` · `npx playwright test` · `npm run mcp:build` · `npm run skill` · `npm run extensao` · `npm run build` · `npm run build:single`. Se mudou a extensão: subir a `version` de `extensao/manifest.json`.
+6. `npm run check` · `npm test` · `npx playwright test` · `npm run mcp:build` · `npm run skill` · `npm run extensao` · `npm run reporter` · `npm run build` · `npm run build:single`. Se mudou a extensão: subir a `version` de `extensao/manifest.json`.
 7. Avisar o usuário se precisa reinstalar `mcp-dist\testflow.mcpb` no Claude desktop (só quando o MCP mudou).
 8. **Entregar pelo Git** (desde 07/10/2026): commit na pasta do Windows (o repositório privado no GitHub) e o usuário faz `git push`; no Mac ele faz `git pull` + `npm install` + `npm run app`. Não mandar zip para copiar por cima (arquivos removidos ficavam para trás). `_local/` é só da máquina e não sobe.
 

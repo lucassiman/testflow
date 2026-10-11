@@ -29,6 +29,9 @@ import { parseView, runView, viewMarkdown, VIEW_PRESETS, findViewBlocks, viewMat
 import type { ViewDoc } from '../src/markdown/views.ts';
 import { lastRound } from '../src/markdown/linkInfo.ts';
 import { featureFiles } from '../src/markdown/gherkin.ts';
+import { automationRuns, flakyNotes, flakyTests, runFromTests } from '../src/markdown/flaky.ts';
+import { buildAutomationBlock } from '../src/markdown/automationReport.js';
+import { parseResults } from '../src/io/automation.js';
 import { stepTable, setActual, setStepStatus, logRun, newRound, addEvidenceToSection, cellToText, findSection } from '../src/markdown/runs.ts';
 import { syncExecution, countStatuses, deriveOverall, cellStatus, updateSummaryBlocks, setCell } from '../src/markdown/status.ts';
 import { sourceInfo, failedStep, nextId, idPrefix, buildLinkedDoc, linkLine, addRecurrence, bugClosed } from '../src/markdown/linkedDoc.ts';
@@ -38,6 +41,7 @@ import { inheritHeader, segmentMembers, commonHeader, headerOf } from '../src/ma
 import {
   cycleDoc, cycleTable, isCycle, isCycleDef, cycleStart, cycleClosed, syncCycle, caseResult, needsFreshRound, closeCycle, skipPending, cycleSummary,
   configOf, configFromLabel, combos, parseConfigs, defCases, execNumber, cicloOf, nextExecNumber, cycleProgress, unexecuted, nextCase, execInfo, syncDefExecutions, retestCases, runsOf,
+  attachAutomation as attachAutoToText,
 } from '../src/markdown/cycle.ts';
 import type { CaseLookup } from '../src/markdown/cycle.ts';
 import { planSharedSweep, sharedDocText, applyCasePlan, sharedSweepReport } from '../src/markdown/sharedSweep.ts';
@@ -58,7 +62,7 @@ import { ensureUid, headerIds, syncHeaderToBody, relinkRenamedId } from '../src/
 import { parseBlocks } from '../src/markdown/parser.js';
 import { lintMarkdown } from '../src/markdown/lint.js';
 import { makeBuiltins, fillTemplate, suggestedFileName, loadCustomTemplates } from '../src/templates/lib.js';
-import type { DocEntry } from '../src/types';
+import type { AutomationResult, DocEntry } from '../src/types';
 
 export const EVIDENCE_DIR = 'evidencias';
 
@@ -1443,6 +1447,66 @@ export class QaWorkspace {
     }
     if (!out.length) return ref ? `${docs[0].path}: nenhum bloco ${fence}gherkin para exportar.` : `Nenhum documento com bloco ${fence}gherkin${appName ? ` em ${appName}` : ''}.`;
     return [`${out.length} arquivo(s) .feature (nome sugerido no título; o comentário do topo diz de onde veio — reexportar substitui o mesmo arquivo):`, ...out].join('\n\n');
+  }
+
+  /**
+   * Resultado de testes automatizados direto na execução (11.5 — reporter, comando de importar, qa_anexar_automacao):
+   * de um arquivo (JUnit XML, Playwright JSON, Newman JSON) ou já lido (reporter do Playwright). Vai para a execução
+   * pedida; sem ela ("atual"), para a execução em andamento mais recente (da aplicação, se informada); sem nenhuma em
+   * andamento (ou "nova"), cria uma execução só automatizada. Substitui a seção "Testes automatizados" que já houver
+   * (a anterior fica em .versoes/). Marca os testes instáveis e liga os casos manuais citados.
+   */
+  async attachAutomation(o: { arquivo?: string; resultado?: AutomationResult; execucao?: string; app?: string; projeto?: string; origem?: string }): Promise<string> {
+    await this.refresh();
+    let res = o.resultado || null;
+    let sourceName = o.origem || '';
+    if (!res) {
+      if (!o.arquivo) throw new Error('informe o arquivo de resultados (JUnit XML, Playwright JSON ou Newman JSON)');
+      const file = nodePath.resolve(o.arquivo);
+      const raw = await fs.readFile(file, 'utf8').catch(() => { throw new Error(`não achei o arquivo ${file}`); });
+      res = parseResults(raw, nodePath.basename(file));
+      if (!res) throw new Error(`${nodePath.basename(file)} não parece um relatório JUnit XML, Playwright JSON (--reporter=json) ou Newman JSON`);
+      sourceName = sourceName || nodePath.basename(file);
+    }
+    if (!res.tests.length) throw new Error('o resultado não tem nenhum teste');
+    const all = this.index.all();
+    const appName = o.app ? (matchApp(o.app, listApps(this.dirs)) || o.app) : '';
+    const want = String(o.execucao || 'atual').trim();
+    let target: DocEntry | null = null;
+    if (want && !/^(atual|nova)$/i.test(want)) {
+      target = await this.find(want);
+      if (!isCycle(target.text || '')) throw new Error(`${target.path} não é uma execução`);
+    } else if (!/^nova$/i.test(want)) {
+      target = all
+        .filter((e) => isCycle(e.text || '') && !cycleClosed(e.text || '') && (!appName || (e.app || '').toLowerCase() === appName.toLowerCase()))
+        .sort((a, b) => (cycleStart(b.text || '')?.getTime() || 0) - (cycleStart(a.text || '')?.getTime() || 0))[0] || null;
+    }
+    // onde fica (ou vai ficar) a execução: os links dos casos são relativos a ela
+    const sibs = all.filter((e) => (e.tipo === 'execucao' || e.tipo === 'relatorio-execucao') && (!appName || (e.app || '').toLowerCase() === appName.toLowerCase())).map((e) => e.path);
+    const dir = target ? dirOf(target.path) : runDestination({ tipo: 'execucao', app: appName }, this.dirs, sibs).dir;
+    // casos manuais citados nos testes (TC-042 no título, ou automacao: apontando para o spec)
+    const cases = all.filter((e) => e.id && (e.tipo === 'caso-de-teste' || e.tipo === 'cenario-bdd' || meta(e.text || '').automacao))
+      .map((e) => ({ id: e.id, titulo: e.titulo || '', path: relativePath(dir, e.path), automacao: String(meta(e.text || '').automacao || '') }));
+    // instáveis: o histórico da pasta (menos a própria execução) e este resultado
+    const history = all.filter((e) => e.text && e.path !== target?.path).flatMap((e) => automationRuns(e.text || '', { id: e.id || e.name, link: '', titulo: e.titulo || '' }));
+    const rows = history.length ? flakyTests([...history, runFromTests(res.tests, res.startedAt || new Date(), { id: 'este', link: '', titulo: '' })]) : [];
+    const block = buildAutomationBlock(res, { sourceName: sourceName || res.name || res.tool, cases, projectRoot: o.projeto || '', flaky: rows.length ? flakyNotes(rows) : undefined });
+    const fails = res.tests.filter((t) => t.status === 'fail').length;
+    const marked = rows.filter((r) => res.tests.some((t) => runFromTests([t], new Date(), { id: '', link: '', titulo: '' }).testes[0].key === r.key)).length;
+    const counts = `${res.tests.length} teste(s) · ${fails} FAIL${marked ? ` · ${marked} instável(is)` : ''}`;
+    if (target) {
+      const doc = await this.readDoc(target.path);
+      if (cycleClosed(doc.text)) throw new Error(`${target.path} já foi finalizada — rode com execucao: "nova" (ou outra em andamento)`);
+      const had = /^## Testes automatizados\s*$/m.test(doc.text);
+      await this.writeDoc(target.path, attachAutoToText(doc.text, block), doc);
+      return `🤖 ${res.tool}: ${counts} → ${target.path} (${target.id || target.name})${had ? ' — o relatório anterior foi substituído (está em .versoes/)' : ''}.`;
+    }
+    const now = new Date();
+    const titulo = `Execução automatizada — ${String(res.name || res.tool).replace(/[:#]/g, ' ').replace(/\s+/g, ' ').trim()} — ${now.toLocaleDateString('pt-BR')}`;
+    const text = attachAutoToText(cycleDoc({ titulo, app: appName, origem: `relatório ${res.tool}`, cases: [], start: now, responsavel: this.opts.who || '', tags: ['automacao'] }), block);
+    const slug = titulo.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+    const path = await this.createDoc(dir, `${slug}.md`, text);
+    return `🤖 ${res.tool}: ${counts} → execução nova ${path} (${String(meta(text).id || '')})${want === 'atual' ? ' — não havia execução em andamento' : ''}.`;
   }
 
   /** Histórico de versões de um documento (.versoes/). */

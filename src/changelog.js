@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.53.0', date: '11/10/2026',
+    items: [
+      { icon: '🤖', text: '**Reporter ao vivo**: os testes automatizados gravam o resultado direto na execução em andamento (ou numa nova), sem baixar e importar o arquivo. Playwright: um reporter no `playwright.config`; Jest, Cypress, pytest: um comando com o JUnit XML. `Ctrl+Shift+P` → *Reporter da automação* mostra o trecho pronto, com a sua pasta.', manual: '9. Resultados de automação' },
+      { icon: '🔗', text: 'O resultado entra como a seção *Testes automatizados* (a anterior fica em `.versoes/`), com os casos citados ligados e os instáveis marcados. O Claude faz o mesmo com `qa_anexar_automacao`.', manual: '9. Resultados de automação' },
+    ],
+  },
+  {
     version: '1.52.0', date: '11/10/2026',
     items: [
       { icon: '🎲', text: '**Testes automatizados instáveis**: ao anexar um relatório (Playwright, JUnit, Newman), o teste que alterna PASS/FAIL entre as execuções da pasta — ou que só passou com retry — ganha **⚠ instável** na coluna Obs. A visão *Tendência entre rodadas* lista os instáveis com a sequência (✓✗✓✗).', manual: '9. Resultados de automação' },

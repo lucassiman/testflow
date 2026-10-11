@@ -143,6 +143,7 @@ Na árvore, 🏛 marca os documentos publicados e ✎ os alterados desde a publi
 | Guardar um filtro do Painel | **📊 Painel → 💾 Salvar como visão** |
 | Executar a regressão caso a caso | **Novo ▾ → 🔁 Ciclo de regressão…** (salva os casos) → **▶ Executar este ciclo** → **▶ Próximo caso** (ver 7.8); sem ciclo: **Novo ▾ → ▶ Rodada de execução…** |
 | Comentar / revisar o documento de alguém | `Alt+M`; responder e resolver no próprio comentário (ver 6.7) |
+| Resultado dos testes automatizados direto na execução (sem importar arquivo) | `npm run reporter` + `Ctrl+Shift+P` → **Reporter da automação** (ver 9) |
 | Mandar os cenários BDD para o repositório da automação | `Ctrl+Shift+P` → **Exportar .feature** (ver 9) |
 | Ver quais testes automatizados são instáveis | Visão **Tendência entre rodadas**, tabela *Testes automatizados instáveis* (ver 9) |
 | Gravar vídeo de um bug intermitente | `Ctrl+Alt+G` ou **⏺ Gravar** no painel de execução (ver 8.1) |
@@ -706,6 +707,28 @@ Exemplos para testar: `exemplos/automacao/junit.xml`, `playwright.json`, `newman
 
 **Testes instáveis.** Ao importar ou anexar um relatório, o TestFlow olha as execuções automatizadas já registradas na pasta de trabalho: o teste que **trocou PASS↔FAIL duas vezes ou mais** nas últimas 10 execuções em que rodou — ou que o Playwright marcou *flaky* (passou só depois de retry) — ganha na coluna **Obs** a marca `⚠ instável: 3 trocas PASS↔FAIL em 8 execuções`. Quem quebrou de vez (passava e passou a falhar) ou foi corrigido não é instável. O mesmo teste é reconhecido pelo arquivo e pelo título. A visão **Tendência entre rodadas** (`Ctrl+Shift+P` → *Tendência*) ganha a tabela **Testes automatizados instáveis**: execuções, falhas, trocas, quantas vezes só passou com retry, a sequência (`✓` passou, `✗` falhou, `↻` passou com retry, da mais antiga para a mais nova) e a última execução. O Claude vê a mesma tabela em `qa_tendencia`.
 
+**Reporter ao vivo: o resultado direto na execução.** Os testes automatizados gravam o resultado na pasta de trabalho, sem baixar e importar o arquivo:
+
+1. Uma vez, na pasta do TestFlow: `npm run reporter` (gera `reporter-dist/testflow.mjs`, um arquivo só, sem dependências).
+2. `Ctrl+Shift+P` → **Reporter da automação: resultado direto na execução — como ligar…** mostra (e copia) o trecho com o caminho da sua pasta de trabalho (o de *Onde fica a pasta de trabalho no computador*).
+3. **Playwright** — no `playwright.config` do projeto de automação:
+   ```js
+   reporter: [['list'], ['C:/dev/markdown qa editor/reporter-dist/testflow.mjs', { pasta: 'C:/dev/qa', app: 'Portal' }]],
+   ```
+   **Jest, Cypress, pytest…** — gere o JUnit XML (`jest-junit`, `mocha-junit-reporter`, `pytest --junitxml`) e rode depois dos testes:
+   ```text
+   node "C:/dev/markdown qa editor/reporter-dist/testflow.mjs" importar junit.xml --pasta "C:\dev\qa" --app Portal
+   ```
+
+| Para onde vai | Como |
+| --- | --- |
+| **Padrão (`atual`)** | A execução **em andamento** mais recente (da aplicação, se informar `app`). O resultado entra como a seção *Testes automatizados*, ao lado dos casos manuais; a que já existia é **substituída** (a anterior fica em `.versoes/`). O status da execução é recalculado. |
+| **Nenhuma em andamento, ou `execucao: 'nova'`** | Cria uma **execução só automatizada** na pasta de execuções da aplicação. |
+| **Uma específica** | `execucao: 'EXEC-20261011-0930'` (ID ou caminho). Execução finalizada não muda — o terminal avisa. |
+| **Sem configurar a pasta** | O reporter só avisa no terminal; os testes rodam normalmente. Opções também por variável de ambiente: `TESTFLOW_PASTA`, `TESTFLOW_EXECUCAO`, `TESTFLOW_APP`. |
+
+Igual à importação: os casos citados no título do teste (`TC-042`, `@TC-042`) ficam ligados, os instáveis ganham ⚠ e os specs abrem no VS Code na linha. Se a execução estiver aberta no editor, ele avisa que o arquivo mudou e oferece recarregar. O resultado vai **no fim** da rodada de testes (não teste a teste). Num **CI na nuvem** (GitHub Actions…), o servidor não enxerga a sua pasta: baixe o relatório e importe (ou use o comando na sua máquina). O Claude faz o mesmo com `qa_anexar_automacao { arquivo }`.
+
 **Exportar `.feature` (Gherkin).** Os cenários BDD (blocos ```` ```gherkin ````) viram arquivos para o repositório da automação:
 
 | Como | O que acontece |
@@ -1028,6 +1051,7 @@ No `claude_desktop_config.json`: `"markdown-qa": { "command": "node", "args": ["
 | `qa_bug_do_caso` | Bug ligado a partir do passo que falhou, com passos, esperado, obtido e os prints; o caso ganha o link. Se o caso **já tem bug ligado**, ele não duplica: mostra os bugs e o Claude pergunta se é **reincidência** (registra no bug e reabre, como o app) ou bug novo. Achado numa rodada, o bug guarda `execucao:`/`ciclo:` |
 | `qa_rodada_criar` · `qa_rodada_registrar` · `qa_rodada_status` · `qa_rodada_finalizar` | A rodada inteira pelo Claude: criar pelos casos de um **segmento** (épico, ticket, `#tag`), de uma consulta, de uma lista ou de um **ciclo salvo** (vira a execução #N); registrar cada caso (passos ou o caso inteiro); ver como está; finalizar (SKIP nos pendentes + os 4 relatórios) |
 | `qa_relatorios` | Gera/regera os relatórios de fim de execução (7.8) — os mesmos do app, mantendo o que você escreveu |
+| `qa_anexar_automacao` | Resultado de automação (JUnit XML, Playwright JSON, Newman JSON) direto na execução em andamento, numa nova ou numa específica (9) |
 | `qa_exportar_feature` | Cenários BDD como arquivos `.feature` (9), de um documento ou de todos (por aplicação) — para o Claude gravar no repositório da automação |
 | `qa_validar` · `qa_rastreabilidade` | Avisos de QA, links quebrados e evidências faltando (documento, segmento, pasta ou tudo); matriz ticket/épico → casos → resultado → bugs |
 | `qa_varredura` · `qa_ligar` | Documentos antigos sem os vínculos (app, ticket, épico, tags/sprint herdadas, bug sem caso, caso sem requisito, pasta errada), cada achado com ✅ certo / 🟡 provável / ❓ confirmar; `aplicar` preenche só campos vazios e soma tags. `qa_ligar` liga o bug órfão ao caso |

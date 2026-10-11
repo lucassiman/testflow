@@ -1,6 +1,6 @@
 {
   "name": "testflow",
-  "version": "1.52.0",
+  "version": "1.53.0",
   "description": "Editor Markdown leve para documentação de QA (Raw, Preview editável, Mermaid).",
   "scripts": {
     "dev": "vite",
@@ -15,7 +15,8 @@
     "check": "tsc -p tsconfig.json && tsc -p tsconfig.mcp.json",
     "mcp": "tsx mcp/main.ts",
     "mcp:build": "node scripts/build-mcp.mjs",
-    "extensao": "node scripts/build-extension.mjs"
+    "extensao": "node scripts/build-extension.mjs",
+    "reporter": "node scripts/build-reporter.mjs"
   },
   "license": "MIT",
   "dependencies": {

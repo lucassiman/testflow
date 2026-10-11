@@ -59,6 +59,7 @@ Como trabalhar:
 - Bug de um caso que já tem bug ligado: qa_bug_do_caso devolve os bugs; pergunte ao usuário se é reincidência (reincidencia: "BUG-…") ou bug novo (novo: true).
 - Evolução da qualidade (sprint, % de sucesso no tempo, casos que mais falham, testes automatizados instáveis): qa_tendencia.
 - Cenários BDD como .feature para o repositório da automação: qa_exportar_feature (devolve os arquivos; grave com as suas ferramentas).
+- Rodou os testes automatizados (Playwright, Jest, Cypress…)? qa_anexar_automacao { arquivo } põe o resultado na execução em andamento (ou numa nova).
 - Status personalizados: um documento tipo status (configuracao/status.md, tabela Palavra | Conta como | Cor) cria palavras a mais (ex.: RETESTE, FALHA CONHECIDA) que valem nos passos e contam como um dos 5 — use só as que existem (qa_marcar_passos avisa).
 - Aprovação do caso (rascunho → em-revisao → aprovado): casos novos nascem "rascunho"; qa_aprovacao muda (aprovar só quando o usuário pedir); consulta "aprovacao: em-revisao, alterado" lista o que falta revisar; qa_rodada_criar so_aprovados=true deixa de fora os não aprovados.
 - Massa por ambiente: no compartilhado, "## Dados: Logins (hml)" / "(prod)"… com as mesmas chaves (sem ambiente = vale para todos); o caso continua {{admin.e-mail}} e o app troca pelo ambiente ativo. qa_preparar_ambientes cria as seções com as chaves e os valores em branco para o QA preencher; qa_compartilhados { ambiente } mostra o que falta em cada ambiente.
@@ -230,6 +231,16 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
     inputSchema: { doc: docArg, arquivo: z.string().describe('caminho completo do arquivo no computador'), passo: z.string().optional(), legenda: z.string().optional() },
     annotations: RW,
   }, async (a) => run(() => ws.attach(a), text));
+
+  server.registerTool('qa_anexar_automacao', {
+    title: 'Anexar resultado de automação', description: 'Resultado de testes automatizados (JUnit XML — Jest, Cypress, pytest… —, Playwright JSON ou Newman JSON) direto na execução: a pedida, a em andamento mais recente (padrão "atual", da aplicação se informada) ou uma nova ("nova"; também quando não há nenhuma em andamento). Substitui a seção Testes automatizados (a anterior fica em .versoes/), marca os testes instáveis e liga os casos citados (TC-042 no título).',
+    inputSchema: {
+      arquivo: z.string().describe('caminho completo do arquivo de resultados no computador'),
+      execucao: z.string().optional().describe('ID/caminho da execução, "atual" (padrão) ou "nova"'),
+      app: z.string().optional(), projeto: z.string().optional().describe('pasta do projeto de automação (links para o VS Code)'),
+    },
+    annotations: RW,
+  }, async (a) => run(() => ws.attachAutomation(a), text));
 
   server.registerTool('qa_atualizar_cabecalho', {
     title: 'Atualizar cabeçalho', description: 'Muda campos do cabeçalho YAML (status, prioridade, responsavel, versao, jira…). "jira" acrescenta a chave (sem apagar as que já existem), a não ser com substituir_jira. Trocar "id" (ex.: SES-002 → SES-005) atualiza o título e as menções no documento e os [[links]] dos outros documentos da pasta. Campos de publicação e "uid" (identidade fixa) não mudam por aqui.',

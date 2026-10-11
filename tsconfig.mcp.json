@@ -1,6 +1,6 @@
 {
-  // Servidor MCP (Node): mcp/*.ts + os módulos do app que ele reaproveita. Rode: npm run check
+  // Servidor MCP e reporter (Node): mcp/*.ts, reporter/*.ts + os módulos do app que eles reaproveitam. Rode: npm run check
   "extends": "./tsconfig.json",
   "compilerOptions": { "types": ["node"] },
-  "include": ["mcp/**/*.ts", "src/**/*.d.ts"]
+  "include": ["mcp/**/*.ts", "reporter/**/*.ts", "src/**/*.d.ts"]
 }

@@ -36,6 +36,7 @@ npm install
 npm run app          # depois: instale pelo Chrome em http://localhost:4173 (passos acima)
 npm run skill        # skill do Claude em claude-skill/ (opcional)
 npm run mcp:build    # extensão do Claude desktop em mcp-dist/ (opcional)
+npm run reporter     # reporter da automação em reporter-dist/ (opcional: resultado direto na execução)
 ```
 
 **Extensão do navegador (opcional, console, rede e contexto no bug):** no Chrome/Edge, `chrome://extensions` → *Modo do desenvolvedor* → **Carregar sem compactação** → pasta `extensao/`; depois, no app, `Ctrl+Shift+P` → *Captura de bug pela extensão*. Atualiza com o `git pull` + ↻ na página de extensões. Manual, seção 8.3.
@@ -50,7 +51,7 @@ npm run app
 
 Abra o app: ele pega a versão nova sozinho (confira no rodapé). **Não desinstale o app nem limpe os dados do site** para atualizar — é lá que ficam preferências, abas, fixados e recentes; mantenha sempre a porta 4173.
 
-**Não vai para o repositório** (`.gitignore`): `node_modules/`, as saídas geradas (`dist/`, `dist-single/`, `mcp-dist/`, `claude-skill/`, `extensao-dist/`, zips) e a pasta **`_local/`**, que é só desta máquina (rascunhos, testes pessoais). Seus documentos de QA ficam na pasta de trabalho, fora do repositório do app.
+**Não vai para o repositório** (`.gitignore`): `node_modules/`, as saídas geradas (`dist/`, `dist-single/`, `mcp-dist/`, `claude-skill/`, `extensao-dist/`, `reporter-dist/`, zips) e a pasta **`_local/`**, que é só desta máquina (rascunhos, testes pessoais). Seus documentos de QA ficam na pasta de trabalho, fora do repositório do app.
 
 ### Atualizar o app instalado
 
@@ -148,6 +149,7 @@ Só o bloco editado é reescrito no Markdown; se nada mudou, nada é escrito. A 
 | **Importar** | Arraste para o editor um **JUnit XML** (Playwright, Cypress, Selenium/TestNG, pytest, Jest, Newman…), um **Playwright JSON** (`--reporter=json`) ou um **Newman JSON** (`-r json`) — ou `/importar resultados`. Abre um relatório novo com cabeçalho, resumo + gráfico, tabela de resultados e **Falhas** (mensagem, stack trace recolhido, screenshot/trace). Segure `Shift` ao soltar (ou `/inserir resultados`) para colocar só a tabela e as falhas no documento aberto. |
 | **Abrir no VS Code** | O arquivo de cada teste e os anexos são links `vscode://` (abrem o spec na linha exata). No cartão de um caso manual, o campo `automacao:` também abre o spec. Caminhos relativos usam a **pasta do projeto de automação** — perguntada na primeira vez; troque em `/pasta do projeto`. |
 | **Caso manual ↔ automatizado** | Se o nome do teste citar o ID do caso (`TC-042 login…` ou `@TC-042`), ou se um caso da pasta de trabalho tiver `automacao:` apontando para o spec, o relatório ganha a coluna **Caso** e a seção **Cobertura dos casos manuais** (resultado por caso). |
+| **🤖 Reporter ao vivo** | `npm run reporter` e o trecho de `Ctrl+Shift+P` → *Reporter da automação* no `playwright.config` (ou o comando `importar` com o JUnit XML do Jest/Cypress/pytest): o resultado vai direto para a execução em andamento (ou numa nova). Manual, seção 9. |
 | **⚠ Testes instáveis** | O teste que alterna PASS/FAIL entre as execuções da pasta (ou que só passou com retry) ganha **⚠ instável** na coluna Obs ao importar; a visão *Tendência entre rodadas* lista os instáveis. |
 | **🥒 Exportar `.feature`** | `Ctrl+Shift+P` → *Exportar .feature*: os blocos Gherkin dos cenários BDD vão para a pasta de features da automação (`# language: pt`, tags `@CEN-…` e do Jira); reexportar substitui só o que o TestFlow gerou. |
 
@@ -308,4 +310,5 @@ Novos recursos de QA entram como plugins em `src/markdown/plugins.js`.
 | `src/io/` | Arquivos, pastas, índice da pasta, captura de tela |
 | `src/ui/` | Componentes de tela (barra lateral, painel, diálogos, dicas, "O que mudou"…) |
 | `src/editor/` | Raw (CodeMirror), Preview, comandos, execução no Preview |
+| `reporter/` | Reporter da automação (`testflow.ts`): reporter do Playwright e comando `importar`, por cima do `QaWorkspace` do MCP (`attachAutomation`). `npm run reporter` → `reporter-dist/testflow.mjs` |
 | `extensao/` | Extensão do Chrome/Edge (Manifest V3, JS puro): `captura.js` (na página testada), `conteudo.js` (lote de eventos e a ponte com o app), `fundo.js` (service worker), `buffer.js` (regras testadas em `tests/unit/extensao.test.mjs`). Lado do app: `src/io/extBridge.js`, `src/app/bugCapture.js`, `src/markdown/bugCapture.ts` |

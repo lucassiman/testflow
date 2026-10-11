@@ -104,3 +104,19 @@ test('.feature: grava na pasta da automação, substitui o arquivo antigo do Tes
   await dlg.locator('button', { hasText: 'Gravar em repo-features/' }).click();
   await expect(page.locator('#toast')).toContainText('0 novo(s), 2 atualizado(s)');
 });
+
+test('reporter da automação (1.53.0): a paleta mostra e copia o trecho do Playwright com o caminho da pasta de trabalho', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.addInitScript(wsInit, 'ws-reporter');
+  await openEditor(page, { mode: 'split', prefs: { wsDiskPaths: { 'ws-reporter': String.raw`C:\dev\qa` } } });
+  await page.evaluate(() => window.__write('aplicacoes/Portal/casos/TC-1.md', '---\ntipo: caso-de-teste\nid: TC-1\ntitulo: Login\napp: Portal\n---\n\n# TC-1 — Login\n'));
+  await openWorkspace(page);
+  await page.locator('[data-side="wsList"] .side-file', { hasText: 'TC-1' }).click();
+  await expect(page.locator('#fileName')).toContainText('TC-1');
+  await palette(page, 'Reporter da automação');
+  const dlg = page.locator('.app-dialog');
+  await expect(dlg).toContainText("reporter: [['list'], ['<pasta do TestFlow>/reporter-dist/testflow.mjs', { pasta: 'C:/dev/qa', app: 'Portal' }]],");
+  await expect(dlg).toContainText(String.raw`node "<pasta do TestFlow>/reporter-dist/testflow.mjs" importar junit.xml --pasta "C:\dev\qa" --app "Portal"`);
+  await dlg.locator('button', { hasText: 'Copiar trecho do Playwright' }).click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("{ pasta: 'C:/dev/qa', app: 'Portal' }");
+});

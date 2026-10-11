@@ -7,8 +7,10 @@
  *   tests: [{ title, suite, file, line, project, duration, status: 'pass'|'fail'|'skip'|'blocked',
  *             retries, flaky, message, details, attachments: [{ name, path, contentType }] }]
  * }
- * Sem dependências: XML via DOMParser, JSON nativo.
+ * Sem dependências: XML via DOMParser (no Node, src/io/miniXml.js), JSON nativo.
  */
+import { parseXml } from './miniXml.js';
+
 /** @typedef {import('../types').AutomationResult} AutomationResult */
 /** @typedef {import('../types').AutomationTest} AutomationTest */
 /** @typedef {import('../types').AutomationStatus} AutomationStatus */
@@ -59,7 +61,8 @@ function guessTool(xml, fileName) {
 
 /** @param {string} xml @returns {AutomationResult} */
 export function parseJUnit(xml, fileName = '') {
-  const doc = new DOMParser().parseFromString(xml, 'application/xml');
+  // no navegador, o DOMParser; no Node (reporter, comando de importar, MCP), o leitor mínimo
+  const doc = /** @type {Document} */ (/** @type {unknown} */ (typeof DOMParser !== 'undefined' ? new DOMParser().parseFromString(xml, 'application/xml') : parseXml(xml)));
   if (doc.querySelector('parsererror')) throw new Error('XML inválido');
   const root = doc.documentElement;
   /** @type {AutomationTest[]} */
