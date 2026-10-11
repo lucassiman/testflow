@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.55.0', date: '11/10/2026',
+    items: [
+      { icon: '📣', text: '**Avisos no Microsoft Teams**: um cartão vai para o canal quando a rodada é encerrada (números, recomendação Go/No-Go, falhas com o passo e bugs abertos) e quando um caso **Crítico** falha (o passo, esperado × obtido, a rodada). `Ctrl+Shift+P` → *Avisos no Microsoft Teams* — cole a URL do webhook (Workflows do canal) e envie um teste.', manual: '12.8 Avisos no Microsoft Teams' },
+      { icon: '🛡', text: 'Desligado por padrão (sem URL, nada sai). Dados sensíveis vão mascarados; o envio vai pela extensão do navegador (atualize: `git pull` e ↻).', manual: '12.8 Avisos no Microsoft Teams' },
+    ],
+  },
+  {
     version: '1.54.0', date: '11/10/2026',
     items: [
       { icon: '🎫', text: '**Jira pela API**: `Ctrl+Shift+P` → *Jira: criar a issue deste bug* cria a issue direto (descrição em wiki, prints e logs como anexo, prioridade e rótulos) e a chave volta para o campo `jira:`. *Jira: trazer o status* grava o status de cada issue nos bugs (`jira_status`) e lista os concluídos no Jira que aguardam reteste.', manual: '12.7 Jira pela API' },

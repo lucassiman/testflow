@@ -7,6 +7,7 @@
  */
 import { MAX_AGE_MS, addEvent, addRequest, counts, focusTab, isAppOrigin, prune, shrink, tabList } from './buffer.js';
 import { jiraCreate, jiraIssueTypes, jiraMe, jiraProjects, jiraStatuses, normalizeSite } from './jira.js';
+import { teamsPost } from './teams.js';
 
 const VERSAO = chrome.runtime.getManifest().version;
 const PROTOCOLO = 1;
@@ -76,7 +77,10 @@ async function bridge(p) {
   if (/^jira/.test(p.tipo)) {
     try { return await jiraBridge(p.tipo, p.dados); } catch (err) { return { ok: false, erro: String(/** @type {Error} */ (err)?.message || err) }; }
   }
-  if (p.tipo === 'ola') return { ok: true, dados: { versao: VERSAO, protocolo: PROTOCOLO, pausado: paused, jira: !!(await jiraConfig()) } };
+  if (p.tipo === 'teams-enviar') {
+    try { return { ok: true, dados: await teamsPost(String(p.dados?.url || ''), p.dados?.payload) }; } catch (err) { return { ok: false, erro: String(/** @type {Error} */ (err)?.message || err) }; }
+  }
+  if (p.tipo === 'ola') return { ok: true, dados: { versao: VERSAO, protocolo: PROTOCOLO, pausado: paused, jira: !!(await jiraConfig()), teams: true } };
   if (p.tipo === 'abas') {
     const open = await chrome.tabs.query({});
     return { ok: true, dados: { abas: tabList(state, open, appTabs, now), pausado: paused } };

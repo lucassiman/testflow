@@ -147,6 +147,7 @@ Na árvore, 🏛 marca os documentos publicados e ✎ os alterados desde a publi
 | Mandar os cenários BDD para o repositório da automação | `Ctrl+Shift+P` → **Exportar .feature** (ver 9) |
 | Ver quais testes automatizados são instáveis | Visão **Tendência entre rodadas**, tabela *Testes automatizados instáveis* (ver 9) |
 | Gravar vídeo de um bug intermitente | `Ctrl+Alt+G` ou **⏺ Gravar** no painel de execução (ver 8.1) |
+| Avisar o time no Teams quando a rodada termina ou um caso crítico falha | `Ctrl+Shift+P` → **Avisos no Microsoft Teams…** (ver 12.8) |
 | Criar a issue no Jira direto do bug (com os anexos) / trazer o status | `Ctrl+Shift+P` → **Jira: criar a issue deste bug** / **Jira: trazer o status** — com a extensão e o Jira configurado nela (ver 12.7) |
 | Erros do console, requisições com falha (HAR), URL, navegador e tela da aba testada no bug | Extensão do navegador (pasta `extensao/`) + `Ctrl+Shift+P` → **Captura de bug pela extensão** (ver 8.3) |
 | Vídeo do que acabou de acontecer (sem ter apertado gravar) | **⏪** no rodapé, `Ctrl+Alt+R` ou **⏪ Replay** no painel de execução — com a captura de tela ligada (ver 8.1) |
@@ -686,7 +687,7 @@ Para mandar a um colega sem o repositório: `npm run extensao` gera `extensao-di
 | **Anexar depois** | `Ctrl+Shift+P` → **Console e contexto da aba testada (extensão): anexar aqui…** — num bug, preenche *Ambiente* e *Console e rede* (troca a seção se já existir); em outro documento, o resumo entra onde você está (ou no passo da execução). |
 | **O que é guardado** | Por aba: `console.error`, `console.warn`, erros não tratados, promises rejeitadas, imagens/scripts que não carregaram e as trocas de página (inclusive em SPA) — os últimos 300 eventos dos últimos 30 min. |
 | **Rede** | Só as requisições que **falharam**: `fetch` e XHR com status 400 ou mais (com os cabeçalhos e até 16 KB da resposta, se for texto/JSON), imagens, scripts e a própria página com erro, e falhas sem resposta (domínio que não existe, conexão recusada, tempo esgotado) com o erro do navegador (`net::ERR_NAME_NOT_RESOLVED`). Até 50 por aba, dos últimos 30 min. No bug: cada uma numa linha (`POST …/api/pedidos → 500 Internal Server Error · 320 ms`; repetidas juntam, `(2×)`), e o **`.har`** com tudo — abre no DevTools (aba *Rede* → importar), no Charles/Fiddler, e vai como anexo no *Copiar para o Jira*. |
-| **Ícone da extensão** | Mostra se está capturando e quanto guardou; **Pausar** (nada é guardado) e **Limpar**. Pausada, o bug sai sem console (o TestFlow avisa). **Configurar Jira…** abre as opções do Jira (12.7). |
+| **Ícone da extensão** | Mostra se está capturando e quanto guardou; **Pausar** (nada é guardado) e **Limpar**. Pausada, o bug sai sem console (o TestFlow avisa). **Configurar Jira…** abre as opções do Jira (12.7). A extensão também manda os avisos do Teams (12.8). |
 
 > [!NOTE]
 > **Privacidade:** a extensão não manda nada para a internet nem grava em disco — guarda só na memória da sessão do navegador (fechou o navegador, apagou). Só páginas **locais** com o TestFlow (`localhost`, `127.0.0.1`, arquivo) conseguem pedir a captura. **Cookies, `Authorization`, chaves de API e cabeçalhos de token nunca são guardados** (fica só o nome, com `••••`). Antes de ir para o documento, **tokens, senhas, CPF, cartão e e-mails são mascarados** (`••••`) no resumo, nas URLs, no log e nos corpos do HAR.
@@ -1105,6 +1106,19 @@ Opcional: com a **extensão do navegador** (8.3) e o Jira configurado nela, o Te
 
 > [!NOTE]
 > O Jira recebe só o que você manda com essas ações. A extensão fala direto com o seu Jira Cloud (sem servidor no meio). O Claude continua podendo usar o conector da Atlassian (12.6) — os dois caminhos convivem.
+
+### 12.8 Avisos no Microsoft Teams
+
+Opcional: um cartão vai para um canal do Teams quando:
+
+| Evento | O que vai no cartão |
+| --- | --- |
+| **Rodada encerrada** (🏁 Finalizar execução) | Título, aplicação e versão, % de sucesso com PASS/FAIL/BLOCKED/SKIP, a **recomendação** do relatório de Encerramento (LIBERAR / COM RESSALVAS / NÃO LIBERAR), período e duração, responsável, as **falhas e bloqueios** (com o passo e o obtido), os **bugs abertos** e os automatizados. Vermelho se teve falha. |
+| **Caso crítico falhou** | Ao concluir a execução de um caso de prioridade **Crítica** (ou Crítica e Alta, se escolher) com FAIL — no painel ▶ ou marcando o caso inteiro FAIL na rodada: o caso, o **passo** (esperado × obtido), a rodada, quem executou e os bugs ligados. Um aviso por caso e rodada. |
+
+**Configurar:** no Teams, no canal: **⋯ → Fluxos de trabalho (Workflows) → "Postar em um canal quando uma solicitação de webhook for recebida"** → copie a URL. No TestFlow: `Ctrl+Shift+P` → **Avisos no Microsoft Teams…** → cole a URL, escolha o que avisar e **Salvar e enviar teste** (chega *✅ TestFlow conectado a este canal*). URL em branco = desligado (o padrão): nada sai do computador.
+
+O envio vai pela **extensão do navegador** (8.3), que só aceita endereços do Teams / Power Automate; sem ela, o app tenta mandar direto (alguns webhooks não deixam — aí o aviso pede a extensão). **Dados sensíveis** (e-mail, senha, CPF, cartão, token) vão mascarados no cartão. Se o envio falhar, o aviso diz no app e o seu trabalho segue normalmente. Rodadas encerradas pelo Claude (`qa_rodada_finalizar`) não avisam — o aviso sai do app.
 
 ## 13. Atalhos
 

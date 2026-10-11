@@ -378,6 +378,8 @@ export async function markWhole(status) {
   savePrefs({ cycleWhole: all });
   unskip(c.path, key);
   if (c.path === currentWorkspacePath()) refreshCycleDoc();
+  // 📣 caso crítico marcado FAIL (se o aviso no Teams estiver ligado)
+  if (status === 'FAIL' && e) { const caseText = openDocOverrides().get(e.path) ?? e.text ?? ''; import('./teams.js').then((m) => m.notifyCaseFailed({ text: caseText, path: e.path, key })).catch(() => {}); }
   const after = applyWhole(text, { [key]: { status, when } });
   const dest = nextCase(after, key, me());
   const p = cycleProgress(after);
@@ -514,12 +516,14 @@ function caseDetails(text) {
 }
 
 /** 📊 Como foi (está) essa rodada? — totais, % de sucesso, duração, falhas com os passos, SKIP e bugs. */
-export async function showRoundSummary() {
-  const c = currentCycle();
-  if (!c) { app.toast('Nenhum ciclo em andamento — abra o documento do ciclo.', 'error'); return; }
+/**
+ * Números, detalhes dos casos com problema, vínculos e bugs da rodada — o "Como foi essa rodada?" e o aviso do Teams.
+ * @param {{ path: string, text: string }} c
+ */
+export function roundData(c) {
   const text = syncedCycle(c.text);
   const summary = cycleSummary(text);
-  if (!summary) return;
+  if (!summary) return null;
   /** @type {import('../ui/roundSummary.js').CaseDetails} */
   const details = {};
   for (const p of summary.casos) {
@@ -527,10 +531,19 @@ export async function showRoundSummary() {
     const body = e ? openDocOverrides().get(e.path) ?? e.text ?? '' : '';
     details[p.key] = { titulo: e?.titulo, ...caseDetails(body) };
   }
+  return { text, summary, details, linksText: linksSummaryLine(text), bugs: roundBugs(summary) };
+}
+
+export async function showRoundSummary() {
+  const c = currentCycle();
+  if (!c) { app.toast('Nenhum ciclo em andamento — abra o documento do ciclo.', 'error'); return; }
+  const data = roundData(c);
+  if (!data) return;
+  const { text, summary, details } = data;
   const { writeRichClipboard, writePlainClipboard } = await import('./share.js');
   await openRoundSummary({
-    summary, details, title: summary.fim ? 'Como foi essa rodada?' : 'Como está essa rodada?', links: currentLinkChips(text), linksText: linksSummaryLine(text),
-    bugs: roundBugs(summary),
+    summary, details, title: summary.fim ? 'Como foi essa rodada?' : 'Como está essa rodada?', links: currentLinkChips(text), linksText: data.linksText,
+    bugs: data.bugs,
     clip: { rich: writeRichClipboard, plain: writePlainClipboard },
     toast: (m) => app.toast(m),
     onOpenCycle: c.path === currentWorkspacePath() ? undefined : () => openCycle(),
@@ -586,10 +599,13 @@ export async function finishCycle() {
   const execPath = currentWorkspacePath();
   if (activePath() === execPath) setActive('');
   await app.doSave(false);
+  const closedText = app.store.source;
   import('./docState.js').then((m) => m.refreshDocState());
   // os 4 relatórios de fim de execução (Encerramento/Go-No-Go, Defeitos, Rastreabilidade, Log + comparativo)
   if (!app.store.dirty && execPath) {
     try { await (await import('./reports.js')).generateReports({ execPath }); } catch (err) { app.toast(`Os relatórios não foram gerados: ${err instanceof Error ? err.message : err}`, 'error'); }
+    // 📣 aviso no Teams (se configurado) — não segura o resumo
+    import('./teams.js').then((m) => m.notifyRound(execPath, closedText)).catch(() => {});
   }
   await showRoundSummary();
 }

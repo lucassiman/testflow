@@ -7,6 +7,7 @@
  * Protocolo (v1): { testflow: 'ext', dir: 'pedido', id, tipo: 'ola' | 'abas' | 'captura' | 'jira…', abaId?, dados? }
  *              → { testflow: 'ext', dir: 'resposta', id, ok, dados?, erro? }
  * Jira (1.54.0): 'jira' (configurado?), 'jira-projetos', 'jira-tipos' { projeto }, 'jira-criar' { … }, 'jira-status' { chaves }.
+ * Teams (1.55.0): 'teams-enviar' { url, payload }.
  * O token do Jira fica só na extensão; aqui chegam só os resultados.
  * A extensão também anuncia { testflow: 'ext', dir: 'presente', versao } quando a página carrega.
  */
@@ -71,6 +72,8 @@ export function createExtBridge({ win = window, timeoutMs = 900 } = {}) {
     jiraCreate: (dados) => request('jira-criar', { dados, timeoutMs: 180_000 }),
     /** @param {string[]} chaves @returns {Promise<{ issues: import('../markdown/jiraApi.ts').JiraIssueStatus[] }>} */
     jiraStatus: (chaves) => request('jira-status', { dados: { chaves }, timeoutMs: 120_000 }),
+    /** Manda um cartão para o webhook do Teams (a extensão só aceita endereços do Teams/Power Automate). @param {string} url @param {unknown} payload */
+    teamsSend: (url, payload) => request('teams-enviar', { dados: { url, payload }, timeoutMs: 30_000 }),
     get announced() { return announced; },
   };
 }
