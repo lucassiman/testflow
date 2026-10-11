@@ -2,13 +2,25 @@
 /** Capturar a tela: print da janela do sistema testado direto para o documento, o passo da execução ou a nota da sessão. */
 import { app } from './context.js';
 import { createCapturer, supportsCapture } from '../io/capture.js';
-import { addEvidence, downloadBlob } from './evidence.js';
+import { REPLAY_CHOICES, REPLAY_DEFAULT } from '../io/replay.js';
+import { loadPrefs, savePrefs } from '../io/drafts.js';
+import { evidenceBaseName } from '../markdown/evidenceName.ts';
+import { showDialog } from '../ui/dialog.js';
+import { addEvidence, docLabel, downloadBlob } from './evidence.js';
 import { errMsg } from './shared.js';
 
 const status = /** @type {HTMLButtonElement | null} */ (document.getElementById('captureStatus'));
 
+/** Duração do replay instantâneo em segundos (0 = desligado). */
+export function replaySeconds() {
+  const v = loadPrefs().replaySeconds;
+  return typeof v === 'number' && (v === 0 || REPLAY_CHOICES.includes(v)) ? v : REPLAY_DEFAULT;
+}
+
 export const capturer = createCapturer({
+  replaySeconds,
   onChange: ({ active, label }) => {
+    paintReplay();
     if (!status) return;
     status.hidden = !active;
     status.textContent = `📸 ${shortLabel(label)} · parar`;
@@ -109,7 +121,7 @@ export async function toggleRecording({ win = window, floating = false } = {}) {
 
 /** Grava o vídeo e põe o link no lugar; se não der (sem pasta, cancelou), baixa o arquivo — o vídeo não se perde. @param {File} file @param {boolean} floating */
 async function placeVideo(file, floating) {
-  const name = `video-${new Date().toISOString().slice(0, 19).replace('T', '_').replace(/:/g, '-')}.${file.type === 'video/mp4' ? 'mp4' : 'webm'}`;
+  const name = !/^video\.[a-z0-9]+$/i.test(file.name) ? file.name : `video-${new Date().toISOString().slice(0, 19).replace('T', '_').replace(/:/g, '-')}.${file.type === 'video/mp4' ? 'mp4' : 'webm'}`;
   const before = app.store.source;
   if (app.runner?.mode === 'session') {
     const pending = app.runner.pendingPrints;
@@ -121,4 +133,98 @@ async function placeVideo(file, floating) {
   }
   downloadBlob(file, name);
   app.toast(`🎬 Não deu para gravar o vídeo em evidencias/ — ele foi baixado como ${name} (arraste para o documento depois).`, 'error', { duration: 9000 });
+}
+
+// ---------------------------------------------------------------- replay instantâneo (os últimos N s, sem ter apertado gravar)
+const replayStatus = /** @type {HTMLButtonElement | null} */ (document.getElementById('replayStatus'));
+/** @type {ReturnType<typeof setInterval> | undefined} */
+let replayTick;
+/** @param {number} seconds */
+export const secondsLabel = (seconds) => (seconds >= 120 && seconds % 60 === 0 ? `${seconds / 60} min` : `${seconds} s`);
+
+function paintReplay() {
+  if (!replayStatus) return;
+  const btn = replayStatus;
+  clearInterval(replayTick);
+  btn.hidden = !capturer.replaying;
+  if (btn.hidden) return;
+  const draw = () => {
+    if (!capturer.replaying) { paintReplay(); return; }
+    const win = capturer.replayWindowMs / 1000;
+    const have = Math.min(win, Math.floor(capturer.replayCoveredMs / 1000));
+    btn.textContent = have < win ? `⏪ ${have}/${win} s` : `⏪ ${secondsLabel(win)}`;
+    btn.title = `Replay instantâneo: os últimos ${secondsLabel(win)} da janela capturada ficam guardados só na memória (nada vai para o disco). Clique (ou Ctrl+Alt+R) para salvar o vídeo onde você está — passo da execução, nota da sessão ou documento.`;
+  };
+  draw();
+  replayTick = setInterval(draw, 1000);
+}
+replayStatus?.addEventListener('click', () => { saveReplay(); });
+
+/** Nome do arquivo do replay: `2026-10-11_14-30-12_TC-042-replay.webm`. @param {File} file @param {string} docId */
+function replayFile(file, docId) {
+  const d = new Date();
+  const p = (/** @type {number} */ n) => String(n).padStart(2, '0');
+  const stamp = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}_${p(d.getHours())}-${p(d.getMinutes())}-${p(d.getSeconds())}`;
+  const ext = file.type === 'video/mp4' ? 'mp4' : 'webm';
+  return new File([file], `${evidenceBaseName(stamp, { docId, step: 'replay' })}.${ext}`, { type: file.type });
+}
+
+/**
+ * Copia o replay agora (o momento do bug), para anexar depois — no diálogo do bug, por exemplo.
+ * null = replay desligado ou nada guardado ainda.
+ * @param {string} [docId] documento dono do vídeo (vai no nome do arquivo)
+ * @returns {Promise<{ file: File, ms: number } | null>}
+ */
+export async function takeReplay(docId = docLabel()) {
+  if (!capturer.replaying) return null;
+  try {
+    const clip = await capturer.saveReplay();
+    return clip ? { file: replayFile(clip.file, docId), ms: clip.ms } : null;
+  } catch { return null; }
+}
+
+/** Duração do trecho para mostrar (1:05). @param {number} ms */
+export const clipLabel = (ms) => mmss(ms);
+
+/**
+ * ⏪ Salvar replay (Ctrl+Alt+R): os últimos N s da janela capturada vão para evidencias/ e o link entra onde você está.
+ * Sem a captura ligada, pede a janela e liga o replay (os próximos N s passam a ficar guardados).
+ * @param {{ win?: Window, floating?: boolean }} [opts]
+ */
+export async function saveReplay({ win = window, floating = false } = {}) {
+  if (!supportsCapture || !globalThis.MediaRecorder) { app.toast('Este navegador não grava a tela — use Chrome ou Edge.', 'error'); return; }
+  const seconds = replaySeconds();
+  if (!seconds) {
+    app.toast('O replay instantâneo está desligado — Ctrl+Shift+P → "Replay instantâneo: duração" para ligar.', 'error', { duration: 6000 });
+    return;
+  }
+  if (!capturer.active) {
+    app.toast('Escolha a janela do sistema testado no seletor do navegador…');
+    try {
+      if (!(await capturer.share({ win }))) { app.toast('Replay não ligado — nenhuma janela escolhida.'); return; }
+    } catch (err) { app.toast(`Não foi possível capturar a tela: ${errMsg(err)}`, 'error'); return; }
+    app.toast(`⏪ Replay ligado: daqui em diante os últimos ${secondsLabel(seconds)} de "${shortLabel(capturer.label)}" ficam guardados (só na memória). Quando o problema acontecer, ⏪ no rodapé ou Ctrl+Alt+R salva o vídeo.`, 'info', { duration: 7000 });
+    return;
+  }
+  if (!capturer.replaying) { capturer.restartReplay(); app.toast(`⏪ Replay ligado: os últimos ${secondsLabel(seconds)} passam a ficar guardados.`); return; }
+  const clip = await takeReplay();
+  if (!clip) { app.toast('O replay ainda não tem nada guardado — tente de novo em um segundo.', 'error'); return; }
+  await placeVideo(clip.file, floating);
+}
+
+/** Ctrl+Shift+P → Replay instantâneo: 30 s / 60 s / 2 min / desligado. */
+export async function replaySetting() {
+  const cur = replaySeconds();
+  const res = await showDialog({
+    title: 'Replay instantâneo', icon: '⏪',
+    message: 'Enquanto a janela do sistema testado está sendo capturada (📸), os últimos segundos ficam guardados só na memória — sem ter apertado ⏺ Gravar. Quando o problema acontecer, ⏪ no rodapé (ou Ctrl+Alt+R) salva o vídeo; o bug criado na hora também pode levá-lo.',
+    select: { label: 'Guardar', value: String(cur), options: [...REPLAY_CHOICES.map((n) => ({ value: String(n), label: `Os últimos ${secondsLabel(n)}` })), { value: '0', label: 'Desligado' }] },
+    buttons: [{ id: 'cancel', label: 'Cancelar' }, { id: 'ok', label: 'Salvar', kind: 'primary' }],
+    defaultId: 'ok', cancelId: 'cancel',
+  });
+  if (res?.id !== 'ok') return;
+  const choice = Number(res.choice ?? cur);
+  savePrefs({ replaySeconds: choice });
+  capturer.restartReplay();
+  app.toast(choice ? `Replay instantâneo: os últimos ${secondsLabel(choice)}${capturer.active ? '' : ' (começa quando a captura de tela for ligada)'}.` : 'Replay instantâneo desligado.');
 }

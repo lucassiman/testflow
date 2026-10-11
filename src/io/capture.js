@@ -7,22 +7,47 @@
  * O navegador mostra a barra "compartilhando…" enquanto a captura está ligada; "Parar" nela (ou aqui) desliga.
  */
 
+import { createReplayBuffer } from './replay.js';
+
 export const supportsCapture = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getDisplayMedia;
 
 /**
- * @param {{ onChange?: (state: { active: boolean, label: string }) => void }} [opts]
+ * @param {{ onChange?: (state: { active: boolean, label: string }) => void, replaySeconds?: () => number }} [opts]
+ * `replaySeconds`: janela do replay instantâneo (0 = desligado), lida a cada vez que a captura liga.
  */
-export function createCapturer({ onChange } = {}) {
+export function createCapturer({ onChange, replaySeconds = () => 0 } = {}) {
   /** @type {MediaStream | null} */
   let stream = null;
   /** @type {HTMLVideoElement | null} */
   let video = null;
   let label = '';
+  /** @type {ReturnType<typeof createReplayBuffer> | null} */
+  let replay = null;
 
   const active = () => !!stream && stream.getVideoTracks().some((t) => t.readyState === 'live');
   const notify = () => onChange?.({ active: active(), label });
 
+  /** Quadros por segundo da trilha: prints 5; replay 10; gravação 15. */
+  function applyFps() {
+    const fps = recording ? 15 : replay?.running ? 10 : 5;
+    stream?.getVideoTracks()[0]?.applyConstraints?.({ frameRate: fps }).catch(() => {});
+  }
+
+  /** Liga (ou religa, com outra duração) o replay sobre o compartilhamento atual. */
+  function startReplay() {
+    replay?.stop();
+    replay = null;
+    const seconds = replaySeconds();
+    if (stream && active() && seconds > 0 && globalThis.MediaRecorder) {
+      const r = createReplayBuffer({ stream, windowMs: seconds * 1000, onError: () => { replay = null; applyFps(); notify(); } });
+      if (r.start()) replay = r;
+    }
+    applyFps();
+  }
+
   function stop() {
+    replay?.stop();
+    replay = null;
     if (recording && recording.rec.state !== 'inactive') recording.rec.stop();
     stream?.getTracks().forEach((t) => t.stop());
     stream = null;
@@ -56,6 +81,7 @@ export function createCapturer({ onChange } = {}) {
     video = v;
     await v.play().catch(() => {});
     await firstFrame(v);
+    startReplay();
     notify();
   }
 
@@ -167,9 +193,6 @@ export function createCapturer({ onChange } = {}) {
       }
     }
     const s = /** @type {MediaStream} */ (stream);
-    const track = s.getVideoTracks()[0];
-    // prints usam 5 quadros/s; o vídeo precisa de mais
-    await track?.applyConstraints?.({ frameRate: 15 }).catch(() => {});
     const rec = new MediaRecorder(s, { mimeType: mime, videoBitsPerSecond: 2_500_000 });
     /** @type {Blob[]} */
     const chunks = [];
@@ -178,7 +201,7 @@ export function createCapturer({ onChange } = {}) {
       rec.addEventListener('stop', () => {
         // só limpa a PRÓPRIA gravação
         if (recording?.rec === rec) { clearTimeout(recording.timer); recording = null; }
-        track?.applyConstraints?.({ frameRate: 5 }).catch(() => {});
+        applyFps();
         const type = mime.split(';')[0];
         const file = chunks.length ? new File(chunks, `video.${type === 'video/mp4' ? 'mp4' : 'webm'}`, { type }) : null;
         notify();
@@ -188,6 +211,8 @@ export function createCapturer({ onChange } = {}) {
     });
     rec.start(1000);
     recording = { rec, chunks, started: Date.now(), done: /** @type {Promise<File | null>} */ (done), timer: setTimeout(() => { if (rec.state !== 'inactive') rec.stop(); }, maxMs) };
+    // prints usam 5 quadros/s; o vídeo precisa de mais
+    applyFps();
     notify();
     return true;
   }
@@ -200,9 +225,29 @@ export function createCapturer({ onChange } = {}) {
     return r.done;
   }
 
+  /**
+   * Só liga o compartilhamento (sem tirar print): para começar o replay. Pede a janela se preciso (precisa de um clique).
+   * @param {{ win?: Window }} [opts]
+   * @returns {Promise<boolean>} false = cancelou a escolha
+   */
+  async function share({ win = window } = {}) {
+    if (active()) return true;
+    if (starting) return starting;
+    starting = start(win).then(() => true, (err) => { if (/** @type {Error} */ (err)?.name === 'NotAllowedError' || /** @type {Error} */ (err)?.name === 'AbortError') return false; throw err; });
+    try { return await starting; } finally { starting = null; }
+  }
+
   return {
     grab,
+    share,
     stop,
+    /** Replay: copia os últimos N s (entre N e 2N) — null se não está ligado ou nada foi gravado ainda. */
+    saveReplay: () => (replay ? replay.save() : Promise.resolve(null)),
+    /** Troca a duração (ou desliga) sem parar o compartilhamento. */
+    restartReplay: () => { if (active()) startReplay(); notify(); },
+    get replaying() { return !!replay?.running; },
+    get replayCoveredMs() { return replay?.running ? replay.coveredMs : 0; },
+    get replayWindowMs() { return replay?.windowMs || 0; },
     startRecording,
     stopRecording,
     get recording() { return !!recording; },

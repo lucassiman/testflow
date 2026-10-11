@@ -53,6 +53,8 @@ import { runsOf } from '../markdown/cycle.ts';
  *   onCapture?: (opts: { floating: boolean, win: Window }) => Promise<File[]>,
  *   onRecord?: (opts: { floating: boolean, win: Window }) => Promise<void>,
  *   isRecording?: () => boolean,
+ *   onReplay?: (opts: { floating: boolean, win: Window }) => Promise<void>,
+ *   canReplay?: () => boolean,
  *   onStateChange?: () => void,
  *   onFinish?: (res: { overall: string, round: number, revised?: boolean }) => boolean | void,
  *   onCancel?: (res: { reverted: boolean }) => void,
@@ -62,7 +64,7 @@ import { runsOf } from '../markdown/cycle.ts';
  *   prefs: import('../types').PrefsApi,
  * }} deps
  */
-export function createRunner({ store, preview, toast: appToast, root, onPastePrint, onPasteFiles, onSavePrints, onReadClipboardImages, onNewBug, onCapture, onRecord, isRecording, onStateChange, onFinish, onCancel, docKey: docKeyDep, prefs, shared, roundConfig }) {
+export function createRunner({ store, preview, toast: appToast, root, onPastePrint, onPasteFiles, onSavePrints, onReadClipboardImages, onNewBug, onCapture, onRecord, isRecording, onReplay, canReplay, onStateChange, onFinish, onCancel, docKey: docKeyDep, prefs, shared, roundConfig }) {
   const el = document.createElement('div');
   el.className = 'runner';
   el.setAttribute('role', 'region');
@@ -120,6 +122,8 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     ? (isRecording?.()
       ? '<button type="button" data-act="record" class="run-btn run-rec on" title="Parar a gravação: o vídeo vai para evidencias/ com o link aqui">⏹ Parar vídeo</button>'
       : '<button type="button" data-act="record" class="run-btn run-rec" title="Gravar um vídeo da janela do sistema testado (bug intermitente) — até 5 min; Ctrl+Alt+G no editor">⏺ Gravar</button>')
+    : '') + (onReplay && canReplay?.()
+    ? '<button type="button" data-act="replay" class="run-btn run-replay" title="Replay instantâneo: salva os últimos segundos da janela capturada, sem ter apertado gravar (Ctrl+Alt+R no editor). Sem a captura ligada, o clique escolhe a janela e começa a guardar.">⏪ Replay</button>'
     : '');
   const canFloat = typeof window !== 'undefined' && 'documentPictureInPicture' in window;
   const floatBtn = () => (canFloat
@@ -945,6 +949,7 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     else if (act === 'bug') { saveActual(); const c = current(); onNewBug?.(c ? c.row.line : -1); }
     else if (act === 'notePrint') { onReadClipboardImages?.(win().navigator.clipboard).then(addSessionPrints); }
     else if (act === 'record') { onRecord?.({ floating: !!pip, win: win() }).finally(() => render()); }
+    else if (act === 'replay') { onReplay?.({ floating: !!pip, win: win() }); }
     else if (act === 'capture') {
       const floating = !!pip;
       const sessionNow = mode === 'session';

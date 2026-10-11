@@ -130,6 +130,14 @@ function setTitle(lines: string[], id: string, title: string): void {
   else lines.splice(from, 0, '', h);
 }
 
+/** Evidência no Markdown: vídeo (replay, gravação) vira link `[🎬 …]`, imagem vira `![…]`, o resto `[📎 …]`. */
+export function evidenceLink(path: string, alt: string): string {
+  const ext = /\.([a-z0-9]+)(?:[?#].*)?$/i.exec(path)?.[1]?.toLowerCase() || '';
+  if (['webm', 'mp4', 'mov', 'mkv'].includes(ext)) return `[🎬 ${alt}](${path})`;
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'avif'].includes(ext)) return `![${alt}](${path})`;
+  return `[📎 ${alt}](${path})`;
+}
+
 export interface LinkedOptions {
   id: string;
   title: string;
@@ -138,7 +146,7 @@ export interface LinkedOptions {
   source: SourceInfo;
   /** passo que falhou (só bug) */
   step?: FailedStep | null;
-  /** caminhos dos prints (relativos ao documento novo) */
+  /** caminhos dos prints e vídeos (relativos ao documento novo) */
   prints?: string[];
   /** de onde veio (achado numa rodada): execução e ciclo */
   origin?: { execucao?: string; ciclo?: string; plano?: string };
@@ -194,7 +202,7 @@ export function buildLinkedDoc(template: string, o: LinkedOptions): string {
       if (step.expected) setSection(lines, /^resultado esperado\b/i, [step.expected]);
       if (step.actual) setSection(lines, /^resultado obtido\b/i, ['> [!CAUTION]', `> ${step.actual}`]);
     }
-    if (o.prints?.length) setSection(lines, /^evid[eê]ncias?\b/i, o.prints.map((p) => `![${p.split('/').pop()?.replace(/\.[a-z0-9]+$/i, '') || 'print'}](${p})`).flatMap((l, i) => (i ? ['', l] : [l])));
+    if (o.prints?.length) setSection(lines, /^evid[eê]ncias?\b/i, o.prints.map((p) => evidenceLink(p, p.split('/').pop()?.replace(/\.[a-z0-9]+$/i, '') || 'print')).flatMap((l, i) => (i ? ['', l] : [l])));
   } else {
     // outros modelos: "Relacionado a" logo depois do título
     const fm = detectFrontMatter(lines.join('\n'));
@@ -222,7 +230,7 @@ export interface Recurrence {
   /** como o bug cita a origem: [[TC-042]] */
   sourceTarget: string;
   step?: FailedStep | null;
-  /** prints copiados para a pasta do bug (relativos a ele) */
+  /** prints (e o replay) copiados para a pasta do bug (relativos a ele) */
   prints?: string[];
   versao?: string;
   ambiente?: string;
@@ -250,7 +258,7 @@ export function addRecurrence(text: string, r: Recurrence): { text: string; reop
     ...(step?.actual ? [`- Obtido: ${step.actual}`] : []),
     ...([r.versao && `Versão ${r.versao}`, r.ambiente && `Ambiente ${r.ambiente}`].filter(Boolean).length ? [`- ${[r.versao && `Versão ${r.versao}`, r.ambiente && `Ambiente ${r.ambiente}`].filter(Boolean).join(' · ')}`] : []),
     ...(reopened ? [`- Bug reaberto (estava \`${previous}\`).`] : []),
-    ...(r.prints?.length ? ['', ...r.prints.flatMap((p, i) => [...(i ? [''] : []), `![Reincidência ${stamp}](${p})`])] : []),
+    ...(r.prints?.length ? ['', ...r.prints.flatMap((p, i) => [...(i ? [''] : []), evidenceLink(p, `Reincidência ${stamp}`)])] : []),
   ];
   const lines = out.replace(/\n+$/, '').split('\n');
   const sec = findSection(lines, /^reincid[eê]ncias?\b/i);

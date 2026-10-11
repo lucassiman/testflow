@@ -1,7 +1,7 @@
 // @ts-check
 /** Modelos, menu "/" e documentos novos: inserir blocos, salvar como modelo, criar documento na pasta, nota rápida e documento ligado (ex.: bug a partir do caso). */
 import { app } from './context.js';
-import { captureToDocument, toggleRecording } from './capture.js';
+import { captureToDocument, capturer, secondsLabel, takeReplay, toggleRecording } from './capture.js';
 import { TEMPLATES, rawCommand } from '../editor/commands.js';
 import { describe as describeDoc } from '../io/docIndex.ts';
 import { EVIDENCE_DIR, isRelativePath, readEvidence, setFolder } from '../io/evidence.js';
@@ -23,7 +23,7 @@ import { caretPosition } from '../ui/commandMenu.js';
 import { confirmDialog, showDialog } from '../ui/dialog.js';
 import { askAutomationRoot, pickAutomationFile } from './automation.js';
 import { formatCommand, insertBlockAfterActive } from './editing.js';
-import { captureInsertion, placeEvidence, reuseEvidence } from './evidence.js';
+import { captureInsertion, downloadBlob, placeEvidence, reuseEvidence } from './evidence.js';
 import { doNewRound, refreshSummary, startRun } from './execution.js';
 import { docIndex, els, errMsg, menu, todayIso } from './shared.js';
 
@@ -406,6 +406,10 @@ export async function createLinkedDoc(template, { where = app.target(), nearLine
   const ctx = { ...captureInsertion(where), runTarget: null };
   const tipo = /^tipo[ \t]*:[ \t]*(\S+)/m.exec(template.text)?.[1] || '';
   const dest = app.workspaceDir ? suggestDestination({ tipo, app: me.app }, app.workspaceDirs).dir : null;
+  // replay instantâneo ligado: copia AGORA os últimos segundos da janela capturada (o momento do defeito), antes dos diálogos
+  const replay = isBug && capturer.replaying ? takeReplay(sourceTarget) : null;
+  /** @type {import('../ui/dialog.js').DialogCheck | null} */
+  const replayCheck = replay ? { id: 'replay', label: `Levar o replay (os últimos ${secondsLabel(capturer.replayWindowMs / 1000)} da janela capturada)`, hint: 'vídeo em evidencias/ do bug' } : null;
   // o caso já tem bug ligado: o defeito pode ser o mesmo → registrar a reincidência (evita bug duplicado)
   if (isBug && app.workspaceDir) {
     const known = linkedBugs(src, sourceTarget);
@@ -415,14 +419,14 @@ export async function createLinkedDoc(template, { where = app.target(), nearLine
         title: known.length > 1 ? `Este documento já tem ${known.length} bugs ligados` : `Este documento já tem bug ligado: ${known[0].id}`, icon: '🐞',
         message: `O defeito${step ? ` do passo ${step.label}` : ''} pode ser o mesmo. Registrar a reincidência no bug existente (com data, passo, resultado obtido${printsHere.length ? ' e o print' : ''}) evita bug duplicado — se ele estava fechado, volta a FAIL.`,
         select: { label: 'Bug', value: known[0].path, options: known.map((b) => ({ value: b.path, label: `${b.id}${b.titulo ? ` — ${b.titulo}` : ''} · ${bugClosed(b.status || '') ? `fechado (${b.status})` : `aberto${b.status ? ` (${b.status})` : ''}`}` })) },
-        checks: printsHere.length ? [{ id: 'prints', label: `Levar ${printsHere.length} print(s) do passo ${step?.label}` }] : [],
+        checks: [...(printsHere.length ? [{ id: 'prints', label: `Levar ${printsHere.length} print(s) do passo ${step?.label}` }] : []), ...(replayCheck ? [replayCheck] : [])],
         buttons: [{ id: 'cancel', label: 'Cancelar' }, { id: 'new', label: 'Criar bug novo' }, { id: 'again', label: 'Registrar no bug escolhido', kind: 'primary' }],
         defaultId: 'again', cancelId: 'cancel',
       });
       if (!pick || pick.id === 'cancel') return;
       if (pick.id === 'again') {
         const bug = known.find((b) => b.path === pick.choice) || known[0];
-        await registerRecurrence(bug, { src, me, step, sourceTarget, prints: pick.checks.prints === false ? [] : printsHere, ctx: { ...captureInsertion(where), runTarget: null } });
+        await registerRecurrence(bug, { src, me, step, sourceTarget, prints: pick.checks.prints === false ? [] : printsHere, replay: pick.checks.replay === false ? null : replay, ctx: { ...captureInsertion(where), runTarget: null } });
         return;
       }
     }
@@ -432,6 +436,7 @@ export async function createLinkedDoc(template, { where = app.target(), nearLine
   if (step) checks.push({ id: 'fill', label: `Preencher com o passo ${step.label} (${step.status})`, hint: 'passos até ele, resultado esperado e obtido' });
   if (stepPrints.length) checks.push({ id: 'prints', label: `Levar ${stepPrints.length} print(s) do passo ${step?.label}` });
   else if (isBug && allPrints.length) checks.push({ id: 'prints', label: `Levar os ${allPrints.length} print(s) deste documento`, checked: false });
+  if (replayCheck) checks.push(replayCheck);
   const res = await showDialog({
     title: isBug ? `Novo bug ${id}` : `Novo ${template.label.toLowerCase()} ${id}`.trim(), icon: isBug ? '🐞' : '🔗',
     message: `Ligado a ${sourceTarget}${me.app ? ` · app: ${me.app}` : ''}${dest !== null ? ` → ${dest}/` : ''}. Abre numa aba nova, já salvo; aqui entra o link para ele.`,
@@ -447,6 +452,12 @@ export async function createLinkedDoc(template, { where = app.target(), nearLine
   const newPrints = [];
   if (dest !== null && app.workspaceDir && printSrc.length) {
     try { newPrints.push(...(await copyPrintsTo(dest, printSrc))); } catch (err) { app.toast(`Os prints não foram copiados (${errMsg(err)}) — o bug é criado mesmo assim.`, 'error'); }
+  }
+  const clip = replay && res.checks.replay !== false ? await replay : null;
+  if (clip) {
+    if (dest !== null && app.workspaceDir) {
+      try { newPrints.push(...(await writeEvidenceFiles(dest, [clip.file]))); } catch (err) { app.toast(`O replay não foi gravado (${errMsg(err)}) — o bug é criado mesmo assim.`, 'error'); }
+    } else downloadBlob(clip.file, clip.file.name); // sem pasta de trabalho: o vídeo não se perde
   }
   // achado numa rodada: o bug guarda a execução e o ciclo de onde veio
   const origin = await import('./cycle.js').then((m) => m.roundOfOpenCase()).catch(() => null);
@@ -470,15 +481,27 @@ export async function createLinkedDoc(template, { where = app.target(), nearLine
  * @param {string} dir @param {string[]} printSrc
  */
 async function copyPrintsTo(dir, printSrc) {
+  /** @type {File[]} */
+  const files = [];
+  for (const p of printSrc) {
+    const file = await readEvidence(p);
+    if (file) files.push(new File([file], decodeURIComponent(p.split(/[?#]/)[0].split('/').pop() || 'print.png'), { type: file.type }));
+  }
+  return writeEvidenceFiles(dir, files);
+}
+
+/**
+ * Grava arquivos em `<dir>/evidencias/` (nome livre lá: `-2`, `-3`…). Devolve os caminhos relativos a `dir`.
+ * @param {string} dir @param {File[]} files
+ */
+async function writeEvidenceFiles(dir, files) {
   const ws = /** @type {FileSystemDirectoryHandle} */ (app.workspaceDir);
   const evDir = dir ? `${dir}/${EVIDENCE_DIR}` : EVIDENCE_DIR;
   const used = await wsNamesIn(ws, evDir);
   /** @type {string[]} */
   const out = [];
-  for (const p of printSrc) {
-    const file = await readEvidence(p);
-    if (!file) continue;
-    const name = uniqueName(decodeURIComponent(p.split(/[?#]/)[0].split('/').pop() || 'print.png'), (n) => hasName(used, n));
+  for (const file of files) {
+    const name = uniqueName(file.name || 'evidencia', (n) => hasName(used, n));
     used.add(name);
     await wsWriteBytes(ws, `${evDir}/${name}`, file);
     out.push(`${EVIDENCE_DIR}/${name.replace(/ /g, '%20')}`);
@@ -506,15 +529,19 @@ function linkedBugs(src, sourceTarget) {
  * Reincidência: prints vão para a pasta do bug, o bug ganha a entrada em "Reincidências" (e volta a FAIL se estava fechado),
  * este documento ganha o link se ainda não tinha. O bug abre numa aba, já salvo.
  * @param {KnownBug} bug
- * @param {{ src: string, me: import('../markdown/linkedDoc.ts').SourceInfo, step: import('../markdown/linkedDoc.ts').FailedStep | null, sourceTarget: string, prints: string[], ctx: ReturnType<typeof captureInsertion> }} o
+ * @param {{ src: string, me: import('../markdown/linkedDoc.ts').SourceInfo, step: import('../markdown/linkedDoc.ts').FailedStep | null, sourceTarget: string, prints: string[], replay?: Promise<{ file: File, ms: number } | null> | null, ctx: ReturnType<typeof captureInsertion> }} o
  */
-async function registerRecurrence(bug, { src, me, step, sourceTarget, prints, ctx }) {
+async function registerRecurrence(bug, { src, me, step, sourceTarget, prints, replay, ctx }) {
   if (!bug.handle) { app.toast(`Não achei o arquivo de ${bug.id} na pasta de trabalho.`, 'error'); return; }
   const dir = bug.path.split('/').slice(0, -1).join('/');
   /** @type {string[]} */
   let copied = [];
   if (prints.length) {
     try { copied = await copyPrintsTo(dir, prints); } catch (err) { app.toast(`Os prints não foram copiados (${errMsg(err)}) — a reincidência é registrada mesmo assim.`, 'error'); }
+  }
+  const clip = replay ? await replay : null;
+  if (clip) {
+    try { copied.push(...(await writeEvidenceFiles(dir, [clip.file]))); } catch (err) { app.toast(`O replay não foi gravado (${errMsg(err)}) — a reincidência é registrada mesmo assim.`, 'error'); }
   }
   // link neste documento (se ainda não tinha), antes de trocar de aba
   const cited = new Set([...src.matchAll(/\[\[([^\]|#]+)/g)].map((m) => m[1].trim().toLowerCase()));

@@ -144,6 +144,7 @@ Na árvore, 🏛 marca os documentos publicados e ✎ os alterados desde a publi
 | Executar a regressão caso a caso | **Novo ▾ → 🔁 Ciclo de regressão…** (salva os casos) → **▶ Executar este ciclo** → **▶ Próximo caso** (ver 7.8); sem ciclo: **Novo ▾ → ▶ Rodada de execução…** |
 | Comentar / revisar o documento de alguém | `Alt+M`; responder e resolver no próprio comentário (ver 6.7) |
 | Gravar vídeo de um bug intermitente | `Ctrl+Alt+G` ou **⏺ Gravar** no painel de execução (ver 8.1) |
+| Vídeo do que acabou de acontecer (sem ter apertado gravar) | **⏪** no rodapé, `Ctrl+Alt+R` ou **⏪ Replay** no painel de execução — com a captura de tela ligada (ver 8.1) |
 | Ver o que os colegas publicaram / trazer | Barra lateral → **🏛 Oficial · ⬇ N**, ou a pílula **⬇** no topo (ver 10.4) |
 | Guardar épicos e histórias de uma aplicação | `aplicacoes/<App>/requisitos/` — cabeçalho `tipo: epico` (ou `historia`) + `app:`, e `Ctrl+S` (ver 10.2) |
 | Deixar o Claude trabalhar direto na pasta | Instale `mcp-dist/testflow.mcpb` no Claude desktop (ver 12.6) |
@@ -641,6 +642,8 @@ Print da janela do sistema testado **sem PrtSc + Ctrl+V**: clique em **📸 Capt
 | **Trocar de janela** | `Ctrl+Shift+P` → *Capturar a tela: escolher outra janela* |
 | **Parar** | Clique em **📸 … · parar** no rodapé, em *Parar de compartilhar* na barra do navegador, ou `Ctrl+Shift+P` → *Capturar a tela: parar* |
 | **🎬 Gravar vídeo** | Para bug intermitente: **`Ctrl+Alt+G`** (ou **⏺ Gravar** no painel de execução/sessão, ou `/vídeo`). Grava a mesma janela; o rodapé mostra **● 0:12 · parar gravação** — clique (ou `Ctrl+Alt+G` de novo) para parar. O vídeo (`.webm`) vai para `evidencias/` e o link **🎬** entra no passo da execução, na próxima nota da sessão ou no documento. Para sozinho em 5 min. Clique no link para assistir (e **⬇ Baixar** para anexar no Jira). Se não der para gravar na pasta, o vídeo é baixado — não se perde. |
+| **⏪ Replay instantâneo** | Com a captura ligada, os **últimos 60 s** da janela ficam guardados **só na memória** (nada vai para o disco até você pedir), sem ter apertado gravar. O rodapé mostra **⏪ 60 s** (enquanto enche, **⏪ 12/60 s**). Quando o problema acontecer: clique em **⏪** no rodapé, `Ctrl+Alt+R` ou **⏪ Replay** no painel de execução/sessão — o vídeo (`…_TC-042-replay.webm`) vai para `evidencias/` e o link **🎬** entra no passo, na próxima nota da sessão ou no documento. Sem a captura ligada, o primeiro `Ctrl+Alt+R` (ou ⏪ Replay) só escolhe a janela e começa a guardar. O vídeo tem **pelo menos** a duração escolhida (pode ter até o dobro). Duração (30 s, 60 s, 2 min) ou desligar: `Ctrl+Shift+P` → *Replay instantâneo: duração*. |
+| **⏪ Replay no bug** | Criar um bug (`/bug`, **🐞 Bug** no painel, ou a reincidência num bug já ligado) com o replay ligado oferece **Levar o replay** (já marcado): o vídeo do momento em que você pediu o bug vai para `evidencias/` do bug e aparece em *Evidências* (ou na reincidência). Desmarque para não levar. |
 
 O print segue o mesmo caminho de um print colado: vai para `evidencias/` ao lado do documento, passa pelo editor de anotação (se estiver ligado) e entra onde o cursor está (ou no passo da execução). Tudo local — a imagem não sai do computador. Funciona no Chrome e no Edge (Windows e Mac). No Mac, na primeira vez o sistema pede a permissão **Gravação de Tela** para o navegador (Ajustes do Sistema → Privacidade e Segurança).
 
@@ -1040,6 +1043,7 @@ Ele aplica só o que você aprovar e, para os "confirmar", propõe a resposta: l
 | Bloco de código | `Ctrl+Alt+K` | `⌘⌥K` |
 | Capturar a tela (print da janela escolhida) | `Ctrl+Alt+P` | `⌘⌥P` |
 | Gravar vídeo da tela / parar | `Ctrl+Alt+G` | `⌘⌥G` |
+| Replay instantâneo: salvar os últimos segundos (ou ligar) | `Ctrl+Alt+R` | `⌘⌥R` |
 | Comentário de revisão | `Alt+M` | `⌥M` |
 | Copiar Markdown | `Ctrl+Alt+C` (ou botão **Copiar**) | `⌘⌥C` (ou botão **Copiar**) |
 | Colar como texto puro | `Ctrl+Shift+V` | `⌘⇧V` |

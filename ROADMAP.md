@@ -518,12 +518,12 @@ Levantada comparando com TestRail, Zephyr, Xray, Qase, Testmo e as extensões de
 | **Releases / milestones** | ✅ 1.47.0 — Rodadas e planos agrupados por versão do produto, com o progresso da release. | M |
 | **Status personalizados** | ✅ 1.48.0 — Além dos 5 (ex.: *Reteste*, *Falha conhecida*), com cor e regra de contagem. | M |
 
-#### 11.4 — Captura de bug com console e rede *(G — opcional)*
+#### 11.4 — Captura de bug com console e rede *(G — opcional)* — em andamento: 1.49.0 replay instantâneo
 
 | Item | Detalhe | Esforço |
 |---|---|---|
 | **Extensão opcional do navegador** | Quem quiser instala uma extensão: erros do console, requisições com falha (HAR), URL, navegador, sistema e tamanho da tela entram no bug junto com o print. Liga/desliga nas preferências; **desligada (ou sem a extensão), o fluxo continua exatamente como hoje**. | G |
-| **Replay instantâneo** | Os últimos 30 s – 2 min da tela já gravados, sem ter apertado gravar (depende da extensão). | M |
+| **Replay instantâneo** | ✅ 1.49.0 — Os últimos 30 s – 2 min da tela já gravados, sem ter apertado gravar. Feito **no app, sem a extensão**: usa o compartilhamento da janela que o 📸 já mantém; dois gravadores defasados guardam entre N e 2N s na memória (um `.webm` não pode ser cortado). ⏪ no rodapé, `Ctrl+Alt+R`, ⏪ Replay no painel; *Levar o replay* no bug novo e na reincidência. Padrão 60 s. | M |
 
 #### 11.5 — Integrações e acompanhamento *(M–G)*
 
@@ -594,6 +594,14 @@ Fora por ora: papéis, permissões e auditoria (fazem sentido em ferramenta de n
 - **Conectar a pasta oficial no OneDrive** e medir com o diagnóstico.
 - **MCP: reincidência de bug** — `qa_bug_do_caso` hoje sempre cria um bug novo; oferecer registrar a reincidência no bug já ligado (como o app faz desde a 1.18.0, `addRecurrence`).
 - Se a lentidão voltar no Mac: mandar o texto do *Diagnóstico: tempo para ler a pasta*.
+
+### Respondidas (11/10/2026) — 11.4
+
+| Pergunta | Resposta | Impacto no roadmap |
+|---|---|---|
+| O Mac da empresa aceita extensão "sem compactação" (modo desenvolvedor)? | **Sim**, sem restrição até agora. | A extensão do 11.4 vale nas duas máquinas; instalação por *Carregar sem compactação*. |
+| Capturar rede com `chrome.debugger` (HAR completo, barra amarela "depurando")? | **Não** — scripts na página + `webRequest`. | HAR parcial (sem corpo dos recursos e sem tempos detalhados), sem barra amarela e sem brigar com o DevTools. |
+| Replay na extensão ou no app? | **No app**, sem extensão, **60 s** por padrão, e primeiro (1.49.0). | Funciona também para app desktop e mobile espelhado. |
 
 ### Ainda em aberto
 

@@ -193,6 +193,7 @@ Depois de `npm run skill`, atualize onde você usa:
 | **Colar print** | Tire o print (Win+Shift+S, Print Screen, Cmd+Ctrl+Shift+4…) e cole com `Ctrl+V` no Raw ou no Preview. |
 | **Ampliar e tamanho** | Clique no print: grande, com setas entre os prints, ✎ anotar e tamanho **P/M/G** no documento (`![legenda\|320](…)`, convenção do Obsidian). `Ctrl+Shift+P` → *Limpar evidências* move para a lixeira os prints que nenhum documento usa. |
 | **📸 Capturar a tela** | Sem PrtSc: escolha a janela do sistema testado uma vez; depois cada **📸** (toolbar, painel de execução, sessão) ou `Ctrl+Alt+P` é um clique. Manual, seção 8.1. |
+| **⏪ Replay instantâneo** | Com a captura ligada, os últimos 60 s da janela ficam guardados só na memória; **⏪** no rodapé ou `Ctrl+Alt+R` salva o vídeo, e o bug criado na hora pode levá-lo. Manual, seção 8.1. |
 | **Soltar arquivos** | Arraste imagens, logs, HAR, PDF, vídeos para o editor. Imagens viram `![...]`, outros arquivos viram link `[📎 ...]`. |
 | **Onde ficam** | Na pasta `evidencias/` dentro da **pasta do documento**. Na primeira vez o editor pede essa pasta (o seletor já abre na pasta do `.md`). Nome automático com data e hora: `evidencias/2026-09-24_15-30-12.png`. |
 | **No Markdown** | Link relativo: `![Evidência 24/09 15:30](evidencias/2026-09-24_15-30-12.png)` — funciona também no GitHub, VS Code e no hub. |
@@ -297,7 +298,7 @@ Novos recursos de QA entram como plugins em `src/markdown/plugins.js`.
 | Pasta | O que tem |
 | --- | --- |
 | `src/main.js` | O editor em si: documento ativo, Raw, Preview, abas, salvar, pasta de trabalho, barra lateral, paleta, atalhos e inicialização |
-| `src/app/` | As áreas de funcionalidade, cada uma num módulo: `evidence` (prints), `capture` (📸), `links`, `organize` (pastas), `templates` (modelos, menu `/`, documento ligado), `execution`, `publishing` (pasta oficial, histórico), `notion`, `share` (copiar/exportar), `automation`, `docState` (estado visível), `hints` (dicas). Usam o editor pelo contexto `app` (`src/app/context.js`); o que não depende de nada fica em `src/app/shared.js` |
+| `src/app/` | As áreas de funcionalidade, cada uma num módulo: `evidence` (prints), `capture` (📸, ⏺ e ⏪ replay — buffer em `src/io/replay.js`), `links`, `organize` (pastas), `templates` (modelos, menu `/`, documento ligado), `execution`, `publishing` (pasta oficial, histórico), `notion`, `share` (copiar/exportar), `automation`, `docState` (estado visível), `hints` (dicas). Usam o editor pelo contexto `app` (`src/app/context.js`); o que não depende de nada fica em `src/app/shared.js` |
 | `src/markdown/` | Regras puras (sem tela), em `.ts`: status, execução, publicação, estrutura, Notion, Jira… — também serão usadas pelo servidor MCP (fase 9.5) |
 | `src/io/` | Arquivos, pastas, índice da pasta, captura de tela |
 | `src/ui/` | Componentes de tela (barra lateral, painel, diálogos, dicas, "O que mudou"…) |

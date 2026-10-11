@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.49.0', date: '11/10/2026',
+    items: [
+      { icon: '⏪', text: '**Replay instantâneo**: com a captura de tela ligada (📸), os últimos 60 s da janela ficam guardados só na memória — sem ter apertado gravar. Quando o problema acontecer, **⏪** no rodapé (ou `Ctrl+Alt+R`, ou **⏪ Replay** no painel de execução) salva o vídeo onde você está.', manual: '8.1 Capturar a tela' },
+      { icon: '🐞', text: 'O **bug novo** (e a reincidência) criado com a captura ligada já oferece *Levar o replay*: o vídeo do momento do defeito vai para `evidencias/` do bug. Duração (30 s, 60 s, 2 min) ou desligar: `Ctrl+Shift+P` → *Replay instantâneo: duração*.', manual: '8.1 Capturar a tela' },
+    ],
+  },
+  {
     version: '1.48.0', date: '10/10/2026',
     items: [
       { icon: '🏷', text: '**Status personalizados**: `Ctrl+Shift+P` → *Status personalizados* cria `configuracao/status.md` — palavra, como conta (um dos 5), cor e descrição. Viram etiquetas coloridas, entram no seletor de status e no painel de execução (teclas 6–9) e contam nas rodadas e relatórios pela regra.', manual: '7.1 Status clicável' },

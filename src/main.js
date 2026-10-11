@@ -79,7 +79,7 @@ import { updateToolbar, resetToolbar, toggleFocus, toggleToolbarMode } from './a
 import { createHome } from './app/home.js';
 import { BUILTIN_TEMPLATES } from './templates/index.js';
 import { hintAfterRender, hintRunner, hintTree } from './app/hints.js';
-import { captureFiles, captureToDocument, capturer, toggleRecording } from './app/capture.js';
+import { captureFiles, captureToDocument, capturer, replaySeconds, replaySetting, saveReplay, toggleRecording } from './app/capture.js';
 import { showWhatsNew, changesSince } from './ui/whatsNew.js';
 import { CHANGELOG } from './changelog.js';
 
@@ -229,6 +229,9 @@ runner = createRunner({
   onCapture: ({ floating, win }) => captureFiles({ floating, win }),
   onRecord: ({ floating, win }) => toggleRecording({ floating, win }),
   isRecording: () => capturer.recording,
+  // ⏪ replay instantâneo: aparece no painel quando ligado nas preferências (sem captura ligada, o clique liga)
+  onReplay: ({ floating, win }) => saveReplay({ floating, win }),
+  canReplay: () => !!globalThis.MediaRecorder && replaySeconds() > 0,
   onStateChange: () => { refreshDocState(); hintRunner(); },
   // caso do ciclo ativo: o ciclo oferece o próximo; senão, o próximo caso da mesma pasta
   onFinish: (res) => {
@@ -1460,7 +1463,7 @@ const PALETTE_ACTIONS = [
   ['Exportar bugs para o Jira (CSV do importador do Jira Cloud)…', 'jiraCsv', null, ''], ['Trazer chaves do Jira (CSV exportado do Jira)…', 'jiraKeys', null, ''],
   ['Ver outro documento ao lado (consulta)…', 'sideOpen', null, ''], ['Fechar o documento ao lado', 'sideClose', null, ''],
   ['Capturar a tela (print da janela do sistema testado)', 'capture', null, 'Ctrl+Alt+P'], ['Capturar a tela: escolher outra janela', 'captureChoose', null, ''], ['Capturar a tela: parar', 'captureStop', null, ''],
-  ['Gravar vídeo da tela (bug intermitente) / parar', 'record', null, 'Ctrl+Alt+G'], ['Prints grandes (acima de 2 MB): perguntar, sempre reduzir ou manter…', 'bigPrint', null, ''], ['Fazer backup da pasta de trabalho (.zip)…', 'backup', null, ''], ['Diagnóstico: tempo para ler a pasta de trabalho', 'loadDiag', null, ''], ['Lembrete de backup: intervalo ou desligar…', 'backupPref', null, ''],
+  ['Gravar vídeo da tela (bug intermitente) / parar', 'record', null, 'Ctrl+Alt+G'], ['Replay instantâneo: salvar os últimos segundos da janela capturada', 'replaySave', null, 'Ctrl+Alt+R'], ['Replay instantâneo: duração (30 s, 60 s, 2 min) ou desligar…', 'replayPref', null, ''], ['Prints grandes (acima de 2 MB): perguntar, sempre reduzir ou manter…', 'bigPrint', null, ''], ['Fazer backup da pasta de trabalho (.zip)…', 'backup', null, ''], ['Diagnóstico: tempo para ler a pasta de trabalho', 'loadDiag', null, ''], ['Lembrete de backup: intervalo ou desligar…', 'backupPref', null, ''],
   ['Dicas de primeira vez (ligar/desligar)', 'tipsToggle', null, ''], ['Dicas de primeira vez: mostrar todas de novo', 'tipsReset', null, ''],
   ['Salvar automaticamente (ligar/desligar)', 'toggleAutoSave', null, ''],
   ['Buscar em todos os arquivos da pasta', 'searchAll', null, 'Ctrl+Shift+F'], ['Painel da pasta (status, progresso, tags)', 'dashboard', null, ''],
@@ -1479,7 +1482,7 @@ const PALETTE_GROUPS = /** @type {Array<[string, string, string[]]>} */ ([
   ['Documento', '📄', ['newCase', 'new', 'newFromTemplate', 'open', 'save', 'saveAs', 'rename', 'saveTemplate', 'history', 'toggleAutoSave', 'quickNote', 'newBug', 'sharedPanel', 'envMenu', 'includeShared', 'newView', 'importSheet', 'pdf', 'exportHtml', 'sensitive']],
   ['Execução e rodadas', '▶', ['newRun', 'newCycle', 'runCycle', 'newAutoRun', 'attachAutomation', 'nextCycleCase', 'openCycle', 'finishCycle', 'rerunFailed', 'onlyApproved', 'customStatus', 'trend', 'roundSummary', 'execReports', 'nextCase', 'editLinks', 'editDevice']],
   ['Pasta de trabalho', '📂', ['pickWorkspace', 'home', 'dashboard', 'searchAll', 'structure', 'newApp', 'newFolder', 'moveDoc', 'byTicket', 'bulkEdit', 'undoOrganize', 'importNotion', 'importCases', 'backup', 'backupPref', 'loadDiag', 'diskRoot', 'officialFolder', 'officialUpdate', 'publish']],
-  ['Evidências e prints', '📸', ['capture', 'captureChoose', 'captureStop', 'record', 'evidencePanel', 'reuseEvidence', 'cleanPrints', 'bigPrint', 'pickFolder']],
+  ['Evidências e prints', '📸', ['capture', 'captureChoose', 'captureStop', 'record', 'replaySave', 'replayPref', 'evidencePanel', 'reuseEvidence', 'cleanPrints', 'bigPrint', 'pickFolder']],
   ['Compartilhar e revisar', '📤', ['approval', 'copyAll', 'copyClaude', 'review', 'reviewApply', 'copyJira', 'openJira', 'copyNotion', 'notionZip', 'hubZip', 'jiraCsv', 'jiraKeys', 'comment', 'listComments']],
   ['Exibição', '👁', ['mode', 'openMode', 'focusMode', 'toolbarMode', 'treeLabels', 'toggleSidebar', 'sideOpen', 'sideClose', 'foldAll', 'unfoldAll', 'zoomIn', 'zoomOut', 'zoomReset', 'toggleTheme', 'find', 'replace', 'codeblock', 'moveTabLeft', 'moveTabRight', 'closeTab', 'nextTab', 'prevTab']],
   ['Ajuda e preferências', '❓', ['manual', 'whatsNew', 'tipsToggle', 'tipsReset']],
@@ -1692,6 +1695,8 @@ function run(cmd, value, event) {
     case 'capture': preview.commit(); captureToDocument(); return true;
     case 'captureChoose': preview.commit(); captureToDocument({ choose: true }); return true;
     case 'record': toggleRecording(); return true;
+    case 'replaySave': preview.commit(); saveReplay(); return true;
+    case 'replayPref': replaySetting(); return true;
     case 'captureStop': if (capturer.active) { capturer.stop(); toast('Captura de tela desligada.'); } else toast('A captura de tela não está ligada.'); return true;
     case 'tipsToggle': toast(tips.toggle() ? 'Dicas de primeira vez ligadas.' : 'Dicas de primeira vez desligadas.'); return true;
     case 'tipsReset': tips.reset(); toast('As dicas vão aparecer de novo, uma vez cada.'); return true;

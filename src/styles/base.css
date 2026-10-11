@@ -1326,6 +1326,8 @@ button { font: inherit; color: inherit; }
 .record-status { border-color: color-mix(in srgb, #cf222e 50%, transparent); background: color-mix(in srgb, #cf222e 10%, transparent); color: #cf222e; font-variant-numeric: tabular-nums; }
 .record-status::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #cf222e; margin-right: 5px; vertical-align: 0; animation: rec-blink 1s steps(2) infinite; }
 @keyframes rec-blink { 50% { opacity: 0.2; } }
+/* 1.49: replay instantâneo (os últimos N s guardados) */
+.replay-status { font-variant-numeric: tabular-nums; }
 @media print { .tip, .whatsnew, .doc-state { display: none !important; } }
 .tip.tip-left::before { top: var(--tip-arrow-y, 16px); left: auto; right: -7px; transform: rotate(135deg); }
 .tip.tip-right::before { top: var(--tip-arrow-y, 16px); left: -7px; transform: rotate(-45deg); }
