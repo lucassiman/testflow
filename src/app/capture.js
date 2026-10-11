@@ -4,7 +4,7 @@ import { app } from './context.js';
 import { createCapturer, supportsCapture } from '../io/capture.js';
 import { REPLAY_CHOICES, REPLAY_DEFAULT } from '../io/replay.js';
 import { loadPrefs, savePrefs } from '../io/drafts.js';
-import { evidenceBaseName } from '../markdown/evidenceName.ts';
+import { evidenceBaseName, evidenceStamp } from '../markdown/evidenceName.ts';
 import { showDialog } from '../ui/dialog.js';
 import { addEvidence, docLabel, downloadBlob } from './evidence.js';
 import { errMsg } from './shared.js';
@@ -162,9 +162,7 @@ replayStatus?.addEventListener('click', () => { saveReplay(); });
 
 /** Nome do arquivo do replay: `2026-10-11_14-30-12_TC-042-replay.webm`. @param {File} file @param {string} docId */
 function replayFile(file, docId) {
-  const d = new Date();
-  const p = (/** @type {number} */ n) => String(n).padStart(2, '0');
-  const stamp = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}_${p(d.getHours())}-${p(d.getMinutes())}-${p(d.getSeconds())}`;
+  const stamp = evidenceStamp();
   const ext = file.type === 'video/mp4' ? 'mp4' : 'webm';
   return new File([file], `${evidenceBaseName(stamp, { docId, step: 'replay' })}.${ext}`, { type: file.type });
 }

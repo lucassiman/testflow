@@ -2,6 +2,7 @@
 /** Modelos, menu "/" e documentos novos: inserir blocos, salvar como modelo, criar documento na pasta, nota rápida e documento ligado (ex.: bug a partir do caso). */
 import { app } from './context.js';
 import { captureToDocument, capturer, secondsLabel, takeReplay, toggleRecording } from './capture.js';
+import { captureOffer, captureSelect, takeCapture } from './bugCapture.js';
 import { TEMPLATES, rawCommand } from '../editor/commands.js';
 import { describe as describeDoc } from '../io/docIndex.ts';
 import { EVIDENCE_DIR, isRelativePath, readEvidence, setFolder } from '../io/evidence.js';
@@ -9,6 +10,7 @@ import { saveFile } from '../io/files.js';
 import { getDir as wsGetDir, hasName, namesIn as wsNamesIn, writeBytes as wsWriteBytes } from '../io/fsOps.js';
 import { ensurePermission, saveSession } from '../io/recents.js';
 import { detectFrontMatter } from '../markdown/frontmatter.ts';
+import { applyCaptureToBug, recurrenceNotes, tabLabel } from '../markdown/bugCapture.ts';
 import { addRecurrence, bugClosed, buildLinkedDoc, failedStep, idPrefix, linkLine, nextId, sourceInfo, suggestBugTitle } from '../markdown/linkedDoc.ts';
 import { ALERTS } from '../markdown/qa.ts';
 import { addComment } from './comments.js';
@@ -410,6 +412,10 @@ export async function createLinkedDoc(template, { where = app.target(), nearLine
   const replay = isBug && capturer.replaying ? takeReplay(sourceTarget) : null;
   /** @type {import('../ui/dialog.js').DialogCheck | null} */
   const replayCheck = replay ? { id: 'replay', label: `Levar o replay (os últimos ${secondsLabel(capturer.replayWindowMs / 1000)} da janela capturada)`, hint: 'vídeo em evidencias/ do bug' } : null;
+  // extensão do navegador (preferência ligada): abas para escolher; a captura da sugerida já é pedida (o momento do defeito)
+  const offer = isBug ? await captureOffer() : null;
+  /** @type {Promise<import('./bugCapture.js').TakenCapture | null> | null} */
+  const early = offer ? takeCapture(offer.padrao, sourceTarget).catch(() => null) : null;
   // o caso já tem bug ligado: o defeito pode ser o mesmo → registrar a reincidência (evita bug duplicado)
   if (isBug && app.workspaceDir) {
     const known = linkedBugs(src, sourceTarget);
@@ -419,14 +425,18 @@ export async function createLinkedDoc(template, { where = app.target(), nearLine
         title: known.length > 1 ? `Este documento já tem ${known.length} bugs ligados` : `Este documento já tem bug ligado: ${known[0].id}`, icon: '🐞',
         message: `O defeito${step ? ` do passo ${step.label}` : ''} pode ser o mesmo. Registrar a reincidência no bug existente (com data, passo, resultado obtido${printsHere.length ? ' e o print' : ''}) evita bug duplicado — se ele estava fechado, volta a FAIL.`,
         select: { label: 'Bug', value: known[0].path, options: known.map((b) => ({ value: b.path, label: `${b.id}${b.titulo ? ` — ${b.titulo}` : ''} · ${bugClosed(b.status || '') ? `fechado (${b.status})` : `aberto${b.status ? ` (${b.status})` : ''}`}` })) },
-        checks: [...(printsHere.length ? [{ id: 'prints', label: `Levar ${printsHere.length} print(s) do passo ${step?.label}` }] : []), ...(replayCheck ? [replayCheck] : [])],
+        checks: [
+          ...(printsHere.length ? [{ id: 'prints', label: `Levar ${printsHere.length} print(s) do passo ${step?.label}` }] : []),
+          ...(replayCheck ? [replayCheck] : []),
+          ...(offer ? [{ id: 'console', label: `Levar console e contexto de ${tabLabel(offer.abas[0])}`, hint: 'extensão do navegador: URL, navegador, erros do console e o log' }] : []),
+        ],
         buttons: [{ id: 'cancel', label: 'Cancelar' }, { id: 'new', label: 'Criar bug novo' }, { id: 'again', label: 'Registrar no bug escolhido', kind: 'primary' }],
         defaultId: 'again', cancelId: 'cancel',
       });
       if (!pick || pick.id === 'cancel') return;
       if (pick.id === 'again') {
         const bug = known.find((b) => b.path === pick.choice) || known[0];
-        await registerRecurrence(bug, { src, me, step, sourceTarget, prints: pick.checks.prints === false ? [] : printsHere, replay: pick.checks.replay === false ? null : replay, ctx: { ...captureInsertion(where), runTarget: null } });
+        await registerRecurrence(bug, { src, me, step, sourceTarget, prints: pick.checks.prints === false ? [] : printsHere, replay: pick.checks.replay === false ? null : replay, capture: pick.checks.console === false ? null : early, ctx: { ...captureInsertion(where), runTarget: null } });
         return;
       }
     }
@@ -441,6 +451,7 @@ export async function createLinkedDoc(template, { where = app.target(), nearLine
     title: isBug ? `Novo bug ${id}` : `Novo ${template.label.toLowerCase()} ${id}`.trim(), icon: isBug ? '🐞' : '🔗',
     message: `Ligado a ${sourceTarget}${me.app ? ` · app: ${me.app}` : ''}${dest !== null ? ` → ${dest}/` : ''}. Abre numa aba nova, já salvo; aqui entra o link para ele.`,
     input: { label: 'Título', value: isBug ? suggestBugTitle(step, selected) : selected.slice(0, 120), placeholder: isBug ? 'resumo curto do defeito' : 'título', validate: (v) => (v.trim() ? null : 'Dê um título.') },
+    ...(offer ? { select: captureSelect(offer) } : {}),
     checks,
     buttons: [{ id: 'cancel', label: 'Cancelar' }, { id: 'ok', label: 'Criar e abrir', kind: 'primary' }],
     defaultId: 'ok', cancelId: 'cancel',
@@ -459,9 +470,23 @@ export async function createLinkedDoc(template, { where = app.target(), nearLine
       try { newPrints.push(...(await writeEvidenceFiles(dest, [clip.file]))); } catch (err) { app.toast(`O replay não foi gravado (${errMsg(err)}) — o bug é criado mesmo assim.`, 'error'); }
     } else downloadBlob(clip.file, clip.file.name); // sem pasta de trabalho: o vídeo não se perde
   }
+  // console e contexto da aba escolhida (a sugerida já veio; outra aba é pedida agora)
+  /** @type {import('./bugCapture.js').TakenCapture | null} */
+  let taken = null;
+  let logPath = '';
+  if (offer && res.choice) {
+    taken = res.choice === offer.padrao ? await early : null;
+    if (!taken) {
+      try { taken = await takeCapture(res.choice, sourceTarget); } catch (err) { app.toast(`A extensão não mandou o console e o contexto (${errMsg(err)}) — o bug é criado mesmo assim.`, 'error'); }
+    }
+    if (taken && dest !== null && app.workspaceDir) {
+      try { logPath = (await writeEvidenceFiles(dest, [taken.file]))[0] || ''; } catch (err) { app.toast(`O log do console não foi gravado (${errMsg(err)}) — o bug é criado mesmo assim.`, 'error'); }
+    } else if (taken) downloadBlob(taken.file, taken.file.name);
+  }
   // achado numa rodada: o bug guarda a execução e o ciclo de onde veio
   const origin = await import('./cycle.js').then((m) => m.roundOfOpenCase()).catch(() => null);
-  const text = buildLinkedDoc(fillTemplate(template.text), { id, title, sourceTarget, source: me, step: res.checks.fill === false ? null : step, prints: newPrints, origin: origin || undefined });
+  const built = buildLinkedDoc(fillTemplate(template.text), { id, title, sourceTarget, source: me, step: res.checks.fill === false ? null : step, prints: newPrints, origin: origin || undefined });
+  const text = taken ? applyCaptureToBug(built, taken.cap, logPath) : built;
   const fileName = suggestedFileName(text, template.label);
   // link neste documento (onde o comando foi dado)
   placeEvidence(linkLine(tipo, id || fileName.replace(/\.md$/, ''), title), ctx);
@@ -529,9 +554,9 @@ function linkedBugs(src, sourceTarget) {
  * Reincidência: prints vão para a pasta do bug, o bug ganha a entrada em "Reincidências" (e volta a FAIL se estava fechado),
  * este documento ganha o link se ainda não tinha. O bug abre numa aba, já salvo.
  * @param {KnownBug} bug
- * @param {{ src: string, me: import('../markdown/linkedDoc.ts').SourceInfo, step: import('../markdown/linkedDoc.ts').FailedStep | null, sourceTarget: string, prints: string[], replay?: Promise<{ file: File, ms: number } | null> | null, ctx: ReturnType<typeof captureInsertion> }} o
+ * @param {{ src: string, me: import('../markdown/linkedDoc.ts').SourceInfo, step: import('../markdown/linkedDoc.ts').FailedStep | null, sourceTarget: string, prints: string[], replay?: Promise<{ file: File, ms: number } | null> | null, capture?: Promise<import('./bugCapture.js').TakenCapture | null> | null, ctx: ReturnType<typeof captureInsertion> }} o
  */
-async function registerRecurrence(bug, { src, me, step, sourceTarget, prints, replay, ctx }) {
+async function registerRecurrence(bug, { src, me, step, sourceTarget, prints, replay, capture, ctx }) {
   if (!bug.handle) { app.toast(`Não achei o arquivo de ${bug.id} na pasta de trabalho.`, 'error'); return; }
   const dir = bug.path.split('/').slice(0, -1).join('/');
   /** @type {string[]} */
@@ -543,13 +568,21 @@ async function registerRecurrence(bug, { src, me, step, sourceTarget, prints, re
   if (clip) {
     try { copied.push(...(await writeEvidenceFiles(dir, [clip.file]))); } catch (err) { app.toast(`O replay não foi gravado (${errMsg(err)}) — a reincidência é registrada mesmo assim.`, 'error'); }
   }
+  const taken = capture ? await capture : null;
+  /** @type {string[]} */
+  let notes = [];
+  if (taken) {
+    let logPath = '';
+    try { logPath = (await writeEvidenceFiles(dir, [taken.file]))[0] || ''; } catch (err) { app.toast(`O log do console não foi gravado (${errMsg(err)}) — a reincidência é registrada mesmo assim.`, 'error'); }
+    notes = recurrenceNotes(taken.cap, logPath);
+  }
   // link neste documento (se ainda não tinha), antes de trocar de aba
   const cited = new Set([...src.matchAll(/\[\[([^\]|#]+)/g)].map((m) => m[1].trim().toLowerCase()));
   if (!cited.has(bug.id.toLowerCase())) placeEvidence(linkLine('bug', bug.id, bug.titulo), ctx);
   const ws = /** @type {FileSystemDirectoryHandle} */ (app.workspaceDir);
   const opened = await app.openFromHandle(bug.handle, { folder: bug.parent || null, path: `${ws.name}/${bug.path}` });
   if (!opened) return;
-  const res = addRecurrence(app.store.source, { when: new Date(), sourceTarget, step, prints: copied, versao: me.versao, ambiente: me.ambiente });
+  const res = addRecurrence(app.store.source, { when: new Date(), sourceTarget, step, prints: copied, notes, versao: me.versao, ambiente: me.ambiente });
   app.store.history.breakGroup();
   app.store.setSource(res.text, { origin: 'command' });
   await app.doSave(false);

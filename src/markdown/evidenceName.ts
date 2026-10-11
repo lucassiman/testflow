@@ -42,6 +42,12 @@ export function evidenceSlug({ docId, step, text }: EvidenceParts): string {
   return fileSlug(parts.join('-'), { keepCase: true });
 }
 
+/** Data e hora do nome: `2026-10-05_15-30-12` (hora local). */
+export function evidenceStamp(d: Date = new Date()): string {
+  const p = (n: number): string => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}_${p(d.getHours())}-${p(d.getMinutes())}-${p(d.getSeconds())}`;
+}
+
 /** Nome-base (sem extensão): `<data_hora>_<descrição>`; sem descrição, só a data e hora (como era antes). */
 export function evidenceBaseName(stamp: string, parts: EvidenceParts): string {
   const slug = evidenceSlug(parts);

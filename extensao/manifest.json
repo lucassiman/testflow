@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "TestFlow — captura de bug",
+  "short_name": "TestFlow",
+  "version": "1.50.0",
+  "description": "Guarda os erros do console das abas testadas e entrega ao TestFlow quando você cria um bug. Tudo local: nada sai do computador.",
+  "minimum_chrome_version": "111",
+  "icons": { "128": "icones/icone.png" },
+  "action": {
+    "default_title": "TestFlow — captura de bug",
+    "default_popup": "popup.html",
+    "default_icon": { "128": "icones/icone.png" }
+  },
+  "permissions": ["storage"],
+  "host_permissions": ["http://*/*", "https://*/*", "file:///*"],
+  "background": { "service_worker": "fundo.js", "type": "module" },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*", "file:///*"],
+      "js": ["captura.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["http://*/*", "https://*/*", "file:///*"],
+      "js": ["conteudo.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

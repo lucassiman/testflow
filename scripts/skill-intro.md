@@ -112,7 +112,7 @@ Sempre em tabela, com estas colunas nesta ordem:
 
 ## 5. Evidências, logs e diagramas
 
-- Evidências na pasta `evidencias/` ao lado do `.md`, com link relativo: `![Evidência passo 2](evidencias/2026-09-24_15-30-12.png)`; outros arquivos: `[📎 console.log](evidencias/console.log)`. Só referencie arquivos que existem.
+- Evidências na pasta `evidencias/` ao lado do `.md`, com link relativo: `![Evidência passo 2](evidencias/2026-09-24_15-30-12.png)`; outros arquivos: `[📎 console.log](evidencias/console.log)`. Só referencie arquivos que existem. Bug com `### Console e rede` (capturado pela extensão do navegador do TestFlow): use os erros dali e o log (`…-console.log`) para analisar a causa — não invente erros que não estão lá.
 - Logs e respostas de API em bloco de código: ```` ```json ````, ```` ```xml ````, ```` ```log ````; logs com mais de ~25 linhas: ```` ```log collapsed ````.
 - Fluxos em ```` ```mermaid ````.
 - Sem HTML (exceto, raramente, `<span style="color:…">`); o significado nunca deve depender só da cor.

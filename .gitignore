@@ -3,6 +3,7 @@ node_modules
 dist/
 dist-single/
 mcp-dist/
+extensao-dist/
 claude-skill/
 test-results/
 playwright-report/

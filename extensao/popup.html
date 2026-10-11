@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>TestFlow — captura de bug</title>
+  <style>
+    :root { color-scheme: light dark; --brand: #b91c47; }
+    body { font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; padding: 12px 14px; width: 280px; }
+    h1 { font-size: 14px; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
+    h1 img { width: 20px; height: 20px; }
+    p { margin: 6px 0; }
+    .muted { opacity: .7; font-size: 12px; }
+    .state { font-weight: 600; }
+    .state.off { color: #9a6700; }
+    .row { display: flex; gap: 6px; margin-top: 10px; }
+    button { font: inherit; border-radius: 6px; padding: 4px 10px; cursor: pointer; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); background: transparent; color: inherit; }
+    button.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+  </style>
+</head>
+<body>
+  <h1><img src="icones/icone.png" alt="">TestFlow — captura de bug</h1>
+  <p class="state" id="state">…</p>
+  <p id="counts" class="muted"></p>
+  <p class="muted">No TestFlow: ligue em <b>Ctrl+Shift+P → Captura de bug pela extensão</b>. Ao criar um bug, escolha a aba testada: o console e o contexto vão junto. Tudo fica neste computador e some ao fechar o navegador.</p>
+  <div class="row">
+    <button type="button" id="toggle" class="primary">Pausar</button>
+    <button type="button" id="clear">Limpar o que foi guardado</button>
+  </div>
+  <p class="muted" id="version"></p>
+  <script src="popup.js"></script>
+</body>
+</html>

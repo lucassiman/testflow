@@ -232,6 +232,8 @@ export interface Recurrence {
   step?: FailedStep | null;
   /** prints (e o replay) copiados para a pasta do bug (relativos a ele) */
   prints?: string[];
+  /** linhas extras da entrada (ex.: página e console vindos da extensão do navegador) */
+  notes?: string[];
   versao?: string;
   ambiente?: string;
 }
@@ -257,6 +259,7 @@ export function addRecurrence(text: string, r: Recurrence): { text: string; reop
     ...(step?.action ? [`- Passo: ${step.action}`] : []),
     ...(step?.actual ? [`- Obtido: ${step.actual}`] : []),
     ...([r.versao && `Versão ${r.versao}`, r.ambiente && `Ambiente ${r.ambiente}`].filter(Boolean).length ? [`- ${[r.versao && `Versão ${r.versao}`, r.ambiente && `Ambiente ${r.ambiente}`].filter(Boolean).join(' · ')}`] : []),
+    ...(r.notes || []),
     ...(reopened ? [`- Bug reaberto (estava \`${previous}\`).`] : []),
     ...(r.prints?.length ? ['', ...r.prints.flatMap((p, i) => [...(i ? [''] : []), evidenceLink(p, `Reincidência ${stamp}`)])] : []),
   ];

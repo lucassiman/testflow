@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.50.0', date: '11/10/2026',
+    items: [
+      { icon: '🧩', text: '**Extensão do navegador (opcional)**: instale a pasta `extensao/` no Chrome/Edge e ligue em `Ctrl+Shift+P` → *Captura de bug pela extensão*. Ao criar um bug, escolha a aba testada: URL, navegador, sistema e tela vão para *Ambiente*, e os erros do console para *Evidências* (com o log completo em `evidencias/`).', manual: '8.3 Extensão do navegador' },
+      { icon: '🛡', text: 'Tudo local e mascarado: tokens, senhas, CPF e e-mails saem como `••••` antes de ir para o documento. Desligada (o padrão) ou sem a extensão, o bug é exatamente como antes. Também na reincidência e em *Console e contexto da aba testada: anexar aqui*.', manual: '8.3 Extensão do navegador' },
+    ],
+  },
+  {
     version: '1.49.0', date: '11/10/2026',
     items: [
       { icon: '⏪', text: '**Replay instantâneo**: com a captura de tela ligada (📸), os últimos 60 s da janela ficam guardados só na memória — sem ter apertado gravar. Quando o problema acontecer, **⏪** no rodapé (ou `Ctrl+Alt+R`, ou **⏪ Replay** no painel de execução) salva o vídeo onde você está.', manual: '8.1 Capturar a tela' },
