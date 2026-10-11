@@ -147,6 +147,7 @@ Na árvore, 🏛 marca os documentos publicados e ✎ os alterados desde a publi
 | Mandar os cenários BDD para o repositório da automação | `Ctrl+Shift+P` → **Exportar .feature** (ver 9) |
 | Ver quais testes automatizados são instáveis | Visão **Tendência entre rodadas**, tabela *Testes automatizados instáveis* (ver 9) |
 | Gravar vídeo de um bug intermitente | `Ctrl+Alt+G` ou **⏺ Gravar** no painel de execução (ver 8.1) |
+| Deixar o PO/gerente acompanhar a rodada no navegador, sem instalar nada | `Ctrl+Shift+P` → **Página da rodada para o time…** (HTML na pasta oficial; ver 12.9) |
 | Avisar o time no Teams quando a rodada termina ou um caso crítico falha | `Ctrl+Shift+P` → **Avisos no Microsoft Teams…** (ver 12.8) |
 | Criar a issue no Jira direto do bug (com os anexos) / trazer o status | `Ctrl+Shift+P` → **Jira: criar a issue deste bug** / **Jira: trazer o status** — com a extensão e o Jira configurado nela (ver 12.7) |
 | Erros do console, requisições com falha (HAR), URL, navegador e tela da aba testada no bug | Extensão do navegador (pasta `extensao/`) + `Ctrl+Shift+P` → **Captura de bug pela extensão** (ver 8.3) |
@@ -1119,6 +1120,21 @@ Opcional: um cartão vai para um canal do Teams quando:
 **Configurar:** no Teams, no canal: **⋯ → Fluxos de trabalho (Workflows) → "Postar em um canal quando uma solicitação de webhook for recebida"** → copie a URL. No TestFlow: `Ctrl+Shift+P` → **Avisos no Microsoft Teams…** → cole a URL, escolha o que avisar e **Salvar e enviar teste** (chega *✅ TestFlow conectado a este canal*). URL em branco = desligado (o padrão): nada sai do computador.
 
 O envio vai pela **extensão do navegador** (8.3), que só aceita endereços do Teams / Power Automate; sem ela, o app tenta mandar direto (alguns webhooks não deixam — aí o aviso pede a extensão). **Dados sensíveis** (e-mail, senha, CPF, cartão, token) vão mascarados no cartão. Se o envio falhar, o aviso diz no app e o seu trabalho segue normalmente. Rodadas encerradas pelo Claude (`qa_rodada_finalizar`) não avisam — o aviso sai do app.
+
+### 12.9 Página da rodada para o time
+
+Para o PO/gerente acompanhar a rodada **sem instalar nada**: uma página HTML única (sem nada da internet), gravada na **pasta oficial** (10.4) — o OneDrive do time.
+
+| | |
+| --- | --- |
+| **Ligar** | `Ctrl+Shift+P` → **Página da rodada para o time…** → **Ligar e publicar agora** (com uma rodada aberta) ou **Ligar**. Sem pasta oficial, o diálogo oferece **Configurar a pasta oficial…**. Desligada por padrão. |
+| **O que é gravado** | `acompanhamento/<EXEC-…>.html` para cada rodada e `acompanhamento/index.html` com todas (as em andamento primeiro). |
+| **Quando** | A cada caso concluído (▶ Concluir, caso marcado inteiro, ⏭ pulado) e no **🏁 Finalizar** — aí com a **recomendação** do relatório de Encerramento. Também **Atualizar agora** no mesmo diálogo. |
+| **O que mostra** | Título, aplicação, versão, período e responsável; **% de sucesso**, casos com resultado, falhas e bugs abertos; a **barra** nas cores dos status e a **previsão** de término; a tabela dos **casos** (status, testador, quando, bugs e o **passo que falhou**); os **bugs abertos** (com link para o Jira); os automatizados. |
+| **Para o time** | Com a pasta do OneDrive sincronizada, abra `index.html` (ou a página da rodada) no navegador: enquanto a rodada está aberta, ela **se recarrega sozinha** a cada minuto. Sem sincronizar, baixe o arquivo e abra. Funciona no celular, no claro e no escuro. |
+| **Ver a página** | No mesmo diálogo: abre a prévia numa aba (sem gravar). |
+
+Dados sensíveis (e-mail, senha, CPF, cartão, token) saem **mascarados** na página. Se o navegador ainda não liberou a pasta oficial nesta sessão, o aviso traz **Liberar**. Rodadas registradas pelo Claude não atualizam a página — ela sai do app.
 
 ## 13. Atalhos
 

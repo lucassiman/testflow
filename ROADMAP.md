@@ -484,7 +484,7 @@ Ao **🏁 Finalizar execução**, o TestFlow gera 4 documentos em `relatorios/<E
 | **Herança** | Pai → filho: tags somadas e campos vazios preenchidos (épico/história → caso; casos → execução/ciclo; ciclo → execução; execução → relatórios; caso → bug, sem o jira). |
 | **Pasta do épico** | `casos/<ÉPICO>/<TICKET>/` (o épico mora na pasta dele); *Organizar por épico e ticket* arruma o que já existe. Bugs e execuções ficam nas pastas deles. |
 
-### Fase 11 — O que as ferramentas de mercado têm *(planejada em 09/10/2026)*
+### Fase 11 — O que as ferramentas de mercado têm *(planejada em 09/10/2026 — ✅ concluída na 1.56.0)*
 
 Levantada comparando com TestRail, Zephyr, Xray, Qase, Testmo e as extensões de captura de bug (Jam, Marker.io, BrowserStack Bug Capture). Esforço: **P** / **M** / **G**. Ordem: 11.1 primeiro (pedido em 09/10); o resto conforme a necessidade.
 
@@ -525,7 +525,7 @@ Levantada comparando com TestRail, Zephyr, Xray, Qase, Testmo e as extensões de
 | **Extensão opcional do navegador** | ✅ 1.50.0 + 1.51.0 — extensão `extensao/` (MV3, carregar sem compactação) + ponte com o app; **console e contexto** (URL, navegador, sistema, tela) e **requisições com falha** (resumo + `.har`, sem cookies/autorização/tokens, corpos mascarados; erro do navegador `net::ERR_…` junto) no bug novo, na reincidência e em *anexar aqui*; preferência desligada por padrão; sem `chrome.debugger`. — Pedido: quem quiser instala uma extensão: erros do console, requisições com falha (HAR), URL, navegador, sistema e tamanho da tela entram no bug junto com o print. Liga/desliga nas preferências; **desligada (ou sem a extensão), o fluxo continua exatamente como hoje**. | G |
 | **Replay instantâneo** | ✅ 1.49.0 — Os últimos 30 s – 2 min da tela já gravados, sem ter apertado gravar. Feito **no app, sem a extensão**: usa o compartilhamento da janela que o 📸 já mantém; dois gravadores defasados guardam entre N e 2N s na memória (um `.webm` não pode ser cortado). ⏪ no rodapé, `Ctrl+Alt+R`, ⏪ Replay no painel; *Levar o replay* no bug novo e na reincidência. Padrão 60 s. | M |
 
-#### 11.5 — Integrações e acompanhamento *(M–G)* — em andamento: 1.52.0 instáveis e .feature · 1.53.0 reporter ao vivo · 1.54.0 Jira pela API · 1.55.0 avisos no Teams
+#### 11.5 — Integrações e acompanhamento *(M–G)* — ✅ feito: 1.52.0 instáveis e .feature · 1.53.0 reporter ao vivo · 1.54.0 Jira pela API · 1.55.0 avisos no Teams · 1.56.0 página da rodada
 
 Decidido em 11/10/2026 (ver seção 5): cada integração que manda dados para fora é **opcional e desligada por padrão**; Jira pela API **pela extensão do navegador**; avisos no **Microsoft Teams**; relatório para o time como **HTML na pasta oficial**. Ordem: 1.52.0 instáveis + `.feature` → 1.53.0 reporter ao vivo → 1.54.0 Jira pela API → 1.55.0 avisos no Teams → 1.56.0 relatório HTML.
 
@@ -536,7 +536,7 @@ Decidido em 11/10/2026 (ver seção 5): cada integração que manda dados para f
 | **Testes instáveis** | ✅ 1.52.0 — Marca o teste automatizado que alterna PASS/FAIL entre execuções: ⚠ na coluna Obs ao importar (2+ trocas nas últimas 10 execuções, ou flaky do Playwright) e a tabela na tendência (app e `qa_tendencia`). | P–M |
 | **Exportar `.feature`** | ✅ 1.52.0 — Cenários BDD como arquivos Gherkin para o repositório da automação (`# language: pt`, tags `@CEN-…`/Jira/tags; reexportar substitui só o que o TestFlow gerou; `qa_exportar_feature`). | P |
 | **Avisos automáticos** | ✅ 1.55.0 — **Teams** (decidido em 11/10: Slack e e-mail fora): cartão (Adaptive Card) no canal pelo webhook dos Workflows quando a rodada é encerrada (números, Go/No-Go, falhas, bugs abertos) e quando um caso Crítico (ou Crítico/Alto) falha; desligado sem URL; enviado pela extensão (lista de domínios do Teams/Power Automate) ou direto; dados sensíveis mascarados. | M |
-| **Link de relatório para o time** | Página para o PO/gerente acompanhar a rodada sem instalar nada. | M |
+| **Link de relatório para o time** | ✅ 1.56.0 — HTML único na pasta oficial (`acompanhamento/<EXEC>.html` + `index.html`), regravado a cada caso e no encerramento (com a recomendação), que se recarrega sozinho enquanto a rodada está aberta; claro/escuro e celular; dados sensíveis mascarados; desligado por padrão. | M |
 
 Fora por ora: papéis, permissões e auditoria (fazem sentido em ferramenta de nuvem com time grande; o TestFlow é local com pasta compartilhada).
 
@@ -551,7 +551,7 @@ Fora por ora: papéis, permissões e auditoria (fazem sentido em ferramenta de n
 7. ~~Depois, conforme a necessidade: execução, automação, devolução.~~ ✅ Fases 3 a 8 concluídas (até 28/09).
 8. **Fase 9** (29/09 em diante): 9.1 Consolidar → 9.2 Ler e navegar → 9.3 Visões e rastreabilidade → 9.4 Regressão e trabalho a dois → 9.5 **MCP local** (1.0). QoL pontuais entram entre as rodadas.
 9. ~~**Fase 10**~~ ✅ concluída na 1.30.0.
-10. **Fase 11** (09/10 em diante): 11.1 primeiro (passos e dados compartilhados, reexecutar falhas, tendência); a captura com console e rede (11.4) depois, como extensão opcional — ✅ 11.1 a 11.4 feitos (até a 1.51.0); falta a 11.5.
+10. **Fase 11** (09/10 em diante): 11.1 primeiro (passos e dados compartilhados, reexecutar falhas, tendência); a captura com console e rede (11.4) depois, como extensão opcional — ✅ **Fase 11 concluída** (11.1 a 11.5, até a 1.56.0).
 
 ---
 

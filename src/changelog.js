@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.56.0', date: '11/10/2026',
+    items: [
+      { icon: '🌐', text: '**Página da rodada para o time**: `Ctrl+Shift+P` → *Página da rodada para o time* → **Ligar**. O TestFlow grava na pasta oficial (OneDrive) `acompanhamento/<rodada>.html` — % de sucesso, barra de progresso, casos com o passo que falhou, bugs abertos, previsão e, no fim, a recomendação — e o índice `acompanhamento/index.html`.', manual: '12.9 Página da rodada para o time' },
+      { icon: '🔄', text: 'O PO/gerente abre no navegador, sem instalar nada; a página é regravada a cada caso concluído e se recarrega sozinha enquanto a rodada está aberta. Claro/escuro, celular, dados sensíveis mascarados. **Ver a página** mostra a prévia. Fecha a 11.5.', manual: '12.9 Página da rodada para o time' },
+    ],
+  },
+  {
     version: '1.55.0', date: '11/10/2026',
     items: [
       { icon: '📣', text: '**Avisos no Microsoft Teams**: um cartão vai para o canal quando a rodada é encerrada (números, recomendação Go/No-Go, falhas com o passo e bugs abertos) e quando um caso **Crítico** falha (o passo, esperado × obtido, a rodada). `Ctrl+Shift+P` → *Avisos no Microsoft Teams* — cole a URL do webhook (Workflows do canal) e envie um teste.', manual: '12.8 Avisos no Microsoft Teams' },

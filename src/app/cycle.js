@@ -232,6 +232,7 @@ export async function skipCycleCase(key) {
   const left = nextCase(applySkipped(text, [key]), key, me());
   unwhole(c.path, key);
   app.toast(`⏭ ${key} pulado (SKIP).`, 'info', { duration: 4000 });
+  import('./roundPage.js').then((m) => m.scheduleRoundPage()).catch(() => {});
   if (onCase && left) await goToCycleCase(left);
   else if (onCase) await openCycle();
   import('./docState.js').then((m) => m.refreshDocState());
@@ -380,6 +381,8 @@ export async function markWhole(status) {
   if (c.path === currentWorkspacePath()) refreshCycleDoc();
   // 📣 caso crítico marcado FAIL (se o aviso no Teams estiver ligado)
   if (status === 'FAIL' && e) { const caseText = openDocOverrides().get(e.path) ?? e.text ?? ''; import('./teams.js').then((m) => m.notifyCaseFailed({ text: caseText, path: e.path, key })).catch(() => {}); }
+  // 🌐 página da rodada para o time (se ligada)
+  import('./roundPage.js').then((m) => m.scheduleRoundPage()).catch(() => {});
   const after = applyWhole(text, { [key]: { status, when } });
   const dest = nextCase(after, key, me());
   const p = cycleProgress(after);
@@ -606,6 +609,8 @@ export async function finishCycle() {
     try { await (await import('./reports.js')).generateReports({ execPath }); } catch (err) { app.toast(`Os relatórios não foram gerados: ${err instanceof Error ? err.message : err}`, 'error'); }
     // 📣 aviso no Teams (se configurado) — não segura o resumo
     import('./teams.js').then((m) => m.notifyRound(execPath, closedText)).catch(() => {});
+    // 🌐 página da rodada (com a recomendação do Encerramento)
+    import('./roundPage.js').then((m) => m.publishClosedRound(execPath, closedText)).catch(() => {});
   }
   await showRoundSummary();
 }

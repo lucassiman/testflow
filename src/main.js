@@ -237,6 +237,8 @@ runner = createRunner({
   onFinish: (res) => {
     // 📣 caso crítico com falha → Teams (se configurado); o texto vai agora, antes de abrir o próximo caso
     if (res.overall === 'FAIL') { const text = store.source; const path = currentWorkspacePath(); import('./app/teams.js').then((m) => m.notifyCaseFailed({ text, path })).catch(() => {}); }
+    // 🌐 página da rodada para o time (se ligada): regrava depois que o app salvar
+    import('./app/roundPage.js').then((m) => m.scheduleRoundPage()).catch(() => {});
     if (onCaseFinished(res, { auto: true })) return true; // ciclo: abre o próximo caso
     offerNextCase(res);
     return false;
@@ -1465,7 +1467,7 @@ const PALETTE_ACTIONS = [
   ['Exportar bugs para o Jira (CSV do importador do Jira Cloud)…', 'jiraCsv', null, ''], ['Jira: criar a issue deste bug pela API (extensão do navegador)…', 'jiraCreate', null, ''], ['Jira: trazer o status dos bugs da pasta (pela API)', 'jiraSync', null, ''], ['Trazer chaves do Jira (CSV exportado do Jira)…', 'jiraKeys', null, ''],
   ['Ver outro documento ao lado (consulta)…', 'sideOpen', null, ''], ['Fechar o documento ao lado', 'sideClose', null, ''],
   ['Capturar a tela (print da janela do sistema testado)', 'capture', null, 'Ctrl+Alt+P'], ['Capturar a tela: escolher outra janela', 'captureChoose', null, ''], ['Capturar a tela: parar', 'captureStop', null, ''],
-  ['Gravar vídeo da tela (bug intermitente) / parar', 'record', null, 'Ctrl+Alt+G'], ['Replay instantâneo: salvar os últimos segundos da janela capturada', 'replaySave', null, 'Ctrl+Alt+R'], ['Replay instantâneo: duração (30 s, 60 s, 2 min) ou desligar…', 'replayPref', null, ''], ['Captura de bug pela extensão do navegador (console e contexto): ligar/desligar', 'extToggle', null, ''], ['Avisos no Microsoft Teams: rodada encerrada, caso crítico com falha (configurar)…', 'teamsPref', null, ''], ['Console e contexto da aba testada (extensão): anexar aqui…', 'extAttach', null, ''], ['Prints grandes (acima de 2 MB): perguntar, sempre reduzir ou manter…', 'bigPrint', null, ''], ['Fazer backup da pasta de trabalho (.zip)…', 'backup', null, ''], ['Diagnóstico: tempo para ler a pasta de trabalho', 'loadDiag', null, ''], ['Lembrete de backup: intervalo ou desligar…', 'backupPref', null, ''],
+  ['Gravar vídeo da tela (bug intermitente) / parar', 'record', null, 'Ctrl+Alt+G'], ['Replay instantâneo: salvar os últimos segundos da janela capturada', 'replaySave', null, 'Ctrl+Alt+R'], ['Replay instantâneo: duração (30 s, 60 s, 2 min) ou desligar…', 'replayPref', null, ''], ['Captura de bug pela extensão do navegador (console e contexto): ligar/desligar', 'extToggle', null, ''], ['Avisos no Microsoft Teams: rodada encerrada, caso crítico com falha (configurar)…', 'teamsPref', null, ''], ['Página da rodada para o time (HTML na pasta oficial): ligar, ver, atualizar…', 'roundPage', null, ''], ['Console e contexto da aba testada (extensão): anexar aqui…', 'extAttach', null, ''], ['Prints grandes (acima de 2 MB): perguntar, sempre reduzir ou manter…', 'bigPrint', null, ''], ['Fazer backup da pasta de trabalho (.zip)…', 'backup', null, ''], ['Diagnóstico: tempo para ler a pasta de trabalho', 'loadDiag', null, ''], ['Lembrete de backup: intervalo ou desligar…', 'backupPref', null, ''],
   ['Dicas de primeira vez (ligar/desligar)', 'tipsToggle', null, ''], ['Dicas de primeira vez: mostrar todas de novo', 'tipsReset', null, ''],
   ['Salvar automaticamente (ligar/desligar)', 'toggleAutoSave', null, ''],
   ['Buscar em todos os arquivos da pasta', 'searchAll', null, 'Ctrl+Shift+F'], ['Painel da pasta (status, progresso, tags)', 'dashboard', null, ''],
@@ -1482,7 +1484,7 @@ const PALETTE_ACTIONS = [
 /** Categoria e ícone de cada ação da paleta (as que não estão aqui ficam em "Ações"). */
 const PALETTE_GROUPS = /** @type {Array<[string, string, string[]]>} */ ([
   ['Documento', '📄', ['newCase', 'new', 'newFromTemplate', 'open', 'save', 'saveAs', 'rename', 'saveTemplate', 'history', 'toggleAutoSave', 'quickNote', 'newBug', 'sharedPanel', 'envMenu', 'includeShared', 'newView', 'importSheet', 'pdf', 'exportHtml', 'sensitive']],
-  ['Execução e rodadas', '▶', ['newRun', 'newCycle', 'runCycle', 'newAutoRun', 'attachAutomation', 'reporterSetup', 'featureHere', 'featureAll', 'nextCycleCase', 'openCycle', 'finishCycle', 'rerunFailed', 'onlyApproved', 'customStatus', 'trend', 'roundSummary', 'execReports', 'teamsPref', 'nextCase', 'editLinks', 'editDevice']],
+  ['Execução e rodadas', '▶', ['newRun', 'newCycle', 'runCycle', 'newAutoRun', 'attachAutomation', 'reporterSetup', 'featureHere', 'featureAll', 'nextCycleCase', 'openCycle', 'finishCycle', 'rerunFailed', 'onlyApproved', 'customStatus', 'trend', 'roundSummary', 'execReports', 'teamsPref', 'roundPage', 'nextCase', 'editLinks', 'editDevice']],
   ['Pasta de trabalho', '📂', ['pickWorkspace', 'home', 'dashboard', 'searchAll', 'structure', 'newApp', 'newFolder', 'moveDoc', 'byTicket', 'bulkEdit', 'undoOrganize', 'importNotion', 'importCases', 'backup', 'backupPref', 'loadDiag', 'diskRoot', 'officialFolder', 'officialUpdate', 'publish']],
   ['Evidências e prints', '📸', ['capture', 'captureChoose', 'captureStop', 'record', 'replaySave', 'replayPref', 'extToggle', 'extAttach', 'evidencePanel', 'reuseEvidence', 'cleanPrints', 'bigPrint', 'pickFolder']],
   ['Compartilhar e revisar', '📤', ['approval', 'copyAll', 'copyClaude', 'review', 'reviewApply', 'copyJira', 'openJira', 'jiraCreate', 'jiraSync', 'copyNotion', 'notionZip', 'hubZip', 'jiraCsv', 'jiraKeys', 'comment', 'listComments']],
@@ -1704,6 +1706,7 @@ function run(cmd, value, event) {
     case 'record': toggleRecording(); return true;
     case 'replaySave': preview.commit(); saveReplay(); return true;
     case 'replayPref': replaySetting(); return true;
+    case 'roundPage': import('./app/roundPage.js').then((m) => m.roundPageSetting()); return true;
     case 'teamsPref': import('./app/teams.js').then((m) => m.teamsSetting()); return true;
     case 'extToggle': import('./app/bugCapture.js').then((m) => m.toggleCapture()); return true;
     case 'extAttach': preview.commit(); import('./app/bugCapture.js').then((m) => m.attachCaptureHere()); return true;
