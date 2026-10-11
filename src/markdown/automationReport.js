@@ -1,6 +1,7 @@
 // @ts-check
 import { syncExecution, updateSummaryBlocks, SUMMARY_OPEN, SUMMARY_CLOSE, WORD_OF, countStatuses, deriveOverall } from './status.ts';
 import { cellText, fmtDate, fmtTime } from './runs.ts';
+import { testKey } from './flaky.ts';
 
 /**
  * Resultados de automação (estrutura de src/io/automation.js) → Markdown QA-MD.
@@ -9,7 +10,7 @@ import { cellText, fmtDate, fmtTime } from './runs.ts';
 /** @typedef {import('../types').AutomationTest} AutomationTest */
 /** @typedef {import('../types').LinkedCase} LinkedCase */
 /** @typedef {import('../types').StatusCounts} StatusCounts */
-/** @typedef {{ level?: number, cases?: LinkedCase[], projectRoot?: string, withSummary?: boolean }} SectionOptions */
+/** @typedef {{ level?: number, cases?: LinkedCase[], projectRoot?: string, withSummary?: boolean, flaky?: Map<string, string> }} SectionOptions */
 
 /** @param {number} n */
 const pad = (n) => String(n).padStart(2, '0');
@@ -88,7 +89,7 @@ const WORD = (s) => WORD_OF[/** @type {import('../types').StatusKind} */ (s)] ||
  * @param {AutomationResult} res resultado normalizado
  * @param {SectionOptions} [opts]
  */
-export function buildAutomationSections(res, { level = 2, cases = [], projectRoot = '', withSummary = true } = {}) {
+export function buildAutomationSections(res, { level = 2, cases = [], projectRoot = '', withSummary = true, flaky } = {}) {
   const H = '#'.repeat(level);
   const tests = res.tests.map((t, i) => ({ ...t, n: i + 1, cases: casesFor(t, cases, res.rootDir) }));
   const anyProject = tests.some((t) => t.project);
@@ -116,6 +117,9 @@ export function buildAutomationSections(res, { level = 2, cases = [], projectRoo
     if (newman && t.httpCode) obs.push(`HTTP ${t.httpCode}`);
     if (newman && t.assertions) obs.push(`${t.assertions} asserç${t.assertions > 1 ? 'ões' : 'ão'}`);
     if (t.status === 'fail' && t.message && !newman) obs.push(cellText(t.message.split('\n').find((l) => l.trim()) || '').slice(0, 90));
+    // instável entre execuções (histórico da pasta + esta)
+    const unstable = flaky?.get(testKey(t.title, t.file || ''));
+    if (unstable) obs.push(unstable);
     const row = [String(t.n), cellText(t.title), link && fileLabel ? `[${fileLabel}](${link})` : fileLabel];
     if (anyProject) row.push(cellText(t.project));
     row.push(t.status === 'skip' && !t.duration ? '' : fmtMs(t.duration));
@@ -180,9 +184,9 @@ export function buildAutomationSections(res, { level = 2, cases = [], projectRoo
 /**
  * Documento completo (novo arquivo).
  * @param {AutomationResult} res
- * @param {{ sourceName?: string, now?: Date, cases?: LinkedCase[], projectRoot?: string }} [opts]
+ * @param {{ sourceName?: string, now?: Date, cases?: LinkedCase[], projectRoot?: string, flaky?: Map<string, string> }} [opts]
  */
-export function buildAutomationReport(res, { sourceName = '', now = new Date(), cases = [], projectRoot = '' } = {}) {
+export function buildAutomationReport(res, { sourceName = '', now = new Date(), cases = [], projectRoot = '', flaky } = {}) {
   const started = res.startedAt || now;
   const id = `AUT-${started.getFullYear()}${pad(started.getMonth() + 1)}${pad(started.getDate())}-${pad(started.getHours())}${pad(started.getMinutes())}`;
   const titulo = `Automação — ${res.name || res.tool}`.replace(/[:#]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -212,28 +216,28 @@ export function buildAutomationReport(res, { sourceName = '', now = new Date(), 
       + ` · ${counts.total} teste${counts.total === 1 ? '' : 's'}: ${counts.pass} PASS, ${counts.fail} FAIL${counts.skip ? `, ${counts.skip} SKIP` : ''}${res.tests.some((t) => t.flaky) ? `, ${res.tests.filter((t) => t.flaky).length} flaky` : ''}.`,
     '',
   ];
-  const body = buildAutomationSections(res, { cases, projectRoot });
+  const body = buildAutomationSections(res, { cases, projectRoot, flaky });
   return syncExecution(`${head.join('\n')}\n${body}\n## Observações\n`);
 }
 
 /**
  * Só a tabela e as falhas, para inserir no documento aberto.
  * @param {AutomationResult} res
- * @param {{ sourceName?: string, now?: Date, cases?: LinkedCase[], projectRoot?: string }} [opts]
+ * @param {{ sourceName?: string, now?: Date, cases?: LinkedCase[], projectRoot?: string, flaky?: Map<string, string> }} [opts]
  */
-export function buildAutomationInsert(res, { sourceName = '', cases = [], projectRoot = '', now = new Date() } = {}) {
+export function buildAutomationInsert(res, { sourceName = '', cases = [], projectRoot = '', now = new Date(), flaky } = {}) {
   const intro = `## Automação — ${res.name || res.tool}\n\n_Importado de \`${sourceName}\` (${res.tool}) em ${fmtDate(now)} ${fmtTime(now)}._\n`;
-  return `${intro}\n${buildAutomationSections(res, { level: 3, cases, projectRoot, withSummary: false })}`;
+  return `${intro}\n${buildAutomationSections(res, { level: 3, cases, projectRoot, withSummary: false, flaky })}`;
 }
 
 /**
  * A seção "## Testes automatizados" de uma execução (ver cycleAuto.ts). A tabela usa "Resultado" no lugar de "Status":
  * assim o relatório fica ao lado dos casos manuais sem entrar na contagem deles.
  * @param {AutomationResult} res
- * @param {{ sourceName?: string, now?: Date, cases?: LinkedCase[], projectRoot?: string }} [opts]
+ * @param {{ sourceName?: string, now?: Date, cases?: LinkedCase[], projectRoot?: string, flaky?: Map<string, string> }} [opts]
  */
-export function buildAutomationBlock(res, { sourceName = '', cases = [], projectRoot = '', now = new Date() } = {}) {
-  const body = buildAutomationSections(res, { level: 3, cases, projectRoot, withSummary: false })
+export function buildAutomationBlock(res, { sourceName = '', cases = [], projectRoot = '', now = new Date(), flaky } = {}) {
+  const body = buildAutomationSections(res, { level: 3, cases, projectRoot, withSummary: false, flaky })
     .replace(/^(\|.*\| )Status( \| Obs \|)$/m, '$1Resultado$2');
   const intro = `> 🤖 **${res.tool}** — \`${String(sourceName || 'resultado').replace(/`/g, "'")}\` · importado em ${fmtDate(now)} ${fmtTime(now)}${res.duration ? ` · duração ${fmtMs(res.duration)}` : ''}`;
   return `## Testes automatizados\n\n${intro}\n\n${body}`;

@@ -143,6 +143,8 @@ Na árvore, 🏛 marca os documentos publicados e ✎ os alterados desde a publi
 | Guardar um filtro do Painel | **📊 Painel → 💾 Salvar como visão** |
 | Executar a regressão caso a caso | **Novo ▾ → 🔁 Ciclo de regressão…** (salva os casos) → **▶ Executar este ciclo** → **▶ Próximo caso** (ver 7.8); sem ciclo: **Novo ▾ → ▶ Rodada de execução…** |
 | Comentar / revisar o documento de alguém | `Alt+M`; responder e resolver no próprio comentário (ver 6.7) |
+| Mandar os cenários BDD para o repositório da automação | `Ctrl+Shift+P` → **Exportar .feature** (ver 9) |
+| Ver quais testes automatizados são instáveis | Visão **Tendência entre rodadas**, tabela *Testes automatizados instáveis* (ver 9) |
 | Gravar vídeo de um bug intermitente | `Ctrl+Alt+G` ou **⏺ Gravar** no painel de execução (ver 8.1) |
 | Erros do console, requisições com falha (HAR), URL, navegador e tela da aba testada no bug | Extensão do navegador (pasta `extensao/`) + `Ctrl+Shift+P` → **Captura de bug pela extensão** (ver 8.3) |
 | Vídeo do que acabou de acontecer (sem ter apertado gravar) | **⏪** no rodapé, `Ctrl+Alt+R` ou **⏪ Replay** no painel de execução — com a captura de tela ligada (ver 8.1) |
@@ -702,6 +704,20 @@ Exemplos para testar: `exemplos/automacao/junit.xml`, `playwright.json`, `newman
 
 **Em uma execução**: o mesmo relatório também pode ser anexado a uma execução (🤖 no painel da rodada, ou **Novo ▾ → 🤖 Execução só automatizada…**), como seção *Testes automatizados* ao lado dos casos manuais — veja a seção 7.8.
 
+**Testes instáveis.** Ao importar ou anexar um relatório, o TestFlow olha as execuções automatizadas já registradas na pasta de trabalho: o teste que **trocou PASS↔FAIL duas vezes ou mais** nas últimas 10 execuções em que rodou — ou que o Playwright marcou *flaky* (passou só depois de retry) — ganha na coluna **Obs** a marca `⚠ instável: 3 trocas PASS↔FAIL em 8 execuções`. Quem quebrou de vez (passava e passou a falhar) ou foi corrigido não é instável. O mesmo teste é reconhecido pelo arquivo e pelo título. A visão **Tendência entre rodadas** (`Ctrl+Shift+P` → *Tendência*) ganha a tabela **Testes automatizados instáveis**: execuções, falhas, trocas, quantas vezes só passou com retry, a sequência (`✓` passou, `✗` falhou, `↻` passou com retry, da mais antiga para a mais nova) e a última execução. O Claude vê a mesma tabela em `qa_tendencia`.
+
+**Exportar `.feature` (Gherkin).** Os cenários BDD (blocos ```` ```gherkin ````) viram arquivos para o repositório da automação:
+
+| Como | O que acontece |
+| --- | --- |
+| `Ctrl+Shift+P` → **Exportar .feature (Gherkin) deste documento…** | Um arquivo por `Funcionalidade:` do documento (blocos só com cenários entram na funcionalidade anterior; sem nenhuma, usa o título). |
+| `Ctrl+Shift+P` → **Exportar .feature de todos os cenários BDD da pasta…** | Todos os documentos com bloco Gherkin (escolha a aplicação, se houver mais de uma). |
+| **Onde grava** | Na **pasta de features** do projeto de automação — escolhida na primeira vez (**Escolher a pasta…**) e lembrada (**Gravar em features/**). Ou **Baixar** (um `.zip` se forem vários). |
+| **O que vai no arquivo** | `# language: pt` (quando as palavras-chave são em português), um comentário com o documento de origem e a data, e as tags de rastreio na funcionalidade: `@CEN-004 @LOJA-12 @checkout` (ID, chave do Jira e tags do documento). Nome: `cen-004-carrinho-de-compras.feature`. |
+| **Reexportar** | Substitui o arquivo que o TestFlow gerou para o mesmo documento e funcionalidade (pelo comentário do topo — mesmo que você o tenha renomeado ou mudado de nome a funcionalidade). **Arquivo escrito à mão nunca é sobrescrito**: o novo vai como `…-testflow.feature`. Nada é apagado. |
+
+O Claude também exporta: `qa_exportar_feature` devolve os arquivos para ele gravar no repositório.
+
 ## 10. Arquivos, pastas e abas
 
 | Recurso | Como funciona |
@@ -1012,6 +1028,7 @@ No `claude_desktop_config.json`: `"markdown-qa": { "command": "node", "args": ["
 | `qa_bug_do_caso` | Bug ligado a partir do passo que falhou, com passos, esperado, obtido e os prints; o caso ganha o link. Se o caso **já tem bug ligado**, ele não duplica: mostra os bugs e o Claude pergunta se é **reincidência** (registra no bug e reabre, como o app) ou bug novo. Achado numa rodada, o bug guarda `execucao:`/`ciclo:` |
 | `qa_rodada_criar` · `qa_rodada_registrar` · `qa_rodada_status` · `qa_rodada_finalizar` | A rodada inteira pelo Claude: criar pelos casos de um **segmento** (épico, ticket, `#tag`), de uma consulta, de uma lista ou de um **ciclo salvo** (vira a execução #N); registrar cada caso (passos ou o caso inteiro); ver como está; finalizar (SKIP nos pendentes + os 4 relatórios) |
 | `qa_relatorios` | Gera/regera os relatórios de fim de execução (7.8) — os mesmos do app, mantendo o que você escreveu |
+| `qa_exportar_feature` | Cenários BDD como arquivos `.feature` (9), de um documento ou de todos (por aplicação) — para o Claude gravar no repositório da automação |
 | `qa_validar` · `qa_rastreabilidade` | Avisos de QA, links quebrados e evidências faltando (documento, segmento, pasta ou tudo); matriz ticket/épico → casos → resultado → bugs |
 | `qa_varredura` · `qa_ligar` | Documentos antigos sem os vínculos (app, ticket, épico, tags/sprint herdadas, bug sem caso, caso sem requisito, pasta errada), cada achado com ✅ certo / 🟡 provável / ❓ confirmar; `aplicar` preenche só campos vazios e soma tags. `qa_ligar` liga o bug órfão ao caso |
 | `qa_marcar_passos` · `qa_nova_rodada` | Status/obtido por passo (o resumo e o status geral se atualizam); `concluir` registra a rodada |

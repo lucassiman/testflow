@@ -148,6 +148,8 @@ Só o bloco editado é reescrito no Markdown; se nada mudou, nada é escrito. A 
 | **Importar** | Arraste para o editor um **JUnit XML** (Playwright, Cypress, Selenium/TestNG, pytest, Jest, Newman…), um **Playwright JSON** (`--reporter=json`) ou um **Newman JSON** (`-r json`) — ou `/importar resultados`. Abre um relatório novo com cabeçalho, resumo + gráfico, tabela de resultados e **Falhas** (mensagem, stack trace recolhido, screenshot/trace). Segure `Shift` ao soltar (ou `/inserir resultados`) para colocar só a tabela e as falhas no documento aberto. |
 | **Abrir no VS Code** | O arquivo de cada teste e os anexos são links `vscode://` (abrem o spec na linha exata). No cartão de um caso manual, o campo `automacao:` também abre o spec. Caminhos relativos usam a **pasta do projeto de automação** — perguntada na primeira vez; troque em `/pasta do projeto`. |
 | **Caso manual ↔ automatizado** | Se o nome do teste citar o ID do caso (`TC-042 login…` ou `@TC-042`), ou se um caso da pasta de trabalho tiver `automacao:` apontando para o spec, o relatório ganha a coluna **Caso** e a seção **Cobertura dos casos manuais** (resultado por caso). |
+| **⚠ Testes instáveis** | O teste que alterna PASS/FAIL entre as execuções da pasta (ou que só passou com retry) ganha **⚠ instável** na coluna Obs ao importar; a visão *Tendência entre rodadas* lista os instáveis. |
+| **🥒 Exportar `.feature`** | `Ctrl+Shift+P` → *Exportar .feature*: os blocos Gherkin dos cenários BDD vão para a pasta de features da automação (`# language: pt`, tags `@CEN-…` e do Jira); reexportar substitui só o que o TestFlow gerou. |
 
 ## Documentos de QA: modelos, cabeçalho e validação
 

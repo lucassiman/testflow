@@ -7,11 +7,13 @@ import { loadPrefs, savePrefs } from '../io/drafts.js';
 import { setFolder } from '../io/evidence.js';
 import { saveSession } from '../io/recents.js';
 import { buildAutomationInsert, buildAutomationReport, vscodeLink } from '../markdown/automationReport.js';
+import { automationRuns, flakyNotes, flakyTests, runFromTests } from '../markdown/flaky.ts';
 import { detectFrontMatter, parseFrontMatter } from '../markdown/frontmatter.ts';
 import { suggestedFileName } from '../templates/index.js';
 import { promptDialog } from '../ui/dialog.js';
 import { insertBlockAfterActive } from './editing.js';
-import { els, errMsg } from './shared.js';
+import { currentWorkspacePath } from './links.js';
+import { docIndex, els, errMsg } from './shared.js';
 
 // ---------------------------------------------------------------- resultados de automação (JUnit / Playwright / Newman)
 export const automationInput = Object.assign(document.createElement('input'), { type: 'file', accept: '.xml,.json', hidden: true });
@@ -77,7 +79,24 @@ export async function askAutomationRoot(force = false) {
 async function prepare(res, file) {
   const relative = !res.rootDir && res.format !== 'newman' && res.tests.some((t) => t.file && !/^[A-Za-z]:[\\/]|^\//.test(t.file));
   const projectRoot = relative ? await askAutomationRoot() : (loadPrefs().automationRoot || '');
-  return { sourceName: file.name, cases: await collectManualCases(), projectRoot };
+  return { sourceName: file.name, cases: await collectManualCases(), projectRoot, flaky: flakyFor(res) };
+}
+
+/**
+ * Testes instáveis (alternam PASS/FAIL entre execuções): o histórico das execuções da pasta mais este relatório.
+ * O documento aberto fica de fora do histórico (trocar o relatório dele não conta duas vezes).
+ * @param {import('../types').AutomationResult} res
+ * @returns {Map<string, string> | undefined}
+ */
+export function flakyFor(res) {
+  if (!docIndex.ready) return undefined;
+  const here = currentWorkspacePath();
+  const history = docIndex.all()
+    .filter((e) => e.text && e.path !== here)
+    .flatMap((e) => automationRuns(e.text || '', { id: e.id || e.name, link: '', titulo: e.titulo || '' }));
+  if (!history.length) return undefined;
+  const rows = flakyTests([...history, runFromTests(res.tests, res.startedAt || new Date(), { id: 'este relatório', link: '', titulo: '' })]);
+  return rows.length ? flakyNotes(rows) : undefined;
 }
 
 /**

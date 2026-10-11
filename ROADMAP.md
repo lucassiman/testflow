@@ -525,14 +525,16 @@ Levantada comparando com TestRail, Zephyr, Xray, Qase, Testmo e as extensões de
 | **Extensão opcional do navegador** | ✅ 1.50.0 + 1.51.0 — extensão `extensao/` (MV3, carregar sem compactação) + ponte com o app; **console e contexto** (URL, navegador, sistema, tela) e **requisições com falha** (resumo + `.har`, sem cookies/autorização/tokens, corpos mascarados; erro do navegador `net::ERR_…` junto) no bug novo, na reincidência e em *anexar aqui*; preferência desligada por padrão; sem `chrome.debugger`. — Pedido: quem quiser instala uma extensão: erros do console, requisições com falha (HAR), URL, navegador, sistema e tamanho da tela entram no bug junto com o print. Liga/desliga nas preferências; **desligada (ou sem a extensão), o fluxo continua exatamente como hoje**. | G |
 | **Replay instantâneo** | ✅ 1.49.0 — Os últimos 30 s – 2 min da tela já gravados, sem ter apertado gravar. Feito **no app, sem a extensão**: usa o compartilhamento da janela que o 📸 já mantém; dois gravadores defasados guardam entre N e 2N s na memória (um `.webm` não pode ser cortado). ⏪ no rodapé, `Ctrl+Alt+R`, ⏪ Replay no painel; *Levar o replay* no bug novo e na reincidência. Padrão 60 s. | M |
 
-#### 11.5 — Integrações e acompanhamento *(M–G)*
+#### 11.5 — Integrações e acompanhamento *(M–G)* — em andamento: 1.52.0 instáveis e .feature
+
+Decidido em 11/10/2026 (ver seção 5): cada integração que manda dados para fora é **opcional e desligada por padrão**; Jira pela API **pela extensão do navegador**; avisos no **Microsoft Teams**; relatório para o time como **HTML na pasta oficial**. Ordem: 1.52.0 instáveis + `.feature` → 1.53.0 reporter ao vivo → 1.54.0 Jira pela API → 1.55.0 avisos no Teams → 1.56.0 relatório HTML.
 
 | Item | Detalhe | Esforço |
 |---|---|---|
 | **Jira pela API** | Criar a issue direto e trazer o status de volta (hoje: copiar/colar e CSV). | M–G |
 | **Reporter ao vivo para o CI** | Playwright/Jest/Cypress mandam o resultado direto para a execução, sem baixar e importar o arquivo. | M |
-| **Testes instáveis** | Marca o teste automatizado que alterna PASS/FAIL entre execuções. | P–M |
-| **Exportar `.feature`** | Cenários BDD como arquivos Gherkin para o repositório da automação. | P |
+| **Testes instáveis** | ✅ 1.52.0 — Marca o teste automatizado que alterna PASS/FAIL entre execuções: ⚠ na coluna Obs ao importar (2+ trocas nas últimas 10 execuções, ou flaky do Playwright) e a tabela na tendência (app e `qa_tendencia`). | P–M |
+| **Exportar `.feature`** | ✅ 1.52.0 — Cenários BDD como arquivos Gherkin para o repositório da automação (`# language: pt`, tags `@CEN-…`/Jira/tags; reexportar substitui só o que o TestFlow gerou; `qa_exportar_feature`). | P |
 | **Avisos automáticos** | Slack/Teams/e-mail quando a rodada termina ou um caso crítico falha (hoje o resumo é copiado à mão). | M |
 | **Link de relatório para o time** | Página para o PO/gerente acompanhar a rodada sem instalar nada. | M |
 
@@ -602,6 +604,15 @@ Fora por ora: papéis, permissões e auditoria (fazem sentido em ferramenta de n
 | O Mac da empresa aceita extensão "sem compactação" (modo desenvolvedor)? | **Sim**, sem restrição até agora. | A extensão do 11.4 vale nas duas máquinas; instalação por *Carregar sem compactação*. |
 | Capturar rede com `chrome.debugger` (HAR completo, barra amarela "depurando")? | **Não** — scripts na página + `webRequest`. | HAR parcial (sem corpo dos recursos e sem tempos detalhados), sem barra amarela e sem brigar com o DevTools. |
 | Replay na extensão ou no app? | **No app**, sem extensão, **60 s** por padrão, e primeiro (1.49.0). | Funciona também para app desktop e mobile espelhado. |
+
+### Respondidas (11/10/2026) — 11.5
+
+| Pergunta | Resposta | Impacto no roadmap |
+|---|---|---|
+| Pode mandar dados para fora (Jira, Teams, relatório)? | **Sim, opcional por destino**, desligado por padrão. | Cada integração liga separada; desligado, o app continua 100% local. |
+| Por onde falar com a API do Jira? | **Pela extensão do navegador** (sem bloqueio de CORS; token guardado só nela). | Jira pela API depende da extensão (1.54.0). |
+| Canal dos avisos automáticos? | **Microsoft Teams**. | Avisos só no Teams (1.55.0); Slack e e-mail ficam fora. |
+| Como o PO/gerente acompanha a rodada? | **Página HTML na pasta oficial** (OneDrive), atualizada sozinha. | Sem servidor nem nuvem nova (1.56.0). |
 
 ### Ainda em aberto
 

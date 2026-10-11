@@ -7,6 +7,7 @@ import { statusKind } from './qa.ts';
 import { jiraLabel } from './jiraLink.ts';
 import { VIEW_OPEN, VIEW_CLOSE, findViewBlocks } from './viewBlocks.ts';
 import { buildTrend, monthLabel, durLabel } from './trend.ts';
+import { automationRuns, flakyTests } from './flaky.ts';
 
 /**
  * Visões: consultas salvas sobre os documentos da pasta de trabalho (funções puras).
@@ -523,6 +524,8 @@ function trendView(spec: ViewSpec, docs: ViewDoc[], rows: ViewDoc[], base: { tit
   });
   const tables: ViewTable[] = [];
   const charts: ViewChart[] = [];
+  // testes automatizados que alternam PASS/FAIL entre as execuções (11.5)
+  const instaveis = flakyTests(rows.filter((d) => d.text).flatMap((d) => automationRuns(d.text || '', ref(d))));
   if (t.rounds.length) {
     charts.push({
       title: '% de sucesso por rodada', unit: '%', series: [{ name: '% de sucesso', kind: 'pass' }],
@@ -550,6 +553,15 @@ function trendView(spec: ViewSpec, docs: ViewDoc[], rows: ViewDoc[], base: { tit
       rows: t.cases.map((c) => [{ text: c.id, link: c.link }, { text: c.titulo }, { text: String(c.rodadas) }, { text: String(c.falhas) }, { text: `${c.taxa}%` }, { text: c.ultima ? `${c.ultima} ${shortDate(c.ultimaData)}` : '—', badge: statusKind(c.ultima) || undefined }, { text: durLabel(c.mediaMs) }]),
     });
   }
+  if (instaveis.length) {
+    tables.push({
+      group: 'Testes automatizados instáveis', head: ['Teste', 'Arquivo', 'Execuções', 'Falhas', 'Trocas PASS↔FAIL', 'Só com retry', 'Sequência', 'Última'],
+      rows: instaveis.slice(0, 15).map((f) => [
+        { text: f.titulo }, { text: f.arquivo || '—' }, { text: String(f.execucoes) }, { text: String(f.falhas) }, { text: String(f.trocas) }, { text: String(f.retries) },
+        { text: f.sequencia }, { text: f.ultimaRef ? `${f.ultima} ${shortDate(f.ultimaData)}`.trim() : f.ultima, link: f.ultimaRef?.link || undefined, badge: statusKind(f.ultima) || undefined },
+      ]),
+    });
+  }
   if (t.bugMonths.length) {
     charts.push({
       title: 'Bugs por mês de abertura', unit: 'n', series: [{ name: 'Ainda abertos', kind: 'fail' }, { name: 'Já fechados', kind: 'pass' }],
@@ -568,6 +580,7 @@ function trendView(spec: ViewSpec, docs: ViewDoc[], rows: ViewDoc[], base: { tit
   else parts.push('Nenhuma rodada com casos executados ainda');
   if (t.cases[0]) parts.push(`caso que mais falha: ${t.cases[0].id} (${t.cases[0].falhas} de ${t.cases[0].rodadas})`);
   if (t.tempoMedioMs) parts.push(`tempo médio por caso: ${durLabel(t.tempoMedioMs)}`);
+  if (instaveis.length) parts.push(`${instaveis.length} teste(s) automatizado(s) instável(is)`);
   const open = rows.filter((d) => isBug(d) && bugOpen(d)).length;
   if (rows.some(isBug)) parts.push(`${open} bug(s) aberto(s)`);
   return { ...base, total: t.rounds.length, tables, charts, summary: parts.join(' · ') };

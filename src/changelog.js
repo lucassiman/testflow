@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.52.0', date: '11/10/2026',
+    items: [
+      { icon: '🎲', text: '**Testes automatizados instáveis**: ao anexar um relatório (Playwright, JUnit, Newman), o teste que alterna PASS/FAIL entre as execuções da pasta — ou que só passou com retry — ganha **⚠ instável** na coluna Obs. A visão *Tendência entre rodadas* lista os instáveis com a sequência (✓✗✓✗).', manual: '9. Resultados de automação' },
+      { icon: '🥒', text: '**Exportar `.feature`**: `Ctrl+Shift+P` → *Exportar .feature* (deste documento ou de todos os cenários BDD) grava os blocos Gherkin na pasta de features da automação, com `# language: pt` e as tags `@CEN-…` e do Jira. Reexportar substitui só o que o TestFlow gerou.', manual: '9. Resultados de automação' },
+    ],
+  },
+  {
     version: '1.51.0', date: '11/10/2026',
     items: [
       { icon: '🌐', text: '**Requisições com falha no bug**: com a extensão do navegador (atualize: `git pull` e ↻ em `chrome://extensions`), o bug também leva as requisições que falharam na aba testada — `POST /api/pedidos → 500`, 404, domínio que não responde — no resumo de *Console e rede* e num **`.har`** em `evidencias/` (abre no DevTools e vai como anexo no Jira).', manual: '8.3 Extensão do navegador' },
