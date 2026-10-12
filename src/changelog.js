@@ -8,6 +8,14 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.59.0', date: '12/10/2026',
+    items: [
+      { icon: '🧪', text: '**Exemplos novos — Casos**: a Loja Demo (`exemplos/`) chegou à Sprint 43 com o épico *Pagamento com Pix* (versão 2.15.0): pasta do épico com uma pasta por ticket, logins compartilhados por ambiente (geral, HML, PROD) e o passo `↪ Fazer login`, caso com dois logins, casos com dados (tabela e `iterar:`), os estados da aprovação — inclusive *aprovado · alterado*, com a versão aprovada para comparar — e uma planilha do TestRail para importar.', manual: '3. Primeiros 15 minutos' },
+      { icon: '▶', text: '**Exemplos novos — Execução**: ciclo salvo com 3 execuções (a #3 em andamento, com testadores, previsão e os status `RETESTE` e `FALHA CONHECIDA`), os 4 relatórios da #2, um ciclo com matriz pronto para você executar, a release 2.15.0 e as visões não executados, cobertura, rastreabilidade e tendência.', manual: '3. Primeiros 15 minutos' },
+      { icon: '🗺', text: 'Onde olhar cada um: manual, *Primeiros 15 minutos*. São só arquivos novos — o que você já tinha em `exemplos/` não muda (`git pull` traz).', manual: '3. Primeiros 15 minutos' },
+    ],
+  },
+  {
     version: '1.58.0', date: '12/10/2026',
     items: [
       { icon: '🧰', text: '**Painel da rodada mais enxuto**: à vista só o da hora — ▶ Próximo caso, 📊 Como está e 🏁 Finalizar (encerrada: 🔂 Reteste das falhas, 🔁 Executar de novo, 📑 Relatórios). O resto foi para o **⋯**, agrupado pelos módulos do topo: *Execução* (atribuir, reteste, relatórios, ciclo de origem, tendência, página da rodada), *Casos* (vínculos, dispositivo) e *Automação*.', manual: '7.8 Ciclo de regressão' },

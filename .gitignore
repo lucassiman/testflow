@@ -14,6 +14,10 @@ playwright-report/
 # coisas só desta máquina (testes pessoais, rascunhos) — nunca sobem
 _local/
 .versoes/
+# …menos as versões aprovadas dos exemplos (TC-008: "o que mudou desde a aprovação"); as outras de exemplos/ continuam fora
+!exemplos/.versoes/
+exemplos/.versoes/**/[0-9]*
+!exemplos/.versoes/**/*_aprovada.md
 _lixeira/
 .DS_Store
 Thumbs.db

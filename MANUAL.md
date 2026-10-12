@@ -81,6 +81,21 @@ Resumo do roteiro:
 4. **📊 Painel** (aba Arquivos) e clique em **FAIL**.
 5. No `BUG-001`: **Compartilhar ▾ → Copiar para o Jira**.
 
+**Os recursos novos na Loja Demo (desde a 1.59.0).** A mesma pasta continua a história na Sprint 43: o épico **QA-400 Pagamento com Pix** da versão **2.15.0**. Arquivos só novos — o que você já tinha em `exemplos/` não muda. Por módulo:
+
+| Módulo | Onde olhar | O que mostra |
+| --- | --- | --- |
+| **Casos** | `compartilhados/COMP-001…` | Logins geral / HML / PROD e o passo `↪ Fazer login` (6.8). Abra o `TC-008`, aperte `Alt+K` e troque o 🌐 para PROD: os dados mudam; o gestor aparece com **falta PROD**. |
+| | `casos/QA-400 Pagamento com Pix/` | O épico na pasta dele, uma pasta por ticket (`QA-410 …`, `QA-420 …`) com a história e os casos (10.2). História ainda sem ticket: `requisitos/HU-001…`. |
+| | `TC-008` · `TC-007` · `TC-009` | Dois logins no mesmo caso (`↪ Fazer login (cliente)` e `(atendente)`); caso com dados pela tabela *Iterações* (3 valores) e pelo `iterar:` dos logins (6.9). |
+| | `TC-005` · `TC-006` · `TC-009` · `TC-008` | Aprovação: aprovado · em revisão · rascunho · **⚠ aprovado · alterado** — clique na pílula → *Ver o que mudou desde a aprovação* (a versão aprovada está no histórico) (6.10). |
+| | `importar/casos-testrail.csv` | Exportação do TestRail para testar **Casos ▾ → 📥 Importar casos de uma planilha…** (10.3). |
+| **Execução** | `execucoes/regressao-do-pix` | Ciclo salvo com 3 execuções: #1 (Sprint 42) e #2 encerradas, #3 em andamento (7.8). |
+| | `…-execucao-3` | Rodada em andamento: testadores (Ana, Bruno e Lucas — com *Lucas* como o seu nome nas preferências, **Minhas** mostra o TC-007), **⏱ previsão**, ⏮ Antes da rodada, caso com 1/3 iterações e os status personalizados `FALHA CONHECIDA` (TC-006) e `RETESTE` (TC-008), definidos em `configuracao/status.md` (7.1). |
+| | `relatorios/EXEC-20261001-083000/` | Os 4 relatórios da execução #2 — *Não liberar*, com a decisão do time escrita no aceite e o comparativo com a #1 (TC-006 passou a falhar). |
+| | `smoke-do-pix-multiplataforma` | Ciclo com **matriz** (HML · Chrome · Windows, HML · Safari · macOS, PROD · Chrome · Windows), ainda sem execução: clique em **▶ Executar este ciclo** e veja nascer uma execução por configuração. |
+| | `releases/REL-001…` · `visoes/` | A release 2.15.0 com o progresso (7.10) e as visões *não executados*, *cobertura da regressão*, *rastreabilidade* (só a 2.15) e *tendência* (11.1). |
+
 ## 4. A tela
 
 | Área | O que tem |

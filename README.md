@@ -2,7 +2,7 @@
 
 Editor Markdown leve para documentação de QA: **Raw**, **Preview editável** (clique e edite direto no texto renderizado), **Mermaid**, cores de texto, ajuste do tamanho de leitura e arquivos `.md` locais. Sem backend, sem login, sem banco de dados.
 
-> 📘 **Chegando agora?** Leia o **[MANUAL.md](MANUAL.md)** (todas as funcionalidades, atalhos Windows/Mac, problemas comuns — também no botão **?** do editor ou `F1`) e faça o tour de 15 minutos em **[exemplos/LEIA-ME.md](exemplos/LEIA-ME.md)**: abra a pasta `exemplos` como pasta de trabalho.
+> 📘 **Chegando agora?** Leia o **[MANUAL.md](MANUAL.md)** (todas as funcionalidades, atalhos Windows/Mac, problemas comuns — também no botão **?** do editor ou `F1`) e faça o tour de 15 minutos em **[exemplos/LEIA-ME.md](exemplos/LEIA-ME.md)**: abra a pasta `exemplos` como pasta de trabalho. Desde a 1.59.0 a mesma Loja Demo mostra também os recursos novos de **Casos** e **Execução** (épico Pix, Sprint 43, versão 2.15.0: compartilhados por ambiente, casos com dados, aprovação, ciclo com 3 execuções e relatórios, matriz, release, visões) — onde olhar cada um: MANUAL, *Primeiros 15 minutos*.
 
 ## Como usar
 

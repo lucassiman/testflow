@@ -1,0 +1,12 @@
+ID,Title,Section,Section Hierarchy,Priority,Type,Preconditions,Steps (Step),Steps (Expected Result),References,Estimate,Created By
+C201,Aplicar cupom de desconto válido,Cupom,Loja Demo > Carrinho > Cupom,High,Functional,"Cupom DEMO10 ativo no backoffice
+Carrinho com um produto",Abrir o carrinho,Carrinho com o produto e o total,QA-450,5m,Ana Souza
+,,,,,,,Informar o cupom DEMO10 e clicar em Aplicar,Desconto de 10% no total e o cupom listado,,,
+,,,,,,,Ir para o checkout,Checkout com o total já com desconto,,,
+C202,Cupom expirado não é aceito,Cupom,Loja Demo > Carrinho > Cupom,Medium,Functional,Cupom VELHO5 com validade vencida,Abrir o carrinho com um produto,Carrinho com o total,QA-450,3m,Ana Souza
+,,,,,,,Informar o cupom VELHO5 e clicar em Aplicar,"Mensagem ""Cupom expirado"" e o total sem desconto",,,
+C203,Frete grátis acima de R$ 199,Frete,Loja Demo > Carrinho > Frete,Medium,Functional,CEP de entrega cadastrado,Montar um carrinho de R$ 198,Frete calculado normalmente,"QA-451, QA-452",4m,Bruno Lima
+,,,,,,,Adicionar um item de R$ 5,Total acima de R$ 199 e frete grátis,,,
+,,,,,,,Remover o item de R$ 5,Frete volta a ser cobrado,,,
+C204,Remover o último item do carrinho,Carrinho,Loja Demo > Carrinho,Low,Usability,,Abrir o carrinho com um produto,Carrinho com o produto,,2m,Bruno Lima
+,,,,,,,Clicar em Remover,"Carrinho vazio com o botão ""Continuar comprando""",,,

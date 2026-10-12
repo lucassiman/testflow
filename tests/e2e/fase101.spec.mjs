@@ -26,7 +26,10 @@ test('rodada com os exemplos: nasce em execucoes/, pendente × último resultado
   await picker.locator('button', { hasText: 'Criar e começar' }).click();
 
   const panel = page.locator('#cyclePanel');
-  await expect(panel.locator('.cp-item')).toHaveCount(6);
+  // todos os casos, cenários e checklists da pasta (a .versoes/ não conta)
+  const casos = files.filter(([p, t]) => !p.startsWith('.versoes/') && /^tipo: (caso-de-teste|cenario-bdd|checklist)$/m.test(t)).length;
+  expect(casos).toBeGreaterThan(6);
+  await expect(panel.locator('.cp-item')).toHaveCount(casos);
   // nada começou nesta rodada: nenhum "em andamento"
   await expect(panel.locator('.cp-andamento')).toHaveCount(0);
   const tc2 = panel.locator('.cp-item', { hasText: 'TC-002' });
@@ -35,7 +38,7 @@ test('rodada com os exemplos: nasce em execucoes/, pendente × último resultado
   await expect(panel.locator('.cp-item', { hasText: 'TC-003' }).locator('.cp-last')).toHaveCount(0);
 
   // a rodada foi para a pasta de execuções que já existia, não para a _entrada/
-  expect(await page.evaluate(() => window.__ls('execucoes'))).toEqual(['EXE-001-regressao-sprint-42.md', 'regressao.md']);
+  expect(await page.evaluate(() => window.__ls('execucoes'))).toEqual([...new Set(files.filter(([p]) => p.startsWith('execucoes/')).map(([p]) => p.split('/')[1])), 'regressao.md'].sort());
   expect(await page.evaluate(() => window.__ls('_entrada'))).toBeNull();
 
   // cenário BDD: abre e executa pela tabela "Cenário | Status" (a rodada antiga vai para o histórico)
