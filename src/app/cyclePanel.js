@@ -12,6 +12,7 @@ import { forecastText, forecastDetail } from '../markdown/forecast.ts';
 import { loadPrefs, savePrefs } from '../io/drafts.js';
 import { $ } from './shared.js';
 import { openWikiTarget } from './links.js';
+import { moreMenuHtml } from '../ui/modules.js';
 
 const el = $('cyclePanel');
 
@@ -101,19 +102,36 @@ export function refreshCyclePanel() {
     <div class="cp-foot">
       ${!data.closed && data.next ? `<button type="button" class="cp-btn primary" data-cp="next" title="Abre o próximo caso pendente e já começa a execução">▶ Próximo caso</button>` : ''}
       ${!data.onCycle ? '<button type="button" class="cp-btn" data-cp="cycle" title="Voltar ao documento da execução">↩ Execução</button>' : ''}
-      ${data.onCycle ? `<button type="button" class="cp-btn" data-cp="auto" title="JUnit XML, Playwright JSON ou Newman JSON: entra como Testes automatizados, separado dos manuais">🤖 ${data.auto ? 'Trocar relatório' : 'Relatório automatizado'}</button>` : ''}
-      ${data.onCycle ? '<button type="button" class="cp-btn" data-cp="device" title="WEB, Mobile iOS/Android (com a versão) ou Mobile — Todos">📱 Dispositivo</button>' : ''}
-      ${!data.closed && data.total > 1 ? '<button type="button" class="cp-btn" data-cp="assign" title="Dividir os casos entre os testadores (pelo tempo previsto) ou pegar os livres para você">👥 Atribuir</button>' : ''}
-      <button type="button" class="cp-btn" data-cp="links" title="Jira, Épico, Sprint… desta execução">🔗 Vínculos</button>
-      ${data.ciclo ? `<button type="button" class="cp-btn" data-cp="def" title="Abrir o ciclo &quot;${esc(data.ciclo.titulo)}&quot; (definição e histórico das execuções)">📋 Ciclo</button>` : ''}
-      ${nFail ? `<button type="button" class="cp-btn${data.closed ? ' primary' : ''}" data-cp="retest" title="Cria uma rodada nova só com os casos FAIL/BLOCKED desta — para validar as correções">🔂 Reteste das falhas (${nFail})</button>` : ''}
+      ${data.closed && nFail ? `<button type="button" class="cp-btn primary" data-cp="retest" title="Cria uma rodada nova só com os casos FAIL/BLOCKED desta — para validar as correções">🔂 Reteste das falhas (${nFail})</button>` : ''}
       ${data.closed && data.ciclo ? '<button type="button" class="cp-btn primary" data-cp="again" title="Cria a próxima execução com os mesmos casos">🔁 Executar de novo</button>' : ''}
       <button type="button" class="cp-btn" data-cp="summary" title="Totais, % de sucesso, duração e falhas da rodada">📊 ${data.closed ? 'Como foi' : 'Como está'}</button>
-      <button type="button" class="cp-btn" data-cp="reports" title="Encerramento e Go/No-Go, Defeitos, Rastreabilidade e Log + comparativo — em relatorios/ ao lado da execução (regerar mantém seus comentários)">📑 Relatórios</button>
-      ${!data.closed ? '<button type="button" class="cp-btn" data-cp="finish" title="Marca SKIP nos não executados, encerra a rodada e mostra o resumo">🏁 Finalizar execução</button>' : ''}
+      ${data.closed ? '<button type="button" class="cp-btn" data-cp="reports" title="Encerramento e Go/No-Go, Defeitos, Rastreabilidade e Log + comparativo — em relatorios/ ao lado da execução (regerar mantém seus comentários)">📑 Relatórios</button>' : ''}
+      ${!data.closed ? '<button type="button" class="cp-btn" data-cp="finish" title="Marca SKIP nos não executados, encerra a rodada e mostra o resumo">🏁 Finalizar</button>' : ''}
+      ${moreMenuHtml('cpMore', moreRefs(data, nFail), { title: 'Mais ações da rodada (por módulo)', btnClass: 'cp-btn cp-more' })}
     </div>`;
   // mantém o caso aberto à vista
   el.querySelector('.cp-item.open')?.scrollIntoView({ block: 'nearest' });
+}
+
+/**
+ * ⋯ do painel (1.58.0): o que não é o principal da hora, agrupado pelos módulos do topo — Execução (atribuir, reteste,
+ * relatórios, ciclo, tendência, página para o time), Casos (vínculos, dispositivo) e Automação (relatório).
+ * À vista ficam ▶ Próximo caso, ↩ Execução, 📊 Como está e 🏁 Finalizar (encerrada: reteste, executar de novo,
+ * como foi e relatórios).
+ * @param {NonNullable<ReturnType<typeof cycleChecklist>>} data @param {number} nFail
+ * @returns {Array<import('../ui/modules.js').QuickRef | string>}
+ */
+function moreRefs(data, nFail) {
+  return [
+    ...(!data.closed && data.total > 1 ? [{ cmd: 'assignRound', cp: 'assign' }] : []),
+    ...(!data.closed && nFail ? [{ cmd: 'rerunFailed', cp: 'retest', label: `🔂 Reteste das falhas (${nFail})` }] : []),
+    ...(!data.closed ? [{ cmd: 'execReports', cp: 'reports', hint: 'parciais até finalizar — regerar mantém seus comentários' }] : []),
+    ...(data.ciclo ? [{ cmd: 'openCycleDef', cp: 'def', hint: data.ciclo.titulo }] : []),
+    'trend', 'roundPage',
+    { cmd: 'editLinks', cp: 'links', label: '🔗 Vínculos da execução…', hint: 'Jira, épico, sprint, plano' },
+    ...(data.onCycle ? [{ cmd: 'editDevice', cp: 'device' }] : []),
+    ...(data.onCycle ? [{ cmd: 'attachAutomation', cp: 'auto', ...(data.auto ? { label: '🤖 Trocar o relatório automatizado…' } : {}) }] : []),
+  ];
 }
 
 const data0 = () => cycleChecklist();
@@ -121,6 +139,9 @@ el.addEventListener('click', (event) => {
   const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (event.target).closest('[data-cp]'));
   if (!b) return;
   const act = b.dataset.cp;
+  // ação escolhida no ⋯: fecha o menu (o bindToolbar só fecha sozinho os itens com data-cmd)
+  const pop = /** @type {HTMLElement | null} */ (b.closest('.menu-pop'));
+  if (pop) { pop.hidden = true; el.querySelector('[data-menu][aria-expanded="true"]')?.setAttribute('aria-expanded', 'false'); }
   if (act === 'toggle') { savePrefs({ cyclePanelCollapsed: !collapsed() }); lastSig = ''; refreshCyclePanel(); return; }
   if (act === 'filter') { savePrefs({ cyclePanelFilter: b.dataset.f || 'todos' }); lastSig = ''; refreshCyclePanel(); return; }
   if (act === 'who' && b.dataset.key) { event.stopPropagation(); reassignCase(b.dataset.key, b); return; }

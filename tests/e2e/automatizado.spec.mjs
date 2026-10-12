@@ -1,6 +1,6 @@
 // Relatório automatizado (Playwright JSON) anexado a uma execução: ao lado dos manuais, sem misturar; e execução só automatizada.
 import { test, expect } from '@playwright/test';
-import { openEditor, raw, wsInit } from './helpers.mjs';
+import { openEditor, raw, wsInit, roundMore } from './helpers.mjs';
 
 const tc = (id, title) => `---\ntipo: caso-de-teste\nid: ${id}\ntitulo: ${title}\napp: Portal\ntags: [regressao]\n---\n\n# ${id} — ${title}\n\n| # | Ação | Resultado esperado | Resultado obtido | Status |\n| --- | --- | --- | --- | --- |\n| 1 | Abrir | Abre | | |\n`;
 const report = (name) => ({
@@ -40,7 +40,7 @@ test('relatório automatizado na execução (mista) e execução só automatizad
 
   // 2) anexar o relatório Playwright: entra como seção própria e o painel mostra o bloco 🤖
   const chooser = page.waitForEvent('filechooser');
-  await panel.locator('[data-cp="auto"]').click();
+  await roundMore(page, 'auto');
   await (await chooser).setFiles(report('resultado.json'));
   await expect.poll(() => raw(page)).toMatch(/^## Testes automatizados$/m);
   await expect(panel.locator('.cp-auto')).toContainText('1 PASS');

@@ -1,6 +1,6 @@
 // Dispositivo/ambiente: escolher no painel da execução, ver no cabeçalho, nas tags e no chip.
 import { test, expect } from '@playwright/test';
-import { openEditor, raw, wsInit } from './helpers.mjs';
+import { openEditor, raw, wsInit, roundMore } from './helpers.mjs';
 
 test('dispositivo da execução: Mobile iOS com versão vira campo, tag e chip', async ({ page }) => {
   page.on('dialog', (d) => { throw new Error(`diálogo nativo inesperado: ${d.message()}`); });
@@ -21,7 +21,7 @@ test('dispositivo da execução: Mobile iOS com versão vira campo, tag e chip',
   const panel = page.locator('#cyclePanel');
   await expect(panel.locator('.cp-item')).toHaveCount(1);
 
-  await panel.locator('[data-cp="device"]').click();
+  await roundMore(page, 'device');
   const dv = page.locator('.dv-dialog');
   await expect(dv.locator('.dv-version')).toBeHidden();
   await dv.locator('input[value="ios"]').check();
@@ -33,7 +33,7 @@ test('dispositivo da execução: Mobile iOS com versão vira campo, tag e chip',
   await expect(panel.locator('.cp-links')).toContainText('Mobile iOS — iOS 18');
 
   // trocar para WEB tira as tags do iOS
-  await panel.locator('[data-cp="device"]').click();
+  await roundMore(page, 'device');
   await page.locator('.dv-dialog input[value="web"]').check();
   await page.locator('.dv-dialog button', { hasText: 'Salvar dispositivo' }).click();
   await expect.poll(() => raw(page)).toMatch(/^dispositivo: WEB$/m);

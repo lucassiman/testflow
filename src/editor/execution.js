@@ -4,6 +4,7 @@ import {
   STATUS_ORDER, KIND_OF, WORD_OF, isStatusHeader, cellStatus, countStatuses, countTasks,
   collectStatusTables, deriveOverall, findSummaryBlocks, summaryIsStale,
 } from '../markdown/status.ts';
+import { EXEC_BAR_MORE, moreItemsHtml, moreButtonHtml } from '../ui/modules.js';
 
 /**
  * Execução no Preview:
@@ -225,6 +226,13 @@ export function createExecutionBar({ pane, root, onSummary, onRun, onSession, on
   bar.className = 'exec-bar ui-only';
   bar.hidden = true;
   pane.insertBefore(bar, pane.firstChild);
+  // ⋯ da barra (1.58.0): o menu mora fora dela — a barra rola na horizontal e tem backdrop-filter, que prenderiam o menu
+  const more = document.createElement('div');
+  more.className = 'menu-pop menu-pop-right ctx-pop';
+  more.id = 'execMore';
+  more.hidden = true;
+  more.setAttribute('role', 'menu');
+  document.body.appendChild(more);
   let filter = '';
   let lastSig = '';
 
@@ -264,6 +272,7 @@ export function createExecutionBar({ pane, root, onSummary, onRun, onSession, on
     lastSig = sig;
     if (!counts.total && !tasks.total && !charter) {
       bar.hidden = true;
+      more.hidden = true;
       if (filter) setFilter('');
       return;
     }
@@ -300,7 +309,11 @@ export function createExecutionBar({ pane, root, onSummary, onRun, onSession, on
     if (next && !automated) actions.push(`<button type="button" class="exec-action exec-next" data-act="caseNext" title="Salva e abre o próximo caso da pasta (${esc(next)}) já em execução — Alt+Shift+→">⏭ Próximo caso: ${esc(next)}</button>`);
     if (charter) actions.push('<button type="button" class="exec-action" data-act="session" title="Cronômetro e notas rápidas da sessão exploratória">⏱ Sessão</button>');
     parts.push(`<span class="exec-actions">${actions.join('')}`);
-    parts.push(`<button type="button" class="exec-summary${stale ? ' stale' : ''}" data-act="summary" title="${hasSummary ? (stale ? 'Resumo desatualizado — clique para recalcular' : 'Recalcular resumo e status geral') : 'Inserir resumo automático (tabela + gráfico)'}">📊 ${hasSummary ? (stale ? 'Atualizar resumo' : 'Resumo ✓') : 'Resumo'}</button></span>`);
+    parts.push(`<button type="button" class="exec-summary${stale ? ' stale' : ''}" data-act="summary" title="${hasSummary ? (stale ? 'Resumo desatualizado — clique para recalcular' : 'Recalcular resumo e status geral') : 'Inserir resumo automático (tabela + gráfico)'}">📊 ${hasSummary ? (stale ? 'Atualizar resumo' : 'Resumo ✓') : 'Resumo'}</button>`);
+    // o resto, agrupado pelos módulos do topo: evidências, dados e Claude num caso; relatórios, reteste e time numa execução
+    more.innerHTML = moreItemsHtml(cycle ? EXEC_BAR_MORE.rodada : EXEC_BAR_MORE.caso);
+    more.hidden = true;
+    parts.push(`${moreButtonHtml('execMore', { title: cycle ? 'Mais ações da execução (por módulo)' : 'Mais ações (por módulo): capturar, bug, dados, Claude…', btnClass: 'exec-summary exec-more' })}</span>`);
     bar.innerHTML = parts.join('');
     // filtro que ficou sem linhas: limpa
     if (filter && filter !== 'todo' && !counts[/** @type {StatusKind} */ (filter)]) setFilter('');

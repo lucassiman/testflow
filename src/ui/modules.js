@@ -132,6 +132,8 @@ export const MODULES = [
           { cmd: 'nextCase', value: 'run', label: 'Próximo caso da pasta e já executar', menu: false, palette: 'Próximo caso da pasta e já executar' },
           { cmd: 'openCycle', label: '↩ Voltar à execução', palette: 'Ciclo de regressão: voltar ao ciclo' },
           { cmd: 'roundSummary', label: '📊 Como está a rodada', hint: 'totais, % de sucesso, duração e falhas', palette: 'Ciclo de regressão: como está / como foi a rodada' },
+          { cmd: 'assignRound', label: '👥 Atribuir os casos…', hint: 'dividir entre os testadores (pelo tempo previsto) ou pegar os livres', palette: 'Rodada: atribuir os casos aos testadores…' },
+          { cmd: 'openCycleDef', label: '📋 Abrir o ciclo de origem', hint: 'definição e histórico das execuções', palette: 'Rodada: abrir o ciclo de origem (definição e histórico)' },
           { cmd: 'finishCycle', label: '🏁 Finalizar execução…', hint: 'SKIP nos não executados, encerra e mostra o resumo', palette: 'Ciclo de regressão: finalizar execução…' },
         ],
       },
@@ -305,8 +307,8 @@ export const MODULES = [
       items: [
         { cmd: 'pickWorkspace', label: 'Escolher pasta de trabalho…', palette: 'Escolher pasta de trabalho…' },
         { cmd: 'home', label: 'Início', palette: 'Início: rodada em andamento, pendências, fixados e atalhos' },
-        { cmd: 'dashboard', label: 'Painel da pasta', palette: 'Painel da pasta (status, progresso, tags)' },
-        { cmd: 'searchAll', label: 'Buscar na pasta', keys: 'Ctrl+Shift+F', palette: 'Buscar em todos os arquivos da pasta' },
+        { cmd: 'dashboard', label: '📊 Painel da pasta', hint: 'status, progresso, tags e a entrada', palette: 'Painel da pasta (status, progresso, tags)' },
+        { cmd: 'searchAll', label: '🔎 Buscar na pasta', hint: 'texto ou filtros (status:FAIL, tag:…)', keys: 'Ctrl+Shift+F', palette: 'Buscar em todos os arquivos da pasta' },
         { cmd: 'structure', label: 'Criar estrutura', palette: 'Criar estrutura da pasta de trabalho…' },
         { cmd: 'newApp', label: 'Nova aplicação', palette: 'Nova aplicação (pasta com casos, bugs, planos…)' },
         { cmd: 'newFolder', label: 'Nova pasta', palette: 'Nova pasta na pasta de trabalho…' },
@@ -407,6 +409,126 @@ export function menuHtml(menuId) {
 
 /** Id do menu de um módulo do topo. @param {AppModule} m */
 export const moduleMenuId = (m) => `mod-${m.id}`;
+
+// ---------------------------------------------------------------- ⋯ e atalhos por módulo (1.58.0)
+
+/**
+ * Ação de um ⋯ (painel da rodada, barra Execução) ou atalho da tela inicial: um comando do registro, que dá o módulo,
+ * o texto e a dica. `'cmd'` ou `'cmd:value'` servem de atalho para `{ cmd, value }`.
+ * @typedef {object} QuickRef
+ * @property {string} cmd
+ * @property {string} [value]
+ * @property {string} [cp]     ação do painel da rodada (`data-cp`) no lugar do `data-cmd` — quando o painel passa a execução certa
+ * @property {string} [label]  texto no lugar do do registro (ex.: com a contagem)
+ * @property {string} [hint]
+ */
+
+/** @param {QuickRef | string} r @returns {QuickRef} */
+const refOf = (r) => (typeof r === 'string' ? { cmd: r.split(':')[0], ...(r.includes(':') ? { value: r.slice(r.indexOf(':') + 1) } : {}) } : r);
+
+/**
+ * Item do registro pelo comando: o que está no menu de um módulo do topo; senão o primeiro.
+ * @param {string} cmd @param {string | null} [value]
+ * @returns {{ module: AppModule, item: ModuleItem } | null}
+ */
+export function findItem(cmd, value = null) {
+  /** @type {{ module: AppModule, item: ModuleItem } | null} */
+  let first = null;
+  for (const m of MODULES) {
+    for (const s of m.sections) {
+      for (const it of s.items) {
+        if (it.cmd !== cmd || (it.value ?? null) !== (value ?? null)) continue;
+        if (m.top && s.menu === undefined && it.menu !== false) return { module: m, item: it };
+        first ||= { module: m, item: it };
+      }
+    }
+  }
+  return first;
+}
+
+/**
+ * Agrupa as ações pelo módulo, na ordem em que os módulos aparecem na lista (quem chama põe o mais útil primeiro).
+ * Comando fora do registro fica de fora (o teste `modules.test.mjs` não deixa isso acontecer).
+ * @param {Array<QuickRef | string>} refs
+ * @returns {Array<{ module: AppModule, items: Array<{ ref: QuickRef, item: ModuleItem }> }>}
+ */
+export function groupByModule(refs) {
+  /** @type {Map<string, { module: AppModule, items: Array<{ ref: QuickRef, item: ModuleItem }> }>} */
+  const groups = new Map();
+  for (const raw of refs) {
+    const ref = refOf(raw);
+    const found = findItem(ref.cmd, ref.value);
+    if (!found) continue;
+    const g = groups.get(found.module.id) || { module: found.module, items: [] };
+    g.items.push({ ref, item: found.item });
+    groups.set(found.module.id, g);
+  }
+  return [...groups.values()];
+}
+
+/**
+ * Itens de um ⋯, agrupados por módulo (título = ícone + nome do módulo, como na paleta). `data-cmd` roda pelo `run()`
+ * (o `bindToolbar` fecha o menu); `data-cp` fica com o painel da rodada.
+ * @param {Array<QuickRef | string>} refs
+ */
+export function moreItemsHtml(refs) {
+  return groupByModule(refs).map(({ module: m, items }) => `<div class="menu-title">${m.icon} ${esc(m.label)}</div>${items.map(({ ref, item }) => {
+    const attrs = ref.cp ? [`data-cp="${esc(ref.cp)}"`] : [`data-cmd="${esc(ref.cmd)}"`, ...(ref.value ? [`data-value="${esc(ref.value)}"`] : [])];
+    const hint = ref.hint ?? item.hint;
+    const text = esc(ref.label || item.label);
+    return `<button type="button" role="menuitem" ${attrs.join(' ')}>${item.keys ? `<span class="mi-row">${text}<kbd>${esc(item.keys)}</kbd></span>` : text}${hint ? ` <small>${esc(hint)}</small>` : ''}</button>`;
+  }).join('')}`).join('');
+}
+
+/**
+ * Botão ⋯ que abre o menu `id` (quem abre e fecha é o `bindToolbar`, pelo `data-menu`).
+ * @param {string} id @param {{ label?: string, title?: string, btnClass?: string }} [opts]
+ */
+export function moreButtonHtml(id, { label = '⋯', title = 'Mais ações', btnClass = '' } = {}) {
+  return `<button type="button" class="${esc(btnClass)}" data-menu="${esc(id)}" aria-haspopup="true" aria-expanded="false" title="${esc(title)}" aria-label="${esc(title)}">${esc(label)}</button>`;
+}
+
+/**
+ * Botão ⋯ com o menu ao lado (painel da rodada). Vazio se nenhuma ação vale.
+ * @param {string} id id do menu (único na página)
+ * @param {Array<QuickRef | string>} refs
+ * @param {{ label?: string, title?: string, btnClass?: string, right?: boolean }} [opts]
+ */
+export function moreMenuHtml(id, refs, opts = {}) {
+  const body = moreItemsHtml(refs);
+  if (!body) return '';
+  return `<span class="menu ctx-more">${moreButtonHtml(id, opts)}<div class="menu-pop ctx-pop${opts.right === false ? '' : ' menu-pop-right'}" id="${esc(id)}" role="menu" hidden>${body}</div></span>`;
+}
+
+/**
+ * ⋯ da barra Execução, pelo tipo do documento: um caso (ou sessão, checklist) e uma execução/ciclo.
+ * O que já está à vista na barra (▶ Executar, 🔁 Nova rodada, ⏭ Próximo caso, 🏁 Finalizar, 📊 Resumo) não se repete.
+ */
+export const EXEC_BAR_MORE = {
+  caso: ['capture', 'record', 'replaySave', 'newBug', 'evidencePanel', 'sharedPanel', 'envMenu', 'editDevice', 'copyClaude:failures', 'copyJira'],
+  rodada: ['roundSummary', 'execReports', 'rerunFailed', 'assignRound', 'trend', 'roundPage', 'editLinks', 'editDevice', 'attachAutomation', 'copyClaude:summary'],
+};
+
+/**
+ * Atalhos da tela inicial, por módulo. `ws: false` = aparece mesmo sem pasta de trabalho (o resto precisa dela).
+ * @type {Array<{ cmd: string, ws?: boolean }>}
+ */
+export const HOME_SHORTCUTS = [
+  { cmd: 'newCase', ws: false }, { cmd: 'importCases' }, { cmd: 'bulkEdit' }, { cmd: 'newView' },
+  { cmd: 'newRun', ws: false }, { cmd: 'runCycle' }, { cmd: 'trend' }, { cmd: 'roundPage' },
+  { cmd: 'newAutoRun' }, { cmd: 'reporterSetup' },
+  { cmd: 'officialUpdate' },
+  { cmd: 'newFromTemplate', ws: false }, { cmd: 'quickNote', ws: false },
+  { cmd: 'dashboard' }, { cmd: 'searchAll' },
+];
+
+/**
+ * Atalhos da tela inicial agrupados por módulo, só os que valem agora.
+ * @param {boolean} hasWorkspace
+ */
+export function homeShortcuts(hasWorkspace) {
+  return groupByModule(HOME_SHORTCUTS.filter((s) => hasWorkspace || s.ws === false).map((s) => s.cmd));
+}
 
 /** Botões dos módulos do topo, cada um com o seu menu. */
 export function topModulesHtml() {

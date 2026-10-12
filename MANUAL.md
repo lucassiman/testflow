@@ -85,12 +85,12 @@ Resumo do roteiro:
 
 | Área | O que tem |
 | --- | --- |
-| **Início** | Ao abrir o app sem documento, aparece a tela inicial: **🔁 rodada em andamento** (progresso, falhas, próximo caso e **▶ Continuar**, que abre o próximo caso já executando), **📋 pendências da pasta** (com falha, bloqueados, nunca executados, bugs abertos — clique para ver a lista na busca), **⚡ Começar** (novo caso, nova rodada, nota rápida, outro documento, painel) e **★ fixados / 🕘 recentes**. Some quando você abre ou cria um documento; volta pelo **logo** no canto ou `Ctrl+Shift+P` → *Início*. *Ver o documento de exemplo* abre o exemplo do formato. |
+| **Início** | Ao abrir o app sem documento, aparece a tela inicial: **🔁 rodada em andamento** (progresso, falhas, próximo caso e **▶ Continuar**, que abre o próximo caso já executando), **📋 pendências da pasta** (com falha, bloqueados, nunca executados, bugs abertos — clique para ver a lista na busca), **⚡ Começar** (atalhos **por módulo**, os mesmos do topo: *Casos* — novo caso, importar, edição em massa, nova visão; *Execução* — rodada, ciclo salvo, tendência, página da rodada; *Automação*; *Publicar*; *Arquivo* — modelo, nota rápida; *Pasta de trabalho* — painel, buscar) e **★ fixados / 🕘 recentes**. Some quando você abre ou cria um documento; volta pelo **logo** no canto ou `Ctrl+Shift+P` → *Início*. *Ver o documento de exemplo* abre o exemplo do formato. |
 | **Topo** | `☰` barra lateral · nome do arquivo (clique para renomear) · **estado do documento** (ver 4.1) · **Arquivo:** **Novo ▾** (caso de teste, a partir de modelo, nota rápida, em branco; importar casos de planilha ou do Notion) · **Abrir** · **Salvar ▾** (salvar como, renomear, salvar como modelo, salvar automaticamente) · **um menu por módulo** (ver *Menus por módulo* abaixo): **Casos ▾ · Execução ▾ · Evidências ▾ · Automação ▾ · Publicar ▾ · Compartilhar ▾** · modo **Raw / Dividido / Preview** · **A− 100% A+** (tamanho do texto) · **🔑** dados compartilhados · **⌘** paleta · **?** manual · **◐** tema claro/escuro. Em tela menor que ~1700 px os módulos ficam só com o ícone (o nome aparece ao passar o mouse). |
 | **Abas** | Aparecem quando há 2+ documentos abertos. `●` = não salvo; 🏛/✎/▶/⏱ = estado (ver 4.1). Botão do meio do mouse fecha. **Arraste** uma aba para mudar a ordem. Com abas demais para a largura, elas encolhem e depois **rolam** (roda do mouse sobre as abas, ou **‹ ›** à direita); **⌄ N** abre a lista de todas para escolher. |
 | **Toolbar** | Só o que mais se usa: desfazer/refazer · **B** *I* · **Aa ▾** (tachado, código inline, cor) · **Título ▾** (H1, H2, H3, citação) · **Lista ▾** (lista, numerada, checklist) · Link · **📸 Capturar** · **Tabela ▾** · **{ } Código ▾** · **Status ▾** · **Destaque ▾** · **＋ Inserir** (tudo o que dá para pôr no documento: blocos, modelos, imagem por URL, diagrama… — o mesmo menu do `/`). Todas as ações pelo nome: `Ctrl+Shift+P`. **No Preview, ela só aparece quando você está num bloco** (editando ou com ele selecionado) e fica por cima do documento, sem empurrar o texto; sai com `Esc` (sem editar) ou clicando fora. No Raw e no Dividido fica sempre. Para deixar fixa também no Preview: `Ctrl+Shift+P` → *Barra de formatação no Preview: só ao editar / sempre*. |
 | **Barra lateral** (`☰` ou `Ctrl+Shift+E`) | Abas (com a barra estreita, só a aberta mostra o nome) **Arquivos** (pasta de trabalho em árvore, 📊 Painel, recentes), **Sumário** (títulos), **Links** (quem cita / links de saída), **Buscar** (em todos os arquivos). **Arraste a borda direita** para mudar a largura (duplo clique volta ao padrão; com ela em foco, `←`/`→` ajustam). |
-| **Barra Execução** (topo do Preview) | Aparece em documentos com passos/checklist, numa linha só: status geral, progresso, contagem **dos status que existem** no documento (clique para filtrar), ☑, **▶ Executar**, **🔁 Nova rodada**, **⏱ Sessão**, **📊 Resumo** |
+| **Barra Execução** (topo do Preview) | Aparece em documentos com passos/checklist, numa linha só: status geral, progresso, contagem **dos status que existem** no documento (clique para filtrar), ☑, **▶ Executar**, **🔁 Nova rodada**, **⏱ Sessão**, **📊 Resumo** e **⋯** (o resto, por módulo — ver 7.2) |
 | **Painel de execução** | Com espaço (área do documento com 1000 px ou mais), o painel do ▶ Executar fica **encaixado à direita**, numa coluna própria — não cobre mais a tabela de passos. Em tela estreita ele flutua no canto, como antes; **⧉ Flutuar** leva para uma janelinha por cima do sistema testado. |
 | **Cartão do cabeçalho** | Vem **compacto**: tipo · ID · status · prioridade · ambiente · Jira numa linha, e o título. **▾ mais** mostra todos os campos e as tags (**▴ menos** recolhe); a escolha vale para todos os documentos e fica lembrada. Clicar no resto do cartão abre o formulário, como sempre. |
 | **Modo foco** (`Ctrl+Shift+.` / `⌘⇧.`) | Esconde topo, abas, barras, barra lateral e rodapé: fica só o documento (e o painel de execução ou da rodada, se estiverem abertos). **⤢ Sair do foco** no canto, ou o mesmo atalho, volta. Fica lembrado ao reabrir. Também na paleta: *Modo foco*. |
@@ -104,7 +104,7 @@ Cada ação mora num **módulo**. Os menus do topo e as categorias da paleta (`C
 | --- | --- |
 | **Novo ▾ / Salvar ▾** (Arquivo) | Criar documento (caso, modelo, nota rápida, em branco), importar casos de planilha ou do Notion · salvar como, renomear, salvar como modelo, salvar automaticamente |
 | **📋 Casos ▾** | **Escrever:** novo caso, 🔑 dados compartilhados, ↪ incluir passos compartilhados, 🌐 ambiente ativo, vínculos, dispositivo · **Revisar:** aprovação do caso, rodadas só com aprovados · **Vários casos:** edição em massa, importar de planilha, organizar por épico e ticket, nova visão |
-| **▶ Execução ▾** | **Começar:** rodada, ciclo de regressão, executar ciclo salvo, reteste das falhas · **Durante:** próximo caso (da rodada / da pasta), voltar à execução, como está, finalizar · **Resultados:** relatórios da execução, tendência entre rodadas · **Acompanhar com o time:** página da rodada, avisos no Teams · **Configurar:** status personalizados |
+| **▶ Execução ▾** | **Começar:** rodada, ciclo de regressão, executar ciclo salvo, reteste das falhas · **Durante:** próximo caso (da rodada / da pasta), voltar à execução, como está, atribuir os casos, abrir o ciclo de origem, finalizar · **Resultados:** relatórios da execução, tendência entre rodadas · **Acompanhar com o time:** página da rodada, avisos no Teams · **Configurar:** status personalizados |
 | **📸 Evidências ▾** (evidências e bugs) | **Capturar:** print, outra janela, parar, gravar vídeo, ⏪ replay · **Bug:** novo bug ligado, console e rede da aba testada (extensão) · **Arquivos:** evidências do documento, reaproveitar print, limpar · **Preferências:** duração do replay, captura pela extensão, prints grandes |
 | **🤖 Automação ▾** | Execução só automatizada, anexar relatório à execução, relatório como documento, reporter ao vivo · exportar `.feature` (deste documento / de todos) |
 | **🏛 Publicar ▾** | Publicar na pasta oficial, sincronizar, pasta oficial · histórico de versões · comentar, comentários do documento |
@@ -130,54 +130,115 @@ Na árvore, 🏛 marca os documentos publicados e ✎ os alterados desde a publi
 
 ### Onde fica…?
 
+Organizado pelos mesmos módulos dos menus do topo e da paleta (desde a 1.58.0). Um teste confere estas referências contra o registro do app — se o nome de um menu mudar, o manual acompanha.
+
+**📄 Arquivo**
+
 | Quero… | Onde |
 | --- | --- |
 | Criar documento a partir de modelo | **Novo ▾ → A partir de modelo…** ou `Alt+Shift+N` |
+| Anotar algo rápido sem pensar onde guardar | `Alt+Q` ou **Novo ▾ → 📝 Nota rápida** (vai para `_entrada/`) |
 | Renomear o arquivo | Clique no nome no topo, ou **Salvar ▾ → Renomear** |
-| Oficializar um documento validado | **Publicar ▾ → 🏛 Publicar na pasta oficial…** (ver 10.4) |
-| Ver ou voltar uma versão anterior | **Publicar ▾ → 🕘 Histórico de versões…** |
-| Abrir um bug a partir do caso de teste | No Preview, `/` → `bug` → **Bug novo, ligado a este documento** (ver 6.4) |
-| Usar num documento o print de outro | `/print` → galeria de evidências (ver 8) |
-| Print da janela do sistema testado sem PrtSc | **📸 Capturar** (toolbar, painel de execução, sessão) ou `Ctrl+Alt+P` (ver 8.1) |
-| Ver as novidades da versão | `Ctrl+Shift+P` → **O que mudou** |
-| Ver outro documento enquanto edita (ex.: o caso enquanto escreve o bug) | `Ctrl+clique` no `[[link]]` ou árvore → ⋯ → **Abrir ao lado** (ver 6.6) |
-| Apagar prints que ninguém usa | `Ctrl+Shift+P` → **Limpar evidências** (vão para a lixeira) |
-| Levar para o hub da empresa | **Compartilhar ▾ → 🏢 Pacote para o hub (.zip)** |
-| Trazer páginas do Notion | **Novo ▾ → 📥 Importar do Notion (.zip)…** ou arraste o `.zip` do export (ver 10.3) |
-| Anotar algo rápido sem pensar onde guardar | `Alt+Q` (**Nota rápida**, vai para `_entrada/`) |
-| Organizar a pasta (estrutura, aplicações, triagem) | Aba **Arquivos** → **🗂 Organizar esta pasta…** · 📊 **Painel → 📥 Entrada** (ver 10.2) |
-| Criar pasta, mover, renomear, apagar | Barra lateral → **Arquivos**: **＋ Nova pasta**, arrastar, `F2`, `Delete`, ou **⋯** / clique direito (ver 10.1) |
-| Copiar para Jira / Notion / Claude | **Compartilhar ▾** |
-| Achar os prints para anexar no Jira | Rodapé **📁 …/evidencias** → **🖼 Evidências**: copiar imagem, baixar, copiar o caminho da pasta (ver 8.2) |
-| Saber de onde é o documento aberto | Rodapé **📍** (ver 10) |
-| Ligar a outro documento | Digite `[[` no texto (ou `/` → *Link para documento*) e escolha na lista (ver 6.6) |
-| Trocar o código (ID) de um documento | Mude o `id:` no cabeçalho e salve: título, menções e links dos outros documentos acompanham (ver 6.6) |
-| Revisar texto com IA | **Compartilhar ▾ → ✍️ Revisar texto com o Claude…** ou `Alt+R` |
-| Dados sensíveis (mascarar, configurar) | **Compartilhar ▾ → 🛡 Dados sensíveis…** |
-| Exportar PDF / HTML / pacote Notion | **Compartilhar ▾ → Exportar** |
-| Relatório de automação | Arraste o XML/JSON, ou **Automação ▾ → Relatório como documento** |
+| Gravar sozinho, sem `Ctrl+S` | **Salvar ▾ → ☐ Salvar automaticamente** |
+| Trazer páginas do Notion | **Novo ▾ → Importar → 📥 Do Notion (.zip)…** ou arraste o `.zip` do export (ver 10.3) |
+
+**📋 Casos**
+
+| Quero… | Onde |
+| --- | --- |
+| Dados compartilhados (logins, URLs), ambiente ativo, aprovação | **Casos ▾** (ou 🔑 no topo / `Alt+K` para os dados) |
+| Mudar prioridade, tags, épico de vários casos de uma vez | **Casos ▾ → ✏️ Edição em massa…** |
+| Trazer casos do TestRail, Zephyr, Xray, Excel | **Casos ▾ → 📥 Importar casos de uma planilha…** (também em **Novo ▾ → Importar**) |
 | Ver casos não executados, tickets em teste, cobertura (regressão, automação), rastreabilidade | **Casos ▾ → 📊 Nova visão…** (ficam em `visoes/`; ver 11.1) |
 | Guardar um filtro do Painel | **📊 Painel → 💾 Salvar como visão** |
+| Ligar a outro documento | Digite `[[` no texto (ou `/` → *Link para documento*) e escolha na lista (ver 6.6) |
+| Trocar o código (ID) de um documento | Mude o `id:` no cabeçalho e salve: título, menções e links dos outros documentos acompanham (ver 6.6) |
+| Guardar épicos e histórias de uma aplicação | `aplicacoes/<App>/requisitos/` — cabeçalho `tipo: epico` (ou `historia`) + `app:`, e `Ctrl+S` (ver 10.2) |
+
+**▶ Execução**
+
+| Quero… | Onde |
+| --- | --- |
 | Executar a regressão caso a caso | **Execução ▾ → 🔁 Ciclo de regressão…** (salva os casos) → **▶ Executar este ciclo** → **▶ Próximo caso** (ver 7.8); sem ciclo: **Execução ▾ → ▶ Rodada de execução…** |
-| Comentar / revisar o documento de alguém | `Alt+M`; responder e resolver no próprio comentário (ver 6.7) |
-| Resultado dos testes automatizados direto na execução (sem importar arquivo) | `npm run reporter` + **Automação ▾ → ⚡ Reporter ao vivo** (ver 9) |
-| Mandar os cenários BDD para o repositório da automação | **Automação ▾ → Exportar .feature** (ver 9) |
+| Continuar a rodada em andamento | Tela **Início → ▶ Continuar**, a pílula **🔁** no topo ou **▶ Próximo caso** no painel da rodada |
+| Dividir os casos entre os testadores | Painel da rodada → **⋯ → 👥 Atribuir os casos…**, ou **Execução ▾ → 👥 Atribuir os casos…** |
+| Vínculos, dispositivo e relatório automatizado da rodada | Painel da rodada → **⋯** (grupos *Casos* e *Automação*) |
+| Reteste das falhas, relatórios da execução | Painel da rodada → **⋯** (com a rodada encerrada, ficam à vista), ou **Execução ▾ → 🔂 Reteste das falhas** / **Execução ▾ → 📑 Relatórios da execução** |
+| Tendência, status personalizados | **Execução ▾ → 📈 Tendência entre rodadas** / **Execução ▾ → 🏷 Status personalizados…** |
 | Ver quais testes automatizados são instáveis | **Execução ▾ → 📈 Tendência entre rodadas**, tabela *Testes automatizados instáveis* (ver 9) |
-| Gravar vídeo de um bug intermitente | `Ctrl+Alt+G`, **Evidências ▾ → ⏺ Gravar vídeo** ou **⏺ Gravar** no painel de execução (ver 8.1) |
 | Deixar o PO/gerente acompanhar a rodada no navegador, sem instalar nada | **Execução ▾ → 🌐 Página da rodada para o time…** (HTML na pasta oficial; ver 12.9) |
 | Avisar o time no Teams quando a rodada termina ou um caso crítico falha | **Execução ▾ → 📣 Avisos no Microsoft Teams…** (ver 12.8) |
-| Criar a issue no Jira direto do bug (com os anexos) / trazer o status | **Compartilhar ▾ → Jira → 🎫 Criar a issue deste bug** / **Trazer o status dos bugs** — com a extensão e o Jira configurado nela (ver 12.7) |
-| Erros do console, requisições com falha (HAR), URL, navegador e tela da aba testada no bug | Extensão do navegador (pasta `extensao/`) + **Evidências ▾ → Captura pela extensão: ligar** (anexar num documento: **🧩 Console e rede da aba testada**) (ver 8.3) |
+| Capturar, abrir bug, dados compartilhados ou copiar as falhas sem sair do caso | Barra Execução (topo do Preview) → **⋯** |
+
+**📸 Evidências e bugs**
+
+| Quero… | Onde |
+| --- | --- |
+| Abrir um bug a partir do caso de teste | **Evidências ▾ → 🐞 Novo bug ligado a este documento…**, ou no Preview `/` → `bug` (ver 6.4) |
+| Print da janela do sistema testado sem PrtSc | **Evidências ▾ → 📸 Capturar a tela** ou `Ctrl+Alt+P` — também **📸 Capturar** na toolbar, no painel de execução e na sessão (ver 8.1) |
+| Gravar vídeo de um bug intermitente | `Ctrl+Alt+G`, **Evidências ▾ → ⏺ Gravar vídeo** ou **⏺ Gravar** no painel de execução (ver 8.1) |
 | Vídeo do que acabou de acontecer (sem ter apertado gravar) | **⏪** no rodapé, `Ctrl+Alt+R`, **Evidências ▾ → ⏪ Replay instantâneo** ou **⏪ Replay** no painel de execução — com a captura de tela ligada (ver 8.1) |
-| Ver o que os colegas publicaram / trazer | Barra lateral → **🏛 Oficial · ⬇ N**, ou a pílula **⬇** no topo (ver 10.4) |
-| Guardar épicos e histórias de uma aplicação | `aplicacoes/<App>/requisitos/` — cabeçalho `tipo: epico` (ou `historia`) + `app:`, e `Ctrl+S` (ver 10.2) |
+| Usar num documento o print de outro | **Evidências ▾ → Reaproveitar print de outro documento…** ou `/print` (ver 8) |
+| Achar os prints para anexar no Jira | **Evidências ▾ → 🖼 Evidências do documento…** ou rodapé **📁 …/evidencias**: copiar imagem, baixar, copiar o caminho da pasta (ver 8.2) |
+| Apagar prints que ninguém usa | **Evidências ▾ → Limpar evidências que ninguém usa…** (vão para a lixeira) |
+| Erros do console, requisições com falha (HAR), URL, navegador e tela da aba testada no bug | Extensão do navegador (pasta `extensao/`) + **Evidências ▾ → Captura pela extensão: ligar/desligar** (anexar num documento: **Evidências ▾ → 🧩 Console e rede da aba testada…**) (ver 8.3) |
+
+**🤖 Automação**
+
+| Quero… | Onde |
+| --- | --- |
+| Relatório de automação como documento | Arraste o XML/JSON, ou **Automação ▾ → 📄 Relatório como documento…** |
+| Resultado dos testes automatizados direto na execução (sem importar arquivo) | `npm run reporter` + **Automação ▾ → ⚡ Reporter ao vivo — como ligar…** (ver 9) |
+| Juntar o relatório a uma rodada manual | **Automação ▾ → 📎 Anexar relatório à execução…** (ou, no painel da rodada, **⋯**) |
+| Mandar os cenários BDD para o repositório da automação | **Automação ▾ → Exportar .feature deste documento…** ou **Automação ▾ → Exportar .feature de todos os cenários…** (ver 9) |
+
+**🏛 Publicar**
+
+| Quero… | Onde |
+| --- | --- |
+| Oficializar um documento validado | **Publicar ▾ → 🏛 Publicar na pasta oficial…** (ver 10.4) |
+| Ver ou voltar uma versão anterior | **Publicar ▾ → 🕘 Histórico de versões…** |
+| Ver o que os colegas publicaram / trazer | Barra lateral → **🏛 Oficial · ⬇ N**, a pílula **⬇** no topo ou **Publicar ▾ → ⇅ Sincronizar com a oficial…** (ver 10.4) |
+| Comentar / revisar o documento de alguém | `Alt+M` ou **Publicar ▾ → 💬 Comentar**; responder e resolver no próprio comentário (ver 6.7) |
+
+**📤 Compartilhar**
+
+| Quero… | Onde |
+| --- | --- |
+| Copiar para Jira / Notion | **Compartilhar ▾ → Copiar** |
+| Mandar as falhas ou o resumo para o Claude | **Compartilhar ▾ → Claude** |
+| Revisar texto com IA | **Compartilhar ▾ → ✍️ Revisar texto com o Claude…** ou `Alt+R` |
+| Exportar PDF / HTML / pacote Notion | **Compartilhar ▾ → Exportar** |
+| Levar para o hub da empresa | **Compartilhar ▾ → 🏢 Pacote para o hub (.zip)** |
+| Dados sensíveis (mascarar, configurar) | **Compartilhar ▾ → 🛡 Dados sensíveis…** |
+| Criar a issue no Jira direto do bug (com os anexos) / trazer o status | **Compartilhar ▾ → Jira → 🎫 Criar a issue deste bug** / **Compartilhar ▾ → Jira → Trazer o status dos bugs** — com a extensão e o Jira configurado nela (ver 12.7) |
+| Abrir vários bugs no Jira de uma vez | **📊 Painel → ⬇ CSV para o Jira** ou **Compartilhar ▾ → Jira → Exportar bugs em CSV…**; chaves de volta: **Compartilhar ▾ → Jira → Trazer chaves do Jira (CSV)…** (ver 12.5) |
 | Deixar o Claude trabalhar direto na pasta | Instale `mcp-dist/testflow.mcpb` no Claude desktop (ver 12.6) |
-| Abrir vários bugs no Jira de uma vez | **📊 Painel → ⬇ CSV para o Jira**; chaves de volta: `Ctrl+Shift+P` → *Trazer chaves do Jira* (ver 12.5) |
-| Qualquer ação pelo nome | `Ctrl+Shift+P` (paleta) — as categorias são os módulos do topo |
-| Dados compartilhados, ambiente, aprovação, edição em massa | **Casos ▾** (ou 🔑 no topo / `Alt+K` para os dados) |
-| Tendência, relatórios da execução, status personalizados, reteste das falhas | **Execução ▾** |
-| Backup da pasta de trabalho | `Ctrl+Shift+P` → *Fazer backup* (categoria **Pasta de trabalho**) |
+
+**📂 Pasta de trabalho** (paleta e barra lateral)
+
+| Quero… | Onde |
+| --- | --- |
+| Voltar à tela inicial | Clique no **logo**, ou `Ctrl+Shift+P` → *Início* |
+| Organizar a pasta (estrutura, aplicações, triagem) | Aba **Arquivos** → **🗂 Organizar esta pasta…** · 📊 **Painel → 📥 Entrada** (ver 10.2) |
+| Criar pasta, mover, renomear, apagar | Barra lateral → **Arquivos**: **＋ Nova pasta**, arrastar, `F2`, `Delete`, ou **⋯** / clique direito (ver 10.1) |
+| Saber de onde é o documento aberto | Rodapé **📍** (ver 10) |
+| Backup da pasta de trabalho | `Ctrl+Shift+P` → *Fazer backup* |
+
+**👁 Editar e exibir**
+
+| Quero… | Onde |
+| --- | --- |
+| Ver outro documento enquanto edita (ex.: o caso enquanto escreve o bug) | `Ctrl+clique` no `[[link]]` ou árvore → ⋯ → **Abrir ao lado** (ver 6.6) |
 | Inserir bloco, status, destaque, modelo | `/` no começo da linha (Raw), `Ctrl+/` ou **＋ Inserir** |
+| Só o documento na tela | `Ctrl+Shift+P` → *Modo foco* (ou `Ctrl+Shift+.`) |
+
+**❓ Ajuda e preferências**
+
+| Quero… | Onde |
+| --- | --- |
+| Ver as novidades da versão | `Ctrl+Shift+P` → **O que mudou** |
+| Qualquer ação pelo nome | `Ctrl+Shift+P` (paleta) — as categorias são os módulos do topo |
 
 ## 5. Escrever e editar
 
@@ -491,6 +552,15 @@ O **status geral** do cabeçalho é recalculado: algum `FAIL` → `FAIL`; senão
 
 Status geral, barra de progresso e contagem por status. **Clique num status** para ver só essas linhas (clique de novo desfaz); **☑** mostra só itens de checklist não marcados. Cada título mostra `feitos/total` do checklist da seção. O filtro não vai para o PDF.
 
+**⋯** (no fim da barra, desde a 1.58.0) abre o resto das ações **agrupado pelos módulos do topo**, sem sair do documento:
+
+| Documento | O que tem no ⋯ |
+| --- | --- |
+| Caso, cenário, checklist, sessão | **📸 Evidências e bugs:** capturar a tela, gravar vídeo, replay, novo bug ligado, evidências do documento · **📋 Casos:** dados compartilhados, ambiente ativo, dispositivo · **📤 Compartilhar:** copiar as falhas para o Claude, copiar para o Jira |
+| Execução / ciclo | **▶ Execução:** como está a rodada, relatórios, reteste das falhas, atribuir os casos, tendência, página da rodada · **📋 Casos:** vínculos, dispositivo · **🤖 Automação:** anexar relatório · **📤 Compartilhar:** copiar o resumo para o Claude |
+
+O que já está à vista na barra (▶ Executar, 🔁 Nova rodada, ⏭ Próximo caso, 🏁 Finalizar, 📊 Resumo) não se repete no ⋯.
+
 ### 7.3 Executar passo a passo
 
 **▶ Executar** (ou `/executar`) abre um painel com a ação e o resultado esperado do passo atual:
@@ -549,13 +619,22 @@ Na janela de seleção dos casos:
 - **Atalhos**: *Regressão — Portal* (casos com a tag `regressao`), *todas as aplicações*, *todos os casos* de uma aplicação ou *pela visão* (uma visão de `visoes/`).
 - A coluna **Último** mostra o resultado mais recente de cada caso. Dê um nome (ex.: *Regressão Portal 2.14*) e confirme.
 
-**🤖 Testes automatizados na execução**: o relatório de uma execução automatizada (Playwright `--reporter=json`, JUnit XML ou Newman JSON — os mesmos da seção 9) pode ser anexado à execução: botão **🤖 Relatório automatizado** do painel (ou `Ctrl+Shift+P` → *Execução: anexar relatório…*). Ele entra como a seção **Testes automatizados**, **ao lado** dos casos manuais e sem substituí-los: a tabela usa a coluna *Resultado* (não *Status*), então **não entra na contagem nem na % de sucesso dos manuais**. O painel e o *Como foi essa rodada?* mostram um bloco 🤖 próprio (total, PASS/FAIL, % de sucesso, falhas), mas o **resultado geral** da execução considera os dois (uma falha automatizada deixa a execução em FAIL). Anexar de novo troca o relatório; numa execução já encerrada, o *Encerramento* é refeito. A execução pode ser **só manual, só automatizada ou mista**: **Automação ▾ → 🤖 Execução só automatizada…** cria uma execução a partir do relatório, sem casos manuais. Os testes que citam o ID de um caso (`TC-042`, `@TC-042`) ou casos com `automacao:` aparecem ligados a ele (coluna *Caso* e *Cobertura dos casos manuais*) — por enquanto isso é só informativo, não muda o status do caso manual.
+**🤖 Testes automatizados na execução**: o relatório de uma execução automatizada (Playwright `--reporter=json`, JUnit XML ou Newman JSON — os mesmos da seção 9) pode ser anexado à execução: no painel da rodada, **⋯ → 🤖 Automação → 📎 Anexar relatório à execução…** (ou **Automação ▾**, ou `Ctrl+Shift+P` → *Execução: anexar relatório…*). Ele entra como a seção **Testes automatizados**, **ao lado** dos casos manuais e sem substituí-los: a tabela usa a coluna *Resultado* (não *Status*), então **não entra na contagem nem na % de sucesso dos manuais**. O painel e o *Como foi essa rodada?* mostram um bloco 🤖 próprio (total, PASS/FAIL, % de sucesso, falhas), mas o **resultado geral** da execução considera os dois (uma falha automatizada deixa a execução em FAIL). Anexar de novo troca o relatório; numa execução já encerrada, o *Encerramento* é refeito. A execução pode ser **só manual, só automatizada ou mista**: **Automação ▾ → 🤖 Execução só automatizada…** cria uma execução a partir do relatório, sem casos manuais. Os testes que citam o ID de um caso (`TC-042`, `@TC-042`) ou casos com `automacao:` aparecem ligados a ele (coluna *Caso* e *Cobertura dos casos manuais*) — por enquanto isso é só informativo, não muda o status do caso manual.
 
-**📱 Dispositivo / ambiente**: em que dispositivo o caso, o bug, o ciclo ou a execução foi (ou será) validado — **WEB**, **Mobile iOS**, **Mobile Android** ou **Mobile — Todos**, com a **versão do sistema** nos mobile (`Mobile iOS — iOS 18`, `Mobile Android — Android 15`). Escolha no botão **📱 Dispositivo** do painel da execução ou em `Ctrl+Shift+P` → *Dispositivo / ambiente…* (vale para o documento aberto). Fica no campo `dispositivo:` do cabeçalho (os modelos de caso, bug, charter e relatório já trazem o campo), vira **tag** (`web`, `mobile`, `ios`, `android`; trocar o dispositivo troca as tags dele sem tirar as suas), aparece como chip no painel e no resumo da rodada, é repetido pelo aviso *Preencher com a última execução*, vai no contexto do Jira/CSV e filtra nas visões (`dispositivo: ios`, `dispositivo: mobile` pega iOS, Android e Todos). A execução de um ciclo **herda o dispositivo do ciclo**. O campo `browser:` continua existindo (o navegador usado no WEB).
+**📱 Dispositivo / ambiente**: em que dispositivo o caso, o bug, o ciclo ou a execução foi (ou será) validado — **WEB**, **Mobile iOS**, **Mobile Android** ou **Mobile — Todos**, com a **versão do sistema** nos mobile (`Mobile iOS — iOS 18`, `Mobile Android — Android 15`). Escolha no painel da execução (**⋯ → 📋 Casos → 📱 Dispositivo / ambiente…**) ou em `Ctrl+Shift+P` → *Dispositivo / ambiente…* (vale para o documento aberto). Fica no campo `dispositivo:` do cabeçalho (os modelos de caso, bug, charter e relatório já trazem o campo), vira **tag** (`web`, `mobile`, `ios`, `android`; trocar o dispositivo troca as tags dele sem tirar as suas), aparece como chip no painel e no resumo da rodada, é repetido pelo aviso *Preencher com a última execução*, vai no contexto do Jira/CSV e filtra nas visões (`dispositivo: ios`, `dispositivo: mobile` pega iOS, Android e Todos). A execução de um ciclo **herda o dispositivo do ciclo**. O campo `browser:` continua existindo (o navegador usado no WEB).
 
-**🔗 Vínculos (Jira, Épico, Sprint, Plano)**: o ciclo, a execução ou a rodada avulsa podem ser ligados a um ticket do Jira, a um épico, a uma sprint e a um **plano de teste** (`plano: PT-001` — os critérios de saída dele entram no relatório de encerramento, ver *Relatórios de fim de execução*). Preencha na janela de seleção dos casos (🔗 Vínculos, opcional), no botão **🔗 Vínculos** do painel ou em `Ctrl+Shift+P` → *Vínculos…* (vale para o documento aberto). Ficam no cabeçalho — `jira: [QA-123]`, `epico: PORTAL-10`, `sprint: Sprint 42` —, a **execução herda os vínculos do ciclo** e dá para ajustá-los depois. Eles aparecem como chips no painel e no resumo da rodada (o Jira abre o ticket; um épico que é documento da pasta abre o documento) e entram no resumo copiado. As visões filtram por eles (`sprint: Sprint 42`, `epico: PORTAL-10`).
+**🔗 Vínculos (Jira, Épico, Sprint, Plano)**: o ciclo, a execução ou a rodada avulsa podem ser ligados a um ticket do Jira, a um épico, a uma sprint e a um **plano de teste** (`plano: PT-001` — os critérios de saída dele entram no relatório de encerramento, ver *Relatórios de fim de execução*). Preencha na janela de seleção dos casos (🔗 Vínculos, opcional), no painel da rodada (**⋯ → 📋 Casos → 🔗 Vínculos da execução…**) ou em `Ctrl+Shift+P` → *Vínculos…* (vale para o documento aberto). Ficam no cabeçalho — `jira: [QA-123]`, `epico: PORTAL-10`, `sprint: Sprint 42` —, a **execução herda os vínculos do ciclo** e dá para ajustá-los depois. Eles aparecem como chips no painel e no resumo da rodada (o Jira abre o ticket; um épico que é documento da pasta abre o documento) e entram no resumo copiado. As visões filtram por eles (`sprint: Sprint 42`, `epico: PORTAL-10`).
 
-O **painel lateral da rodada** (à direita, no ciclo e em qualquer caso dele; `⟩` recolhe) lista todos os casos: ✅ PASS, ❌ FAIL, ⛔ BLOCKED, ⏭ SKIP, ▶ em execução, ◐ em andamento (começou nesta rodada e ainda não foi concluído), ⏳ pendente, com a **barra de progresso nas cores dos status** (verde PASS, vermelho FAIL, amarelo BLOCKED, cinza SKIP; o vazio é o que falta). Com mais de 3 casos, os filtros **Todos · Pendentes · Falhas** enxugam a lista (o caso aberto aparece sempre; o filtro fica lembrado). Cada caso concluído mostra **⏱ a duração** da execução dele nesta rodada. Um caso pendente que já tinha resultado de antes mostra **último: PASS/FAIL…** em cinza — é só referência, não conta nesta rodada. **Cenários BDD** executam pela tabela *Cenário | Status* da seção Execução (um cenário por passo). Clique num caso para ir até ele; `↑`/`↓` andam pela lista. O **⏭** que aparece ao lado de um caso pendente **pula o caso** (SKIP, sem abrir; se ele estava em foco, abre o próximo); clicar depois num caso pulado abre para executá-lo normalmente. No fim, **📋 Ciclo** abre o ciclo de origem e **🔁 Executar de novo** cria a próxima execução.
+O **painel lateral da rodada** (à direita, no ciclo e em qualquer caso dele; `⟩` recolhe) lista todos os casos: ✅ PASS, ❌ FAIL, ⛔ BLOCKED, ⏭ SKIP, ▶ em execução, ◐ em andamento (começou nesta rodada e ainda não foi concluído), ⏳ pendente, com a **barra de progresso nas cores dos status** (verde PASS, vermelho FAIL, amarelo BLOCKED, cinza SKIP; o vazio é o que falta). Com mais de 3 casos, os filtros **Todos · Pendentes · Falhas** enxugam a lista (o caso aberto aparece sempre; o filtro fica lembrado). Cada caso concluído mostra **⏱ a duração** da execução dele nesta rodada. Um caso pendente que já tinha resultado de antes mostra **último: PASS/FAIL…** em cinza — é só referência, não conta nesta rodada. **Cenários BDD** executam pela tabela *Cenário | Status* da seção Execução (um cenário por passo). Clique num caso para ir até ele; `↑`/`↓` andam pela lista. O **⏭** que aparece ao lado de um caso pendente **pula o caso** (SKIP, sem abrir; se ele estava em foco, abre o próximo); clicar depois num caso pulado abre para executá-lo normalmente. No fim, **🔁 Executar de novo** cria a próxima execução e **⋯ → 📋 Abrir o ciclo de origem** abre o ciclo.
+
+**Botões do painel (desde a 1.58.0)** — à vista ficam só as ações da hora; o resto vai para o **⋯**, agrupado pelos mesmos módulos do topo:
+
+| Rodada | À vista | No ⋯ |
+| --- | --- | --- |
+| **Em andamento** | **▶ Próximo caso** · **↩ Execução** (num caso) · **📊 Como está** · **🏁 Finalizar** | **▶ Execução:** 👥 atribuir os casos, 🔂 reteste das falhas, 📑 relatórios (parciais), 📋 ciclo de origem, 📈 tendência, 🌐 página da rodada · **📋 Casos:** 🔗 vínculos, 📱 dispositivo · **🤖 Automação:** relatório automatizado |
+| **Finalizada** | **🔂 Reteste das falhas** · **🔁 Executar de novo** · **📊 Como foi** · **📑 Relatórios** | ciclo de origem, tendência, página da rodada, vínculos, dispositivo, relatório automatizado |
+
+Dispositivo e relatório automatizado aparecem com o documento da execução aberto (são dele).
 
 **🧮 Matriz de configurações** — o mesmo caso em vários ambientes, navegadores ou dispositivos. Na janela de *Nova rodada* (ou *Novo ciclo*), abra **🧮 Configurações (matriz)** e preencha o que varia: *Ambientes* `HML, PROD`, *Navegadores* `Chrome, Safari`, *Dispositivos / SO* `Windows, Android 15` — a janela mostra as combinações. Nasce **uma execução por combinação** (`… — HML · Chrome`, `… — PROD · Chrome`), com os mesmos casos e, no cabeçalho, `configuracao:`, `ambiente:` e `browser:`.
 - No painel, os chips **🧮 HML · Chrome 3/5 · PROD · Chrome 0/5** mostram o progresso de cada configuração; clique para trocar. ▶ Próximo caso continua na configuração ativa.
@@ -563,7 +642,7 @@ O **painel lateral da rodada** (à direita, no ciclo e em qualquer caso dele; `�
 - Num **ciclo salvo** com configurações (`configuracoes:` no cabeçalho), *Executar este ciclo* cria a execução #N em cada configuração, e o ciclo mostra a **grade da matriz** (caso × configuração) embaixo das execuções.
 - 🔂 Reteste das falhas fica na configuração de origem. Com o Claude: `qa_rodada_criar { …, ambientes: ["HML", "PROD"], navegadores: ["Chrome"] }`.
 
-**👥 Atribuir** (no painel da rodada): divide os casos entre os testadores — escreva os nomes (`Ana, Bruno`) e escolha *só os pendentes sem testador*, *todos os pendentes (redistribuir)* ou *pegar para mim os sem testador*. Com **Equilibrar pelo tempo previsto**, os casos mais demorados vão primeiro, sempre para quem está com menos (pela duração média de cada caso); sem ele, pela quantidade. A execução ganha a coluna **Testador** (dá para editar à mão também).
+**👥 Atribuir os casos** (no painel da rodada, **⋯ → ▶ Execução**; também em **Execução ▾**): divide os casos entre os testadores — escreva os nomes (`Ana, Bruno`) e escolha *só os pendentes sem testador*, *todos os pendentes (redistribuir)* ou *pegar para mim os sem testador*. Com **Equilibrar pelo tempo previsto**, os casos mais demorados vão primeiro, sempre para quem está com menos (pela duração média de cada caso); sem ele, pela quantidade. A execução ganha a coluna **Testador** (dá para editar à mão também).
 - Cada caso mostra as iniciais de quem está com ele (o seu em destaque); **clique nas iniciais** para trocar (pessoas da rodada, você, ninguém ou outra).
 - **Minhas** (filtro do painel) mostra só os seus; a linha **👥** mostra a carga de cada um (pendentes e tempo previsto).
 - **▶ Próximo caso** abre os **seus** primeiro, depois os sem testador — os de outra pessoa ficam com ela. "Você" é o nome das preferências (o mesmo do *Publicado por*).
@@ -572,7 +651,7 @@ O **painel lateral da rodada** (à direita, no ciclo e em qualquer caso dele; `�
 
 **⏱ Previsão** (no painel, embaixo do progresso): *faltam ~1 h 20 min (14 casos) · termina ~16:40* — a soma da duração média que cada caso pendente já teve (coluna Duração do Histórico de execuções, as últimas 5; caso com dados conta as iterações). Caso que nunca rodou entra com a média dos outros da rodada (passe o mouse para ver quantos). Não conta pausas nem o tempo de abrir bugs. Pelo Claude: aparece no `qa_rodada_status`.
 
-**🔂 Reteste das falhas** (no painel, quando a rodada tem FAIL ou BLOCKED; também na paleta) cria uma **rodada nova só com esses casos** — para validar as correções sem refazer tudo. Ela herda os vínculos (Jira, épico, sprint), o dispositivo e as tags (mais a tag `reteste`), e a descrição aponta a execução de origem (`reteste das falhas de [[EXEC-…]]`). Se houver casos pulados, dá para **incluir os SKIP também**. A rodada original não muda. Pelo Claude: *"cria o reteste das falhas da EXEC-…"*.
+**🔂 Reteste das falhas** (no painel, quando a rodada tem FAIL ou BLOCKED: no **⋯** com a rodada aberta, à vista depois de finalizada; também em **Execução ▾**) cria uma **rodada nova só com esses casos** — para validar as correções sem refazer tudo. Ela herda os vínculos (Jira, épico, sprint), o dispositivo e as tags (mais a tag `reteste`), e a descrição aponta a execução de origem (`reteste das falhas de [[EXEC-…]]`). Se houver casos pulados, dá para **incluir os SKIP também**. A rodada original não muda. Pelo Claude: *"cria o reteste das falhas da EXEC-…"*.
 
 | Passo | O que acontece |
 | --- | --- |
@@ -613,7 +692,7 @@ Os outros ficam como **⚠️ avaliar**, ou ✅ se o item já estiver marcado no
 
 A sugestão é **Não liberar** se algum critério falhou e **Liberar com ressalvas** se há algo a avaliar, SKIP ou bug aberto. A decisão é do time: registre-a na tabela de aceite.
 
-**📑 Relatórios** (botão do painel da rodada, ou `Ctrl+Shift+P` → *Relatórios da execução*) **gera de novo** os relatórios a qualquer momento, por exemplo depois de corrigir um status ou fechar um bug. O que você escreveu nos trechos de **comentários**, **riscos** e **decisão e aceite** é **mantido**, mesmo que você tenha editado o arquivo em outro programa. Antes de finalizar a execução, os relatórios saem como **parciais** (com aviso). Se um relatório estiver aberto em outra aba, ele não é regravado: feche a aba e gere de novo.
+**📑 Relatórios** (no painel da rodada: no **⋯** com a rodada aberta, à vista depois de finalizada; ou `Ctrl+Shift+P` → *Relatórios da execução*) **gera de novo** os relatórios a qualquer momento, por exemplo depois de corrigir um status ou fechar um bug. O que você escreveu nos trechos de **comentários**, **riscos** e **decisão e aceite** é **mantido**, mesmo que você tenha editado o arquivo em outro programa. Antes de finalizar a execução, os relatórios saem como **parciais** (com aviso). Se um relatório estiver aberto em outra aba, ele não é regravado: feche a aba e gere de novo.
 
 ### 7.9 Próximo caso da pasta
 
@@ -697,7 +776,7 @@ Clique em **📁 …/evidencias** no rodapé (ou `Ctrl+Shift+P` → *Evidências
 3. **Carregar sem compactação** → escolha a pasta **`extensao/`** do TestFlow (a mesma do `git pull`).
 4. Fixe o ícone do TestFlow na barra (🧩 → 📌), se quiser ver o estado.
 5. **Recarregue as abas** que já estavam abertas (o sistema testado e o TestFlow) — a extensão só começa a observar as páginas abertas depois dela.
-6. No TestFlow: `Ctrl+Shift+P` → **Captura de bug pela extensão: ligar/desligar**. O aviso confirma a versão da extensão (*1.51.0*).
+6. No TestFlow: **Evidências ▾ → Captura pela extensão: ligar/desligar** (ou `Ctrl+Shift+P` → **Captura de bug pela extensão do navegador**). O aviso confirma a versão da extensão (*1.51.0*).
 
 Para mandar a um colega sem o repositório: `npm run extensao` gera `extensao-dist/testflow-extensao.zip` (descompactar e carregar a pasta). **Atualizar:** `git pull` e o ↻ da extensão em `chrome://extensions` (e recarregue as abas testadas).
 
@@ -733,7 +812,7 @@ Exemplos para testar: `exemplos/automacao/junit.xml`, `playwright.json`, `newman
 **Reporter ao vivo: o resultado direto na execução.** Os testes automatizados gravam o resultado na pasta de trabalho, sem baixar e importar o arquivo:
 
 1. Uma vez, na pasta do TestFlow: `npm run reporter` (gera `reporter-dist/testflow.mjs`, um arquivo só, sem dependências).
-2. `Ctrl+Shift+P` → **Reporter da automação: resultado direto na execução — como ligar…** mostra (e copia) o trecho com o caminho da sua pasta de trabalho (o de *Onde fica a pasta de trabalho no computador*).
+2. **Automação ▾ → ⚡ Reporter ao vivo — como ligar…** (ou `Ctrl+Shift+P` → **Reporter da automação: resultado direto na execução**) mostra (e copia) o trecho com o caminho da sua pasta de trabalho (o de *Onde fica a pasta de trabalho no computador*).
 3. **Playwright** — no `playwright.config` do projeto de automação:
    ```js
    reporter: [['list'], ['C:/dev/markdown qa editor/reporter-dist/testflow.mjs', { pasta: 'C:/dev/qa', app: 'Portal' }]],
@@ -799,7 +878,7 @@ Crie pastas, mova e renomeie documentos sem sair do editor — e sem quebrar pri
 | **Renomear** | `F2` no item da árvore, **⋯ → Renomear…**, ou clique no nome do arquivo no topo. |
 | **Lixeira** | `Delete` no item da árvore ou **⋯ → Mover para a lixeira**. Nada é apagado: vai para a pasta `_lixeira/` da pasta de trabalho. A **🗑 Lixeira** aparece no fim da árvore com **Restaurar** (volta para o lugar de origem) e **×** (apaga de vez, com confirmação); **Esvaziar** apaga tudo o que o editor pôs lá. O nome `_lixeira` fica reservado na raiz da pasta de trabalho. |
 | **Edição em massa** | Mudar **prioridade, responsável, épico, sprint, versão, tags (pôr/tirar) e aprovação** de vários casos de uma vez: clique direito numa pasta → **✎ Editar os casos desta pasta em massa…** (já marca os casos dela) ou `Ctrl+Shift+P` → *Edição em massa*. A janela de escolha é a mesma da rodada (filtro, atalhos por aplicação, épico, regressão, visão; `Shift+clique` marca um intervalo). Depois, preencha só o que muda — as tags dos casos escolhidos aparecem para clicar e tirar — e a prévia diz quantos mudam. Só o cabeçalho muda; o caso aberto vira uma edição (`Ctrl+Z`), os outros são gravados com a versão anterior no histórico, e o aviso traz **Desfazer**. Casos abertos em outra aba ficam de fora (o aviso lista). Com o Claude: `qa_editar_em_massa` (mostra a prévia; grava com o seu OK). |
-| **Desfazer** | O aviso de cada operação traz **Desfazer** (fica ~8 s; parado enquanto o mouse estiver em cima). Também em `Ctrl+Shift+P` → *Desfazer mover/renomear/lixeira* (a última operação). |
+| **Desfazer** | O aviso de cada operação traz **Desfazer** (fica ~8 s; parado enquanto o mouse estiver em cima). Também em `Ctrl+Shift+P` → *Desfazer a última organização* (a última operação). |
 
 **O que o editor cuida para você ao mover ou renomear:**
 
@@ -854,7 +933,7 @@ visoes/                    ← visões: consultas salvas (ver 11.1)
 Traz as páginas do Notion para a pasta de trabalho, já no formato do editor, **sem precisar descompactar**.
 
 1. No Notion: **•••** (no menu da página ou em *Settings → Export all workspace content*) → **Export** → formato **Markdown & CSV**, com **Include subpages** (e *Create folders for subpages*, se aparecer). Baixe o `.zip`.
-2. No editor: **Novo ▾ → 📥 Importar do Notion (.zip)…** (ou `Ctrl+Shift+P` → *Importar do Notion*, clique direito no espaço vazio da árvore, ou simplesmente **arraste o .zip** para a janela). Precisa da pasta de trabalho aberta.
+2. No editor: **Novo ▾ → Importar → 📥 Do Notion (.zip)…** (ou `Ctrl+Shift+P` → *Importar do Notion*, clique direito no espaço vazio da árvore, ou simplesmente **arraste o .zip** para a janela). Precisa da pasta de trabalho aberta.
 3. Confira o resumo (páginas, bancos de dados, imagens, links) e clique em **Importar**. Abre a **página-índice** da importação.
 
 | O que vem do Notion | Como fica |

@@ -49,6 +49,7 @@ test('compartilhado: 🌐 → preparar a massa por ambiente cria as seções em 
   await page.evaluate(async (c) => { await window.__write('aplicacoes/Portal/compartilhados/portal.md', c); }, COMP.replace(/\n## Dados: Logins \(hml\)[\s\S]*$/, '\n'));
   await page.locator('.sidebar button', { hasText: 'Abrir…' }).first().click();
   await page.locator('[data-side="wsList"] .side-file', { hasText: 'portal' }).first().click();
+  await expect(page.locator('#preview h2', { hasText: 'Dados: Logins' }).first()).toBeVisible(); // o documento já abriu
   await page.keyboard.press('Control+Shift+P');
   await page.keyboard.type('Ambiente ativo');
   await page.keyboard.press('Enter');

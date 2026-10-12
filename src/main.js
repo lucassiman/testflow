@@ -68,7 +68,8 @@ import { exportJiraCsv, importJiraKeys } from './app/jiraExport.js';
 import { startCollab, collabDocChanged, officialMenu, updateAllFromOfficial, paintOfficialButton } from './app/collab.js';
 import { syncReleaseBlock } from './markdown/release.ts';
 import { refreshStatuses, editStatuses } from './app/statuses.js';
-import { newCycle, newRun, newAutoRun, attachAutomation, editDevice, runCycle, editLinks, nextCycleCase, finishCycle, showRoundSummary, openCycle, onCaseFinished, refreshCycleDoc, syncCycleForSave, rerunFailed, roundOfOpenCase } from './app/cycle.js';
+import { newCycle, newRun, newAutoRun, attachAutomation, editDevice, runCycle, editLinks, nextCycleCase, finishCycle, showRoundSummary, openCycle, onCaseFinished, refreshCycleDoc, syncCycleForSave, rerunFailed, roundOfOpenCase, openCycleDef } from './app/cycle.js';
+import { assignRound } from './app/assign.js';
 import { goNextCase, offerNextCase } from './app/nextCase.js';
 import { bindLinkPicker } from './app/linkPicker.js';
 import { pendingIdChange, prepareSave, afterSave, checkOutsideRenames } from './app/idSync.js';
@@ -1638,6 +1639,8 @@ function run(cmd, value, event) {
     case 'openCycle': openCycle(); return true;
     case 'finishCycle': finishCycle(); return true;
     case 'rerunFailed': rerunFailed(); return true;
+    case 'assignRound': assignRound(); return true;
+    case 'openCycleDef': openCycleDef(); return true;
     case 'trend': import('./app/views.js').then((m) => m.openTrend()); return true;
     case 'roundSummary': showRoundSummary(); return true;
     case 'focusMode': toggleFocus(); return true;

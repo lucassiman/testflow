@@ -1,6 +1,6 @@
 // 11.3: planejar e executar — previsão de tempo da rodada (1.44.0)…
 import { test, expect } from '@playwright/test';
-import { openEditor, wsInit } from './helpers.mjs';
+import { openEditor, wsInit, roundMore } from './helpers.mjs';
 
 const HIST = '\n## Histórico de execuções\n\n| Rodada | Data | Início | Fim | Duração | Ambiente | Resultado | Responsável |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| 1 | 01/10/2026 | 10:00 | 10:20 | 20 min | | `PASS` | |\n\n### Rodada 1 — 01/10/2026 — `PASS`\n';
 export const tc = (id, extra = '', hist = '') => `---\ntipo: caso-de-teste\nid: ${id}\ntitulo: Caso ${id}\napp: Portal\ntags: [regressao]\n${extra}---\n\n# ${id}\n\n| # | Ação | Resultado esperado | Resultado obtido | Status |\n| --- | --- | --- | --- | --- |\n| 1 | Abrir | Abre | | |\n${hist}`;
@@ -43,7 +43,7 @@ test('atribuir: 👥 distribui os pendentes, chip do testador, filtro Minhas, ca
     ['aplicacoes/Portal/casos/TC-3.md', tc('TC-3', '', HIST)],
   ]);
   await newRun(page);
-  await page.locator('.cp-btn[data-cp="assign"]').click();
+  await roundMore(page, 'assign');
   await page.locator('.app-dialog-field input').first().fill('Lucas, Bruno');
   await page.locator('.app-dialog-foot button', { hasText: 'Atribuir' }).click();
   await expect(page.locator('#toast')).toContainText('Distribuídos — Lucas: 1 (~30 min) · Bruno: 2 (~40 min)');

@@ -64,3 +64,9 @@ export const wsInit = (name) => {
     (selector ? document.querySelector(selector) : document).dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
   };
 };
+
+/** Painel da rodada: abre o ⋯ e escolhe a ação (desde a 1.58.0 o que não é o principal da hora fica no ⋯). @param {string} cp */
+export async function roundMore(page, cp) {
+  await page.locator('#cyclePanel [data-menu="cpMore"]').click();
+  await page.locator(`#cpMore [data-cp="${cp}"]`).click();
+}

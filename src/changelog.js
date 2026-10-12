@@ -8,6 +8,15 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.58.0', date: '12/10/2026',
+    items: [
+      { icon: '🧰', text: '**Painel da rodada mais enxuto**: à vista só o da hora — ▶ Próximo caso, 📊 Como está e 🏁 Finalizar (encerrada: 🔂 Reteste das falhas, 🔁 Executar de novo, 📑 Relatórios). O resto foi para o **⋯**, agrupado pelos módulos do topo: *Execução* (atribuir, reteste, relatórios, ciclo de origem, tendência, página da rodada), *Casos* (vínculos, dispositivo) e *Automação*.', manual: '7.8 Ciclo de regressão' },
+      { icon: '⋯', text: '**⋯ na barra Execução**: num caso, capturar a tela, gravar, replay, novo bug, evidências, dados compartilhados, ambiente e copiar as falhas sem ir ao topo; numa execução, relatórios, reteste, atribuir, tendência, página da rodada e anexar automação.', manual: '7.2 Barra Execução' },
+      { icon: '🏠', text: '**Tela inicial por módulo**: o ⚡ Começar tem os atalhos agrupados como no topo — Casos, Execução, Automação, Publicar, Arquivo e Pasta de trabalho.', manual: '4. A tela' },
+      { icon: '🧭', text: 'O **Onde fica…?** do manual foi reorganizado pelos módulos (e é conferido contra os menus do app). Na paleta, novas: *Rodada: atribuir os casos* e *Rodada: abrir o ciclo de origem*.', manual: 'Onde fica' },
+    ],
+  },
+  {
     version: '1.57.0', date: '12/10/2026',
     items: [
       { icon: '🧭', text: '**Menus por módulo**: o topo agora tem **Casos ▾ · Execução ▾ · Evidências ▾ · Automação ▾ · Publicar ▾ · Compartilhar ▾**. Tendência, status personalizados, página da rodada, Teams, reporter, `.feature`, Jira pela API, aprovação e edição em massa saíram de dentro da paleta e ganharam lugar na tela.', manual: 'Menus por módulo' },

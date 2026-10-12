@@ -1,6 +1,6 @@
 // Ciclo (definição salva) × execuções (#1, #2…), pular caso e executar de novo.
 import { test, expect } from '@playwright/test';
-import { openEditor, raw, wsInit } from './helpers.mjs';
+import { openEditor, raw, wsInit, roundMore } from './helpers.mjs';
 
 const tc = (id, title) => `---\ntipo: caso-de-teste\nid: ${id}\ntitulo: ${title}\napp: Portal\ntags: [regressao]\n---\n\n# ${id} — ${title}\n\n| # | Ação | Resultado esperado | Resultado obtido | Status |\n| --- | --- | --- | --- | --- |\n| 1 | Abrir | Abre | | |\n| 2 | Enviar | Envia | | |\n`;
 
@@ -48,7 +48,7 @@ test('ciclo salvo: executar duas vezes, pular caso, finalizar e ver o histórico
   await expect.poll(() => raw(page)).toMatch(/^sprint: Sprint 42$/m);
   await expect(panel.locator('.cp-links')).toContainText('Sprint 42');
   await expect(panel.locator('.cp-links')).toContainText('QA-7');
-  await panel.locator('[data-cp="links"]').click();
+  await roundMore(page, 'links');
   const lk = page.locator('.lk-dialog');
   await lk.locator('[data-link="sprint"]').fill('Sprint 43');
   await lk.locator('button', { hasText: 'Salvar vínculos' }).click();
@@ -95,7 +95,7 @@ test('ciclo salvo: executar duas vezes, pular caso, finalizar e ver o histórico
   await expect.poll(() => raw(page)).toMatch(/### Rodada 1/);
 
   // 7) o ciclo guarda o histórico das execuções
-  await panel.locator('[data-cp="def"]').click();
+  await roundMore(page, 'def');
   await expect(page.locator('#fileName')).toContainText('regressao-2-5');
   await expect.poll(() => raw(page)).toMatch(/\| 1 \| \[\[EXEC-[^\]]+\]\] \| [^|]+ \| [^|]+ \| `FAIL` \| 50% \|/);
   await expect.poll(() => raw(page)).toMatch(/\| 2 \| \[\[EXEC-[^\]]+\]\] \| [^|]+ \| — \| em andamento \| — \|/);

@@ -1,8 +1,9 @@
 // 12.1 (1.57.0): registro de módulos — menus do topo e paleta saem da mesma lista; nada fica sem módulo nem repetido.
+// 1.58.0: ⋯ do painel da rodada e da barra Execução, atalhos da tela inicial e o "Onde fica…?" do manual conferidos contra o registro.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { MODULES, paletteActions, menuHtml, topModulesHtml, moduleOf } from '../../src/ui/modules.js';
+import { MODULES, paletteActions, menuHtml, topModulesHtml, moduleOf, findItem, groupByModule, moreItemsHtml, moreMenuHtml, EXEC_BAR_MORE, HOME_SHORTCUTS, homeShortcuts } from '../../src/ui/modules.js';
 
 const main = readFileSync(new URL('../../src/main.js', import.meta.url), 'utf8');
 const index = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
@@ -61,4 +62,95 @@ test('HTML escapado (sem quebrar o menu com < ou ")', () => {
   const html = topModulesHtml();
   assert.doesNotMatch(html, /casos\/<ÉPICO>/);
   assert.match(html, /casos\/&lt;ÉPICO&gt;/);
+});
+
+// ---------------------------------------------------------------- 1.58.0: ⋯ do painel e da barra, tela inicial, Onde fica…?
+const panel = readFileSync(new URL('../../src/app/cyclePanel.js', import.meta.url), 'utf8');
+const manual = readFileSync(new URL('../../MANUAL.md', import.meta.url), 'utf8');
+
+test('⋯ e atalhos: todo comando usado existe no registro e no run()', () => {
+  const panelRefs = [...panel.slice(panel.indexOf('function moreRefs')).matchAll(/cmd: '(\w+)'|^\s+'(\w+)', '(\w+)',$/gm)].flatMap((m) => m.slice(1).filter(Boolean));
+  assert.ok(panelRefs.length >= 9, `só ${panelRefs.length} ações no ⋯ do painel`);
+  const all = [...EXEC_BAR_MORE.caso, ...EXEC_BAR_MORE.rodada, ...HOME_SHORTCUTS.map((s) => s.cmd), ...panelRefs];
+  for (const r of all) {
+    const [cmd, value] = r.split(':');
+    assert.ok(findItem(cmd, value ?? null), `${r} não está no registro`);
+    assert.ok(main.includes(`case '${cmd}'`), `${cmd} não está no run()`);
+  }
+  // as ações que só existiam no painel agora também estão na paleta
+  const acts = paletteActions();
+  for (const c of ['assignRound', 'openCycleDef']) assert.ok(acts.some((a) => a.cmd === c), c);
+});
+
+test('findItem prefere o item do menu do módulo (texto do topo)', () => {
+  assert.equal(findItem('newCase')?.module.label, 'Casos');
+  assert.equal(findItem('copyClaude', 'summary')?.item.label, '📊 Copiar o resumo da execução');
+  assert.equal(findItem('nada'), null);
+});
+
+test('⋯: agrupado por módulo, na ordem em que os módulos aparecem; data-cp para o painel', () => {
+  assert.deepEqual(groupByModule(EXEC_BAR_MORE.caso).map((g) => g.module.label), ['Evidências e bugs', 'Casos', 'Compartilhar']);
+  assert.deepEqual(groupByModule(EXEC_BAR_MORE.rodada).map((g) => g.module.label), ['Execução', 'Casos', 'Automação', 'Compartilhar']);
+  const html = moreItemsHtml(['capture', { cmd: 'assignRound', cp: 'assign' }, 'copyClaude:failures', { cmd: 'rerunFailed', cp: 'retest', label: '🔂 Reteste das falhas (3)' }]);
+  assert.match(html, /<div class="menu-title">📸 Evidências e bugs<\/div><button[^>]*data-cmd="capture"[^>]*><span class="mi-row">📸 Capturar a tela<kbd>Ctrl\+Alt\+P<\/kbd>/);
+  assert.match(html, /▶ Execução<\/div><button[^>]*data-cp="assign"/);
+  assert.match(html, /data-cp="retest">🔂 Reteste das falhas \(3\)/);
+  assert.match(html, /data-cmd="copyClaude" data-value="failures"/);
+  assert.doesNotMatch(html, /data-cmd="assignRound"/);
+  // menu do painel: botão + menu escondido; sem ações, nada
+  assert.match(moreMenuHtml('cpMore', ['trend']), /data-menu="cpMore"[^]*id="cpMore" role="menu" hidden/);
+  assert.equal(moreMenuHtml('cpMore', []), '');
+});
+
+test('tela inicial: atalhos por módulo; sem pasta, só os que não precisam dela', () => {
+  assert.deepEqual(homeShortcuts(true).map((g) => g.module.label), ['Casos', 'Execução', 'Automação', 'Publicar', 'Arquivo', 'Pasta de trabalho']);
+  const semPasta = homeShortcuts(false).flatMap((g) => g.items.map((i) => i.item.cmd));
+  assert.deepEqual(semPasta, ['newCase', 'newRun', 'newFromTemplate', 'quickNote']);
+  // os atalhos de antes continuam (testes de tela clicam neles)
+  const comPasta = homeShortcuts(true).flatMap((g) => g.items.map((i) => i.item.cmd));
+  for (const c of ['newCase', 'newRun', 'quickNote', 'newFromTemplate', 'dashboard', 'trend']) assert.ok(comPasta.includes(c), c);
+});
+
+/** Para comparar textos do manual com os do registro: sem emoji, sem "…", minúsculas. @param {string} s */
+const norm = (s) => s.normalize('NFC').toLowerCase().replace(/…|\.\.\./g, '').replace(/[^\p{L}\p{N}\s.:/-]/gu, ' ').replace(/\s+/g, ' ').trim();
+
+test('MANUAL: "Onde fica…?" organizado pelos módulos do registro', () => {
+  const sec = manual.slice(manual.indexOf('### Onde fica…?'), manual.indexOf('## 5. Escrever e editar'));
+  const blocks = [...sec.matchAll(/^\*\*(\S+) ([^*]+)\*\*/gm)].map((m) => ({ icon: m[1], label: m[2] }));
+  assert.deepEqual(blocks.map((b) => b.label), MODULES.map((m) => m.label));
+  for (const b of blocks) assert.equal(b.icon, MODULES.find((m) => m.label === b.label)?.icon, b.label);
+});
+
+test('MANUAL: todo "Menu ▾ → item" e "Ctrl+Shift+P → texto" existe no registro', () => {
+  /** @type {Record<string, import('../../src/ui/modules.js').ModuleSection[]>} */
+  const menus = {
+    Novo: MODULES.flatMap((m) => m.sections.filter((s) => s.menu === 'newMenu')),
+    Salvar: MODULES.flatMap((m) => m.sections.filter((s) => s.menu === 'saveMenu')),
+  };
+  for (const m of MODULES.filter((x) => x.top)) menus[m.short || m.label] = m.sections.filter((s) => s.menu === undefined);
+  const bad = [];
+  let checked = 0;
+  for (const [, menu, path] of manual.matchAll(/\*\*([^*▾]{1,30}?) ▾ → ([^*]+?)\*\*/g)) {
+    const secs = menus[menu.trim()];
+    if (!secs) continue; // Tabela ▾, Código ▾… (menus da toolbar, fora do registro)
+    checked++;
+    // seção (opcional) → item; o que vem depois do item é dentro da janela dele
+    let pool = secs;
+    let ok = false;
+    for (const seg of path.split(' → ').map(norm).filter(Boolean)) {
+      if (pool.flatMap((s) => s.items).some((i) => norm(i.label).startsWith(seg))) { ok = true; break; }
+      const s = pool.find((x) => x.title && norm(x.title).startsWith(seg));
+      if (!s) { ok = false; break; }
+      pool = [s];
+      ok = true;
+    }
+    if (!ok) bad.push(`${menu.trim()} ▾ → ${path}`);
+  }
+  const pal = paletteActions().map((a) => norm(a.label));
+  for (const [, ref] of manual.matchAll(/Ctrl\+Shift\+P`? → \*{1,2}([^*]+)\*{1,2}/g)) {
+    checked++;
+    if (!pal.some((p) => p.startsWith(norm(ref)))) bad.push(`Ctrl+Shift+P → ${ref}`);
+  }
+  assert.ok(checked > 100, `só ${checked} referências conferidas`);
+  assert.deepEqual(bad, []);
 });

@@ -546,14 +546,14 @@ Fora por ora: papéis, permissões e auditoria (fazem sentido em ferramenta de n
 
 Pedido em 12/10/2026: (1) os recursos das últimas versões (Fase 11 inteira) não têm exemplo na pasta `exemplos/`, que parou na Fase 10; (2) os menus do topo misturam tudo — **Novo ▾** tinha documento, execução e importação; **Salvar ▾** tinha publicar, histórico e backup; **Copiar ▾** tinha dados sensíveis e revisão de texto; o pacote do Notion estava em Copiar e em PDF —, e muita coisa (tendência, status personalizados, Teams, página da rodada, reporter, `.feature`, Jira pela API, edição em massa, aprovação, ambiente) **só existia na paleta**. Esforço: **P** / **M** / **G**. Ordem: 12.1 primeiro (os exemplos já citam os menus novos) e 12.2 depois.
 
-#### 12.1 — Layout por módulo *(M)* — ✅ 1.57.0 registro, topo por módulo e paleta
+#### 12.1 — Layout por módulo *(M)* — ✅ concluída: 1.57.0 registro, topo por módulo e paleta · 1.58.0 painel da rodada, barra Execução, tela inicial e *Onde fica…?*
 
 | Item | Detalhe | Esforço |
 |---|---|---|
 | **Registro único de módulos** | ✅ 1.57.0 — `src/ui/modules.js`: cada ação mora num módulo (Arquivo, Casos, Execução, Evidências e bugs, Automação, Publicar, Compartilhar, Pasta de trabalho, Editar e exibir, Ajuda). Dele saem os menus do topo **e** as categorias da paleta — antes eram listas separadas (`index.html` + `PALETTE_ACTIONS`/`PALETTE_GROUPS`) e já divergiam. Teste: toda ação tem módulo, existe no `run()` e aparece uma vez só na paleta. | M |
 | **Topo por módulo** | ✅ 1.57.0 — `Novo ▾ · Abrir · Salvar ▾` (só arquivo) + um menu por módulo: **Casos ▾ · Execução ▾ · Evidências ▾ · Automação ▾ · Publicar ▾ · Compartilhar ▾** (Copiar e PDF viram um só). Ícone + nome em tela larga; só o ícone abaixo de 1700 px (notebook 1280×720 cabe). Menu longo rola dentro dele. | M |
-| **Painel da rodada e barra Execução** | Os botões do painel da rodada (hoje 11 soltos: automação, dispositivo, atribuir, vínculos, ciclo, reteste, de novo, como está, relatórios, finalizar) agrupados pelos mesmos módulos, com as ações principais à vista e o resto num ⋯. | M |
-| **Tela inicial e "Onde fica…?"** | Atalhos da tela inicial por módulo; a tabela *Onde fica…?* do manual reorganizada pelos módulos (e conferida contra o registro). | P |
+| **Painel da rodada e barra Execução** | ✅ 1.58.0 — o painel da rodada (eram 11 botões soltos) mostra só o da hora: ▶ Próximo caso, ↩ Execução, 📊 Como está, 🏁 Finalizar; encerrada, 🔂 Reteste, 🔁 Executar de novo, 📊 Como foi, 📑 Relatórios. O resto vai para o **⋯**, agrupado pelos módulos (Execução: atribuir, reteste, relatórios, ciclo de origem, tendência, página da rodada · Casos: vínculos, dispositivo · Automação: relatório). A barra Execução ganhou o mesmo **⋯**: num caso, Evidências/Casos/Compartilhar; numa execução, Execução/Casos/Automação/Compartilhar. Os textos e o módulo de cada item saem do registro (`moreItemsHtml`, `EXEC_BAR_MORE`); *Atribuir os casos* e *Abrir o ciclo de origem* entraram na paleta. | M |
+| **Tela inicial e "Onde fica…?"** | ✅ 1.58.0 — ⚡ Começar da tela inicial em colunas por módulo (`HOME_SHORTCUTS`; sem pasta, só o que não precisa dela). *Onde fica…?* do manual em uma tabela por módulo, na ordem do registro; `modules.test.mjs` confere os blocos e **todas** as referências `Menu ▾ → item` e `Ctrl+Shift+P → texto` do manual contra o registro (achou 4 antigas, corrigidas). | P |
 
 #### 12.2 — Exemplos dos recursos novos *(M–G)*
 
@@ -582,7 +582,7 @@ Só arquivos **novos** na pasta `exemplos/` (regra do projeto: não sobrescrever
 8. **Fase 9** (29/09 em diante): 9.1 Consolidar → 9.2 Ler e navegar → 9.3 Visões e rastreabilidade → 9.4 Regressão e trabalho a dois → 9.5 **MCP local** (1.0). QoL pontuais entram entre as rodadas.
 9. ~~**Fase 10**~~ ✅ concluída na 1.30.0.
 10. **Fase 11** (09/10 em diante): 11.1 primeiro (passos e dados compartilhados, reexecutar falhas, tendência); a captura com console e rede (11.4) depois, como extensão opcional — ✅ **Fase 11 concluída** (11.1 a 11.5, até a 1.56.0).
-11. **Fase 12** (12/10 em diante): 12.1 layout por módulo (1.57.0–1.58.0) → 12.2 exemplos dos recursos novos (1.59.0–1.60.0).
+11. **Fase 12** (12/10 em diante): ✅ 12.1 layout por módulo (1.57.0–1.58.0) → 12.2 exemplos dos recursos novos (1.59.0–1.60.0).
 
 ---
 

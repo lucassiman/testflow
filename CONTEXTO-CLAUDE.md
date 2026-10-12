@@ -17,7 +17,7 @@ antes de gravar por cima, versão anterior em `.versoes/`.
 - Vite + JavaScript com `// @ts-check` (JSDoc) + módulos puros em `.ts`. CodeMirror 6 (Raw), markdown-it (Preview), turndown (Preview → Markdown).
 - `npm run check` — tsc no app e no MCP (tem que passar sem erro).
 - `npm test` — testes unitários (`tests/unit/*.test.mjs`, node:test via tsx).
-- `npx playwright test` — testes de tela (`tests/e2e/*.spec.mjs`). Pasta de trabalho simulada com OPFS: `wsInit` em `tests/e2e/helpers.mjs` (`__write/__read/__ls`).
+- `npx playwright test` — testes de tela (`tests/e2e/*.spec.mjs`). Se o Playwright pedir um navegador que não está baixado, aponte um já instalado: `PW_CHROMIUM=…\ms-playwright\chromium_headless_shell-<n>\chrome-headless-shell-win64\chrome-headless-shell.exe`. Pasta de trabalho simulada com OPFS: `wsInit` em `tests/e2e/helpers.mjs` (`__write/__read/__ls`).
 - `npm run build` (dist/ PWA) · `npm run build:single` (dist-single/index.html, um arquivo só)
 - `npm run mcp:build` → `mcp-dist/qa-mcp.mjs` + `mcp-dist/testflow.mcpb` (extensão do Claude desktop) · `npm run skill` → `claude-skill/`
 
@@ -26,7 +26,7 @@ antes de gravar por cima, versão anterior em `.versoes/`.
 | Pasta | O quê |
 | --- | --- |
 | `src/main.js` | Montagem do app: abas, salvar (`doSave`), atalhos, paleta e `switch` em `run()`, pasta de trabalho (`loadWorkspaceFiles`). |
-| `src/ui/modules.js` | **Onde fica cada ação** (desde a 1.57.0): módulos (Arquivo, Casos, Execução, Evidências e bugs, Automação, Publicar, Compartilhar, Pasta, Editar e exibir, Ajuda) → menus do topo **e** categorias da paleta. Ação nova: entra aqui + `case` no `run()`; `tests/unit/modules.test.mjs` confere. |
+| `src/ui/modules.js` | **Onde fica cada ação** (desde a 1.57.0): módulos (Arquivo, Casos, Execução, Evidências e bugs, Automação, Publicar, Compartilhar, Pasta, Editar e exibir, Ajuda) → menus do topo **e** categorias da paleta. Ação nova: entra aqui + `case` no `run()`; `tests/unit/modules.test.mjs` confere. Desde a 1.58.0 também os **⋯** do painel da rodada (`moreRefs` em `cyclePanel.js`, `data-cp`) e da barra Execução (`EXEC_BAR_MORE`), e os atalhos da tela inicial (`HOME_SHORTCUTS`) — texto e módulo vêm do registro; o teste confere ainda o *Onde fica…?* e todas as referências `Menu ▾ → item` / `Ctrl+Shift+P → texto` do MANUAL. Nos testes de tela, `roundMore(page, 'assign')` abre o ⋯ do painel. |
 | `src/app/*` | Funcionalidades que usam o contexto `app` (`context.js`): `organize` (mover/renomear/lixeira/ticket), `collab` (pasta oficial: novidades, ⇅ sincronizar, "fulano editando"), `publishing`, `cycle` (ciclo de regressão), `nextCase`, `execution`, `evidence`/`evidencePanel`, `place` (📍 de onde é o documento), `linkPicker` (`[[`), `idSync` (uid/ID trocado), `views`, `templates`, `share` (Jira/Notion/Claude), `shared.js` (elementos, `docIndex`, `menu`). |
 | `src/markdown/*.ts` | Lógica pura e testável: `frontmatter`, `structure` (pastas, `suggestDestination`, ticket), `idRename`, `officialSync`, `publish`, `views`, `cycle`, `status`, `relink`, `wikilinks`, `jira`… |
 | `src/io/*` | Disco: `fsOps` (diário/desfazer), `organizer`, `docIndex`, `publisher` (oficial), `versions`, `workspace`, `evidence`. |

@@ -2,7 +2,7 @@
 /**
  * Tela inicial (10.3): no lugar do exemplo "Test Case: Login", o que importa ao abrir o app — a rodada em andamento
  * (▶ Continuar), as pendências da pasta (falhas, bloqueios, não executados, bugs abertos — cada uma abre a busca já
- * filtrada), fixados e recentes, e os atalhos (novo caso, nova rodada, nota rápida). Aparece quando não há documento
+ * filtrada), fixados e recentes, e os atalhos — por módulo, do registro (`homeShortcuts`, 1.58.0). Aparece quando não há documento
  * de verdade aberto; some ao abrir/criar um. `Ctrl+Shift+P` → *Início* (ou o logo) volta a ela.
  */
 import { app } from './context.js';
@@ -13,6 +13,7 @@ import { execState, bugOpen } from '../markdown/views.ts';
 import { lastRound } from '../markdown/linkInfo.ts';
 import { pendingOf } from '../markdown/assign.ts';
 import { isRelease, releaseInfo, releaseSummary, releaseLine, versionIn } from '../markdown/release.ts';
+import { homeShortcuts } from '../ui/modules.js';
 
 /** @param {unknown} s */
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => /** @type {Record<string, string>} */ ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -132,17 +133,13 @@ export function createHome(actions) {
           </div>
           <div class="home-muted">${pend.cases} casos na pasta · clique para ver a lista</div>
         </section>` : ''}
-        <section class="home-card">
+        <section class="home-card home-start">
           <h2>⚡ Começar</h2>
-          <div class="home-actions home-grid">
-            ${ws ? '' : '<button type="button" class="primary" data-home-cmd="openWorkspace">📂 Abrir pasta de trabalho…</button>'}
-            <button type="button" data-home-cmd="newCase">📄 Novo caso de teste</button>
-            <button type="button" data-home-cmd="newRun">▶ Nova rodada…</button>
-            <button type="button" data-home-cmd="quickNote">📝 Nota rápida</button>
-            <button type="button" data-home-cmd="newFromTemplate">🧩 Outro documento…</button>
-            ${ws ? '<button type="button" data-home-cmd="dashboard">📊 Painel da pasta</button>' : ''}
-            ${ws ? '<button type="button" data-home-cmd="trend">📈 Tendência entre rodadas</button>' : ''}
-          </div>
+          ${ws ? '' : '<div class="home-actions home-grid"><button type="button" class="primary" data-home-cmd="openWorkspace">📂 Abrir pasta de trabalho…</button></div>'}
+          <div class="home-mods">${homeShortcuts(!!ws).map(({ module: m, items }) => `<div class="home-mod" role="group" aria-label="${esc(m.label)}">
+            <h3>${m.icon} ${esc(m.label)}</h3>
+            <div class="home-actions">${items.map(({ item }) => `<button type="button" data-home-cmd="${esc(item.cmd)}" title="${esc(item.hint ? `${item.label} — ${item.hint}` : item.label)}">${esc(item.label)}</button>`).join('')}</div>
+          </div>`).join('')}</div>
         </section>
         ${pinned.length || recents.length ? `<section class="home-card">
           ${pinned.length ? `<h2>★ Fixados</h2><ul class="home-list">${pinned.map((p) => `<li><button type="button" data-home-open="${esc(p)}" title="${esc(p)}">${label(p)}</button></li>`).join('')}</ul>` : ''}
