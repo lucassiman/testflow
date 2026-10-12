@@ -289,7 +289,7 @@ export async function updateAllFromOfficial() {
     app.toast([
       '✓ Pasta de trabalho e oficial em dia',
       push.conflict.length ? `${push.conflict.length} em conflito (os dois lados mudaram) — compare um a um no Histórico de versões` : '',
-      push.sensitive.length ? `${push.sensitive.length} com possível dado sensível — publique um a um (Salvar ▾ → Publicar)` : '',
+      push.sensitive.length ? `${push.sensitive.length} com possível dado sensível — publique um a um (Publicar ▾ → Publicar)` : '',
       left ? `${left} aberto(s) com alterações não salvas — salve e sincronize de novo` : '',
     ].filter(Boolean).join(' · '), 'info', { duration: 8000 });
     return;
@@ -311,7 +311,7 @@ export async function updateAllFromOfficial() {
     ].filter(Boolean).join('\n\n'),
     checks: [
       ...(down ? [{ id: 'down', label: `⬇ Trazer ${down} documento(s) da oficial`, checked: true }] : []),
-      ...(pull.mine.length ? [{ id: 'mine', label: `⬇ Trazer a oficial também nos ${pull.mine.length} que você alterou`, hint: 'a sua versão fica em Salvar ▾ → Histórico de versões', checked: false }] : []),
+      ...(pull.mine.length ? [{ id: 'mine', label: `⬇ Trazer a oficial também nos ${pull.mine.length} que você alterou`, hint: 'a sua versão fica em Publicar ▾ → Histórico de versões', checked: false }] : []),
       ...(push.changed.length ? [{ id: 'upChanged', label: `⬆ Enviar ${push.changed.length} alterado(s) desde a última publicação`, checked: true }] : []),
       ...(push.fresh.length ? [{ id: 'upFresh', label: `⬆ Enviar ${push.fresh.length} nunca publicado(s)`, hint: 'rascunhos ainda em andamento: desmarque', checked: true }] : []),
       ...(push.inbox.length ? [{ id: 'upInbox', label: `⬆ Enviar também os ${push.inbox.length} da _entrada/ (ainda por organizar)`, checked: false }] : []),

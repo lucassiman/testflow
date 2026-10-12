@@ -15,13 +15,21 @@ function place(pop, btn) {
   const alignRight = pop.classList.contains('menu-pop-right');
   const left = alignRight ? r.right - w : r.left;
   pop.style.left = `${Math.round(Math.max(8, Math.min(left, window.innerWidth - w - 8)))}px`;
+  pop.style.maxHeight = '';
   const h = pop.offsetHeight;
-  if (r.bottom + 4 + h > window.innerHeight - 8) pop.style.top = `${Math.max(8, Math.round(r.top - h - 4))}px`;
+  const below = window.innerHeight - 8 - (r.bottom + 4);
+  if (h <= below) return;
+  // não cabe embaixo: abre para cima se lá couber; senão fica embaixo, com rolagem (menus por módulo são longos)
+  if (r.top - 4 - 8 >= h) pop.style.top = `${Math.round(r.top - h - 4)}px`;
+  else pop.style.maxHeight = `${Math.max(160, Math.round(below))}px`;
 }
 
 /** @param {{ root?: Document | HTMLElement, run: (cmd: string, value?: string) => unknown }} opts */
 export function bindToolbar({ root = document, run }) {
-  const closeMenus = () => root.querySelectorAll('.menu-pop').forEach((m) => { /** @type {HTMLElement} */ (m).hidden = true; });
+  const closeMenus = () => {
+    root.querySelectorAll('.menu-pop').forEach((m) => { /** @type {HTMLElement} */ (m).hidden = true; });
+    root.querySelectorAll('[data-menu][aria-expanded="true"]').forEach((b) => b.setAttribute('aria-expanded', 'false'));
+  };
 
   root.addEventListener('mousedown', (event) => {
     if (/** @type {HTMLElement} */ (event.target).closest('.toolbar button, .menu-pop button, .topbar button[data-cmd], .topbar button[data-menu]')) event.preventDefault();
@@ -35,7 +43,7 @@ export function bindToolbar({ root = document, run }) {
       const willOpen = pop.hidden;
       closeMenus();
       pop.hidden = !willOpen;
-      if (willOpen) place(pop, /** @type {HTMLElement} */ (menuBtn));
+      if (willOpen) { menuBtn.setAttribute('aria-expanded', 'true'); place(pop, /** @type {HTMLElement} */ (menuBtn)); }
       return;
     }
     const btn = /** @type {HTMLElement} */ (event.target).closest('button[data-cmd]');

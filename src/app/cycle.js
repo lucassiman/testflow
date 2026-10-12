@@ -398,10 +398,10 @@ export async function markWhole(status) {
  */
 export async function nextCycleCase() {
   const c = currentCycle();
-  if (!c) { app.toast('Nenhum ciclo de regressão em andamento — Novo ▾ → 🔁 Ciclo de regressão…', 'error'); return; }
+  if (!c) { app.toast('Nenhum ciclo de regressão em andamento — Execução ▾ → 🔁 Ciclo de regressão…', 'error'); return; }
   // o ciclo salvo pode não saber ainda do caso que acabou de ser concluído: calcula com os casos de agora
   const text = syncedCycle(c.text);
-  if (cycleClosed(text)) { app.toast('Este ciclo já foi encerrado (fim: no cabeçalho) — crie um novo: Novo ▾ → 🔁 Ciclo de regressão…', 'error'); return; }
+  if (cycleClosed(text)) { app.toast('Este ciclo já foi encerrado (fim: no cabeçalho) — crie um novo: Execução ▾ → 🔁 Ciclo de regressão…', 'error'); return; }
   if (text !== app.store.source && c.path === currentWorkspacePath()) programmatic(() => app.store.setSource(text, { origin: 'command' }));
   const key = nextCase(text, currentCaseKey(text), me());
   if (!key && !cycleTable(text)?.rows.length) { app.toast('Esta execução não tem casos manuais — ela é só de testes automatizados (🤖). Para somar casos, edite a tabela "Casos do ciclo".', 'info', { duration: 7000 }); return; }
@@ -788,7 +788,7 @@ function runDir(tipo, appName, same) {
   return runDestination({ tipo, app: appName }, app.workspaceDirs, sibs.map((e) => e.path)).dir;
 }
 
-/** Novo ▾ → 🔁 Ciclo de regressão…: escolhe os casos e SALVA o ciclo (definição), sem executar; dá para executar depois, várias vezes. */
+/** Execução ▾ → 🔁 Ciclo de regressão…: escolhe os casos e SALVA o ciclo (definição), sem executar; dá para executar depois, várias vezes. */
 export function newCycle() {
   pickCases({
     title: 'Novo ciclo de regressão — quais casos?', confirmLabel: 'Salvar ciclo',
@@ -798,7 +798,7 @@ export function newCycle() {
   });
 }
 
-/** Novo ▾ → ▶ Rodada de execução…: rodada avulsa (sem ciclo): escolhe os casos e já começa. */
+/** Execução ▾ → ▶ Rodada de execução…: rodada avulsa (sem ciclo): escolhe os casos e já começa. */
 export function newRun() {
   pickCases({
     title: 'Nova rodada de execução — quais casos?', confirmLabel: 'Criar e começar',
@@ -878,7 +878,7 @@ export async function runCycle(defPath = '') {
   let def = defPath ? docIndex.get(defPath) || null : currentDef();
   if (!def) {
     const defs = docIndex.all().filter((e) => e.text && isCycleDef(e.text));
-    if (!defs.length) { app.toast('Nenhum ciclo salvo ainda — Novo ▾ → 🔁 Ciclo de regressão… cria um.', 'error'); return; }
+    if (!defs.length) { app.toast('Nenhum ciclo salvo ainda — Execução ▾ → 🔁 Ciclo de regressão… cria um.', 'error'); return; }
     if (defs.length === 1) def = defs[0];
     else {
       menu.open({
@@ -1043,8 +1043,8 @@ export function attachAutomation() {
   const c = currentCycle();
   if (!c) {
     app.toast(isCycleDef(app.store.source)
-      ? 'Este é o ciclo (os casos). O relatório vai numa execução dele: ▶ Executar este ciclo e anexe lá — ou Novo ▾ → 🤖 Execução só automatizada.'
-      : 'Abra uma execução para anexar o relatório (ou Novo ▾ → 🤖 Execução só automatizada…).', 'error', { duration: 7000 });
+      ? 'Este é o ciclo (os casos). O relatório vai numa execução dele: ▶ Executar este ciclo e anexe lá — ou Automação ▾ → 🤖 Execução só automatizada.'
+      : 'Abra uma execução para anexar o relatório (ou Automação ▾ → 🤖 Execução só automatizada…).', 'error', { duration: 7000 });
     return;
   }
   pickAutomationFile(false, (file) => { attachAutomationFile(file); });
@@ -1070,7 +1070,7 @@ async function attachAutomationFile(file) {
   import('./docState.js').then((m) => m.refreshDocState());
 }
 
-/** Novo ▾ → 🤖 Execução só automatizada…: escolhe o relatório e cria uma execução sem casos manuais. */
+/** Automação ▾ → 🤖 Execução só automatizada…: escolhe o relatório e cria uma execução sem casos manuais. */
 export function newAutoRun() {
   pickAutomationFile(false, async (file) => {
     const read = await readAutomation(file);

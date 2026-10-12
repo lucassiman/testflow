@@ -17,8 +17,8 @@ test('rodada: filtro/atalhos no modal, painel lateral, concluir avança e revisa
   await page.locator('.sidebar button', { hasText: 'Abrir…' }).first().click();
   await expect(page.locator('[data-side="wsList"] .side-file')).toHaveCount(3);
 
-  await page.click('button[data-menu="newMenu"]');
-  await page.click('#newMenu [data-cmd="newRun"]');
+  await page.click('button[data-menu="mod-execucao"]');
+  await page.click('#mod-execucao [data-cmd="newRun"]');
   const picker = page.locator('.cpk-dialog');
   await expect(picker).toBeVisible();
   const ok = picker.locator('button', { hasText: 'Criar e começar' });

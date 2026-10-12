@@ -147,8 +147,8 @@ test('revisar com o Claude: blocos selecionados → pedido → resposta → conf
 test('documento + instruções abre direto o passo de colar a resposta', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await openEditor(page, { doc: '# T\n\ntexto\n' });
-  await page.click('button[data-menu="copyMenu"]');
-  await page.click('#copyMenu button[data-value="full"]');
+  await page.click('button[data-menu="mod-compartilhar"]');
+  await page.click('#mod-compartilhar button[data-value="full"]');
   await expect(page.locator('.review-reply')).toBeVisible();
   await page.fill('.review-reply', '```markdown\n# T\n\nTexto revisado.\n```');
   await page.click('.review-foot [data-act="compare"]');
@@ -159,8 +159,8 @@ test('documento + instruções abre direto o passo de colar a resposta', async (
 test('copiar para o Jira pergunta sobre dados sensíveis e copia HTML + wiki markup (sem o cabeçalho)', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await openEditor(page, { doc: '---\ntipo: bug\nid: BUG-1\nseveridade: Alta\n---\n\n# Bug\n\nLogin com joao@empresa.com e senha: Abc#123\n\n| # | Status |\n| --- | --- |\n| 1 | `FAIL` |\n' });
-  await page.click('button[data-menu="copyMenu"]');
-  await page.click('#copyMenu button[data-cmd="copyJira"]');
+  await page.click('button[data-menu="mod-compartilhar"]');
+  await page.click('#mod-compartilhar button[data-cmd="copyJira"]');
   await expect(page.locator('.sens-row:not(.sens-all)')).toHaveCount(2);
   await page.click('.sens-dialog [data-act="mask"]');
   await expect(page.locator('#toast')).toContainText('Copiado para o Jira');
@@ -180,7 +180,7 @@ test('exportar HTML: página única com estilos, sem a interface do editor', asy
   await openEditor(page, { doc: '# Relatório\n\n| # | Status |\n| --- | --- |\n| 1 | `PASS` |\n' });
   const [download] = await Promise.all([
     page.waitForEvent('download'),
-    page.click('button[data-menu="exportMenu"]').then(() => page.click('#exportMenu button[data-cmd="exportHtml"]')),
+    page.click('button[data-menu="mod-compartilhar"]').then(() => page.click('#mod-compartilhar button[data-cmd="exportHtml"]')),
   ]);
   const html = await (await import('node:fs/promises')).readFile(await download.path(), 'utf8');
   const body = html.split('<article')[1];
@@ -207,8 +207,8 @@ test('bloco de código pela toolbar: abre para digitar e lembra a linguagem', as
 test('copiar para o Notion: Markdown ajustado (status, alerta, cabeçalho)', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await openEditor(page, { doc: '---\nid: TC-1\ntitulo: Teste\n---\n\n> [!NOTE]\n> Oi.\n\n| # | Status |\n| --- | --- |\n| 1 | `PASS` |\n' });
-  await page.click('button[data-menu="copyMenu"]');
-  await page.click('#copyMenu button[data-cmd="copyNotion"]');
+  await page.click('button[data-menu="mod-compartilhar"]');
+  await page.click('#mod-compartilhar button[data-cmd="copyNotion"]');
   await expect(page.locator('#toast')).toContainText('Copiado para o Notion');
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('# TC-1 — Teste\n\n> ℹ️ **Nota:** Oi.\n\n| # | Status |\n| --- | --- |\n| 1 | ✅ **PASS** |\n');
 });
@@ -757,8 +757,8 @@ test('publicar na pasta oficial: revisão, evidências, histórico, conflito com
   await expect(page.locator('[data-side="official"]')).toHaveText('🏛 Oficial: ws-pub-oficial');
 
   // 1ª publicação
-  await page.click('button[data-menu="saveMenu"]');
-  await page.click('#saveMenu [data-cmd="publish"]');
+  await page.click('button[data-menu="mod-publicar"]');
+  await page.click('#mod-publicar [data-cmd="publish"]');
   await expect(dlg).toContainText('Publicar a revisão 1');
   await dlg.locator('input[type=text]').fill('Lucas');
   await dlg.locator('button', { hasText: /^Publicar$/ }).click();
@@ -770,16 +770,16 @@ test('publicar na pasta oficial: revisão, evidências, histórico, conflito com
   expect((await page.evaluate(() => window.__ls('ws', '.versoes/aplicacoes/Portal/casos/TC-1.md'))).some((n) => n.endsWith('_r1.md'))).toBe(true);
 
   // publicar sem mudar nada: avisa que já é igual
-  await page.click('button[data-menu="saveMenu"]');
-  await page.click('#saveMenu [data-cmd="publish"]');
+  await page.click('button[data-menu="mod-publicar"]');
+  await page.click('#mod-publicar [data-cmd="publish"]');
   await expect(page.locator('#toast')).toContainText('já é igual');
 
   // 2ª publicação: a revisão 1 vai para .versoes/ na oficial
   await page.click('#raw .cm-content');
   await page.keyboard.press('Control+End');
   await page.keyboard.type('\nVersão B.');
-  await page.click('button[data-menu="saveMenu"]');
-  await page.click('#saveMenu [data-cmd="publish"]');
+  await page.click('button[data-menu="mod-publicar"]');
+  await page.click('#mod-publicar [data-cmd="publish"]');
   await expect(dlg.locator('input[type=text]')).toHaveValue('Lucas'); // lembra o nome
   await dlg.locator('button', { hasText: /^Publicar$/ }).click();
   await expect(page.locator('#toast')).toContainText('Publicado: revisão 2');
@@ -792,8 +792,8 @@ test('publicar na pasta oficial: revisão, evidências, histórico, conflito com
   await page.click('#raw .cm-content');
   await page.keyboard.press('Control+End');
   await page.keyboard.type('\nVersão B2.');
-  await page.click('button[data-menu="saveMenu"]');
-  await page.click('#saveMenu [data-cmd="publish"]');
+  await page.click('button[data-menu="mod-publicar"]');
+  await page.click('#mod-publicar [data-cmd="publish"]');
   await expect(dlg).toContainText('alterada fora do editor');
   await dlg.locator('button', { hasText: 'Cancelar' }).click();
 
@@ -802,8 +802,8 @@ test('publicar na pasta oficial: revisão, evidências, histórico, conflito com
   await page.click('#raw .cm-content');
   await page.keyboard.press('Control+End');
   await page.keyboard.type('\nVersão C.');
-  await page.click('button[data-menu="saveMenu"]');
-  await page.click('#saveMenu [data-cmd="publish"]');
+  await page.click('button[data-menu="mod-publicar"]');
+  await page.click('#mod-publicar [data-cmd="publish"]');
   await expect(dlg).toContainText('Há uma versão oficial mais nova');
   await expect(dlg).toContainText('revisão 5, publicada por Ana');
   await dlg.locator('button', { hasText: 'Comparar' }).click();

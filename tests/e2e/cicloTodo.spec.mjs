@@ -17,8 +17,8 @@ test('checklist no ciclo: avaliado como um todo pelo painel; o resto da rodada s
   await page.locator('.sidebar button', { hasText: 'Abrir…' }).first().click();
   await expect(page.locator('[data-side="wsList"] .side-file')).toHaveCount(2);
 
-  await page.click('button[data-menu="newMenu"]');
-  await page.click('#newMenu [data-cmd="newRun"]');
+  await page.click('button[data-menu="mod-execucao"]');
+  await page.click('#mod-execucao [data-cmd="newRun"]');
   const picker = page.locator('.cpk-dialog');
   await expect(picker.locator('.cpk-whole')).toHaveCount(1); // o checklist vem marcado "como um todo"
   await picker.locator('button', { hasText: 'Selecionar visíveis' }).click();

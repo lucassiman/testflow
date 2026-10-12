@@ -28,8 +28,8 @@ test('relatório automatizado na execução (mista) e execução só automatizad
   await expect(page.locator('[data-side="wsList"] .side-file')).toHaveCount(2);
 
   // 1) rodada avulsa com os dois casos manuais
-  await page.click('button[data-menu="newMenu"]');
-  await page.click('#newMenu [data-cmd="newRun"]');
+  await page.click('button[data-menu="mod-execucao"]');
+  await page.click('#mod-execucao [data-cmd="newRun"]');
   const picker = page.locator('.cpk-dialog');
   await picker.locator('button', { hasText: 'Selecionar visíveis' }).click();
   await picker.locator('[data-cpk="name"]').fill('Mista');
@@ -61,9 +61,9 @@ test('relatório automatizado na execução (mista) e execução só automatizad
   await expect.poll(() => raw(page)).toMatch(/\*\*Testes automatizados \(Playwright\):\*\*/);
 
   // 4) execução só automatizada
-  await page.click('button[data-menu="newMenu"]');
+  await page.click('button[data-menu="mod-automacao"]');
   const chooser2 = page.waitForEvent('filechooser');
-  await page.click('#newMenu [data-cmd="newAutoRun"]');
+  await page.click('#mod-automacao [data-cmd="newAutoRun"]');
   await (await chooser2).setFiles(report('ci.json'));
   await expect(page.locator('#fileName')).toContainText('execucao-automatizada');
   await expect.poll(() => raw(page)).toMatch(/^tipo: execucao$/m);

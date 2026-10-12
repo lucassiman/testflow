@@ -17,8 +17,8 @@ test('finalizar a rodada gera os 4 relatórios; regerar mantém o aceite escrito
   await page.click('#sidebarBtn');
   await page.locator('.sidebar button', { hasText: 'Abrir…' }).first().click();
   await expect(page.locator('[data-side="wsList"] .side-file')).toHaveCount(3);
-  await page.click('button[data-menu="newMenu"]');
-  await page.click('#newMenu [data-cmd="newRun"]');
+  await page.click('button[data-menu="mod-execucao"]');
+  await page.click('#mod-execucao [data-cmd="newRun"]');
   const picker = page.locator('.cpk-dialog');
   await picker.locator('button', { hasText: 'Selecionar visíveis' }).click();
   await picker.locator('[data-cpk="name"]').fill('Sprint 7');

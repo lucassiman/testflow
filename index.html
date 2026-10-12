@@ -25,70 +25,17 @@
         <div class="tb-group" role="group" aria-label="Arquivo">
           <span class="menu split-btn">
             <button data-cmd="new" title="Novo documento em branco (Alt+N)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="tb-label">Novo</span></button><button data-menu="newMenu" class="split-caret" title="Mais opções de novo documento" aria-haspopup="true" aria-label="Mais opções de novo documento">▾</button>
-            <div class="menu-pop" id="newMenu" hidden>
-              <div class="menu-title">Documento</div>
-              <button data-cmd="newCase">📄 Caso de teste <small>do modelo, com o próximo ID — salve e ele vai para a pasta certa</small></button>
-              <button data-cmd="newFromTemplate">🧩 A partir de modelo… <kbd>Alt+Shift+N</kbd> <small>bug, plano, BDD, checklist, sessão, épico, história e os seus modelos</small></button>
-              <button data-cmd="quickNote">📝 Nota rápida <kbd>Alt+Q</kbd> <small>já salva em _entrada/, para organizar depois</small></button>
-              <button data-cmd="new">Em branco <kbd>Alt+N</kbd></button>
-              <button data-cmd="newView">📊 Visão… <small>consulta salva: não executados, tickets em teste, cobertura, rastreabilidade</small></button>
-              <div class="menu-title">Execução</div>
-              <button data-cmd="newRun">▶ Rodada de execução… <small>escolher os casos (por tag, épico, visão…) e já executar um por um</small></button>
-              <button data-cmd="newCycle">🔁 Ciclo de regressão… <small>salvar os casos da regressão e executá-la quantas vezes quiser (#1, #2…)</small></button>
-              <button data-cmd="runCycle">⏯ Executar um ciclo salvo… <small>nova execução (#N) com os casos de um ciclo</small></button>
-              <button data-cmd="newAutoRun">🤖 Execução só automatizada… <small>a partir de um relatório Playwright, JUnit ou Newman</small></button>
-              <div class="menu-title">Importar</div>
-              <button data-cmd="importNotion">📥 Do Notion (.zip)… <small>export "Markdown &amp; CSV" → _entrada/, com [[links]] e imagens</small></button>
-              <button data-cmd="importAutomation">🤖 Relatório de automação… <small>JUnit / Playwright / Newman como documento</small></button>
-              <button data-cmd="importCases">📥 Casos de uma planilha (TestRail, Zephyr, Excel)… <small>um documento por caso, com passos, prioridade e seção</small></button>
-              <button data-cmd="importSheet">📊 Planilha (XLSX/CSV)… <small>vira tabela Markdown no documento</small></button>
-            </div>
+            <div class="menu-pop" id="newMenu" hidden></div>
           </span>
           <button data-cmd="open" title="Abrir arquivo .md (Ctrl+O)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v1"/><path d="M3 7v11a2 2 0 0 0 2 2h13l3-9H7l-3 7"/></svg><span class="tb-label">Abrir</span></button>
           <span class="menu split-btn">
-            <button data-cmd="save" title="Salvar (Ctrl+S)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M7 3v6h8V3M7 21v-7h10v7"/></svg><span class="tb-label">Salvar</span></button><button data-menu="saveMenu" class="split-caret" title="Salvar como, renomear" aria-haspopup="true" aria-label="Mais opções de salvar">▾</button>
-            <div class="menu-pop" id="saveMenu" hidden>
-              <button data-cmd="saveAs">Salvar como… <kbd>Ctrl+Shift+S</kbd></button>
-              <button data-cmd="rename">Renomear arquivo…</button>
-              <button data-cmd="publish">🏛 Publicar na pasta oficial… <small>copia o documento validado (e as evidências) para a pasta compartilhada, com revisão e histórico</small></button>
-              <button data-cmd="history">🕘 Histórico de versões… <small>versões anteriores (neste computador e na oficial): comparar, abrir, restaurar</small></button>
-              <button data-cmd="saveTemplate">📄 Salvar como modelo… <small>vira um modelo em modelos/ da pasta de trabalho — aparece em Novo a partir de modelo</small></button>
-              <button data-cmd="backup">💾 Backup da pasta de trabalho (.zip)… <small>tudo (documentos, prints, anexos) num .zip — guarde em outro disco, pendrive ou nuvem</small></button>
-              <button data-cmd="toggleAutoSave" role="menuitemcheckbox" aria-checked="false" id="autoSaveItem"><span data-autosave-label>☐ Salvar automaticamente</span><small>grava sozinho alguns segundos depois de cada alteração (arquivos já salvos no disco)</small></button>
-            </div>
+            <button data-cmd="save" title="Salvar (Ctrl+S)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M7 3v6h8V3M7 21v-7h10v7"/></svg><span class="tb-label">Salvar</span></button><button data-menu="saveMenu" class="split-caret" title="Salvar como, renomear, modelo, salvar automaticamente" aria-haspopup="true" aria-label="Mais opções de salvar">▾</button>
+            <div class="menu-pop" id="saveMenu" hidden></div>
           </span>
         </div>
 
-        <div class="tb-group" role="group" aria-label="Compartilhar">
-          <span class="menu split-btn">
-            <button data-cmd="copyAll" title="Copiar todo o Markdown (Ctrl+Alt+C)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg><span class="tb-label">Copiar</span></button><button data-menu="copyMenu" class="split-caret" title="Copiar para o Claude…" aria-haspopup="true" aria-label="Copiar para o Claude">▾</button>
-            <div class="menu-pop menu-pop-right" id="copyMenu" hidden>
-              <button data-cmd="copyAll">Markdown completo <kbd>Ctrl+Alt+C</kbd></button>
-              <button data-cmd="copyJira">🟦 Copiar para o Jira <small>blocos selecionados ou documento — formatado + wiki markup</small></button>
-              <div class="menu-title">Notion</div>
-              <button data-cmd="copyNotion">📝 Copiar para o Notion <small>blocos selecionados ou documento — cole numa página</small></button>
-              <button data-cmd="notionZip">📦 Pacote para importar no Notion… <small>.zip com o Markdown e os prints — Importar → Texto e Markdown</small></button>
-              <div class="menu-title">Copiar para o Claude</div>
-              <button data-cmd="copyClaude" data-value="failures">🐞 Falhas <small>passos FAIL/BLOCKED + falhas da automação</small></button>
-              <button data-cmd="copyClaude" data-value="summary">📊 Resumo da execução <small>para pedir um status report</small></button>
-              <button data-cmd="copyClaude" data-value="full">📄 Documento + instruções <small>pedir alterações no documento todo — depois cole a resposta para conferir e aplicar</small></button>
-              <div class="menu-title">Revisar texto</div>
-              <button data-cmd="review">✍️ Revisar com o Claude… <small>blocos selecionados, bloco atual ou documento — ortografia, clareza, tom</small></button>
-              <button data-cmd="reviewApply">↩ Colar resposta do Claude… <small>conferir antes × depois e aplicar</small></button>
-              <div class="menu-title">Proteção</div>
-              <button data-cmd="sensitive">🛡 Dados sensíveis… <small>CPF, e-mail, senhas, tokens… — verificar, mascarar e configurar</small></button>
-            </div>
-          </span>
-          <span class="menu split-btn">
-            <button data-cmd="pdf" title="Exportar PDF (Ctrl+P) — na janela de impressão escolha &quot;Salvar como PDF&quot;"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15l3 3 3-3"/></svg><span class="tb-label">PDF</span></button><button data-menu="exportMenu" class="split-caret" title="Exportar PDF ou HTML" aria-haspopup="true" aria-label="Mais opções de exportar">▾</button>
-            <div class="menu-pop menu-pop-right" id="exportMenu" hidden>
-              <button data-cmd="pdf">📄 PDF <small>Ctrl+P · na janela de impressão escolha "Salvar como PDF"</small></button>
-              <button data-cmd="exportHtml">🌐 HTML (página única) <small>mesmo visual, imagens embutidas — abre em qualquer navegador</small></button>
-              <button data-cmd="notionZip">📦 Pacote para o Notion (.zip) <small>Markdown + prints para Importar → Texto e Markdown</small></button>
-              <button data-cmd="hubZip">🏢 Pacote para o hub (.zip) <small>Markdown simples (cabeçalho vira tabela) + as imagens para subir no editor do hub</small></button>
-            </div>
-          </span>
-        </div>
+        <!-- menus por módulo (Casos, Execução, Evidências e bugs, Automação, Publicar, Compartilhar): montados pelo src/ui/modules.js -->
+        <div class="tb-group tb-modules" id="moduleMenus" role="group" aria-label="Módulos"></div>
 
         <span class="tb-spacer"></span>
 

@@ -14,8 +14,8 @@ export async function workspace(page, name, docs) {
 }
 
 export async function newRun(page, filter = '') {
-  await page.click('button[data-menu="newMenu"]');
-  await page.click('#newMenu [data-cmd="newRun"]');
+  await page.click('button[data-menu="mod-execucao"]');
+  await page.click('#mod-execucao [data-cmd="newRun"]');
   const picker = page.locator('.cpk-dialog');
   if (filter) await picker.locator('.cpk-search').fill(filter);
   await picker.locator('button', { hasText: 'Selecionar visíveis' }).click();
@@ -67,8 +67,8 @@ test('matriz: nova rodada em HML e PROD cria uma execução por configuração; 
   await workspace(page, 'ws-matriz', [
     ['aplicacoes/Portal/casos/TC-1.md', tc('TC-1')],
   ]);
-  await page.click('button[data-menu="newMenu"]');
-  await page.click('#newMenu [data-cmd="newRun"]');
+  await page.click('button[data-menu="mod-execucao"]');
+  await page.click('#mod-execucao [data-cmd="newRun"]');
   const picker = page.locator('.cpk-dialog');
   await picker.locator('button', { hasText: 'Selecionar visíveis' }).click();
   await picker.locator('[data-cpk="matrix"] summary').click();
@@ -102,8 +102,8 @@ test('release: o documento da release mostra o progresso de tudo com a mesma ver
     ['aplicacoes/Portal/releases/rel-2-14.md', rel],
   ]);
   // rodada com a versão (vínculos)
-  await page.click('button[data-menu="newMenu"]');
-  await page.click('#newMenu [data-cmd="newRun"]');
+  await page.click('button[data-menu="mod-execucao"]');
+  await page.click('#mod-execucao [data-cmd="newRun"]');
   const picker = page.locator('.cpk-dialog');
   await picker.locator('.cpk-search').fill('TC-2');
   await picker.locator('button', { hasText: 'Selecionar visíveis' }).click();

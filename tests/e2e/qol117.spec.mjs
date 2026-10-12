@@ -91,8 +91,8 @@ test('resumo da rodada: bugs abertos e cópia para Slack e e-mail', async ({ pag
     ['aplicacoes/Portal/casos/TC-2.md', tc('TC-2', 'Cadastro')],
     ['aplicacoes/Portal/bugs/BUG-1.md', bug('BUG-1', 'TC-2')],
   ]);
-  await page.click('button[data-menu="newMenu"]');
-  await page.click('#newMenu [data-cmd="newRun"]');
+  await page.click('button[data-menu="mod-execucao"]');
+  await page.click('#mod-execucao [data-cmd="newRun"]');
   const picker = page.locator('.cpk-dialog');
   await picker.locator('button', { hasText: 'Selecionar visíveis' }).click();
   await picker.locator('[data-cpk="name"]').fill('Sprint 42');

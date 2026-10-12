@@ -33,8 +33,8 @@ test('telas principais sem violações críticas/sérias (claro e escuro)', asyn
   await expect(page.locator('.runner')).toBeVisible();
   await expectClean(page, 'executando');
 
-  await page.click('button[data-menu="newMenu"]');
-  await page.click('#newMenu [data-cmd="newRun"]');
+  await page.click('button[data-menu="mod-execucao"]');
+  await page.click('#mod-execucao [data-cmd="newRun"]');
   const picker = page.locator('.cpk-dialog');
   await expect(picker).toBeVisible();
   await expectClean(page, 'seletor de casos');
@@ -52,8 +52,8 @@ test('seletor de casos e rodada só pelo teclado', async ({ page }) => {
   await page.evaluate(async (list) => { for (const [p, t] of list) await window.__write(`aplicacoes/Loja/${p}`, t); }, walk('exemplos'));
   await page.locator('.sidebar button', { hasText: 'Abrir…' }).first().click();
   await expect(page.locator('[data-side="wsList"] .side-file').first()).toBeVisible();
-  await page.click('button[data-menu="newMenu"]');
-  await page.click('#newMenu [data-cmd="newRun"]');
+  await page.click('button[data-menu="mod-execucao"]');
+  await page.click('#mod-execucao [data-cmd="newRun"]');
   const picker = page.locator('.cpk-dialog');
   await expect(picker).toBeVisible();
   // a primeira linha é a parada do Tab; ↓ move, Espaço marca

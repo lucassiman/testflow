@@ -109,8 +109,8 @@ test('execução: antes de cada caso, passos do bloco com e-mail e senha para co
 
 test('rodada: "antes da rodada" aparece no painel, com os dados resolvidos e marcável', async ({ page, context }) => {
   await setup(page, context);
-  await page.click('button[data-menu="newMenu"]');
-  await page.click('#newMenu [data-cmd="newRun"]');
+  await page.click('button[data-menu="mod-execucao"]');
+  await page.click('#mod-execucao [data-cmd="newRun"]');
   const picker = page.locator('.cpk-dialog');
   await picker.locator('.cpk-item', { hasText: 'TC-1' }).click();
   await picker.locator('button', { hasText: 'Criar e começar' }).click();
@@ -135,7 +135,7 @@ test('painel 🔑 fora da barra lateral, rola, agrupa as tabelas; e-mail sem mai
   await page.locator('.sidebar button', { hasText: 'Abrir…' }).first().click();
   await page.locator('[data-side="wsList"] .side-file', { hasText: 'TC-1' }).first().click();
   await page.keyboard.press('Control+Shift+E'); // barra lateral fechada: o painel continua acessível
-  await page.locator('button[data-cmd="sharedPanel"]').click();
+  await page.locator('.topbar button.sh-top-btn').click();
   const panel = page.locator('#sharedPanel');
   await expect(panel).toBeVisible();
   await expect(page.locator('.side-tabs [data-tab="dados"]')).toHaveCount(0);

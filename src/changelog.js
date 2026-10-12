@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.57.0', date: '12/10/2026',
+    items: [
+      { icon: '🧭', text: '**Menus por módulo**: o topo agora tem **Casos ▾ · Execução ▾ · Evidências ▾ · Automação ▾ · Publicar ▾ · Compartilhar ▾**. Tendência, status personalizados, página da rodada, Teams, reporter, `.feature`, Jira pela API, aprovação e edição em massa saíram de dentro da paleta e ganharam lugar na tela.', manual: 'Menus por módulo' },
+      { icon: '🔀', text: 'Mudou de lugar: **rodada e ciclo** → Execução ▾ · **publicar e histórico de versões** → Publicar ▾ · **Copiar e PDF** viraram **Compartilhar ▾** · backup → paleta (*Fazer backup*). **Novo ▾** e **Salvar ▾** ficaram só com o que é do arquivo. A paleta usa as mesmas categorias dos menus.', manual: 'Menus por módulo' },
+    ],
+  },
+  {
     version: '1.56.0', date: '11/10/2026',
     items: [
       { icon: '🌐', text: '**Página da rodada para o time**: `Ctrl+Shift+P` → *Página da rodada para o time* → **Ligar**. O TestFlow grava na pasta oficial (OneDrive) `acompanhamento/<rodada>.html` — % de sucesso, barra de progresso, casos com o passo que falhou, bugs abertos, previsão e, no fim, a recomendação — e o índice `acompanhamento/index.html`.', manual: '12.9 Página da rodada para o time' },

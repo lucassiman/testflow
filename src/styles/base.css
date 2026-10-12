@@ -139,6 +139,12 @@ button { font: inherit; color: inherit; }
 #zoomLabel { min-width: 48px; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12.5px; }
 
 /* telas pequenas (MacBook 13", janela dividida): menos texto, mesmos botões */
+/* menus por módulo no topo (12.1): ícone + nome + ▾; em telas menores fica só o ícone */
+.topbar .tb-modules { gap: 2px; }
+.topbar .tb-modules > .menu > button { display: inline-flex; align-items: center; gap: 5px; padding: 5px 8px; white-space: nowrap; }
+.topbar .tb-modules .tb-caret { font-size: 10px; color: var(--muted); margin-left: -1px; }
+.topbar .tb-modules > .menu > button[aria-expanded="true"] { background: var(--hover); }
+@media (max-width: 1700px) { .topbar .tb-modules .tb-mod-label { display: none; } .topbar .tb-modules > .menu > button { padding: 5px 6px; gap: 3px; } }
 @media (max-width: 1360px) { .app-name { display: none; } }
 @media (max-width: 1180px) {
   .topbar .tb-label { display: none; }
@@ -793,9 +799,10 @@ button { font: inherit; color: inherit; }
 .split-btn > button[data-cmd] { border-top-right-radius: 0; border-bottom-right-radius: 0; }
 .split-btn .split-caret { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: 1px solid var(--border); padding-left: 6px; padding-right: 6px; }
 .menu-pop-right { min-width: 300px; }
-.menu-pop { width: max-content; max-width: min(420px, calc(100vw - 16px)); }
+.menu-pop { width: max-content; max-width: min(420px, calc(100vw - 16px)); max-height: calc(100vh - 16px); overflow-y: auto; overscroll-behavior: contain; }
 .menu-pop button { text-align: left; }
 .menu-pop .menu-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); padding: 6px 10px 2px; }
+.menu-pop .mi-row { display: flex; align-items: center; gap: 8px; width: 100%; }
 .menu-pop button small { display: block; color: var(--muted); font-size: 11px; }
 .menu-pop button:has(small) { flex-direction: column; align-items: flex-start; gap: 0; }
 .cmd-menu.wide { width: min(560px, calc(100vw - 32px)); max-height: min(560px, 80vh); }

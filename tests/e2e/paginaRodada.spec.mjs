@@ -53,8 +53,8 @@ test('página da rodada: ligar, publicar a cada caso (em andamento, recarrega so
   await expect(page.locator('#toast')).toContainText('Página da rodada ligada');
 
   // rodada: TC-1 falha → a página aparece na pasta oficial
-  await page.click('button[data-menu="newMenu"]');
-  await page.click('#newMenu [data-cmd="newRun"]');
+  await page.click('button[data-menu="mod-execucao"]');
+  await page.click('#mod-execucao [data-cmd="newRun"]');
   const picker = page.locator('.cpk-dialog');
   await picker.locator('button', { hasText: 'Selecionar visíveis' }).click();
   await picker.locator('[data-cpk="name"]').fill('Regressão 2.14');

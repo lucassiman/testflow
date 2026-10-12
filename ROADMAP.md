@@ -1,7 +1,7 @@
 # TestFlow — Roadmap
 
 > Levantamento de melhorias (sem implementação). Complementa o [PLANEJAMENTO.md](PLANEJAMENTO.md), que descreve o MVP.
-> Última revisão: 29/09/2026 (Fase 9 planejada; respostas sobre Jira Cloud, PWA no Mac, evidências e planilhas — ver seção 5)
+> Última revisão: 12/10/2026 (Fase 12 planejada: layout por módulo e exemplos novos). Antes: 29/09/2026 (Fase 9 planejada; respostas sobre Jira Cloud, PWA no Mac, evidências e planilhas — ver seção 5)
 
 ---
 
@@ -171,6 +171,8 @@ Ida e volta pela área de transferência (sem chave de API, nada sai do editor s
 - ✅ **Etapa 5 (feita na 1.11.0) — Relatório Playwright na execução:** anexar/importar o relatório (reaproveita o importador de JUnit/Playwright JSON/Newman, seção 9 do manual) como extra "Testes automatizados" ao lado dos manuais; execução só manual, só automatizada ou mista; deixar espaço para ligar teste automatizado ↔ caso pelo ID (a coluna **Caso** já existe no relatório).
 
 ✅ **Feito na 1.12.0 — Dispositivo/ambiente:** substituir/expandir o campo atual *Browser* por **Dispositivo/Ambiente**: WEB, Mobile iOS, Mobile Android, Mobile — Todos; para mobile informar a versão (ex.: Mobile iOS — iOS 18, Mobile Android — Android 15). Deve aparecer nas tags, no cabeçalho do caso, nos modelos de criação de casos e nas informações da execução, para rastrear em que dispositivo/plataforma cada caso foi validado.
+
+**1.57.0 (12/10) — menus por módulo (12.1, parte 1).** `src/ui/modules.js` (`MODULES`, `paletteActions`, `menuHtml`, `topModulesHtml`): fonte única dos menus do topo e da paleta; `src/ui/topMenus.js` (primeiro import do `main.js`) monta `#newMenu`, `#saveMenu` e `#moduleMenus` antes do resto do app procurar os botões (ex.: `#autoSaveItem`). Topo: Novo ▾ / Abrir / Salvar ▾ + Casos ▾ · Execução ▾ · Evidências ▾ · Automação ▾ · Publicar ▾ · Compartilhar ▾ (`data-menu="mod-<id>"`); Copiar ▾ e PDF ▾ saíram (viraram Compartilhar ▾). Paleta: `PALETTE_ACTIONS`/`PALETTE_GROUPS` derivados do registro (categoria = módulo; "Execução e rodadas" → "Execução", "Exibição" → "Editar e exibir"); o atalho do modo foco estava no campo do valor. `toolbar.js`: `aria-expanded` no botão do menu; menu que não cabe abre para cima ou rola (`max-height`). Testes: `modules.test.mjs` (toda ação no `run()`, sem repetição na paleta, menus sem as misturas antigas) e `interface4` (menus por módulo, tela baixa); os e2e que abriam rodada/ciclo/publicar/copiar pelos menus antigos apontam para os módulos.
 
 **1.48.0 (10/10) — status personalizados (11.3); fecha a 11.3.** `statusConfig.ts`: documento `tipo: status` (tabela Palavra · Conta como · Cor · Descrição), `parseStatusDoc`, `kindOf`, `STATUS_DOC_TEMPLATE`. `qa.ts`: `setCustomStatuses` (as 5 palavras ficam fixas; sinônimos podem mudar), `customStatuses`, `customOf`, `statusSig`, `badgeHtml` (etiqueta `.badge-custom` com `--badge`). Preview: chave dos blocos inclui `statusSig()` (redesenha ao mudar). Seletor de status e painel de execução com os personalizados (teclas 6–9). App `app/statuses.js` (`refreshStatuses` no lint/índice, `editStatuses` → `configuracao/status.md`). MCP: carrega na varredura da pasta, aceita as palavras em `qa_marcar_passos`/`qa_rodada_registrar`. Testes `statusCustom.test`, `planejar.spec` (status).
 
@@ -540,6 +542,34 @@ Decidido em 11/10/2026 (ver seção 5): cada integração que manda dados para f
 
 Fora por ora: papéis, permissões e auditoria (fazem sentido em ferramenta de nuvem com time grande; o TestFlow é local com pasta compartilhada).
 
+### Fase 12 — Organizar por módulo e mostrar o que o app faz *(planejada em 12/10/2026)*
+
+Pedido em 12/10/2026: (1) os recursos das últimas versões (Fase 11 inteira) não têm exemplo na pasta `exemplos/`, que parou na Fase 10; (2) os menus do topo misturam tudo — **Novo ▾** tinha documento, execução e importação; **Salvar ▾** tinha publicar, histórico e backup; **Copiar ▾** tinha dados sensíveis e revisão de texto; o pacote do Notion estava em Copiar e em PDF —, e muita coisa (tendência, status personalizados, Teams, página da rodada, reporter, `.feature`, Jira pela API, edição em massa, aprovação, ambiente) **só existia na paleta**. Esforço: **P** / **M** / **G**. Ordem: 12.1 primeiro (os exemplos já citam os menus novos) e 12.2 depois.
+
+#### 12.1 — Layout por módulo *(M)* — ✅ 1.57.0 registro, topo por módulo e paleta
+
+| Item | Detalhe | Esforço |
+|---|---|---|
+| **Registro único de módulos** | ✅ 1.57.0 — `src/ui/modules.js`: cada ação mora num módulo (Arquivo, Casos, Execução, Evidências e bugs, Automação, Publicar, Compartilhar, Pasta de trabalho, Editar e exibir, Ajuda). Dele saem os menus do topo **e** as categorias da paleta — antes eram listas separadas (`index.html` + `PALETTE_ACTIONS`/`PALETTE_GROUPS`) e já divergiam. Teste: toda ação tem módulo, existe no `run()` e aparece uma vez só na paleta. | M |
+| **Topo por módulo** | ✅ 1.57.0 — `Novo ▾ · Abrir · Salvar ▾` (só arquivo) + um menu por módulo: **Casos ▾ · Execução ▾ · Evidências ▾ · Automação ▾ · Publicar ▾ · Compartilhar ▾** (Copiar e PDF viram um só). Ícone + nome em tela larga; só o ícone abaixo de 1700 px (notebook 1280×720 cabe). Menu longo rola dentro dele. | M |
+| **Painel da rodada e barra Execução** | Os botões do painel da rodada (hoje 11 soltos: automação, dispositivo, atribuir, vínculos, ciclo, reteste, de novo, como está, relatórios, finalizar) agrupados pelos mesmos módulos, com as ações principais à vista e o resto num ⋯. | M |
+| **Tela inicial e "Onde fica…?"** | Atalhos da tela inicial por módulo; a tabela *Onde fica…?* do manual reorganizada pelos módulos (e conferida contra o registro). | P |
+
+#### 12.2 — Exemplos dos recursos novos *(M–G)*
+
+Só arquivos **novos** na pasta `exemplos/` (regra do projeto: não sobrescrever a do usuário). Mesma história da Loja Demo, agora na Sprint 43 / release 2.15.0. O `LEIA-ME.md` passa a ser organizado pelos mesmos módulos, com um roteiro curto por módulo.
+
+| Módulo | Exemplos | Esforço |
+|---|---|---|
+| **Casos** | `compartilhados/` (logins geral/hml/prod + passo "Fazer login"); caso com 2 logins e `↪` passo compartilhado; caso com tabela de dados (3 linhas); casos em rascunho / em revisão / aprovado; versão antiga em `.versoes/` para comparar; épico e história em `requisitos/` com `casos/<ÉPICO>/<TICKET>/`; `importar/casos-testrail.csv`. | M |
+| **Execução** | Ciclo salvo com matriz (Chrome/Safari × Windows/macOS) e `ambientes: [hml, prod]`; rodada em andamento com testadores atribuídos, status personalizados (RETESTE, FALHA CONHECIDA) e durações para a previsão; rodada antiga (tendência); os 4 relatórios de uma execução; release 2.15.0; visões (não executados, cobertura, rastreabilidade). | M |
+| **Evidências e bugs** | Bug com console, `.har` mascarado, vídeo do replay e a tabela de ambiente da extensão; bug com chave do Jira e reincidência. | P–M |
+| **Automação** | Relatórios que alternam PASS/FAIL (instáveis), `.feature` exportado, `playwright.config` com o reporter. | P |
+| **Publicar e Claude** | Página da rodada de exemplo (`acompanhamento/…html`), cartão do Teams (JSON), comentários de revisão num caso; `recursos/pedidos-ao-claude.md` com um pedido pronto por ferramenta `qa_*`. | P |
+| **Conferência** | Teste que valida todos os exemplos com o próprio validador do app (IDs únicos, `[[links]]` que resolvem, nenhum dado sensível real) e ajuste dos testes que leem `exemplos/` (`fase101`, `acessibilidade`, `views`, `reports`). | P |
+
+**Versões:** 1.57.0 registro + topo por módulo + paleta · 1.58.0 painel da rodada, barra Execução, tela inicial e *Onde fica…?* · 1.59.0 exemplos de Casos e Execução · 1.60.0 exemplos de Evidências, Automação, Publicar, `LEIA-ME` por módulo e o teste dos exemplos.
+
 ## 4. Ordem sugerida
 
 1. ~~**Colar imagem** (Fase 1)~~ ✅ feito em 24/09 (junto com soltar arquivos de evidência). Pendente na época: redimensionar/miniatura e lembrar a pasta entre sessões (ambos feitos depois: tamanho do print P/M/G e pasta de evidências lembrada por arquivo) (vai junto com "Lembrar arquivos e recentes", Fase 0).
@@ -552,6 +582,7 @@ Fora por ora: papéis, permissões e auditoria (fazem sentido em ferramenta de n
 8. **Fase 9** (29/09 em diante): 9.1 Consolidar → 9.2 Ler e navegar → 9.3 Visões e rastreabilidade → 9.4 Regressão e trabalho a dois → 9.5 **MCP local** (1.0). QoL pontuais entram entre as rodadas.
 9. ~~**Fase 10**~~ ✅ concluída na 1.30.0.
 10. **Fase 11** (09/10 em diante): 11.1 primeiro (passos e dados compartilhados, reexecutar falhas, tendência); a captura com console e rede (11.4) depois, como extensão opcional — ✅ **Fase 11 concluída** (11.1 a 11.5, até a 1.56.0).
+11. **Fase 12** (12/10 em diante): 12.1 layout por módulo (1.57.0–1.58.0) → 12.2 exemplos dos recursos novos (1.59.0–1.60.0).
 
 ---
 

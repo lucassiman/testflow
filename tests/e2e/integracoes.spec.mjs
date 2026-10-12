@@ -39,9 +39,9 @@ test('instáveis: o relatório novo marca o teste que alterna PASS/FAIL; a tend�
   ]);
   await openWorkspace(page);
   await expect(page.locator('[data-side="wsList"] .side-file')).toHaveCount(3);
-  await page.click('button[data-menu="newMenu"]');
+  await page.click('button[data-menu="mod-automacao"]');
   const chooser = page.waitForEvent('filechooser');
-  await page.click('#newMenu [data-cmd="newAutoRun"]');
+  await page.click('#mod-automacao [data-cmd="newAutoRun"]');
   await (await chooser).setFiles(report);
   await expect.poll(() => raw(page)).toMatch(/^## Testes automatizados$/m);
   const text = await raw(page);

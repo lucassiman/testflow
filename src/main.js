@@ -6,6 +6,7 @@
  * (src/app/context.js): evidências, links, organizar a pasta, modelos e menu "/", execução, publicar,
  * importar do Notion, compartilhar/exportar e automação.
  */
+import './ui/topMenus.js'; // primeiro: monta os menus do topo pelos módulos (12.1)
 import './styles/base.css';
 import './styles/markdown.css';
 import welcome from './welcome.md?raw';
@@ -82,6 +83,7 @@ import { hintAfterRender, hintRunner, hintTree } from './app/hints.js';
 import { captureFiles, captureToDocument, capturer, replaySeconds, replaySetting, saveReplay, toggleRecording } from './app/capture.js';
 import { showWhatsNew, changesSince } from './ui/whatsNew.js';
 import { CHANGELOG } from './changelog.js';
+import { MODULES, paletteActions } from './ui/modules.js';
 
 // o que os módulos de src/app/ usam do editor (getters: sempre o valor atual)
 Object.defineProperties(app, Object.getOwnPropertyDescriptors(/** @type {import('./app/context.js').AppContext} */ ({
@@ -1441,67 +1443,18 @@ async function renameDocument(raw, grantedParent = null) {
 }
 
 // ---------------------------------------------------------------- paleta de comandos (Ctrl+Shift+P)
-const PALETTE_ACTIONS = [
-  ['Renomear arquivo', 'rename', null, ''], ['Salvar como modelo… (vai para modelos/ da pasta de trabalho)', 'saveTemplate', null, ''],
-  ['Publicar na pasta oficial…', 'publish', null, ''], ['Histórico de versões do documento…', 'history', null, ''], ['Pasta oficial (compartilhada)…', 'officialFolder', null, ''], ['Sincronizar com a pasta oficial (trazer e enviar, tudo de uma vez)…', 'officialUpdate', null, ''],
-  ['Pacote para o hub (.zip: Markdown + imagens)', 'hubZip', null, ''],
-  ['Evidências do documento (copiar imagem, baixar, caminho da pasta)…', 'evidencePanel', null, ''], ['Onde fica a pasta de trabalho no computador (para copiar caminhos)…', 'diskRoot', null, ''],
-  ['Reaproveitar print de outro documento (galeria de evidências)…', 'reuseEvidence', null, ''], ['Limpar evidências: prints que nenhum documento usa…', 'cleanPrints', null, ''], ['Novo bug a partir deste documento (ligado)…', 'newBug', null, ''],
-  ['Nota rápida (vai para _entrada/)', 'quickNote', null, 'Alt+Q'], ['Importar do Notion (.zip do export)…', 'importNotion', null, ''], ['Criar estrutura da pasta de trabalho…', 'structure', null, ''], ['Nova aplicação (pasta com casos, bugs, planos…)', 'newApp', null, ''],
-  ['Mover documento para outra pasta…', 'moveDoc', null, ''], ['Nova pasta na pasta de trabalho…', 'newFolder', null, ''], ['Desfazer a última organização (mover, renomear, lixeira, importação)', 'undoOrganize', null, ''],
-  ['Mover aba para a esquerda', 'moveTabLeft', null, 'Alt+Shift+PageUp'], ['Mover aba para a direita', 'moveTabRight', null, 'Alt+Shift+PageDown'], ['Novo caso de teste (do modelo)', 'newCase', null, ''], ['Novo documento em branco', 'new', null, 'Alt+N'], ['Novo a partir de modelo…', 'newFromTemplate', null, 'Alt+Shift+N'],
-  ['Abrir arquivo…', 'open', null, 'Ctrl+O'], ['Salvar', 'save', null, 'Ctrl+S'], ['Salvar como…', 'saveAs', null, 'Ctrl+Shift+S'],
-  ['Fechar aba', 'closeTab', null, 'Alt+W'], ['Próxima aba', 'nextTab', null, 'Alt+PageDown'], ['Aba anterior', 'prevTab', null, 'Alt+PageUp'],
-  ['Copiar tudo (Markdown)', 'copyAll', null, 'Ctrl+Alt+C'],
-  ['Copiar para o Claude: falhas', 'copyClaude', 'failures', ''], ['Copiar para o Claude: resumo da execução', 'copyClaude', 'summary', ''],
-  ['Copiar para o Claude: documento + instruções', 'copyClaude', 'full', ''],
-  ['Revisar com o Claude (ortografia, clareza, tom)', 'review', null, 'Alt+R'], ['Colar resposta do Claude (conferir e aplicar)', 'reviewApply', null, ''],
-  ['Copiar para o Jira (formatado + wiki markup)', 'copyJira', null, ''], ['Abrir o ticket no Jira (campo jira do cabeçalho)', 'openJira', null, ''],
-  ['Copiar para o Notion (colar numa página)', 'copyNotion', null, ''], ['Pacote para importar no Notion (.zip com prints)', 'notionZip', null, ''],
-  ['Inserir bloco de código', 'codeblock', null, 'Ctrl+Alt+K'],
-  ['Abrir o manual (todas as funcionalidades)', 'manual', null, 'F1'], ['O que mudou (novidades desta versão)', 'whatsNew', null, ''], ['Nova visão (consulta salva: não executados, tickets, cobertura…)', 'newView', null, ''],
-  ['Próximo caso da pasta (salva e abre o próximo não executado)', 'nextCase', null, 'Alt+Shift+→'], ['Próximo caso da pasta e já executar', 'nextCase', 'run', ''],
-  ['Organizar por épico e ticket (casos/<ÉPICO>/<TICKET>/, pelos campos epico: e jira:)…', 'byTicket', null, ''], ['Edição em massa: prioridade, tags, épico, responsável… de vários casos', 'bulkEdit', null, ''],
-  ['Ciclo de regressão: novo (salvar os casos)…', 'newCycle', null, ''], ['Rodada de execução: nova (avulsa, escolher os casos)…', 'newRun', null, ''], ['Ciclo de regressão: executar um ciclo salvo (nova execução)…', 'runCycle', null, ''], ['Execução: anexar relatório de testes automatizados (Playwright, JUnit, Newman)…', 'attachAutomation', null, ''], ['Exportar .feature (Gherkin) deste documento para o projeto de automação…', 'featureHere', null, ''], ['Exportar .feature de todos os cenários BDD da pasta…', 'featureAll', null, ''], ['Reporter da automação: resultado direto na execução (Playwright, Jest, Cypress) — como ligar…', 'reporterSetup', null, ''], ['Execução só automatizada: criar a partir de um relatório…', 'newAutoRun', null, ''], ['Ciclo de regressão: próximo caso', 'nextCycleCase', null, ''], ['Ciclo de regressão: voltar ao ciclo', 'openCycle', null, ''], ['Vínculos: Jira, Épico, Sprint deste documento…', 'editLinks', null, ''], ['Dispositivo / ambiente: WEB, Mobile iOS, Mobile Android… deste documento', 'editDevice', null, ''], ['Ciclo de regressão: finalizar execução…', 'finishCycle', null, ''], ['Reteste das falhas: nova rodada só com os FAIL/BLOCKED desta execução', 'rerunFailed', null, ''], ['Tendência entre rodadas: % de sucesso, casos que mais falham, bugs no tempo', 'trend', null, ''], ['Ciclo de regressão: como está / como foi a rodada', 'roundSummary', null, ''], ['Relatórios da execução: gerar / regerar (Encerramento e Go/No-Go, Defeitos, Rastreabilidade, Log)', 'execReports', null, ''], ['Início: rodada em andamento, pendências, fixados e atalhos', 'home', null, ''], ['Árvore: mostrar ID · título ou o nome do arquivo', 'treeLabels', null, ''], ['Ao abrir documento: Preview ou o último modo usado', 'openMode', null, ''], ['Aprovação do caso: enviar para revisão, aprovar, voltar a rascunho…', 'approval', null, ''], ['Rodadas: só casos aprovados entram (liga/desliga)', 'onlyApproved', null, ''], ['Modo foco: só o documento (esconde topo, barras e barra lateral)', 'focusMode', 'Ctrl+Shift+.', ''], ['Barra de formatação no Preview: só ao editar / sempre', 'toolbarMode', null, ''],
-  ['Comentar (comentário de revisão no documento)', 'comment', null, 'Alt+M'], ['Dados compartilhados: logins, URLs e passos que valem para este documento (copiar)', 'sharedPanel', null, 'Alt+K'], ['Ambiente ativo (local, dev, hml, prod): trocar a massa de dados', 'envMenu', null, ''], ['Status personalizados (RETESTE, FALHA CONHECIDA…): criar / editar', 'customStatus', null, ''], ['Incluir passos compartilhados (↪ Fazer login…)', 'includeShared', null, ''], ['Comentários do documento (pendentes e resolvidos)…', 'listComments', null, ''],
-  ['Exportar bugs para o Jira (CSV do importador do Jira Cloud)…', 'jiraCsv', null, ''], ['Jira: criar a issue deste bug pela API (extensão do navegador)…', 'jiraCreate', null, ''], ['Jira: trazer o status dos bugs da pasta (pela API)', 'jiraSync', null, ''], ['Trazer chaves do Jira (CSV exportado do Jira)…', 'jiraKeys', null, ''],
-  ['Ver outro documento ao lado (consulta)…', 'sideOpen', null, ''], ['Fechar o documento ao lado', 'sideClose', null, ''],
-  ['Capturar a tela (print da janela do sistema testado)', 'capture', null, 'Ctrl+Alt+P'], ['Capturar a tela: escolher outra janela', 'captureChoose', null, ''], ['Capturar a tela: parar', 'captureStop', null, ''],
-  ['Gravar vídeo da tela (bug intermitente) / parar', 'record', null, 'Ctrl+Alt+G'], ['Replay instantâneo: salvar os últimos segundos da janela capturada', 'replaySave', null, 'Ctrl+Alt+R'], ['Replay instantâneo: duração (30 s, 60 s, 2 min) ou desligar…', 'replayPref', null, ''], ['Captura de bug pela extensão do navegador (console e contexto): ligar/desligar', 'extToggle', null, ''], ['Avisos no Microsoft Teams: rodada encerrada, caso crítico com falha (configurar)…', 'teamsPref', null, ''], ['Página da rodada para o time (HTML na pasta oficial): ligar, ver, atualizar…', 'roundPage', null, ''], ['Console e contexto da aba testada (extensão): anexar aqui…', 'extAttach', null, ''], ['Prints grandes (acima de 2 MB): perguntar, sempre reduzir ou manter…', 'bigPrint', null, ''], ['Fazer backup da pasta de trabalho (.zip)…', 'backup', null, ''], ['Diagnóstico: tempo para ler a pasta de trabalho', 'loadDiag', null, ''], ['Lembrete de backup: intervalo ou desligar…', 'backupPref', null, ''],
-  ['Dicas de primeira vez (ligar/desligar)', 'tipsToggle', null, ''], ['Dicas de primeira vez: mostrar todas de novo', 'tipsReset', null, ''],
-  ['Salvar automaticamente (ligar/desligar)', 'toggleAutoSave', null, ''],
-  ['Buscar em todos os arquivos da pasta', 'searchAll', null, 'Ctrl+Shift+F'], ['Painel da pasta (status, progresso, tags)', 'dashboard', null, ''],
-  ['Recolher todas as seções (Preview)', 'foldAll', null, ''], ['Expandir todas as seções (Preview)', 'unfoldAll', null, ''],
-  ['Dados sensíveis: verificar e mascarar no documento', 'sensitive', null, ''],
-  ['Exportar PDF', 'pdf', null, 'Ctrl+P'], ['Exportar HTML (página única)', 'exportHtml', null, ''], ['Buscar', 'find', null, 'Ctrl+F'], ['Substituir', 'replace', null, 'Ctrl+H'],
-  ['Painel lateral (arquivos, sumário, links)', 'toggleSidebar', null, 'Ctrl+Shift+E'],
-  ['Modo Raw', 'mode', 'raw', 'Alt+1'], ['Modo Dividido', 'mode', 'split', 'Alt+2'], ['Modo Preview', 'mode', 'preview', 'Alt+3'],
-  ['Aumentar texto', 'zoomIn', null, 'Ctrl+Alt+='], ['Diminuir texto', 'zoomOut', null, 'Ctrl+Alt+-'], ['Texto 100%', 'zoomReset', null, 'Ctrl+Alt+0'],
-  ['Tema claro / escuro', 'toggleTheme', null, ''], ['Importar planilha (XLSX/CSV)…', 'importSheet', null, ''], ['Importar casos de uma planilha (TestRail, Zephyr, Xray, Excel) — um documento por caso…', 'importCases', null, ''],
-  ['Escolher pasta de trabalho…', 'pickWorkspace', null, ''], ['Pasta de evidências do documento…', 'pickFolder', null, ''],
-];
-
-/** Categoria e ícone de cada ação da paleta (as que não estão aqui ficam em "Ações"). */
-const PALETTE_GROUPS = /** @type {Array<[string, string, string[]]>} */ ([
-  ['Documento', '📄', ['newCase', 'new', 'newFromTemplate', 'open', 'save', 'saveAs', 'rename', 'saveTemplate', 'history', 'toggleAutoSave', 'quickNote', 'newBug', 'sharedPanel', 'envMenu', 'includeShared', 'newView', 'importSheet', 'pdf', 'exportHtml', 'sensitive']],
-  ['Execução e rodadas', '▶', ['newRun', 'newCycle', 'runCycle', 'newAutoRun', 'attachAutomation', 'reporterSetup', 'featureHere', 'featureAll', 'nextCycleCase', 'openCycle', 'finishCycle', 'rerunFailed', 'onlyApproved', 'customStatus', 'trend', 'roundSummary', 'execReports', 'teamsPref', 'roundPage', 'nextCase', 'editLinks', 'editDevice']],
-  ['Pasta de trabalho', '📂', ['pickWorkspace', 'home', 'dashboard', 'searchAll', 'structure', 'newApp', 'newFolder', 'moveDoc', 'byTicket', 'bulkEdit', 'undoOrganize', 'importNotion', 'importCases', 'backup', 'backupPref', 'loadDiag', 'diskRoot', 'officialFolder', 'officialUpdate', 'publish']],
-  ['Evidências e prints', '📸', ['capture', 'captureChoose', 'captureStop', 'record', 'replaySave', 'replayPref', 'extToggle', 'extAttach', 'evidencePanel', 'reuseEvidence', 'cleanPrints', 'bigPrint', 'pickFolder']],
-  ['Compartilhar e revisar', '📤', ['approval', 'copyAll', 'copyClaude', 'review', 'reviewApply', 'copyJira', 'openJira', 'jiraCreate', 'jiraSync', 'copyNotion', 'notionZip', 'hubZip', 'jiraCsv', 'jiraKeys', 'comment', 'listComments']],
-  ['Exibição', '👁', ['mode', 'openMode', 'focusMode', 'toolbarMode', 'treeLabels', 'toggleSidebar', 'sideOpen', 'sideClose', 'foldAll', 'unfoldAll', 'zoomIn', 'zoomOut', 'zoomReset', 'toggleTheme', 'find', 'replace', 'codeblock', 'moveTabLeft', 'moveTabRight', 'closeTab', 'nextTab', 'prevTab']],
-  ['Ajuda e preferências', '❓', ['manual', 'whatsNew', 'tipsToggle', 'tipsReset']],
-]);
-const PALETTE_GROUP_OF = new Map(PALETTE_GROUPS.flatMap(([g, icon, cmds]) => cmds.map((c) => [c, { group: g, icon }])));
+// as ações e as categorias vêm do registro de módulos (src/ui/modules.js) — as mesmas dos menus do topo
+const PALETTE_ACTIONS = paletteActions();
+const PALETTE_GROUPS = MODULES.map((m) => [m.label]);
 const PALETTE_RECENT = 6;
 
 function openPalette() {
   const items = [];
   // usados recentemente primeiro (as ações escolhidas na paleta)
   const recent = /** @type {string[]} */ (loadPrefs().paletteRecent || []);
-  const actionItems = PALETTE_ACTIONS.map(([label, cmd, value, keys]) => {
-    const meta = PALETTE_GROUP_OF.get(String(cmd)) || { group: 'Ações', icon: '⌘' };
-    return { id: `act-${cmd}-${value}`, group: meta.group, label: String(label), icon: meta.icon, hint: String(keys || ''), kind: 'action', cmd, value, keywords: meta.group };
-  });
+  const actionItems = PALETTE_ACTIONS.map(({ label, cmd, value, keys, group, icon }) => ({
+    id: `act-${cmd}-${value}`, group, label, icon, hint: keys, kind: 'action', cmd, value, keywords: group,
+  }));
   for (const id of recent) {
     const it = actionItems.find((x) => x.id === id);
     if (it) items.push({ ...it, id: `recent-${id}`, group: 'Usados recentemente', icon: '🕘' });
@@ -1515,7 +1468,7 @@ function openPalette() {
     }
   }
   // por categoria, na ordem das categorias
-  for (const [g] of [...PALETTE_GROUPS, ['Ações']]) items.push(...actionItems.filter((x) => x.group === g));
+  for (const [g] of PALETTE_GROUPS) items.push(...actionItems.filter((x) => x.group === g));
   commandItems().forEach((it) => items.push({ ...it, group: it.group === 'Modelos' || it.group === 'Meus modelos' ? 'Novo documento a partir de modelo' : `Inserir · ${it.group}`, paletteInsert: true }));
   // títulos do documento
   extractOutline(store.source).forEach((h, i) => items.push({ id: `h-${i}`, group: 'Ir para título', label: h.text || '(sem título)', icon: `H${h.level}`, hint: `linha ${h.line + 1}`, kind: 'heading', line: h.line }));

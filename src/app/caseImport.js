@@ -105,7 +105,7 @@ function askOptions(plan, fileName, dupes) {
   });
 }
 
-/** Paleta / Novo ▾: importar uma planilha de casos. @param {File} [given] */
+/** Paleta / Novo ▾ (ou Casos ▾): importar uma planilha de casos. @param {File} [given] */
 export async function importCases(given) {
   const ws = app.workspaceDir;
   if (!ws) { app.toast('Abra a pasta de trabalho primeiro (☰ → Arquivos → Abrir…).', 'error'); return; }

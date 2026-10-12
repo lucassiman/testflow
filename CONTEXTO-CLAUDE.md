@@ -25,7 +25,8 @@ antes de gravar por cima, versão anterior em `.versoes/`.
 
 | Pasta | O quê |
 | --- | --- |
-| `src/main.js` | Montagem do app: abas, salvar (`doSave`), atalhos, paleta (`PALETTE_ACTIONS` + `switch` em `run()`), pasta de trabalho (`loadWorkspaceFiles`). |
+| `src/main.js` | Montagem do app: abas, salvar (`doSave`), atalhos, paleta e `switch` em `run()`, pasta de trabalho (`loadWorkspaceFiles`). |
+| `src/ui/modules.js` | **Onde fica cada ação** (desde a 1.57.0): módulos (Arquivo, Casos, Execução, Evidências e bugs, Automação, Publicar, Compartilhar, Pasta, Editar e exibir, Ajuda) → menus do topo **e** categorias da paleta. Ação nova: entra aqui + `case` no `run()`; `tests/unit/modules.test.mjs` confere. |
 | `src/app/*` | Funcionalidades que usam o contexto `app` (`context.js`): `organize` (mover/renomear/lixeira/ticket), `collab` (pasta oficial: novidades, ⇅ sincronizar, "fulano editando"), `publishing`, `cycle` (ciclo de regressão), `nextCase`, `execution`, `evidence`/`evidencePanel`, `place` (📍 de onde é o documento), `linkPicker` (`[[`), `idSync` (uid/ID trocado), `views`, `templates`, `share` (Jira/Notion/Claude), `shared.js` (elementos, `docIndex`, `menu`). |
 | `src/markdown/*.ts` | Lógica pura e testável: `frontmatter`, `structure` (pastas, `suggestDestination`, ticket), `idRename`, `officialSync`, `publish`, `views`, `cycle`, `status`, `relink`, `wikilinks`, `jira`… |
 | `src/io/*` | Disco: `fsOps` (diário/desfazer), `organizer`, `docIndex`, `publisher` (oficial), `versions`, `workspace`, `evidence`. |

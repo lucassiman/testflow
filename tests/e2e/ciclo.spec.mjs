@@ -18,8 +18,8 @@ test('ciclo salvo: executar duas vezes, pular caso, finalizar e ver o histórico
   await expect(page.locator('[data-side="wsList"] .side-file')).toHaveCount(3);
 
   // 1) salvar o ciclo (definição), sem executar
-  await page.click('button[data-menu="newMenu"]');
-  await page.click('#newMenu [data-cmd="newCycle"]');
+  await page.click('button[data-menu="mod-execucao"]');
+  await page.click('#mod-execucao [data-cmd="newCycle"]');
   const picker = page.locator('.cpk-dialog');
   await picker.locator('button', { hasText: 'Selecionar visíveis' }).click();
   await picker.locator('.cpk-links summary').click();

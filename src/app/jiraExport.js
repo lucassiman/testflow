@@ -29,7 +29,7 @@ export async function exportJiraCsv(entries) {
   const res = await showDialog({
     title: 'CSV para o Jira', icon: '⬇',
     message: `${bugs.length} bug(s) no filtro do Painel${withoutKey.length !== bugs.length ? ` — ${withoutKey.length} ainda sem chave do Jira` : ''}.`,
-    detail: 'Cada bug vira uma linha: Resumo "[BUG-12] título", Tipo Bug, Prioridade, Descrição (o documento em formato do Jira) e Rótulos (qa-md, aplicação, tags). Os prints não vão no CSV: anexe no ticket depois (Copiar ▾ → Jira lista os arquivos).',
+    detail: 'Cada bug vira uma linha: Resumo "[BUG-12] título", Tipo Bug, Prioridade, Descrição (o documento em formato do Jira) e Rótulos (qa-md, aplicação, tags). Os prints não vão no CSV: anexe no ticket depois (Compartilhar ▾ → Jira lista os arquivos).',
     checks: withoutKey.length !== bugs.length ? [{ id: 'onlyNew', label: 'Só os bugs sem chave do Jira', hint: 'o campo jira do cabeçalho está vazio', checked: true }] : [],
     buttons: [{ id: 'cancel', label: 'Cancelar' }, { id: 'go', label: 'Baixar CSV', kind: 'primary' }],
     defaultId: 'go', cancelId: 'cancel',

@@ -56,8 +56,8 @@ async function configure(page, button = 'Salvar') {
 
 /** Rodada com os dois casos: TC-1 (Crítica) falha no passo 2, TC-2 passa; finaliza. @param {import('@playwright/test').Page} page */
 async function runRound(page) {
-  await page.click('button[data-menu="newMenu"]');
-  await page.click('#newMenu [data-cmd="newRun"]');
+  await page.click('button[data-menu="mod-execucao"]');
+  await page.click('#mod-execucao [data-cmd="newRun"]');
   const picker = page.locator('.cpk-dialog');
   await picker.locator('button', { hasText: 'Selecionar visíveis' }).click();
   await picker.locator('[data-cpk="name"]').fill('Regressão 2.14');
