@@ -22,3 +22,7 @@ _lixeira/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# documentos de fases anteriores e roadmap interno — só desta máquina, nunca sobem
+antigos/
+ROADMAP-INTERNO.md

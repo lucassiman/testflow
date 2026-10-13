@@ -2,7 +2,7 @@
 /**
  * Novidades por versão — o cartão "O que mudou" mostra as que o usuário ainda não viu.
  * `manual`: início do título da seção do MANUAL.md que explica o item (abre o manual lá).
- * Atualize junto com o package.json e o ROADMAP a cada versão.
+ * Atualize junto com o package.json a cada versão (a nota detalhada vai no ROADMAP-INTERNO.md, só local).
  */
 
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */

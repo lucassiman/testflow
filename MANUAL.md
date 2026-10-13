@@ -12,7 +12,7 @@ Guia completo do editor — para quem está chegando agora e para consulta rápi
 
 ## 1. O que é
 
-**TestFlow** (até a versão 1.18 se chamava *Markdown QA Editor*) é um editor de **Markdown para QA**: casos de teste, bugs, relatórios de execução, planos, checklists e sessões exploratórias — gerados pelo Claude ou escritos à mão — viram documentos **interativos**: status clicável, execução passo a passo com cronômetro e prints, resumo com gráfico, painel da pasta, cópia pronta para Jira/Notion/Claude.
+**TestFlow** é um editor de **Markdown para QA**: casos de teste, bugs, relatórios de execução, planos, checklists e sessões exploratórias — gerados pelo Claude ou escritos à mão — viram documentos **interativos**: status clicável, execução passo a passo com cronômetro e prints, resumo com gráfico, painel da pasta, cópia pronta para Jira/Notion/Claude.
 
 Três princípios:
 
@@ -26,7 +26,7 @@ Três princípios:
 
 - **Chrome ou Edge** (Windows ou Mac). Firefox/Safari abrem, mas não gravam direto no arquivo nem abrem pastas.
 - **Node.js 18 ou mais novo** — só para gerar o app (uma vez, e a cada atualização). Baixe em nodejs.org (versão LTS).
-- A pasta do projeto (`markdown qa editor`), recebida em `.zip` ou pelo repositório.
+- O código do TestFlow, clonado do repositório com Git (veja 2.4).
 
 ### 2.2 Instalar como aplicativo (recomendado)
 
@@ -54,11 +54,11 @@ Abra `dist-single/index.html` com duplo clique no Chrome/Edge — é o editor in
 
 ### 2.4 Atualizar para uma versão nova
 
-1. Substitua os arquivos do projeto pelos da versão nova.
-2. Rode `npm install` (necessário quando a versão traz bibliotecas novas) e `npm run app`.
+1. Salve tudo no app e, no terminal do servidor, `Ctrl+C`.
+2. Na pasta do projeto: `git pull`, `npm install` (necessário quando há bibliotecas novas) e `npm run app`.
 3. Abra o app: ele baixa a versão nova e recarrega sozinho (se houver algo não salvo, avisa antes).
 
-A versão aparece no canto direito da barra de status (ex.: `v0.11.0`).
+A versão aparece no canto direito da barra de status. **Não desinstale o app nem limpe os dados do site** para atualizar — é lá que ficam preferências, abas, fixados e recentes; mantenha sempre a porta 4173. Não copie um `.zip` por cima da pasta: arquivos removidos numa versão nova ficariam para trás.
 
 ### 2.5 Skill do Claude
 
@@ -71,7 +71,7 @@ A skill **QA Markdown** faz o Claude gerar os documentos já no formato do edito
 
 ## 3. Primeiros 15 minutos
 
-A pasta **`exemplos/`** é um projeto fictício (Loja Demo) montado para o onboarding. Abra `exemplos/LEIA-ME.md`: ele tem um roteiro com checklist — ler, executar um teste, organizar e compartilhar. Desde a 1.60.0, **`exemplos/LEIA-ME-por-modulo.md`** tem um roteiro curto para cada menu do topo (Casos, Execução, Evidências, Automação, Publicar, Compartilhar), com a história da Sprint 43 em ordem.
+A pasta **`exemplos/`** é um projeto fictício (Loja Demo) montado para o onboarding. Abra `exemplos/LEIA-ME.md`: ele tem um roteiro com checklist — ler, executar um teste, organizar e compartilhar. Depois, **`exemplos/LEIA-ME-por-modulo.md`** traz um roteiro curto para cada menu do topo (Casos, Execução, Evidências, Automação, Publicar, Compartilhar), com a história da Sprint 43 em ordem.
 
 Resumo do roteiro:
 
@@ -81,7 +81,7 @@ Resumo do roteiro:
 4. **📊 Painel** (aba Arquivos) e clique em **FAIL**.
 5. No `BUG-001`: **Compartilhar ▾ → Copiar para o Jira**.
 
-**Os recursos novos na Loja Demo (1.59.0 e 1.60.0).** A mesma pasta continua a história na Sprint 43: o épico **QA-400 Pagamento com Pix** da versão **2.15.0**. Arquivos só novos — o que você já tinha em `exemplos/` não muda. Por módulo (o roteiro de cada um está em `exemplos/LEIA-ME-por-modulo.md`):
+**A Loja Demo por módulo.** A mesma pasta segue a história na Sprint 43: o épico **QA-400 Pagamento com Pix** da versão **2.15.0**. Por módulo (o roteiro de cada um está em `exemplos/LEIA-ME-por-modulo.md`):
 
 | Módulo | Onde olhar | O que mostra |
 | --- | --- | --- |
@@ -118,7 +118,7 @@ Resumo do roteiro:
 | **Modo foco** (`Ctrl+Shift+.` / `⌘⇧.`) | Esconde topo, abas, barras, barra lateral e rodapé: fica só o documento (e o painel de execução ou da rodada, se estiverem abertos). **⤢ Sair do foco** no canto, ou o mesmo atalho, volta. Fica lembrado ao reabrir. Também na paleta: *Modo foco*. |
 | **Barra de status** (rodapé) | Modo · dica do que fazer · **avisos de validação** (clique para ir até eles) · 📁 pasta de evidências (clique para trocar) · 📸 captura de tela ligada (clique para parar) · rascunho/salvo · linhas e palavras · versão |
 
-### Menus por módulo (desde a 1.57.0)
+### Menus por módulo
 
 Cada ação mora num **módulo**. Os menus do topo e as categorias da paleta (`Ctrl+Shift+P`) são os mesmos — o que você acha num, acha no outro com o mesmo nome.
 
@@ -132,8 +132,6 @@ Cada ação mora num **módulo**. Os menus do topo e as categorias da paleta (`C
 | **🏛 Publicar ▾** | Publicar na pasta oficial, sincronizar, pasta oficial · histórico de versões · comentar, comentários do documento |
 | **📤 Compartilhar ▾** | **Copiar** (Markdown, Jira, Notion) · **Exportar** (PDF, HTML, pacotes Notion e hub) · **Jira** (abrir o ticket, criar a issue pela API, trazer status, CSV, chaves) · **Claude** (falhas, resumo, documento + instruções, revisar texto, colar resposta) · **Proteção** (dados sensíveis) |
 | Só na paleta | **Pasta de trabalho** (início, painel, buscar, estrutura, nova aplicação/pasta, mover, desfazer organização, backup, diagnóstico) · **Editar e exibir** (modos, foco, barra de formatação, árvore, abas, zoom, tema) · **Ajuda e preferências** (manual, o que mudou, dicas). A pasta de trabalho também fica na barra lateral (aba **Arquivos**). |
-
-Antes da 1.57.0: rodada e ciclo ficavam em **Novo ▾**, publicar/histórico/backup em **Salvar ▾**, e **Copiar ▾** e **PDF ▾** eram dois menus — agora estão em **Execução ▾**, **Publicar ▾** (backup: paleta) e **Compartilhar ▾**.
 
 ### 4.1 Estado do documento
 
@@ -152,7 +150,7 @@ Na árvore, 🏛 marca os documentos publicados e ✎ os alterados desde a publi
 
 ### Onde fica…?
 
-Organizado pelos mesmos módulos dos menus do topo e da paleta (desde a 1.58.0). Um teste confere estas referências contra o registro do app — se o nome de um menu mudar, o manual acompanha.
+Organizado pelos mesmos módulos dos menus do topo e da paleta. Um teste confere estas referências contra o registro do app — se o nome de um menu mudar, o manual acompanha.
 
 **📄 Arquivo**
 
@@ -391,7 +389,7 @@ Sem pasta de trabalho aberta, o editor oferece escolher uma. Se já existir um m
 
 ### 6.2 Cabeçalho (cartão de metadados)
 
-O bloco YAML no topo (`tipo`, `id`, `titulo`, `app`, `status`, `prioridade`, `severidade`, `ambiente`, `browser`, `dispositivo`, `versao`, `responsavel`, `data`, `jira`, `tags`, `automacao`) aparece como um **cartão** com badges. Clique para editar num formulário; ao mudar ID/título, o `# ID — Título` do documento acompanha. Campos que o formulário não conhece são preservados. O campo **`qa-md: 1`** (vem nos modelos) é a versão do formato — não aparece no cartão; se um documento vier de uma versão mais nova do formato, a validação avisa. No campo **`jira`**, cada chave (`QA-123`) vira um link para o ticket (abre em outra aba). O endereço do Jira fica em `branding.json` → `jiraBaseUrl`, que já vem com `https://ngosolucoes.atlassian.net`. Pela paleta (`Ctrl+Shift+P`) também existe **Abrir o ticket no Jira**. O campo **`app`** (aplicação) decide a pasta do documento — ver 10.2.
+O bloco YAML no topo (`tipo`, `id`, `titulo`, `app`, `status`, `prioridade`, `severidade`, `ambiente`, `browser`, `dispositivo`, `versao`, `responsavel`, `data`, `jira`, `tags`, `automacao`) aparece como um **cartão** com badges. Clique para editar num formulário; ao mudar ID/título, o `# ID — Título` do documento acompanha. Campos que o formulário não conhece são preservados. O campo **`qa-md: 1`** (vem nos modelos) é a versão do formato — não aparece no cartão; se um documento vier de uma versão mais nova do formato, a validação avisa. No campo **`jira`**, cada chave (`QA-123`) vira um link para o ticket (abre em outra aba). O endereço do Jira fica em `branding.json` → `jiraBaseUrl` (ex.: `https://suaempresa.atlassian.net`). Pela paleta (`Ctrl+Shift+P`) também existe **Abrir o ticket no Jira**. O campo **`app`** (aplicação) decide a pasta do documento — ver 10.2.
 
 ### 6.3 Status e destaques
 
@@ -574,7 +572,7 @@ O **status geral** do cabeçalho é recalculado: algum `FAIL` → `FAIL`; senão
 
 Status geral, barra de progresso e contagem por status. **Clique num status** para ver só essas linhas (clique de novo desfaz); **☑** mostra só itens de checklist não marcados. Cada título mostra `feitos/total` do checklist da seção. O filtro não vai para o PDF.
 
-**⋯** (no fim da barra, desde a 1.58.0) abre o resto das ações **agrupado pelos módulos do topo**, sem sair do documento:
+**⋯** (no fim da barra) abre o resto das ações **agrupado pelos módulos do topo**, sem sair do documento:
 
 | Documento | O que tem no ⋯ |
 | --- | --- |
@@ -633,7 +631,7 @@ Dois conceitos, dois tipos de documento. Onde nascem: **junto das execuções qu
 | **Execução** (`tipo: execucao`) | Uma **ocorrência** daquele ciclo sendo executada, com o status de cada caso, resumo e encerramento. Tem `ciclo:` (o ciclo de origem) e `numero:` (#1, #2…). | **▶ Executar este ciclo** (pílula no topo do ciclo, ou **Execução ▾ → ⏯ Executar um ciclo salvo…**) ou **🔁 Executar de novo** no painel ao fim de uma execução. |
 | **Rodada avulsa** | Uma execução sem ciclo, só para rodar alguns casos. | **Execução ▾ → ▶ Rodada de execução…** |
 
-Cada execução começa **limpa**: se um caso tinha passos marcados de uma execução anterior, essa rodada vai para o Histórico do caso (🔁 Nova rodada; `Ctrl+Z` desfaz). Ciclos criados em versões antigas (com `inicio:`) seguem abrindo como rodada avulsa.
+Cada execução começa **limpa**: se um caso tinha passos marcados de uma execução anterior, essa rodada vai para o Histórico do caso (🔁 Nova rodada; `Ctrl+Z` desfaz). Um documento de ciclo com `inicio:` no cabeçalho abre como rodada avulsa.
 
 Na janela de seleção dos casos:
 
@@ -649,7 +647,7 @@ Na janela de seleção dos casos:
 
 O **painel lateral da rodada** (à direita, no ciclo e em qualquer caso dele; `⟩` recolhe) lista todos os casos: ✅ PASS, ❌ FAIL, ⛔ BLOCKED, ⏭ SKIP, ▶ em execução, ◐ em andamento (começou nesta rodada e ainda não foi concluído), ⏳ pendente, com a **barra de progresso nas cores dos status** (verde PASS, vermelho FAIL, amarelo BLOCKED, cinza SKIP; o vazio é o que falta). Com mais de 3 casos, os filtros **Todos · Pendentes · Falhas** enxugam a lista (o caso aberto aparece sempre; o filtro fica lembrado). Cada caso concluído mostra **⏱ a duração** da execução dele nesta rodada. Um caso pendente que já tinha resultado de antes mostra **último: PASS/FAIL…** em cinza — é só referência, não conta nesta rodada. **Cenários BDD** executam pela tabela *Cenário | Status* da seção Execução (um cenário por passo). Clique num caso para ir até ele; `↑`/`↓` andam pela lista. O **⏭** que aparece ao lado de um caso pendente **pula o caso** (SKIP, sem abrir; se ele estava em foco, abre o próximo); clicar depois num caso pulado abre para executá-lo normalmente. No fim, **🔁 Executar de novo** cria a próxima execução e **⋯ → 📋 Abrir o ciclo de origem** abre o ciclo.
 
-**Botões do painel (desde a 1.58.0)** — à vista ficam só as ações da hora; o resto vai para o **⋯**, agrupado pelos mesmos módulos do topo:
+**Botões do painel** — à vista ficam só as ações da hora; o resto vai para o **⋯**, agrupado pelos mesmos módulos do topo:
 
 | Rodada | À vista | No ⋯ |
 | --- | --- | --- |
@@ -798,7 +796,7 @@ Clique em **📁 …/evidencias** no rodapé (ou `Ctrl+Shift+P` → *Evidências
 3. **Carregar sem compactação** → escolha a pasta **`extensao/`** do TestFlow (a mesma do `git pull`).
 4. Fixe o ícone do TestFlow na barra (🧩 → 📌), se quiser ver o estado.
 5. **Recarregue as abas** que já estavam abertas (o sistema testado e o TestFlow) — a extensão só começa a observar as páginas abertas depois dela.
-6. No TestFlow: **Evidências ▾ → Captura pela extensão: ligar/desligar** (ou `Ctrl+Shift+P` → **Captura de bug pela extensão do navegador**). O aviso confirma a versão da extensão (*1.51.0*).
+6. No TestFlow: **Evidências ▾ → Captura pela extensão: ligar/desligar** (ou `Ctrl+Shift+P` → **Captura de bug pela extensão do navegador**). O aviso confirma a versão da extensão instalada.
 
 Para mandar a um colega sem o repositório: `npm run extensao` gera `extensao-dist/testflow-extensao.zip` (descompactar e carregar a pasta). **Atualizar:** `git pull` e o ↻ da extensão em `chrome://extensions` (e recarregue as abas testadas).
 
@@ -837,11 +835,11 @@ Exemplos para testar: `exemplos/automacao/junit.xml`, `playwright.json`, `newman
 2. **Automação ▾ → ⚡ Reporter ao vivo — como ligar…** (ou `Ctrl+Shift+P` → **Reporter da automação: resultado direto na execução**) mostra (e copia) o trecho com o caminho da sua pasta de trabalho (o de *Onde fica a pasta de trabalho no computador*).
 3. **Playwright** — no `playwright.config` do projeto de automação:
    ```js
-   reporter: [['list'], ['C:/dev/markdown qa editor/reporter-dist/testflow.mjs', { pasta: 'C:/dev/qa', app: 'Portal' }]],
+   reporter: [['list'], ['<pasta do TestFlow>/reporter-dist/testflow.mjs', { pasta: '<sua pasta de trabalho>', app: 'Portal' }]],
    ```
    **Jest, Cypress, pytest…** — gere o JUnit XML (`jest-junit`, `mocha-junit-reporter`, `pytest --junitxml`) e rode depois dos testes:
    ```text
-   node "C:/dev/markdown qa editor/reporter-dist/testflow.mjs" importar junit.xml --pasta "C:\dev\qa" --app Portal
+   node "<pasta do TestFlow>/reporter-dist/testflow.mjs" importar junit.xml --pasta "<sua pasta de trabalho>" --app Portal
    ```
 
 | Para onde vai | Como |
@@ -885,7 +883,7 @@ O Claude também exporta: `qa_exportar_feature` devolve os arquivos para ele gra
 
 ### 10.0 Backup da pasta de trabalho
 
-Tudo fica só neste computador. `Ctrl+Shift+P` → *Fazer backup da pasta de trabalho* (desde a 1.57.0 fica na categoria **Pasta de trabalho** da paleta; antes estava em Salvar ▾) junta documentos, prints, anexos e as marcações dos prints num `.zip` (`<pasta>-backup-AAAA-MM-DD_HHMM.zip`) e pergunta onde salvar — escolha **outro disco, um pendrive ou a pasta do OneDrive/Google Drive**. Ficam de fora pastas de código (`node_modules`, `.git`…) e a lixeira; o que está aberto e **não salvo** também (o aviso diz quantas abas). Para restaurar: descompacte e abra a pasta como pasta de trabalho.
+Tudo fica só neste computador. `Ctrl+Shift+P` → *Fazer backup da pasta de trabalho* (categoria **Pasta de trabalho** da paleta) junta documentos, prints, anexos e as marcações dos prints num `.zip` (`<pasta>-backup-AAAA-MM-DD_HHMM.zip`) e pergunta onde salvar — escolha **outro disco, um pendrive ou a pasta do OneDrive/Google Drive**. Ficam de fora pastas de código (`node_modules`, `.git`…) e a lixeira; o que está aberto e **não salvo** também (o aviso diz quantas abas). Para restaurar: descompacte e abra a pasta como pasta de trabalho.
 
 **Lembrete:** ao abrir a pasta, se faz **7 dias** ou mais desde o último backup (ou desde que o editor viu a pasta pela primeira vez) e algum documento mudou depois dele, aparece **💾 A pasta está sem backup** com **Fazer backup**; ignorado, volta no dia seguinte. `Ctrl+Shift+P` → *Lembrete de backup* muda para 14 ou 30 dias, ou desliga. Pasta acima de 1,5 GB: o navegador não monta o `.zip` — copie a pasta inteira.
 
@@ -938,7 +936,7 @@ visoes/                    ← visões: consultas salvas (ver 11.1)
 | Recurso | Como |
 | --- | --- |
 | **Criar a estrutura** | Numa pasta ainda sem estrutura, a aba Arquivos mostra **🗂 Organizar esta pasta…** (também no clique direito no espaço vazio da árvore ou em `Ctrl+Shift+P` → *Criar estrutura…*). Cria só as pastas que faltam — pode já criar as aplicações (`Portal, Backoffice`) — e oferece levar os `.md` soltos na raiz para `_entrada/` (links e prints acompanham; **Desfazer** no aviso). Nada que você já tem é renomeado ou apagado. |
-| **Completar a estrutura** | Pasta organizada numa versão anterior do editor (ex.: sem `requisitos/`): o topo da árvore mostra **🗂 Completar a estrutura…** com o que falta — cria só as pastas que faltam, nada é mexido. O **×** dispensa o aviso (ele volta se faltar outra pasta). Também: `Ctrl+Shift+P` → *Criar estrutura…*. Sem isso, a pasta nasce sozinha na primeira vez que você salva um épico ou história. |
+| **Completar a estrutura** | Pasta organizada à qual falta alguma subpasta (ex.: `requisitos/`): o topo da árvore mostra **🗂 Completar a estrutura…** com o que falta — cria só as pastas que faltam, nada é mexido. O **×** dispensa o aviso (ele volta se faltar outra pasta). Também: `Ctrl+Shift+P` → *Criar estrutura…*. Sem isso, a pasta nasce sozinha na primeira vez que você salva um épico ou história. |
 | **Nova aplicação** | Clique direito em `aplicacoes/` (ou no espaço vazio) → *🧩 Nova aplicação…*: cria `aplicacoes/<App>/` com as sete subpastas. |
 | **Nota rápida** | `Alt+Q` (ou **Novo ▾ → 📝 Nota rápida**): cria `_entrada/2026-09-28-1330-nota.md` já salvo, abre e deixa o cursor pronto para escrever. Sem pasta de trabalho aberta, cria um documento novo comum. |
 | **Salvar um documento novo** | Com a pasta de trabalho aberta, o primeiro `Ctrl+S` abre **Salvar na pasta de trabalho**: nome sugerido (`<id>-<titulo>.md`) e a pasta sugerida pelo cabeçalho — com `app:` e `tipo:`, vai para `aplicacoes/<App>/<casos, bugs…>/` (a pasta é criada se faltar); sem `app:`, para `_entrada/`. Dá para escolher outra pasta na lista, ou **Outro lugar…** (janela do sistema, fora da pasta de trabalho). *Salvar como* (`Ctrl+Shift+S`) continua abrindo a janela do sistema. |
@@ -1153,36 +1151,27 @@ Com o **servidor MCP local**, o Claude (app desktop e Claude Code) lê, consulta
 3. Em **Pasta de trabalho**, escolha a mesma pasta que você abre no editor. Opcional: **Seu nome** (autor dos comentários do Claude) e **Endereço do Jira**.
 4. Ative a extensão. Numa conversa, peça: *"quais casos do Portal falharam na última rodada?"* — o Claude usa as ferramentas `qa_*`.
 
-> [!NOTE]
-> Já tinha instalado a extensão com o nome antigo (*Markdown QA*)? Ela continua funcionando. Para ver o nome **TestFlow** no Claude desktop, instale o `testflow.mcpb` por cima — é a mesma extensão (mesmo identificador), não fica duplicada.
-
 O Claude desktop já traz o Node para extensões. Se ele pedir, instale o **Node 20 ou mais novo** (nodejs.org). Com o computador ligado ao Claude (app desktop aberto), as conversas do Claude neste computador também enxergam as ferramentas.
 
 **Claude Code (ou configuração manual):**
 
 ```bash
-claude mcp add markdown-qa -- node "C:/dev/markdown qa editor/mcp-dist/qa-mcp.mjs" --pasta "C:/QA/minha-pasta" --nome "Lucas"
+claude mcp add markdown-qa -- node "<pasta do TestFlow>/mcp-dist/qa-mcp.mjs" --pasta "<sua pasta de trabalho>" --nome "Seu Nome"
 ```
 
 No `claude_desktop_config.json`: `"markdown-qa": { "command": "node", "args": ["<pasta do editor>/mcp-dist/qa-mcp.mjs", "--pasta", "<pasta de trabalho>"] }`. Para testar direto do projeto: `npm run mcp -- --pasta "<pasta>"`.
 
-| Ferramenta | O que faz |
-| --- | --- |
-| `qa_visao_geral` · `qa_listar` · `qa_buscar` | Orientar-se, listar com filtros, buscar texto em todos os documentos |
-| `qa_consultar` | Consulta na **mesma sintaxe das visões** (11.1), inclusive as prontas: *"tickets em teste da versão 2.14"* |
-| `qa_ler` · `qa_resumo_execucao` · `qa_ver_evidencia` · `qa_versoes` | Ler com o cabeçalho interpretado (execução, rodada, Jira, comentários, quem cita); falhas para análise; ver um print; histórico |
-| `qa_criar` | Documento novo do modelo (ou texto completo) com o **próximo ID** e na **pasta certa** pelo `app:`; devolve os avisos da validação |
-| `qa_bug_do_caso` | Bug ligado a partir do passo que falhou, com passos, esperado, obtido e os prints; o caso ganha o link. Se o caso **já tem bug ligado**, ele não duplica: mostra os bugs e o Claude pergunta se é **reincidência** (registra no bug e reabre, como o app) ou bug novo. Achado numa rodada, o bug guarda `execucao:`/`ciclo:` |
-| `qa_rodada_criar` · `qa_rodada_registrar` · `qa_rodada_status` · `qa_rodada_finalizar` | A rodada inteira pelo Claude: criar pelos casos de um **segmento** (épico, ticket, `#tag`), de uma consulta, de uma lista ou de um **ciclo salvo** (vira a execução #N); registrar cada caso (passos ou o caso inteiro); ver como está; finalizar (SKIP nos pendentes + os 4 relatórios) |
-| `qa_relatorios` | Gera/regera os relatórios de fim de execução (7.8) — os mesmos do app, mantendo o que você escreveu |
-| `qa_anexar_automacao` | Resultado de automação (JUnit XML, Playwright JSON, Newman JSON) direto na execução em andamento, numa nova ou numa específica (9) |
-| `qa_exportar_feature` | Cenários BDD como arquivos `.feature` (9), de um documento ou de todos (por aplicação) — para o Claude gravar no repositório da automação |
-| `qa_validar` · `qa_rastreabilidade` | Avisos de QA, links quebrados e evidências faltando (documento, segmento, pasta ou tudo); matriz ticket/épico → casos → resultado → bugs |
-| `qa_varredura` · `qa_ligar` | Documentos antigos sem os vínculos (app, ticket, épico, tags/sprint herdadas, bug sem caso, caso sem requisito, pasta errada), cada achado com ✅ certo / 🟡 provável / ❓ confirmar; `aplicar` preenche só campos vazios e soma tags. `qa_ligar` liga o bug órfão ao caso |
-| `qa_marcar_passos` · `qa_nova_rodada` | Status/obtido por passo (o resumo e o status geral se atualizam); `concluir` registra a rodada |
-| `qa_anexar_evidencia` | Copia um arquivo do computador (print, vídeo, HAR, log) para `evidencias/` e liga no documento |
-| `qa_atualizar_cabecalho` · `qa_comentar` | Campos do cabeçalho (ex.: a chave do Jira; trocar o `id` atualiza o documento e os `[[links]]` da pasta, como no editor); comentário de revisão (6.7) |
-| `qa_para_jira` | O bug pronto para o ticket: resumo `[BUG-12] título`, prioridade, descrição e os anexos |
+São **39 ferramentas** `qa_*`, em grupos:
+
+| Grupo | Ferramentas | O que fazem |
+| --- | --- | --- |
+| **Orientar-se e achar** | `qa_visao_geral` · `qa_listar` · `qa_buscar` · `qa_consultar` · `qa_convencoes` | Panorama da pasta, listar com filtros, buscar texto, consulta na **mesma sintaxe das visões** (11.1) — *"tickets em teste da versão 2.14"* — e as regras do formato QA-MD |
+| **Ler** | `qa_ler` · `qa_resumo_execucao` · `qa_ver_evidencia` · `qa_versoes` · `qa_comparar_versoes` · `qa_restaurar_versao` | Documento com o cabeçalho interpretado (execução, rodada, Jira, comentários, quem cita); falhas para análise; ver um print; histórico, comparação e restauração de versões |
+| **Escrever** | `qa_criar` · `qa_atualizar_cabecalho` · `qa_comentar` · `qa_aprovacao` · `qa_editar_em_massa` · `qa_importar_casos` | Documento novo do modelo (ou texto completo) com o **próximo ID** e na **pasta certa** pelo `app:`; campos do cabeçalho (trocar o `id` atualiza o documento e os `[[links]]` da pasta, como no editor); comentário de revisão (6.7); aprovação do caso (6.10); edição em massa e importação de planilha, com prévia e gravação só com o seu OK |
+| **Bugs e evidências** | `qa_bug_do_caso` · `qa_ligar` · `qa_anexar_evidencia` · `qa_para_jira` | Bug ligado a partir do passo que falhou, com passos, esperado, obtido e prints (se o caso **já tem bug**, ele não duplica: pergunta se é **reincidência** — registra no bug e reabre, como o app — ou bug novo); ligar um bug órfão ao caso; copiar um arquivo (print, vídeo, HAR, log) para `evidencias/`; o bug pronto para o ticket (resumo `[BUG-12] título`, prioridade, descrição, anexos) |
+| **Execução** | `qa_marcar_passos` · `qa_nova_rodada` · `qa_rodada_criar` · `qa_rodada_registrar` · `qa_rodada_status` · `qa_rodada_atribuir` · `qa_pendencias` · `qa_rodada_finalizar` · `qa_relatorios` | Status/obtido por passo; a rodada inteira pelo Claude — criar pelos casos de um **segmento**, de uma consulta, de uma lista ou de um **ciclo salvo**, registrar cada caso, atribuir, ver como está e o que falta para você, finalizar (SKIP nos pendentes + os 4 relatórios); gerar de novo os relatórios (7.8) mantendo o que você escreveu |
+| **Automação** | `qa_anexar_automacao` · `qa_exportar_feature` | Resultado de automação (JUnit XML, Playwright JSON, Newman JSON) direto na execução em andamento, numa nova ou numa específica; cenários BDD como arquivos `.feature` (9) |
+| **Qualidade e acompanhamento** | `qa_validar` · `qa_rastreabilidade` · `qa_varredura` · `qa_tendencia` · `qa_release` · `qa_compartilhados` · `qa_preparar_ambientes` | Avisos de QA, links quebrados e evidências faltando; matriz ticket/épico → casos → resultado → bugs; documentos sem vínculos (cada achado com ✅ certo / 🟡 provável / ❓ confirmar; `aplicar` preenche só campos vazios); tendência entre rodadas; progresso de uma release; dados e passos compartilhados (sem senhas) e a massa por ambiente |
 
 **Escopo dos casos — diga o nível, o tipo e a profundidade.** A skill lê três coisas no pedido:
 - **nível**: E2E/UI, API/integração, unitário ou negócio/aceite;
@@ -1316,7 +1305,7 @@ Dados sensíveis (e-mail, senha, CPF, cartão, token) saem **mascarados** na pá
 | **Tamanho do texto** | **A− / A+** (clique em `100%` para voltar). Vale para Preview e Raw, não muda o arquivo. |
 | **Largura da barra lateral** | Arraste a borda direita da barra (duplo clique volta a 280 px) |
 | **Salvar automaticamente** | **Salvar ▾ → Salvar automaticamente** |
-| **Endereço do Jira** | `branding.json` → `jiraBaseUrl` (ex.: `https://ngosolucoes.atlassian.net`); as chaves do campo `jira` viram link para `…/browse/QA-123`. Depois `npm run app`. |
+| **Endereço do Jira** | `branding.json` → `jiraBaseUrl` (ex.: `https://suaempresa.atlassian.net`); as chaves do campo `jira` viram link para `…/browse/QA-123`. Depois `npm run app`. |
 | **Nome, cor e ícone do app** | `branding.json` (`name`, `shortName`, `color`) e os ícones em `public/icons/`. Depois `npm run app`. |
 | **Modelos próprios** | Pasta `modelos/` dentro da pasta de trabalho — crie com **Salvar como modelo** (ver 6.1) |
 | **Pasta do projeto de automação** | `/pasta do projeto` (para os links do VS Code) |
@@ -1333,7 +1322,7 @@ O editor lembra: modo, tema, tamanho do texto, dicas já vistas, largura e aba d
 | --- | --- |
 | `Ctrl+S` baixa um arquivo em vez de salvar | Use Chrome ou Edge (Firefox/Safari não gravam direto no arquivo). |
 | Imagens aparecem como "clique para permitir acesso" | O navegador pede a permissão da pasta de novo a cada sessão — um clique libera todas. |
-| O app não mostra a versão nova | Rode `npm install` e `npm run app` e abra o app com o servidor no ar. |
+| O app não mostra a versão nova | Rode `git pull`, `npm install` e `npm run app` e abra o app com o servidor no ar (ver 2.4). |
 | `npm run app` dá erro de módulo não encontrado | Faltou `npm install` depois de atualizar. |
 | O painel/busca não mostra um arquivo novo | Volte para o editor (ele relê a pasta) ou clique em ↻ na aba Arquivos / **↻ Atualizar** no painel. |
 | Renomear (clicando no nome, no topo) falha num arquivo fora da pasta de trabalho | O navegador liberou só o arquivo. O editor oferece **Liberar a pasta e renomear** (escolha a pasta do arquivo na janela, que já abre nela) ou **Salvar com o novo nome**. |
@@ -1375,4 +1364,4 @@ O editor lembra: modo, tema, tamanho do texto, dicas já vistas, largura e aba d
 
 ---
 
-*Versão do manual: 1.1.0 (29/09/2026). Novidades e o que vem pela frente: `ROADMAP.md`.*
+*As novidades da versão instalada estão em `Ctrl+Shift+P` → **O que mudou**. O que vem pela frente: `ROADMAP.md`.*
