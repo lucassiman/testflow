@@ -1,7 +1,7 @@
 // 11.5 (1.54.0): Jira pela API — o rascunho da issue (app) e as chamadas da extensão (com um fetch falso).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { applyJiraStatus, jiraDraft, jiraKeysOf, localLinksToAttachments } from '../../src/markdown/jiraApi.ts';
+import { addJiraKey, applyJiraStatus, jiraDraft, jiraKeysOf, localLinksToAttachments } from '../../src/markdown/jiraApi.ts';
 import { authHeader, jiraCreate, jiraError, jiraStatuses, normalizeSite } from '../../extensao/jira.js';
 
 const BUG = `---
@@ -112,4 +112,12 @@ test('extensão: status pela busca JQL; sem a busca nova, uma a uma (chave apaga
     [/^GET \/rest\/api\/2\/issue\/PORT-1\?/, () => [200, issue('PORT-1', 'Aberto', 'new')]],
   ]);
   assert.deepEqual((await jiraStatuses(CFG, ['PORT-1', 'PORT-9'], b.f)).map((s) => [s.chave, s.status]), [['PORT-1', 'Aberto']]);
+});
+
+test('addJiraKey: grava a chave no campo jira, não repete e acrescenta a segunda em lista', () => {
+  const bug = '---\ntipo: bug\nid: BUG-12\ntitulo: x\njira:\n---\n\n# BUG-12\n';
+  const withKey = addJiraKey(bug, 'QA-57');
+  assert.match(withKey, /^jira: QA-57$/m);
+  assert.equal(addJiraKey(withKey, 'QA-57'), withKey);
+  assert.match(addJiraKey(withKey, 'QA-1'), /^jira: \[QA-57, QA-1\]$/m);
 });

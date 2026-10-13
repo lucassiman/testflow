@@ -1,4 +1,4 @@
-// QoL de 07/10: ★ fixados na árvore, busca com filtros prontos e resumo da rodada para Jira/Slack/e-mail.
+// QoL de 07/10: ★ fixados na árvore, busca com filtros prontos e resumo da rodada para Jira/Teams/e-mail.
 import { test, expect } from '@playwright/test';
 import { openEditor, wsInit } from './helpers.mjs';
 
@@ -84,7 +84,7 @@ test('busca com filtros prontos: status:/tag:/tipo: sozinhos listam documentos; 
   await expect(bugsChip).toHaveAttribute('aria-pressed', 'false');
 });
 
-test('resumo da rodada: bugs abertos e cópia para Slack e e-mail', async ({ page, context }) => {
+test('resumo da rodada: bugs abertos e cópia para Teams e e-mail', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await openWs(page, 'ws-resumo-copia', [
     ['aplicacoes/Portal/casos/TC-1.md', tc('TC-1', 'Login')],
@@ -105,12 +105,12 @@ test('resumo da rodada: bugs abertos e cópia para Slack e e-mail', async ({ pag
   const rs = page.locator('.rs-dialog');
   await expect(rs).toContainText('Bugs ligados (1 · 1 aberto)');
   await expect(rs).toContainText('BUG-1');
-  await rs.locator('[data-fmt="slack"]').click();
-  await expect(rs.locator('[data-fmt="slack"]')).toHaveClass(/rs-copied/);
-  const slack = await page.evaluate(() => navigator.clipboard.readText());
-  expect(slack).toMatch(/^\*📊 Sprint 42\*/);
-  expect(slack).toContain('*🐞 Bugs abertos (1)*');
-  expect(slack).toContain('• *BUG-1* — Erro ao salvar (ABC-9)');
+  await rs.locator('[data-fmt="teams"]').click();
+  await expect(rs.locator('[data-fmt="teams"]')).toHaveClass(/rs-copied/);
+  const teams = await page.evaluate(() => navigator.clipboard.readText());
+  expect(teams).toMatch(/^\*📊 Sprint 42\*/);
+  expect(teams).toContain('*🐞 Bugs abertos (1)*');
+  expect(teams).toContain('• *BUG-1* — Erro ao salvar (ABC-9)');
 
   await rs.locator('[data-fmt="email"]').click();
   await expect(page.locator('#toast')).toContainText('Assunto sugerido: [QA] Sprint 42');

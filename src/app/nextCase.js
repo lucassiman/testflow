@@ -1,8 +1,8 @@
 // @ts-check
 /**
  * ⏭ Próximo caso da pasta: terminou um caso (pelo modo execução ou marcando os passos à mão) → abre o próximo
- * da mesma pasta (ex.: casos/PORTAL-120/), de preferência um ainda não executado. Num caso do ciclo de
- * regressão ativo, segue o ciclo.
+ * da mesma pasta (ex.: casos/PORTAL-120/), de preferência um ainda não executado. É o **único** "Próximo caso":
+ * com uma rodada em andamento (no caso dela ou nela mesma) segue a rodada; senão, a pasta.
  */
 import { app } from './context.js';
 import { nextCaseInFolder, isCaseDoc } from '../markdown/nextCase.ts';
@@ -12,7 +12,7 @@ import { viewDocs } from './views.js';
 import { currentWorkspacePath, openWikiTarget } from './links.js';
 import { startRun } from './execution.js';
 import { docIndex } from './shared.js';
-import { inCycleCase, nextCycleCase } from './cycle.js';
+import { inRound, nextCycleCase } from './cycle.js';
 
 /** @typedef {import('../markdown/views.ts').ViewDoc} ViewDoc */
 
@@ -30,9 +30,9 @@ export function nextCaseInfo() {
   return nextCaseInFolder(viewDocs(), rel, (d) => execState(d) === 'executado');
 }
 
-/** Rótulo do botão da barra de execução: "TC-004", "do ciclo" (caso do ciclo ativo) ou null. */
+/** Rótulo do botão da barra de execução: "TC-004", "da rodada" (rodada em andamento) ou null. */
 export function nextCaseLabel() {
-  if (inCycleCase()) return 'do ciclo';
+  if (inRound()) return 'da rodada';
   const n = nextCaseInfo();
   return n && !n.allDone ? keyOf(n.doc) : null;
 }
@@ -44,7 +44,7 @@ export function nextCaseLabel() {
  */
 export async function goNextCase({ run = false } = {}) {
   if (app.runner?.mode === 'exec') { app.toast('Execução em andamento: ✓ Concluir no painel registra a rodada e oferece o próximo caso.', 'error'); return; }
-  if (inCycleCase()) {
+  if (inRound()) {
     if (app.store.dirty) await app.doSave(false);
     if (!app.store.dirty) await nextCycleCase();
     return;

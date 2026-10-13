@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { findComments, countComments, commentBlock, resolveComment, reopenComment, replyComment, stripComments } from '../../src/markdown/comments.ts';
 import { cycleDoc, cycleTable, caseResult, syncCycle, cycleProgress, nextCase, closeCycle, needsFreshRound, runsOf, parseStart } from '../../src/markdown/cycle.ts';
-import { jiraCsv, parseCsv, keysFromJiraCsv, matchKeys, addJiraKey } from '../../src/markdown/jiraCsv.ts';
+import { addJiraKey } from '../../src/markdown/jiraApi.ts';
 import { lockName, makeLock, parseLock, lockState, lockMessage, officialBehind } from '../../src/markdown/lock.ts';
 import { countStatuses, collectStatusTables } from '../../src/markdown/status.ts';
 import { logRun } from '../../src/markdown/runs.ts';
@@ -94,26 +94,6 @@ test('ciclo: resultado do caso pela rodada concluída depois do início; manual 
   assert.equal((closeCycle(closed, new Date(2026, 8, 30, 10, 0)).match(/## Encerramento/g) || []).length, 1);
 });
 
-test('Jira CSV: exportar bugs e trazer as chaves', () => {
-  const bug = '---\ntipo: bug\nid: BUG-12\ntitulo: Botão "Salvar", sem resposta\nprioridade: Alta\napp: Portal Web\ntags: [regressao, login]\njira:\n---\n\n# BUG-12 — Botão\n\n## Passos\n\n1. Abrir\n2. Clicar\n\n> [!COMMENT] @Ana · 29/09/2026 10:00\n> interno\n';
-  const { csv, count } = jiraCsv([{ path: 'aplicacoes/Portal/bugs/BUG-12.md', text: bug }]);
-  assert.equal(count, 1);
-  const rows = parseCsv(csv);
-  assert.deepEqual(rows[0], ['Summary', 'Issue Type', 'Priority', 'Description', 'Labels', 'Labels', 'Labels', 'Labels']);
-  assert.deepEqual([rows[1][0], rows[1][1], rows[1][2]], ['[BUG-12] Botão "Salvar", sem resposta', 'Bug', 'High']);
-  assert.deepEqual(rows[1].slice(4), ['qa-md', 'portal-web', 'regressao', 'login']);
-  assert.match(rows[1][3], /h2\. Passos/);
-  assert.doesNotMatch(rows[1][3], /interno/);
-  const exported = 'Resumo;Chave do item;Status\n"[BUG-12] Botão ""Salvar"", sem resposta";QA-57;Aberto\nOutro;QA-58;x\n';
-  const keys = keysFromJiraCsv(exported);
-  assert.deepEqual(keys.map((k) => [k.key, k.id]), [['QA-57', 'BUG-12'], ['QA-58', '']]);
-  assert.deepEqual(matchKeys(keys, [{ path: 'b.md', text: bug }]), [{ path: 'b.md', key: 'QA-57' }]);
-  const withKey = addJiraKey(bug, 'QA-57');
-  assert.match(withKey, /^jira: QA-57$/m);
-  assert.equal(addJiraKey(withKey, 'QA-57'), withKey);
-  assert.match(addJiraKey(withKey, 'QA-1'), /^jira: \[QA-57, QA-1\]$/m);
-});
-
 test('trava de edição e versão oficial mais nova', () => {
   assert.equal(lockName('aplicacoes/Portal/casos/TC-1.md'), 'aplicacoes__Portal__casos__TC-1.md.json');
   const now = new Date(2026, 8, 29, 14, 0);
@@ -133,7 +113,7 @@ test('trava de edição e versão oficial mais nova', () => {
   assert.equal(officialBehind(pub(2), null), null);
 });
 
-test('revisão 9.4: lista YAML no jira, ciclo encerrado congelado, fim da rodada, comentário em lista, CRLF, CSV com ;', () => {
+test('revisão 9.4: lista YAML no jira, ciclo encerrado congelado, fim da rodada, comentário em lista, CRLF', () => {
   const block = '---\ntipo: bug\nid: B-1\njira:\n  - ABC-1\n  - ABC-2\ntags: [a]\n---\n# x\n';
   assert.equal(addJiraKey(block, 'ABC-9'), '---\ntipo: bug\nid: B-1\njira: [ABC-1, ABC-2, ABC-9]\ntags: [a]\n---\n# x\n');
   // ciclo encerrado não muda mais
@@ -153,6 +133,5 @@ test('revisão 9.4: lista YAML no jira, ciclo encerrado congelado, fim da rodada
   assert.equal(r, '- item\n  > [!RESOLVED] @Ana · 29/09/2026 10:00\n  > texto\n  >\n  > ✓ Resolvido por @Lucas · 29/09/2026 14:02\n- item2\n');
   // CRLF: o índice lê igual
   assert.equal(describe('---\r\ntipo: bug\r\nid: B-2\r\n---\r\n\r\n> [!COMMENT] @x · y\r\n> z\r\n'.replace(/\r\n?/g, '\n')).id, 'B-2');
-  assert.deepEqual(parseCsv('"Resumo, curto";Chave\n"a, b";QA-1\n'), [['Resumo, curto', 'Chave'], ['a, b', 'QA-1']]);
   assert.equal(cycleTable(cycleDoc({ titulo: 'x', cases: [{ key: 'TC-9', titulo: 'a \\| b' }] }).replace('[[TC-9]]', '[[TC-9\\|Nome]]')).rows[0].key, 'TC-9');
 });

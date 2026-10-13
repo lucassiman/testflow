@@ -42,10 +42,9 @@ const COLUMNS = [
  *   suggest?: (path: string) => string | null,
  *   onMove?: (entry: DocEntry, destDir: string | null) => void,
  *   onSaveView?: (filters: { label: string, statuses: string[], tipo: string, tag: string, folder: string, app: string, text: string, comments: boolean }) => void,
- *   onJiraCsv?: (entries: DocEntry[]) => void,
  * }} deps
  */
-export function createDashboard({ toast, onOpen, onRefresh, onOpenAsDocument, prefs, suggest, onMove, onSaveView, onJiraCsv }) {
+export function createDashboard({ toast, onOpen, onRefresh, onOpenAsDocument, prefs, suggest, onMove, onSaveView }) {
   const overlay = document.createElement('div');
   overlay.className = 'review-overlay dash-overlay';
   overlay.hidden = true;
@@ -104,7 +103,6 @@ export function createDashboard({ toast, onOpen, onRefresh, onOpenAsDocument, pr
           <span class="review-hint" data-dash="count"></span>
           <span class="review-grow"></span>
           <button type="button" data-act="copy" title="Copia a tabela (com os filtros atuais) como Markdown">📋 Copiar como Markdown</button>
-          ${onJiraCsv ? '<button type="button" data-act="jiraCsv" title="Bugs mostrados (com os filtros atuais) num CSV para o importador do Jira Cloud">⬇ CSV para o Jira</button>' : ''}
           ${onSaveView ? '<button type="button" data-act="saveView" title="Guarda estes filtros como uma visão em visoes/ — ela se atualiza sozinha com a pasta">💾 Salvar como visão</button>' : ''}
           <button type="button" data-act="asdoc" class="primary" title="Abre o painel como um documento novo (para salvar ou compartilhar)">📄 Abrir como documento</button>
         </div>
@@ -222,7 +220,6 @@ export function createDashboard({ toast, onOpen, onRefresh, onOpenAsDocument, pr
     if (act === 'more') { renderBody({ more: true }); return; }
     if (act === 'close') close();
     else if (act === 'saveView') { const f = { label: filterLabel(), statuses: [...state.statuses], tipo: state.tipo, tag: state.tag, folder: state.folder, app: state.app, text: state.text, comments: state.comments }; close(); onSaveView?.(f); }
-    else if (act === 'jiraCsv') { const list = shownList.map((r) => r.entry); close(); onJiraCsv?.(list); }
     else if (act === 'refresh') onRefresh?.();
     else if (act === 'clear') {
       Object.assign(state, { text: '', statuses: [], tipo: '', tag: '', folder: '', app: '', comments: false });

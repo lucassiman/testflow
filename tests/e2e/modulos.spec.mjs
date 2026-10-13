@@ -122,9 +122,9 @@ test('barra Execução numa execução: ⋯ com relatórios, reteste, time e aut
   await expect(page.locator('#cyclePanel [data-cp="cycle"]')).toHaveCount(0);
   await page.locator('.exec-bar [data-menu="execMore"]').click();
   const more = page.locator('#execMore');
-  await expect(more.locator('.menu-title')).toHaveText(['▶ Execução', '📋 Casos', '🤖 Automação', '📤 Compartilhar']);
+  await expect(more.locator('.menu-title')).toHaveText(['▶ Execução', '📋 Casos', '🤖 Automação']);
   for (const c of ['roundSummary', 'execReports', 'rerunFailed', 'assignRound', 'roundPage', 'attachAutomation']) await expect(more.locator(`[data-cmd="${c}"]`)).toBeVisible();
-  await expect(more.locator('[data-cmd="copyClaude"][data-value="summary"]')).toBeVisible();
+  await expect(more.locator('[data-cmd="copyClaude"][data-value="summary"]')).toHaveCount(0); // o resumo vai pelo 📊 (Jira, Teams, e-mail, Markdown)
 });
 
 test('tela inicial: atalhos agrupados pelos módulos do topo; sem pasta, só os que não precisam dela', async ({ page }) => {

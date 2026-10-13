@@ -52,7 +52,7 @@ import { readLinks } from '../src/markdown/linkTypes.ts';
 import { findBrokenLinks } from '../src/markdown/brokenLinks.ts';
 import { sweepLinks, applySweep, sweepReport } from '../src/markdown/sweep.ts';
 import { setFrontMatterFields, readPublishMeta, PUBLISH_KEYS } from '../src/markdown/publish.ts';
-import { addJiraKey } from '../src/markdown/jiraCsv.ts';
+import { addJiraKey } from '../src/markdown/jiraApi.ts';
 import { buildJiraCopy } from '../src/markdown/jira.ts';
 import { jiraValues, jiraUrl } from '../src/markdown/jiraLink.ts';
 import { copyFailures, copySummary } from '../src/markdown/share.ts';

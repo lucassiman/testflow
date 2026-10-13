@@ -126,11 +126,10 @@ export const MODULES = [
       {
         title: 'Durante',
         items: [
-          { cmd: 'nextCycleCase', label: '⏭ Próximo caso da rodada', palette: 'Ciclo de regressão: próximo caso' },
-          { cmd: 'nextCase', label: '⏭ Próximo caso da pasta', keys: 'Alt+Shift+→', hint: 'salva e abre o próximo não executado', palette: 'Próximo caso da pasta (salva e abre o próximo não executado)' },
-          { cmd: 'nextCase', value: 'run', label: 'Próximo caso da pasta e já executar', menu: false, palette: 'Próximo caso da pasta e já executar' },
+          { cmd: 'nextCase', label: '⏭ Próximo caso', keys: 'Alt+Shift+→', hint: 'da rodada em andamento; sem rodada, o próximo não executado da pasta — salva e abre', palette: 'Próximo caso (da rodada ou da pasta; salva e abre)' },
+          { cmd: 'nextCase', value: 'run', label: 'Próximo caso e já executar', menu: false, palette: 'Próximo caso e já executar' },
           { cmd: 'openCycle', label: '↩ Voltar à execução', palette: 'Ciclo de regressão: voltar ao ciclo' },
-          { cmd: 'roundSummary', label: '📊 Como está a rodada', hint: 'totais, % de sucesso, duração e falhas', palette: 'Ciclo de regressão: como está / como foi a rodada' },
+          { cmd: 'roundSummary', label: '📊 Como está a rodada', hint: 'totais, % de sucesso, duração e falhas — e copiar o resumo para Jira, Teams, e-mail ou Markdown', palette: 'Ciclo de regressão: como está / como foi a rodada' },
           { cmd: 'assignRound', label: '👥 Atribuir os casos…', hint: 'dividir entre os testadores (pelo tempo previsto) ou pegar os livres', palette: 'Rodada: atribuir os casos aos testadores…' },
           { cmd: 'openCycleDef', label: '📋 Abrir o ciclo de origem', hint: 'definição e histórico das execuções', palette: 'Rodada: abrir o ciclo de origem (definição e histórico)' },
           { cmd: 'finishCycle', label: '🏁 Finalizar execução…', hint: 'SKIP nos não executados, encerra e mostra o resumo', palette: 'Ciclo de regressão: finalizar execução…' },
@@ -278,15 +277,12 @@ export const MODULES = [
           { cmd: 'openJira', label: 'Abrir o ticket no Jira', palette: 'Abrir o ticket no Jira (campo jira do cabeçalho)' },
           { cmd: 'jiraCreate', label: '🎫 Criar a issue deste bug (API)…', hint: 'pela extensão do navegador, com os anexos', palette: 'Jira: criar a issue deste bug pela API (extensão do navegador)…' },
           { cmd: 'jiraSync', label: 'Trazer o status dos bugs (API)', palette: 'Jira: trazer o status dos bugs da pasta (pela API)' },
-          { cmd: 'jiraCsv', label: 'Exportar bugs em CSV…', hint: 'importador do Jira Cloud', palette: 'Exportar bugs para o Jira (CSV do importador do Jira Cloud)…' },
-          { cmd: 'jiraKeys', label: 'Trazer chaves do Jira (CSV)…', palette: 'Trazer chaves do Jira (CSV exportado do Jira)…' },
         ],
       },
       {
         title: 'Claude',
         items: [
           { cmd: 'copyClaude', value: 'failures', label: '🐞 Copiar as falhas', hint: 'passos FAIL/BLOCKED + falhas da automação', palette: 'Copiar para o Claude: falhas' },
-          { cmd: 'copyClaude', value: 'summary', label: '📊 Copiar o resumo da execução', hint: 'para pedir um status report', palette: 'Copiar para o Claude: resumo da execução' },
           { cmd: 'copyClaude', value: 'full', label: '📄 Documento + instruções', hint: 'pedir alterações no documento todo — depois cole a resposta para conferir e aplicar', palette: 'Copiar para o Claude: documento + instruções' },
           { cmd: 'review', label: '✍️ Revisar texto com o Claude…', keys: 'Alt+R', hint: 'ortografia, clareza, tom', palette: 'Revisar com o Claude (ortografia, clareza, tom)' },
           { cmd: 'reviewApply', label: '↩ Colar resposta do Claude…', hint: 'conferir antes × depois e aplicar', palette: 'Colar resposta do Claude (conferir e aplicar)' },
@@ -505,7 +501,7 @@ export function moreMenuHtml(id, refs, opts = {}) {
  */
 export const EXEC_BAR_MORE = {
   caso: ['capture', 'record', 'replaySave', 'newBug', 'evidencePanel', 'sharedPanel', 'envMenu', 'editDevice', 'copyClaude:failures', 'copyJira'],
-  rodada: ['roundSummary', 'execReports', 'rerunFailed', 'assignRound', 'trend', 'roundPage', 'editLinks', 'editDevice', 'attachAutomation', 'copyClaude:summary'],
+  rodada: ['roundSummary', 'execReports', 'rerunFailed', 'assignRound', 'trend', 'roundPage', 'editLinks', 'editDevice', 'attachAutomation'],
 };
 
 /**

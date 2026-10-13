@@ -1,15 +1,11 @@
-// Rodada 9.4: comentários de revisão, CSV para o Jira, ciclo de regressão, pasta oficial (novidades e "está editando"), vídeo.
+// Rodada 9.4: comentários de revisão, ciclo de regressão, pasta oficial (novidades e "está editando"), vídeo.
 import { test, expect } from '@playwright/test';
 import { openEditor, raw, wsInit } from './helpers.mjs';
 
 const bugDoc = '---\ntipo: bug\nid: BUG-12\ntitulo: Botão salvar não responde\napp: Portal\nprioridade: Alta\nstatus: FAIL\njira:\ntags: [login]\n---\n\n# BUG-12 — Botão salvar não responde\n\n## Passos\n\n1. Abrir o formulário\n2. Clicar em Salvar\n';
 
-test('comentários de revisão: comentar, responder, resolver; bugs em CSV para o Jira e chaves de volta', async ({ page }) => {
+test('comentários de revisão: comentar, responder, resolver', async ({ page }) => {
   page.on('dialog', (d) => { throw new Error(`diálogo nativo inesperado: ${d.message()}`); });
-  // o seletor de arquivo é interceptado desde o começo (ligar a interceptação só na hora dá corrida)
-  let pickFile;
-  const chooserP = new Promise((resolve) => { pickFile = resolve; });
-  page.on('filechooser', (fc) => pickFile(fc));
   await page.addInitScript(wsInit, 'ws-rev');
   await openEditor(page, { mode: 'split', prefs: { publisherName: 'Lucas' } });
   await page.evaluate(async (t) => { await window.__write('aplicacoes/Portal/bugs/BUG-12.md', t); }, bugDoc);
@@ -45,29 +41,6 @@ test('comentários de revisão: comentar, responder, resolver; bugs em CSV para 
   await page.keyboard.press('Control+s');
   await expect(page.locator('#saveStatus')).toContainText(/Salvo/);
 
-  // Painel → bugs do filtro em CSV
-  await page.locator('[data-side="dashboard"]').click();
-  const downloadP = page.waitForEvent('download');
-  await page.locator('.dash-dialog [data-act="jiraCsv"]').click();
-  await dlg.locator('button', { hasText: 'Baixar CSV' }).click();
-  const download = await downloadP;
-  expect(download.suggestedFilename()).toMatch(/^jira-bugs-\d{4}-\d{2}-\d{2}\.csv$/);
-  const csv = await (await download.createReadStream()).toArray().then((c) => Buffer.concat(c).toString('utf8'));
-  expect(csv).toContain('Summary,Issue Type,Priority,Description,Labels,Labels,Labels');
-  expect(csv).toContain('[BUG-12] Botão salvar não responde,Bug,High,');
-  expect(csv).not.toContain('Chrome 129');
-  await dlg.locator('button', { hasText: 'Entendi' }).click();
-
-  // chaves de volta: CSV exportado do Jira
-  await page.keyboard.press('Control+Shift+P');
-  await page.keyboard.type('Trazer chaves do Jira');
-  await expect(page.locator('.cmd-menu .cmd-item.active')).toContainText('Trazer chaves do Jira');
-  await page.keyboard.press('Enter');
-  const chooser = await chooserP;
-  await chooser.setFiles({ name: 'jira.csv', mimeType: 'text/csv', buffer: Buffer.from('Summary,Issue key,Status\n[BUG-12] Botão salvar não responde,QA-57,Open\n') });
-  await expect(dlg).toContainText('BUG-12.md → QA-57');
-  await dlg.locator('button', { hasText: 'Gravar as chaves' }).click();
-  await expect.poll(() => raw(page)).toMatch(/^jira: QA-57$/m);
 });
 
 const tc = (id, title) => `---\ntipo: caso-de-teste\nid: ${id}\ntitulo: ${title}\napp: Portal\ntags: [regressao]\n---\n\n# ${id} — ${title}\n\n| # | Ação | Resultado esperado | Resultado obtido | Status |\n| --- | --- | --- | --- | --- |\n| 1 | Abrir | Abre | | |\n| 2 | Enviar | Envia | | |\n`;

@@ -64,7 +64,6 @@ import { applyItem, bindRawSlashMenu, commandItems, createLinkedDoc, findBugTemp
 import { app } from './app/context.js';
 import { drawViews, syncViewsForSave, newView, saveFiltersAsView, viewDocs } from './app/views.js';
 import { addComment, commentAction, listComments } from './app/comments.js';
-import { exportJiraCsv, importJiraKeys } from './app/jiraExport.js';
 import { startCollab, collabDocChanged, officialMenu, updateAllFromOfficial, paintOfficialButton } from './app/collab.js';
 import { syncReleaseBlock } from './markdown/release.ts';
 import { refreshStatuses, editStatuses } from './app/statuses.js';
@@ -408,7 +407,6 @@ const dashboard = createDashboard({
     if (dest !== null) organizer.move(item, dest);
     else pickMoveTarget(item, { top: true });
   },
-  onJiraCsv: (entries) => exportJiraCsv(entries),
   onSaveView: async (f) => {
     const titulo = await promptDialog({ title: 'Salvar como visão', icon: '💾', message: 'A visão guarda estes filtros e se atualiza sozinha com a pasta (fica em visoes/).', label: 'Nome da visão', value: f.label || 'Minha visão', okLabel: 'Salvar' });
     if (titulo && titulo.trim()) saveFiltersAsView({ ...f, titulo: titulo.trim() });
@@ -1625,7 +1623,6 @@ function run(cmd, value, event) {
     case 'loadDiag': showLoadDiagnostics(); return true;
     case 'backupPref': backupSetting(); return true;
     case 'runCycle': runCycle(); return true;
-    case 'nextCycleCase': nextCycleCase(); return true;
     case 'nextCase':
       // no Mac, ⌥⇧→ num campo de texto seleciona a próxima palavra: fica com o campo
       if (event && /Mac|iPhone|iPad/.test(navigator.platform) && /** @type {HTMLElement | null} */ (event.target)?.closest?.('input, textarea, [contenteditable="true"]')) return false;
@@ -1651,8 +1648,6 @@ function run(cmd, value, event) {
     case 'treeLabels': { const next = loadPrefs().treeLabels === 'arquivo' ? 'titulo' : 'arquivo'; savePrefs({ treeLabels: next }); sidebar.redraw(); toast(next === 'arquivo' ? 'Árvore: nome do arquivo' : 'Árvore: ID · título (do cabeçalho)'); return true; }
     case 'execReports': import('./app/reports.js').then((m) => m.generateReports()); return true;
     case 'listComments': listComments(); return true;
-    case 'jiraCsv': if (!docIndex.ready) { toast('Abra a pasta de trabalho primeiro.', 'error'); return true; } exportJiraCsv(docIndex.all()); return true;
-    case 'jiraKeys': importJiraKeys(); return true;
     case 'jiraCreate': import('./app/jiraApi.js').then((m) => m.createJiraIssue()); return true;
     case 'jiraSync': import('./app/jiraApi.js').then((m) => m.syncJiraStatus()); return true;
     case 'sideOpen': preview.commit(); pickSide(); return true;

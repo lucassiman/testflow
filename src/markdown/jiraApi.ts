@@ -6,7 +6,7 @@
 import { detectFrontMatter, parseFrontMatter } from './frontmatter.ts';
 import { prepareForJira, toJiraWiki } from './jira.ts';
 import { setFrontMatterFields } from './publish.ts';
-import { jiraValues } from './jiraLink.ts';
+import { jiraValues, jiraLabel } from './jiraLink.ts';
 
 const norm = (s: string): string => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 const PRIORITY: Record<string, string> = { critica: 'Highest', alta: 'High', media: 'Medium', baixa: 'Low', trivial: 'Lowest' };
@@ -72,4 +72,22 @@ export function applyJiraStatus(text: string, s: JiraIssueStatus): { text: strin
   const before = String(meta(text).jira_status ?? '');
   const next = before === value ? text : setFrontMatterFields(text, { jira_status: value });
   return { text: next, changed: next !== text, done: s.categoria === 'done' };
+}
+
+/** Acrescenta a chave ao campo jira (se ainda não estiver lá). */
+export function addJiraKey(text: string, key: string): string {
+  const current = jiraValues(meta(text).jira);
+  if (current.some((v) => jiraLabel(v) === key)) return text;
+  const next = [...current, key];
+  // escreve a linha direto (setFrontMatterFields poria a lista entre aspas) e tira os itens "  - X" da lista antiga
+  const withField = setFrontMatterFields(text, { jira: key });
+  const fm = detectFrontMatter(withField);
+  const lines = withField.split('\n');
+  const i = lines.findIndex((l, n) => n > 0 && fm && n < fm.end - 1 && /^jira[ \t]*:/.test(l));
+  if (i < 0) return withField;
+  lines[i] = next.length === 1 ? `jira: ${key}` : `jira: [${next.join(', ')}]`;
+  let j = i + 1;
+  while (j < lines.length && /^[ \t]+-(\s|$)/.test(lines[j])) j++;
+  lines.splice(i + 1, j - i - 1);
+  return lines.join('\n');
 }

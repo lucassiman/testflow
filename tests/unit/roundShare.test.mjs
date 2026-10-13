@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as C from '../../src/markdown/cycle.ts';
-import { summaryMarkdown, summarySlack, summaryEmail } from '../../src/ui/roundSummary.js';
+import { summaryMarkdown, summaryTeams, summaryEmail } from '../../src/ui/roundSummary.js';
 
 const doc = C.cycleDoc({ titulo: 'Regressão 2.14', app: 'Portal', cases: [{ key: 'TC-1', titulo: 'Login' }, { key: 'TC-2', titulo: 'Cadastro' }, { key: 'TC-3', titulo: 'Relatório' }], start: new Date(2026, 9, 5, 9, 0) });
 const done = C.closeCycle(C.skipPending(doc
@@ -11,8 +11,8 @@ const s = C.cycleSummary(done);
 const details = { 'TC-2': { titulo: 'Cadastro', steps: [{ n: '3', acao: 'Salvar', obtido: 'Erro 500' }], prints: 1 } };
 const bugs = [{ key: 'BUG-7', titulo: 'Erro 500 ao salvar', open: true, jira: 'ABC-9' }, { key: 'BUG-1', titulo: 'Antigo', open: false }];
 
-test('resumo Slack: números, falha com passo, só bugs abertos', () => {
-  const t = summarySlack(s, details, 'Jira: ABC-1', bugs);
+test('resumo Teams: números, falha com passo, só bugs abertos', () => {
+  const t = summaryTeams(s, details, 'Jira: ABC-1', bugs);
   assert.match(t, /^\*📊 Regressão 2\.14\* — encerrada em 05\/10\/2026 11:30 \(2 h 30 min\)/);
   assert.match(t, /✅ 1 PASS · ❌ 1 FAIL · ⏭ 1 SKIP — \*50%\* de sucesso \(3 casos\)/);
   assert.match(t, /• ❌ \*TC-2\* — Cadastro/);

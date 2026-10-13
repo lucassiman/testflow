@@ -79,10 +79,10 @@ const countsLine = (s) => [['PASS', s.pass], ['FAIL', s.fail], ['BLOCKED', s.blo
   .filter(([, n]) => n).map(([k, n]) => `${STATUS_ICON[k]} ${n} ${k}`).join(' · ') + (s.pendente ? ` · ${s.pendente} sem resultado` : '');
 
 /**
- * Resumo para o Slack (mrkdwn: *negrito*, • listas). Curto: números, falhas, bugs abertos e automação.
+ * Resumo para o Teams (texto curto com *negrito* e • listas). Números, falhas, bugs abertos e automação.
  * @param {CycleSummary} s @param {CaseDetails} details @param {string} [linksText] @param {RoundBug[]} [bugs]
  */
-export function summarySlack(s, details = {}, linksText = '', bugs = []) {
+export function summaryTeams(s, details = {}, linksText = '', bugs = []) {
   const out = [
     `*📊 ${s.titulo}* — ${s.fim ? `encerrada em ${when(s.fim)}` : 'em andamento'} (${fmtSpan(s.duracaoMs)})`,
   ];
@@ -218,7 +218,7 @@ export function openRoundSummary({ summary: s, details = {}, title = 'Como foi e
         <div class="review-foot">
           <span class="rs-copy-label">📋 Copiar resumo para:</span>
           <button type="button" data-act="copy" data-fmt="jira" title="Formatado para a descrição ou um comentário do Jira (rich text + wiki markup)">Jira</button>
-          <button type="button" data-act="copy" data-fmt="slack" title="Texto curto com *negrito* e listas, para colar numa mensagem do Slack/Teams">Slack</button>
+          <button type="button" data-act="copy" data-fmt="teams" title="Texto curto com *negrito* e listas, para colar numa mensagem do Teams">Teams</button>
           <button type="button" data-act="copy" data-fmt="email" title="Formatado (tabela com os números) para colar no corpo do e-mail; o assunto vai junto no texto puro">E-mail</button>
           <button type="button" data-act="copy" data-fmt="md" title="Markdown (para o Claude, Notion ou um .md)">Markdown</button>
           <span class="review-grow"></span>
@@ -250,9 +250,9 @@ export function openRoundSummary({ summary: s, details = {}, title = 'Como foi e
         const j = buildJiraCopy(md, { withMeta: false });
         ok = await clip.rich(j.html, j.wiki);
         msg = 'Resumo copiado para o Jira — cole na descrição ou num comentário.';
-      } else if (fmt === 'slack') {
-        ok = await clip.plain(summarySlack(s, details, linksText, bugs));
-        msg = 'Resumo copiado para o Slack — cole na mensagem.';
+      } else if (fmt === 'teams') {
+        ok = await clip.plain(summaryTeams(s, details, linksText, bugs));
+        msg = 'Resumo copiado para o Teams — cole na mensagem.';
       } else if (fmt === 'email') {
         const e = summaryEmail(s, details, linksText, bugs);
         ok = await clip.rich(e.html, `Assunto: ${e.subject}\n\n${e.text}`);

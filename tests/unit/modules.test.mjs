@@ -20,7 +20,7 @@ test('paleta: cada ação uma vez só, com categoria = módulo', () => {
   const acts = paletteActions();
   const ids = acts.map((a) => `${a.cmd}-${a.value}`);
   assert.deepEqual(ids.filter((id, i) => ids.indexOf(id) !== i), []);
-  assert.ok(acts.length >= 120, `só ${acts.length} ações na paleta`);
+  assert.ok(acts.length >= 110, `só ${acts.length} ações na paleta`);
   for (const a of acts) assert.equal(a.group, moduleOf(a.cmd, a.value)?.label);
   // as que antes só existiam na paleta continuam lá
   for (const c of ['trend', 'customStatus', 'teamsPref', 'roundPage', 'reporterSetup', 'featureAll', 'jiraCreate', 'approval', 'envMenu', 'bulkEdit', 'focusMode']) {
@@ -84,13 +84,14 @@ test('⋯ e atalhos: todo comando usado existe no registro e no run()', () => {
 
 test('findItem prefere o item do menu do módulo (texto do topo)', () => {
   assert.equal(findItem('newCase')?.module.label, 'Casos');
-  assert.equal(findItem('copyClaude', 'summary')?.item.label, '📊 Copiar o resumo da execução');
+  assert.equal(findItem('copyClaude', 'failures')?.item.label, '🐞 Copiar as falhas');
+  assert.equal(findItem('copyClaude', 'summary'), null); // o resumo da rodada é copiado do 📊 Como está (Jira, Teams, e-mail, Markdown)
   assert.equal(findItem('nada'), null);
 });
 
 test('⋯: agrupado por módulo, na ordem em que os módulos aparecem; data-cp para o painel', () => {
   assert.deepEqual(groupByModule(EXEC_BAR_MORE.caso).map((g) => g.module.label), ['Evidências e bugs', 'Casos', 'Compartilhar']);
-  assert.deepEqual(groupByModule(EXEC_BAR_MORE.rodada).map((g) => g.module.label), ['Execução', 'Casos', 'Automação', 'Compartilhar']);
+  assert.deepEqual(groupByModule(EXEC_BAR_MORE.rodada).map((g) => g.module.label), ['Execução', 'Casos', 'Automação']);
   const html = moreItemsHtml(['capture', { cmd: 'assignRound', cp: 'assign' }, 'copyClaude:failures', { cmd: 'rerunFailed', cp: 'retest', label: '🔂 Reteste das falhas (3)' }]);
   assert.match(html, /<div class="menu-title">📸 Evidências e bugs<\/div><button[^>]*data-cmd="capture"[^>]*><span class="mi-row">📸 Capturar a tela<kbd>Ctrl\+Alt\+P<\/kbd>/);
   assert.match(html, /▶ Execução<\/div><button[^>]*data-cp="assign"/);

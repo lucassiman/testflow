@@ -657,10 +657,19 @@ export function roundOfOpenCase() {
   return { execucao: h.id || e?.id || '', ciclo: h.ciclo, plano: h.plano, config: configOf(c.text), ambiente: String(/^ambiente:\s*(.*)$/m.exec(c.text.split(/\n---/)[0] || '')?.[1] || '').replace(/^["']|["']$/g, '').trim() };
 }
 
-/** O documento aberto é um caso do ciclo ativo? (aí "próximo caso" segue o ciclo, não a pasta) */
+/** O documento aberto é um caso do ciclo ativo? */
 export function inCycleCase() {
   const c = currentCycle();
   return !!c && c.path !== currentWorkspacePath() && !!currentCaseKey(c.text) && !cycleClosed(c.text);
+}
+
+/**
+ * Há uma rodada em andamento para seguir? É o caso do "⏭ Próximo caso" único: o documento aberto é um caso da rodada
+ * **ou a própria rodada** (aberta e não encerrada) → segue a rodada (os casos escolhidos); senão, a pasta.
+ */
+export function inRound() {
+  const c = currentCycle();
+  return !!c && !cycleClosed(c.text) && (c.path === currentWorkspacePath() || !!currentCaseKey(c.text));
 }
 
 /**

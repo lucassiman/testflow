@@ -8,6 +8,14 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.62.0', date: '13/10/2026',
+    items: [
+      { icon: '⏭', text: '**Um só "Próximo caso"** (`Alt+Shift+→`): com uma rodada em andamento — você está num caso dela ou nela mesma — segue a rodada; sem rodada, vai para o próximo não executado da pasta. Saiu o item separado *Próximo caso da rodada*.', manual: '7.9 Próximo caso da pasta' },
+      { icon: '📊', text: '**Resumo da rodada**: o botão *Slack* virou **Teams** (mesmo texto curto com *negrito*), e o *Copiar o resumo da execução* do Claude saiu — o resumo se copia do **📊 Como está a rodada** para Jira, Teams, e-mail ou Markdown.', manual: '7.8 Ciclo de regressão e execuções' },
+      { icon: '🧹', text: '**Jira sem CSV**: saíram *Exportar bugs em CSV…*, *Trazer chaves do Jira (CSV)* e o botão do Painel. Para o Jira, use **Copiar para o Jira** (colar) ou a API pela extensão — o manual ganhou o passo a passo da API.', manual: '12.5 Jira em lote' },
+    ],
+  },
+  {
     version: '1.61.0', date: '13/10/2026',
     items: [
       { icon: '📖', text: '**Manual com Guia rápido**: as duas primeiras páginas (os primeiros 15 minutos e o essencial do "Onde fica…?") ficam antes da Referência, que segue com os mesmos capítulos. Também explica **Dividido × Ver ao lado**, os **cinco modos do painel de execução** e qual forma usar nos **dados de teste** (`## Iterações` ou `iterar:`).', manual: 'Guia rápido' },
