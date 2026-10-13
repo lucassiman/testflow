@@ -90,4 +90,4 @@ Todo usuário bloqueado vê uma página de erro e abre chamado no suporte. Bloqu
 ## Observações
 
 > [!TIP]
-> **Experimente:** **Copiar ▾ → Copiar para o Jira** e cole na descrição do bug no Jira; o editor avisa quais prints anexar. Ou **Copiar ▾ → Copiar para o Claude → Falhas** para pedir a análise da causa.
+> **Experimente:** **Copiar ▾ → Copiar para o Jira** e cole na descrição do bug no Jira; o editor avisa quais prints anexar. Ou peça ao Claude (com o MCP) a análise da causa: `qa_bug_do_caso`.

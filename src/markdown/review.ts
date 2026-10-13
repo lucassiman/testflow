@@ -4,10 +4,12 @@
  * Funções puras — o diálogo fica em src/ui/review.js.
  */
 
-export type ReviewGoal = 'ortografia' | 'clareza' | 'tom' | 'qa';
+export type ReviewGoal = 'ortografia' | 'coerencia' | 'semantica' | 'clareza' | 'tom' | 'qa';
 
 export const REVIEW_GOALS: Record<ReviewGoal, { label: string; text: string }> = {
   ortografia: { label: 'Ortografia e gramática', text: 'corrigir ortografia, acentuação, gramática e pontuação, sem mudar o sentido' },
+  coerencia: { label: 'Coerência', text: 'conferir a coerência: o texto não se contradiz, as ações dos passos combinam com os resultados esperados e os termos, nomes e perfis são usados do mesmo jeito em todo o trecho; corrija o que destoar sem inventar informação' },
+  semantica: { label: 'Sentido e semântica', text: 'conferir o sentido e a semântica: cada frase diz o que se quer dizer, sem ambiguidade; cada passo descreve um comportamento verificável; reescreva só o que está confuso ou sem sentido, mantendo a intenção original' },
   clareza: { label: 'Clareza e concisão', text: 'deixar o texto mais claro e objetivo (frases diretas, sem repetição), sem perder informação' },
   tom: { label: 'Tom profissional', text: 'ajustar para um tom profissional e neutro, adequado para compartilhar com o time e com o cliente' },
   qa: { label: 'Padrão QA-MD', text: 'padronizar no formato QA-MD: passos em tabela (# | Ação | Resultado esperado | Resultado obtido | Status), um comportamento verificável por passo, status só como `PASS`/`FAIL`/`BLOCKED`/`SKIP`/`PENDING`' },

@@ -25,7 +25,7 @@ E, em todo o app: editor **Raw** (CodeMirror) e **Preview editável** (clique e 
 
 - **Skill `qa-markdown`:** o Claude gera casos, bugs, planos e relatórios já no formato do app. A skill `qa-varredura` arruma vínculos de documentos antigos.
 - **MCP local (39 ferramentas):** o Claude desktop ou o Claude Code lê, consulta e escreve na sua pasta de trabalho com as regras do app — próximo ID, pasta certa, histórico em `.versoes/`, nada apagado nem publicado.
-- **Copiar para o Claude:** falhas ou o documento com instruções (o resumo da rodada vai pelo 📊 Como está, para Jira, Teams, e-mail ou Markdown), e revisão de texto com conferência do antes × depois. Tudo pela área de transferência.
+- **Copiar para o Claude:** o documento com instruções e revisão de texto (o resumo da rodada vai pelo 📊 Como está, para Jira, Teams, e-mail ou Markdown; falhas e análise, pelo MCP) com conferência do antes × depois. Tudo pela área de transferência.
 
 ## Instalação
 

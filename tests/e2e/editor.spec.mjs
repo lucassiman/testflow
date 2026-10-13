@@ -180,7 +180,9 @@ test('exportar HTML: página única com estilos, sem a interface do editor', asy
   await openEditor(page, { doc: '# Relatório\n\n| # | Status |\n| --- | --- |\n| 1 | `PASS` |\n' });
   const [download] = await Promise.all([
     page.waitForEvent('download'),
-    page.click('button[data-menu="mod-compartilhar"]').then(() => page.click('#mod-compartilhar button[data-cmd="exportHtml"]')),
+    page.click('button[data-menu="mod-compartilhar"]').then(() => page.click('#mod-compartilhar button[data-cmd="exportDialog"]'))
+      .then(() => page.selectOption('select[data-select]', 'html'))
+      .then(() => page.click('.app-dialog button:has-text("Exportar")')),
   ]);
   const html = await (await import('node:fs/promises')).readFile(await download.path(), 'utf8');
   const body = html.split('<article')[1];
@@ -204,12 +206,12 @@ test('bloco de código pela toolbar: abre para digitar e lembra a linguagem', as
   expect(await raw(page)).toBe('# T\n\nParágrafo.\n\n```json\n{"a":1}\n```\n\n```json\n2\n```\n');
 });
 
-test('copiar para o Notion: Markdown ajustado (status, alerta, cabeçalho)', async ({ page, context }) => {
+test('copiar para outro editor: Markdown ajustado (status, alerta, cabeçalho)', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await openEditor(page, { doc: '---\nid: TC-1\ntitulo: Teste\n---\n\n> [!NOTE]\n> Oi.\n\n| # | Status |\n| --- | --- |\n| 1 | `PASS` |\n' });
   await page.click('button[data-menu="mod-compartilhar"]');
   await page.click('#mod-compartilhar button[data-cmd="copyNotion"]');
-  await expect(page.locator('#toast')).toContainText('Copiado para o Notion');
+  await expect(page.locator('#toast')).toContainText('Copiado para outro editor');
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('# TC-1 — Teste\n\n> ℹ️ **Nota:** Oi.\n\n| # | Status |\n| --- | --- |\n| 1 | ✅ **PASS** |\n');
 });
 

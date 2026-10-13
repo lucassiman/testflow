@@ -12,7 +12,7 @@ import { buildJiraCopy } from '../markdown/jira.ts';
 import { jiraLinks } from '../markdown/jiraLink.ts';
 import { notionFileName, toNotionMarkdown } from '../markdown/notion.ts';
 import { applyReview } from '../markdown/review.ts';
-import { copyFailures, copySummary, copyWithInstructions } from '../markdown/share.ts';
+import { copyWithInstructions } from '../markdown/share.ts';
 import { showDialog } from '../ui/dialog.js';
 import { createReviewDialog } from '../ui/review.js';
 import { createSensitiveGuard } from '../ui/sensitive.js';
@@ -74,19 +74,19 @@ export function openReview() {
 }
 
 // ---------------------------------------------------------------- copiar para o Claude
-/** @param {string} kind 'failures' | 'summary' | 'full' */
+/** O documento inteiro + instruções para o Claude (as cópias de falhas e de resumo saíram na 1.63.0: o MCP e o 📊 da rodada cobrem). @param {string} kind 'full' */
 export async function copyForClaude(kind) {
   app.preview.commit();
   /** @type {Record<string, (source: string, fileName?: string) => string | null>} */
-  const builders = { failures: copyFailures, summary: copySummary, full: copyWithInstructions };
+  const builders = { full: copyWithInstructions };
   const build = builders[kind];
   if (!build) return;
-  const label = /** @type {Record<string, string>} */ ({ failures: 'Falhas', summary: 'Resumo da execução', full: 'Documento + instruções' })[kind];
+  const label = /** @type {Record<string, string>} */ ({ full: 'Documento + instruções' })[kind];
   // documento inteiro volta para o editor: dados sensíveis vão como {{EMAIL_1}}… (reversível)
   const guarded = await sensitive.check(app.store.source, { purpose: `Copiar para o Claude: ${label}`, reversible: kind === 'full' });
   if (!guarded) return;
   const text = build(guarded.text, app.store.fileName);
-  if (!text) { app.toast(kind === 'failures' ? 'Nenhuma falha no documento (nenhum passo FAIL/BLOCKED nem seção de falhas).' : 'Nada para copiar.', 'error'); return; }
+  if (!text) { app.toast('Nada para copiar.', 'error'); return; }
   try {
     await navigator.clipboard.writeText(text);
     app.toast(`${label} copiado (${text.split('\n').length} linhas) — cole no Claude`);
@@ -192,11 +192,11 @@ export async function copyForNotion() {
   app.preview.commit();
   const scope = copyScope();
   if (!scope.text.trim()) { app.toast('Nada para copiar.', 'error'); return; }
-  const guarded = await sensitive.check(scope.text, { purpose: 'Copiar para o Notion' });
+  const guarded = await sensitive.check(scope.text, { purpose: 'Copiar para outro editor' });
   if (!guarded) return;
   const out = toNotionMarkdown(guarded.text, { withMeta: scope.whole, images: 'placeholder' });
   if (!(await writePlainClipboard(out.markdown))) { app.toast('Não foi possível acessar a área de transferência', 'error'); return; }
-  app.toast(`Copiado para o Notion (${scope.label}) — cole numa página${attachHint(out.attachments)}`);
+  app.toast(`Copiado para outro editor (${scope.label}) — cole numa página${attachHint(out.attachments)}`);
 }
 
 /** @param {'notion' | 'hub'} [target] Notion (Importar → Texto e Markdown) ou hub da empresa (Markdown simples + imagens) */

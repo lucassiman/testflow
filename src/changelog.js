@@ -8,6 +8,14 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.63.0', date: '13/10/2026',
+    items: [
+      { icon: '📤', text: '**Uma porta só para exportar**: **Compartilhar ▾ → 📤 Exportar…** oferece PDF, HTML (página única), .zip de Markdown + imagens (Notion) e o **pacote do hub** — agora de uma **pasta inteira**, com subpastas, Markdown simples e imagens (subir à mão).', manual: '12.3 Exportar' },
+      { icon: '📝', text: '**Copiar para outro editor** (Notion e similares): tabelas, destaques, `[[links]]` e checkboxes colam sem quebrar; imagem vira a linha `[imagem: nome.png]`.', manual: '12.1 Copiar' },
+      { icon: '✍️', text: '**Revisar texto** (`Alt+R`) agora confere ortografia, **coerência** e **sentido e semântica**, no trecho selecionado ou no documento todo. Saíram *Falhas para o Claude* e *Resumo para o Claude*.', manual: '12.2 Revisar texto' },
+    ],
+  },
+  {
     version: '1.62.0', date: '13/10/2026',
     items: [
       { icon: '⏭', text: '**Um só "Próximo caso"** (`Alt+Shift+→`): com uma rodada em andamento — você está num caso dela ou nela mesma — segue a rodada; sem rodada, vai para o próximo não executado da pasta. Saiu o item separado *Próximo caso da rodada*.', manual: '7.9 Próximo caso da pasta' },

@@ -24,7 +24,7 @@ test('Notion: cabeçalho, alertas, status, links e HTML ajustados; código intac
     '| # | Ação | Status |', '| --- | --- | --- |', '| 1 | a / b | ✅ **PASS** |', '',
     '```mermaid', 'pie', '```', '',
     '```log', '<br> `PASS`', '```', '',
-    '📎 *p1.png* — Passo 1 e log (📎 *x.log*)', '',
+    '[imagem: p1.png] — Passo 1 e log ([anexo: x.log])', '',
   ].join('\n'));
   assert.deepEqual(attachments, ['evidencias/p1.png', 'evidencias/x.log']);
 });

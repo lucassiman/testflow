@@ -46,8 +46,9 @@ test('menus do topo: um por módulo, ações agrupadas, sem as misturas de antes
   assert.doesNotMatch(salvar, /data-cmd="publish"|data-cmd="history"|data-cmd="backup"/);
   assert.match(html, /id="mod-execucao"[^]*data-cmd="newRun"/);
   assert.match(html, /id="mod-publicar"[^]*data-cmd="publish"/);
-  // o pacote do Notion aparece uma vez só nos menus do topo
-  assert.equal((html.match(/data-cmd="notionZip"/g) || []).length, 1);
+  // exportar é uma porta só: o diálogo Exportar…
+  assert.equal((html.match(/data-cmd="exportDialog"/g) || []).length, 1);
+  assert.doesNotMatch(html, /data-cmd="(notionZip|hubZip|exportHtml)"/);
 });
 
 test('index.html: os menus vazios que o registro preenche', () => {
@@ -84,7 +85,7 @@ test('⋯ e atalhos: todo comando usado existe no registro e no run()', () => {
 
 test('findItem prefere o item do menu do módulo (texto do topo)', () => {
   assert.equal(findItem('newCase')?.module.label, 'Casos');
-  assert.equal(findItem('copyClaude', 'failures')?.item.label, '🐞 Copiar as falhas');
+  assert.equal(findItem('copyClaude', 'failures'), null); // as falhas vão pelo MCP (qa_resumo_execucao) ou pelo 🐞 Novo bug
   assert.equal(findItem('copyClaude', 'summary'), null); // o resumo da rodada é copiado do 📊 Como está (Jira, Teams, e-mail, Markdown)
   assert.equal(findItem('nada'), null);
 });
@@ -92,11 +93,11 @@ test('findItem prefere o item do menu do módulo (texto do topo)', () => {
 test('⋯: agrupado por módulo, na ordem em que os módulos aparecem; data-cp para o painel', () => {
   assert.deepEqual(groupByModule(EXEC_BAR_MORE.caso).map((g) => g.module.label), ['Evidências e bugs', 'Casos', 'Compartilhar']);
   assert.deepEqual(groupByModule(EXEC_BAR_MORE.rodada).map((g) => g.module.label), ['Execução', 'Casos', 'Automação']);
-  const html = moreItemsHtml(['capture', { cmd: 'assignRound', cp: 'assign' }, 'copyClaude:failures', { cmd: 'rerunFailed', cp: 'retest', label: '🔂 Reteste das falhas (3)' }]);
+  const html = moreItemsHtml(['capture', { cmd: 'assignRound', cp: 'assign' }, 'copyJira', { cmd: 'rerunFailed', cp: 'retest', label: '🔂 Reteste das falhas (3)' }]);
   assert.match(html, /<div class="menu-title">📸 Evidências e bugs<\/div><button[^>]*data-cmd="capture"[^>]*><span class="mi-row">📸 Capturar a tela<kbd>Ctrl\+Alt\+P<\/kbd>/);
   assert.match(html, /▶ Execução<\/div><button[^>]*data-cp="assign"/);
   assert.match(html, /data-cp="retest">🔂 Reteste das falhas \(3\)/);
-  assert.match(html, /data-cmd="copyClaude" data-value="failures"/);
+  assert.match(html, /data-cmd="copyJira"/);
   assert.doesNotMatch(html, /data-cmd="assignRound"/);
   // menu do painel: botão + menu escondido; sem ações, nada
   assert.match(moreMenuHtml('cpMore', ['trend']), /data-menu="cpMore"[^]*id="cpMore" role="menu" hidden/);

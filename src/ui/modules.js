@@ -14,7 +14,7 @@
 /**
  * @typedef {object} ModuleItem
  * @property {string} cmd       comando do `run()` (o mesmo `data-cmd` dos botões)
- * @property {string} [value]   `data-value` (ex.: `copyClaude` → `failures`)
+ * @property {string} [value]   `data-value` (ex.: `mode` → `preview`)
  * @property {string} label     texto no menu (pode ter emoji)
  * @property {string} [hint]    explicação curta embaixo do texto no menu
  * @property {string} [keys]    atalho de teclado
@@ -259,16 +259,14 @@ export const MODULES = [
         items: [
           { cmd: 'copyAll', label: 'Markdown completo', keys: 'Ctrl+Alt+C', palette: 'Copiar tudo (Markdown)' },
           { cmd: 'copyJira', label: '🟦 Copiar para o Jira', hint: 'blocos selecionados ou documento — formatado + wiki markup', palette: 'Copiar para o Jira (formatado + wiki markup)' },
-          { cmd: 'copyNotion', label: '📝 Copiar para o Notion', hint: 'blocos selecionados ou documento — cole numa página', palette: 'Copiar para o Notion (colar numa página)' },
+          { cmd: 'copyNotion', label: '📝 Copiar para outro editor', hint: 'Notion e similares — blocos selecionados ou documento; imagem vira [imagem: nome]', palette: 'Copiar para outro editor (Notion e similares)' },
         ],
       },
       {
         title: 'Exportar',
         items: [
-          { cmd: 'pdf', label: '📄 PDF', keys: 'Ctrl+P', hint: 'na janela de impressão escolha "Salvar como PDF"', palette: 'Exportar PDF' },
-          { cmd: 'exportHtml', label: '🌐 HTML (página única)', hint: 'mesmo visual, imagens embutidas — abre em qualquer navegador', palette: 'Exportar HTML (página única)' },
-          { cmd: 'notionZip', label: '📦 Pacote para o Notion (.zip)', hint: 'Markdown + prints para Importar → Texto e Markdown', palette: 'Pacote para importar no Notion (.zip com prints)' },
-          { cmd: 'hubZip', label: '🏢 Pacote para o hub (.zip)', hint: 'Markdown simples (cabeçalho vira tabela) + as imagens', palette: 'Pacote para o hub (.zip: Markdown + imagens)' },
+          { cmd: 'exportDialog', label: '📤 Exportar…', hint: 'PDF, HTML, .zip para o Notion ou .zip de uma pasta para o hub', palette: 'Exportar… (PDF, HTML, .zip, pacote do hub)' },
+          { cmd: 'pdf', label: '📄 PDF', keys: 'Ctrl+P', hint: 'na janela de impressão escolha "Salvar como PDF"', menu: false, palette: 'Exportar PDF' },
         ],
       },
       {
@@ -282,9 +280,8 @@ export const MODULES = [
       {
         title: 'Claude',
         items: [
-          { cmd: 'copyClaude', value: 'failures', label: '🐞 Copiar as falhas', hint: 'passos FAIL/BLOCKED + falhas da automação', palette: 'Copiar para o Claude: falhas' },
           { cmd: 'copyClaude', value: 'full', label: '📄 Documento + instruções', hint: 'pedir alterações no documento todo — depois cole a resposta para conferir e aplicar', palette: 'Copiar para o Claude: documento + instruções' },
-          { cmd: 'review', label: '✍️ Revisar texto com o Claude…', keys: 'Alt+R', hint: 'ortografia, clareza, tom', palette: 'Revisar com o Claude (ortografia, clareza, tom)' },
+          { cmd: 'review', label: '✍️ Revisar texto com o Claude…', keys: 'Alt+R', hint: 'trecho ou documento inteiro: ortografia, coerência, sentido e semântica', palette: 'Revisar com o Claude (ortografia, coerência, sentido e semântica)' },
           { cmd: 'reviewApply', label: '↩ Colar resposta do Claude…', hint: 'conferir antes × depois e aplicar', palette: 'Colar resposta do Claude (conferir e aplicar)' },
         ],
       },
@@ -500,7 +497,7 @@ export function moreMenuHtml(id, refs, opts = {}) {
  * O que já está à vista na barra (▶ Executar, 🔁 Nova rodada, ⏭ Próximo caso, 🏁 Finalizar, 📊 Resumo) não se repete.
  */
 export const EXEC_BAR_MORE = {
-  caso: ['capture', 'record', 'replaySave', 'newBug', 'evidencePanel', 'sharedPanel', 'envMenu', 'editDevice', 'copyClaude:failures', 'copyJira'],
+  caso: ['capture', 'record', 'replaySave', 'newBug', 'evidencePanel', 'sharedPanel', 'envMenu', 'editDevice', 'copyJira'],
   rodada: ['roundSummary', 'execReports', 'rerunFailed', 'assignRound', 'trend', 'roundPage', 'editLinks', 'editDevice', 'attachAutomation'],
 };
 

@@ -8,7 +8,7 @@ import { SUMMARY_OPEN, SUMMARY_CLOSE } from './status.ts';
 
 /**
  * Notion (sem API): o Markdown do editor ajustado para o que o Notion entende —
- *  - colar numa página (o Notion converte Markdown colado: títulos, listas, to-dos, tabelas, código);
+ *  - colar numa página (o Notion e editores parecidos convertem Markdown colado: títulos, listas, to-dos, tabelas, código);
  *  - pacote .zip (Markdown + evidências) para "Importar → Texto e Markdown".
  * O que muda: cabeçalho YAML vira título + tabela de campos; alertas `> [!NOTE]` viram citação com ícone;
  * status viram ✅ PASS / ❌ FAIL…; [[links]] viram texto; HTML inline sai; `<br>` em tabela vira " / ".
@@ -46,9 +46,9 @@ function inline(line: string, { images }: { images: NotionImages }): string {
       .replace(/<\/?(span|font|mark|u|ins|sub|sup|kbd|small)\b[^>]*>/gi, '')
       .replace(/<!--[\s\S]*?-->/g, '');
     if (images === 'placeholder') {
-      s = s.replace(/!\[([^\]]*)\]\(\s*<?([^)\s>]+)>?[^)]*\)/g, (m, alt: string, src: string) => (isLocal(src) ? `📎 *${baseName(src)}*${imageAlt(alt) ? ` — ${imageAlt(alt)}` : ''}` : m));
+      s = s.replace(/!\[([^\]]*)\]\(\s*<?([^)\s>]+)>?[^)]*\)/g, (m, alt: string, src: string) => (isLocal(src) ? `[imagem: ${baseName(src)}]${imageAlt(alt) ? ` — ${imageAlt(alt)}` : ''}` : m));
       // links para arquivos locais (log, HAR, outro .md) não abrem no Notion: viram texto
-      s = s.replace(/(?<!!)\[([^\]]*)\]\(\s*<?([^)\s>]+)>?[^)]*\)/g, (m, label: string, src: string) => (isLocal(src) ? `${label} (📎 *${baseName(src)}*)` : m));
+      s = s.replace(/(?<!!)\[([^\]]*)\]\(\s*<?([^)\s>]+)>?[^)]*\)/g, (m, label: string, src: string) => (isLocal(src) ? `${label} ([anexo: ${baseName(src)}])` : m));
     }
     return s;
   }).join('');
@@ -56,7 +56,7 @@ function inline(line: string, { images }: { images: NotionImages }): string {
 
 /**
  * Markdown do editor (documento ou trecho) → Markdown para o Notion.
- * images: 'keep' mantém ![](evidencias/x.png) (pacote .zip); 'placeholder' troca prints locais por 📎 nome (colar).
+ * images: 'keep' mantém ![](evidencias/x.png) (pacote .zip); 'placeholder' troca prints locais por `[imagem: nome.png]` (colar em outro editor).
  * attachments: arquivos locais citados (vão no .zip).
  */
 export function toNotionMarkdown(

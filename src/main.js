@@ -1668,7 +1668,7 @@ function run(cmd, value, event) {
     case 'foldAll': preview.commit(); preview.foldAll(); if (mode === 'raw') setMode('preview'); return true;
     case 'unfoldAll': preview.unfoldAll(); return true;
     case 'notionZip': exportNotionZip(); return true;
-    case 'hubZip': exportNotionZip('hub'); return true;
+    case 'exportDialog': import('./app/exportDialog.js').then((m) => m.openExportDialog()); return true;
     case 'publish': publishDocument(); return true;
     case 'history': openVersionHistory(); return true;
     case 'officialFolder': configureOfficial(); return true;

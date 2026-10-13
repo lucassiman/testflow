@@ -165,7 +165,7 @@ Cada ação mora num **módulo**. Os menus do topo e as categorias da paleta (`C
 | **📸 Evidências ▾** (evidências e bugs) | **Capturar:** print, outra janela, parar, gravar vídeo, ⏪ replay · **Bug:** novo bug ligado, console e rede da aba testada (extensão) · **Arquivos:** evidências do documento, reaproveitar print, limpar · **Preferências:** duração do replay, captura pela extensão, prints grandes |
 | **🤖 Automação ▾** | Execução só automatizada, anexar relatório à execução, relatório como documento, reporter ao vivo · exportar `.feature` (deste documento / de todos) |
 | **🏛 Publicar ▾** | Publicar na pasta oficial, sincronizar, pasta oficial · histórico de versões · comentar, comentários do documento |
-| **📤 Compartilhar ▾** | **Copiar** (Markdown, Jira, Notion) · **Exportar** (PDF, HTML, pacotes Notion e hub) · **Jira** (abrir o ticket, criar a issue pela API, trazer status) · **Claude** (falhas, documento + instruções, revisar texto, colar resposta) · **Proteção** (dados sensíveis) |
+| **📤 Compartilhar ▾** | **Copiar** (Markdown, Jira, outro editor) · **Exportar…** (PDF, HTML, .zip, pacote do hub) · **Jira** (abrir o ticket, criar a issue pela API, trazer status) · **Claude** (documento + instruções, revisar texto, colar resposta) · **Proteção** (dados sensíveis) |
 | Só na paleta | **Pasta de trabalho** (início, painel, buscar, estrutura, nova aplicação/pasta, mover, desfazer organização, backup, diagnóstico) · **Editar e exibir** (modos, foco, barra de formatação, árvore, abas, zoom, tema) · **Ajuda e preferências** (manual, o que mudou, dicas). A pasta de trabalho também fica na barra lateral (aba **Arquivos**). |
 
 ### 4.1 Estado do documento
@@ -223,7 +223,7 @@ Organizado pelos mesmos módulos dos menus do topo e da paleta. Um teste confere
 | Ver quais testes automatizados são instáveis | **Execução ▾ → 📈 Tendência entre rodadas**, tabela *Testes automatizados instáveis* (ver 9) |
 | Deixar o PO/gerente acompanhar a rodada no navegador, sem instalar nada | **Execução ▾ → 🌐 Página da rodada para o time…** (HTML na pasta oficial; ver 12.9) |
 | Avisar o time no Teams quando a rodada termina ou um caso crítico falha | **Execução ▾ → 📣 Avisos no Microsoft Teams…** (ver 12.8) |
-| Capturar, abrir bug, dados compartilhados ou copiar as falhas sem sair do caso | Barra Execução (topo do Preview) → **⋯** |
+| Capturar, abrir bug, dados compartilhados ou copiar para o Jira sem sair do caso | Barra Execução (topo do Preview) → **⋯** |
 
 **📸 Evidências e bugs**
 
@@ -260,11 +260,11 @@ Organizado pelos mesmos módulos dos menus do topo e da paleta. Um teste confere
 
 | Quero… | Onde |
 | --- | --- |
-| Copiar para Jira / Notion | **Compartilhar ▾ → Copiar** |
-| Mandar as falhas ou o resumo para o Claude | **Compartilhar ▾ → Claude** |
+| Copiar para Jira / outro editor (Notion e similares) | **Compartilhar ▾ → Copiar** |
+| Mandar o documento com instruções para o Claude | **Compartilhar ▾ → Claude** |
 | Revisar texto com IA | **Compartilhar ▾ → ✍️ Revisar texto com o Claude…** ou `Alt+R` |
-| Exportar PDF / HTML / pacote Notion | **Compartilhar ▾ → Exportar** |
-| Levar para o hub da empresa | **Compartilhar ▾ → 🏢 Pacote para o hub (.zip)** |
+| Exportar PDF / HTML / .zip para o Notion | **Compartilhar ▾ → 📤 Exportar…** |
+| Levar uma pasta para o hub da empresa | **Compartilhar ▾ → 📤 Exportar…** (opção *Pacote do hub*) |
 | Dados sensíveis (mascarar, configurar) | **Compartilhar ▾ → 🛡 Dados sensíveis…** |
 | Criar a issue no Jira direto do bug (com os anexos) / trazer o status | **Compartilhar ▾ → Jira → 🎫 Criar a issue deste bug** / **Compartilhar ▾ → Jira → Trazer o status dos bugs** — com a extensão e o Jira configurado nela (ver 12.7) |
 | Abrir bugs no Jira | **Compartilhar ▾ → Copiar para o Jira** (colar) ou, pela API, **Compartilhar ▾ → Jira → 🎫 Criar a issue deste bug (API)…** (ver 12.5 e 12.7) |
@@ -616,7 +616,7 @@ Status geral, barra de progresso e contagem por status. **Clique num status** pa
 
 | Documento | O que tem no ⋯ |
 | --- | --- |
-| Caso, cenário, checklist, sessão | **📸 Evidências e bugs:** capturar a tela, gravar vídeo, replay, novo bug ligado, evidências do documento · **📋 Casos:** dados compartilhados, ambiente ativo, dispositivo · **📤 Compartilhar:** copiar as falhas para o Claude, copiar para o Jira |
+| Caso, cenário, checklist, sessão | **📸 Evidências e bugs:** capturar a tela, gravar vídeo, replay, novo bug ligado, evidências do documento · **📋 Casos:** dados compartilhados, ambiente ativo, dispositivo · **📤 Compartilhar:** copiar para o Jira |
 | Execução / ciclo | **▶ Execução:** como está a rodada, relatórios, reteste das falhas, atribuir os casos, tendência, página da rodada · **📋 Casos:** vínculos, dispositivo · **🤖 Automação:** anexar relatório · **📤 Compartilhar:** copiar o resumo para o Claude |
 
 O que já está à vista na barra (▶ Executar, 🔁 Nova rodada, ⏭ Próximo caso, 🏁 Finalizar, 📊 Resumo) não se repete no ⋯.
@@ -1050,7 +1050,7 @@ O modelo é: **a pasta de trabalho é sua** (rascunho, execução, notas) e **a 
 | **"Fulano está editando"** | Enquanto você altera um documento, um arquivo pequeno em `.travas/` na pasta oficial avisa os colegas (com o seu nome). Se outra pessoa estiver editando o mesmo documento, você vê **👤 Ana editando** no topo e um aviso ao abrir. **Nunca bloqueia** — é só para combinar; a publicação continua comparando as versões. O aviso some quando a pessoa para de editar, publica ou fecha (ou sozinho, depois de 15 min). |
 | **Versões deste computador** | Ao salvar por cima de um arquivo da pasta de trabalho, a versão anterior vai para `.versoes/` (no máximo uma a cada 10 min por documento; ficam as 30 mais recentes, e as publicadas nunca saem). A pasta começa com ponto: não aparece na lista nem na busca. Mover/renomear leva o histórico junto; a lixeira separa o histórico para um documento novo com o mesmo nome não herdá-lo. |
 
-**Para o hub da empresa:** **Compartilhar ▾ → 🏢 Pacote para o hub (.zip)** gera um Markdown simples (o cabeçalho vira título + tabela, destaques viram citação com ícone, status viram ✅/❌, `[[links]]` viram texto) e junta as imagens em `evidencias/` — crie a página no hub, cole o Markdown e suba cada imagem no lugar dela (o hub guarda no S3).
+**Para o hub da empresa:** **Compartilhar ▾ → 📤 Exportar… → Pacote do hub** pergunta **qual pasta** e gera um `.zip` com a mesma estrutura de pastas, um Markdown simples por documento (o cabeçalho vira título + tabela, destaques viram citação com ícone, status viram ✅/❌, `[[links]]` viram texto) e as imagens citadas — suba à mão no hub (não há API). Documentos abertos com alterações não salvas entram como estão no editor.
 
 **Por que `app:` e não só a pasta?** O cabeçalho viaja com o arquivo (Claude, hub, e-mail). Com ele, o editor sabe onde o documento deve ficar, e a skill do Claude também salva direto no lugar certo.
 
@@ -1138,29 +1138,29 @@ Linhas começando com `#` são comentários. Um erro na consulta aparece em amar
 | --- | --- |
 | **Markdown completo** (`Ctrl+Alt+C`) | O arquivo inteiro |
 | **Copiar para o Jira** | Blocos selecionados, linhas selecionadas no Raw ou o documento — **sem o cabeçalho** (os campos do ticket se preenchem no próprio Jira). Vão **dois formatos juntos**: texto formatado (editor visual do Jira Cloud e Data Center: títulos, listas, tabelas, status em cor) e **wiki markup** (modo *Texto* do Jira Server/Data Center). O gráfico sai (a tabela fica); prints não sobem pelo colar — o aviso lista os arquivos para anexar e traz **🖼 Evidências** (copiar cada imagem para colar no Jira, ou copiar o caminho da pasta para a janela de anexar — ver 8.2). No wiki markup eles aparecem sozinhos depois de anexados. |
-| **Copiar para o Notion** | Markdown ajustado para colar numa página do Notion: status viram ✅ **PASS** / ❌ **FAIL**, destaques viram citação com ícone, prints locais viram 📎 *nome.png* (arraste-os depois). |
-| **Pacote para importar no Notion…** | Um `.zip` com o Markdown e os prints: no Notion, **⋯ → Importar → Texto e Markdown**. O nome (ID — título) vira o título da página. |
-| **Copiar para o Claude → Falhas** | Passos FAIL/BLOCKED (ação, esperado, obtido) + falhas da automação + prints citados, com pedido de análise e bug report |
+| **Copiar para outro editor** | Markdown ajustado para colar no Notion e similares: status viram ✅ **PASS** / ❌ **FAIL**, destaques viram citação com ícone, tabelas e checkboxes seguem como estão, prints locais viram uma linha `[imagem: nome.png]` (suba-os depois). |
+| **Pacote para importar no Notion** | Em **Exportar… → .zip**: um `.zip` com o Markdown e os prints; no Notion, **⋯ → Importar → Texto e Markdown**. O nome (ID — título) vira o título da página. |
 | **→ Documento + instruções** | O documento com as regras do formato; já abre o passo de colar a resposta (conferir e aplicar) |
 
 ### 12.2 Revisar texto com IA
 
 `Alt+R` ou **Compartilhar ▾ → ✍️ Revisar texto com o Claude…**:
 
-1. Escolha o trecho (blocos selecionados, bloco atual, linhas do Raw ou documento) e o tipo: ortografia, clareza, tom profissional, padrão QA-MD, pedido extra.
+1. Escolha o trecho (blocos selecionados, bloco atual, linhas do Raw ou **documento inteiro**) e o tipo: ortografia e gramática, **coerência**, **sentido e semântica**, clareza, tom profissional, padrão QA-MD, pedido extra. Para analisar falhas, use o Claude com o MCP (12.6): `qa_resumo_execucao` e `qa_bug_do_caso`.
 2. **Copiar pedido** e cole no Claude (funciona com **qualquer IA de chat**).
 3. Copie a resposta inteira, cole no diálogo e **Conferir**: aparece o antes × depois (<del>removido</del> / <ins>incluído</ins>).
 4. **Aplicar** muda o documento (`Ctrl+Z` desfaz). Fechar guarda o pedido — **Colar resposta do Claude…** retoma.
 
 O editor não envia nada: é tudo pela área de transferência.
 
-### 12.3 Exportar (**Compartilhar ▾ → Exportar**)
+### 12.3 Exportar (**Compartilhar ▾ → 📤 Exportar…**)
 
 | Formato | Como fica |
 | --- | --- |
 | **PDF** (`Ctrl+P`) | Janela de impressão → "Salvar como PDF". Tema claro, diagramas, evidências e logs abertos, sem barras do editor; tabelas não quebram no meio de uma linha. Nome sugerido = nome do documento. |
 | **HTML (página única)** | Um `.html` com o mesmo visual, estilos e imagens embutidos. Abre em qualquer navegador sem o editor — bom para anexar, mandar por e-mail ou publicar. |
-| **Pacote Notion (.zip)** | Ver 12.1 |
+| **.zip de Markdown + imagens** | Ver 12.1 (importar no Notion) |
+| **Pacote do hub** | O `.zip` de uma pasta inteira, com subpastas, Markdown simples e imagens; precisa da pasta de trabalho aberta. Subir à mão no hub. |
 | **Tabela → Excel/CSV** | Mouse sobre a tabela → **XLSX** / **CSV** |
 | **Diagrama → SVG** | Botão **SVG** no canto do diagrama |
 
