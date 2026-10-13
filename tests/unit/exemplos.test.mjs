@@ -1,17 +1,27 @@
-// 12.2 (1.59.0): os exemplos de Casos e Execução — a Loja Demo na Sprint 43 (épico QA-400 Pagamento com Pix,
-// release 2.15.0). Confere que cada recurso que a pasta exemplos/ mostra continua mostrando o que diz.
+// 12.2: os exemplos da Loja Demo na Sprint 43 (épico QA-400 Pagamento com Pix, release 2.15.0) — 1.59.0 Casos e
+// Execução; 1.60.0 Evidências e bugs, Automação, Publicar e Claude, o LEIA-ME por módulo e a conferência da pasta
+// inteira (validador do app, links, dados sensíveis). Confere que cada recurso que exemplos/ mostra continua mostrando o que diz.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, existsSync, mkdtempSync, cpSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { QaWorkspace } from '../../mcp/qa.ts';
+import { findSensitive } from '../../src/markdown/sensitive.ts';
+import { findRefs, isRelativeHref, resolveHref } from '../../src/markdown/relink.ts';
+import { automationRuns, flakyTests } from '../../src/markdown/flaky.ts';
+import { featureFiles } from '../../src/markdown/gherkin.ts';
+import { readRoundPageMeta } from '../../src/markdown/roundPage.ts';
+import { countComments, findComments } from '../../src/markdown/comments.ts';
+import { parseResults } from '../../src/io/automation.js';
 import { detectFrontMatter, parseFrontMatter } from '../../src/markdown/frontmatter.ts';
 import { findBrokenLinks } from '../../src/markdown/brokenLinks.ts';
 import { approvalKey } from '../../src/markdown/approval.ts';
 import { caseChanges } from '../../src/markdown/versionDiff.ts';
 import { parseShared, scopeFor, envCoverage, iterationsOf, parseInclude } from '../../src/markdown/shared.ts';
 import { parseStatusDoc } from '../../src/markdown/statusConfig.ts';
-import { execInfo, defCases, parseConfigs, cycleTable, runsOf } from '../../src/markdown/cycle.ts';
+import { execInfo, defCases, parseConfigs, cycleTable, runsOf, cycleSummary } from '../../src/markdown/cycle.ts';
 import { testerCol, assignees } from '../../src/markdown/assign.ts';
 import { stepTable } from '../../src/markdown/runs.ts';
 import { planImport } from '../../src/markdown/caseImport.ts';
@@ -148,4 +158,129 @@ test('importar/casos-testrail.csv: TestRail com passos separados, 4 casos, colun
   assert.deepEqual(plan.cases[0].pre, ['Cupom DEMO10 ativo no backoffice', 'Carrinho com um produto']);
   assert.equal(plan.cases[0].responsavel, 'Ana Souza'); // Created By
   assert.deepEqual(plan.ignored, ['Section', 'Estimate']); // a seção vem da Section Hierarchy
+});
+
+// ---------------------------------------------------------------- 1.60.0: Evidências e bugs, Automação, Publicar e Claude; a pasta inteira
+const allFiles = (d = root, b = '') => readdirSync(d).flatMap((n) => { const p = join(d, n); return statSync(p).isDirectory() ? allFiles(p, `${b}${n}/`) : [`${b}${n}`]; });
+const file = (rel) => readFileSync(join(root, rel), 'utf8');
+const BINARY = /\.(png|jpe?g|gif|webp|webm|mp4)$/i;
+
+test('conferência: o validador do app (qa_validar) não acha link quebrado, evidência faltando nem compartilhado errado', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'qa-exemplos-'));
+  cpSync(root, dir, { recursive: true });
+  const out = await new QaWorkspace({ root: dir, templates: {}, who: 'Lucas' }).validate({ limite: 500 });
+  const warns = [...out.matchAll(/^\*\*.+?\*\* \((.+?)\)\n((?:- .*\n?)+)/gm)].flatMap((m) => m[2].trim().split('\n').map((w) => `${m[1]}: ${w.slice(2)}`));
+  assert.ok(warns.length, `a saída do validador mudou de formato:\n${out.slice(0, 300)}`);
+  // os de sempre: a Loja Demo não usa aplicacoes/ (sem app:), o status.md não tem id e a execução #3 está em andamento
+  const known = (w) => /: cabeçalho sem app:$/.test(w) || w === 'configuracao/status.md: aviso: Cabeçalho: falta o campo id'
+    || /^execucoes\/regressao-do-pix-execucao-3\.md: aviso: Linha \d+: passo sem status \(execução incompleta\)$/.test(w);
+  assert.deepEqual(warns.filter((w) => !known(w)), []);
+});
+
+test('conferência: todo link relativo (prints, vídeo, log, HAR, casos) aponta para um arquivo que existe', () => {
+  const missing = [];
+  for (const d of docs) {
+    for (const r of findRefs(d.text).filter((x) => isRelativeHref(x.href))) {
+      const p = resolveHref(d.path, r.href);
+      if (p && !existsSync(join(root, p))) missing.push(`${d.path} → ${r.href}`);
+    }
+  }
+  assert.deepEqual(missing, []);
+});
+
+test('conferência: nenhum dado sensível real — e-mails só @lojademo.test, documentos e cartão só na área de teste, capturas e páginas mascaradas', () => {
+  const AREA = ['recursos/dados-sensiveis.md', 'casos/TC-004-checkout-cartao.md'];
+  // o que sai do app para fora (página da rodada, Teams, HAR, log, relatório da automação) não pode ter nada
+  const CLEAN = /^(acompanhamento|automacao\/noturno)\/|\.(har|log)$/;
+  const bad = [];
+  for (const f of allFiles().filter((x) => !BINARY.test(x) && !x.startsWith('.versoes/'))) {
+    for (const s of findSensitive(file(f))) {
+      if (CLEAN.test(f)) bad.push(`${f}: ${s.kind} ${s.value}`);
+      else if (s.kind === 'email' && !/@lojademo\.test$/i.test(s.value)) bad.push(`${f}: ${s.value}`);
+      else if (['cpf', 'cnpj', 'cartao', 'telefone', 'token', 'urlcred'].includes(s.kind) && !AREA.includes(f)) bad.push(`${f}: ${s.kind} ${s.value}`);
+    }
+  }
+  assert.deepEqual(bad, []);
+  // a resposta da API capturada pela extensão tinha CPF, e-mail e token: no .har e no .log, só mascarados
+  const caps = allFiles().filter((x) => /\.(har|log)$/.test(x));
+  assert.equal(caps.length, 4);
+  for (const f of caps) assert.doesNotMatch(file(f), /529\.982\.247-25|cliente\.ativo@|eyJhbGciOiJIUzI1NiJ9\.eyJw/, f);
+});
+
+test('Evidências e bugs: BUG-004 com print, replay, console e rede da extensão, Jira e a reincidência que reabriu', () => {
+  const bug = doc('BUG-004');
+  const m = meta(bug.text);
+  assert.deepEqual([m.status, m.jira, m.jira_status, m.browser, m.dispositivo], ['FAIL', 'QA-433', 'Reaberto (em andamento)', 'Chrome 141', 'WEB']);
+  // a tabela Ambiente com o que veio da aba testada
+  for (const row of ['| URL | https://hml.lojademo.test/checkout/pix?pedido=10611 |', '| Sistema | Windows 11 |', '| Tela | 1920×1080 (janela 1536×730, escala 1.25) |']) assert.ok(bug.text.includes(row), row);
+  const refs = findRefs(bug.text).map((r) => r.href);
+  assert.ok(refs.some((h) => /_TC-010-replay\.webm$/.test(h)), 'o vídeo do replay');
+  assert.ok(refs.some((h) => /_TC-010-passo-3-[\w-]+\.png$/.test(h)), 'o print do passo');
+  assert.match(bug.text, /### Console e rede\n\nCapturado pela extensão do TestFlow em 10\/10\/2026 14:10/);
+  assert.match(bug.text, /copia-e-cola\?token=••••••••/);
+  // a reincidência: o bug estava fechado (PASS) e voltou
+  assert.match(bug.text, /## Reincidências[\s\S]*### 12\/10\/2026 10:12 — \[\[TC-010\]\] passo 3[\s\S]*- Bug reaberto \(estava `PASS`\)\./);
+  // o HAR é JSON, só com as requisições que falharam, sem cookie nem autorização
+  const har = JSON.parse(file(`bugs/${refs.find((h) => /-rede\.har$/.test(h))}`));
+  assert.deepEqual(har.log.entries.map((e) => e.response.status), [404, 500, 500]);
+  for (const e of har.log.entries) for (const h of e.request.headers.filter((x) => /authorization|cookie/i.test(x.name))) assert.equal(h.value, '••••');
+  // o caso: 3 rodadas (falhou, passou no rc3, falhou de novo com cupom) e o link para o bug
+  const tc10 = doc('TC-010');
+  assert.deepEqual(runsOf(tc10.text).map((r) => r.status), ['FAIL', 'PASS', 'FAIL']);
+  assert.match(tc10.text, /^🐞 Bug: \[\[BUG-004\]\]/m);
+  assert.equal(approvalKey(tc10.text), 'aprovado');
+});
+
+test('Automação: 3 noites do reporter, um teste alternando PASS/FAIL e um que passou só no retry; .feature e playwright.config', () => {
+  const nights = docs.filter((d) => d.path.startsWith('execucoes/execucao-automatizada-loja-demo-e2e-')).sort((a, b) => a.path.localeCompare(b.path));
+  assert.equal(nights.length, 3);
+  for (const n of nights) assert.ok(meta(n.text).fim, `${n.path}: finalizada (não fica como rodada em andamento)`);
+  const flaky = flakyTests(nights.flatMap((n) => automationRuns(n.text, { id: String(meta(n.text).id), link: '', titulo: '' })));
+  assert.deepEqual(flaky.map((r) => [r.titulo, r.sequencia]), [['Pix › TC-005 paga pelo QR Code e o pedido fica Pago', '✓✗✓'], ['Pix › comprovante do Pix em PDF em Meus pedidos', '✓↻✓']]);
+  assert.match(nights[2].text, /\| `PASS` \| ⚠ instável: 2 trocas PASS↔FAIL em 3 execuções \|/);
+  // os testes ligados aos casos manuais (TC-005 pelo automacao:, os outros pelo ID no título)
+  assert.match(nights[2].text, /### Cobertura dos casos manuais[\s\S]*\| TC-005 \|[\s\S]*\| TC-008 \|/);
+  // os mesmos resultados no JSON do Playwright (para arrastar no editor)
+  const jsons = allFiles().filter((f) => f.startsWith('automacao/noturno/')).sort();
+  assert.deepEqual(jsons.map((f) => parseResults(file(f), f).tests.find((t) => /TC-005/.test(t.title)).status), ['pass', 'fail', 'pass']);
+  // .feature: o export do CEN-001 (o mesmo que o app gera no dia do export)
+  const cen = doc('CEN-001');
+  const [feat] = featureFiles(cen.text, { source: cen.path, today: new Date(2026, 9, 9) });
+  assert.equal(file(`automacao/features/${feat.name}`), feat.content);
+  // o projeto de automação liga o reporter do TestFlow: uma execução nova por noite
+  assert.match(file('automacao/playwright.config.ts'), /\['[^']*reporter-dist\/testflow\.mjs', \{ pasta: '[^']+', execucao: 'nova' \}\]/);
+});
+
+test('Publicar: página da rodada (#2 encerrada, #3 em andamento) e índice, cartões do Teams e o caso em revisão com comentários', () => {
+  const index = file('acompanhamento/index.html');
+  for (const [id, closed] of [['EXEC-20261001-083000', true], ['EXEC-20261008-084500', false]]) {
+    const html = file(`acompanhamento/${id}.html`);
+    const m = readRoundPageMeta(html);
+    const s = cycleSummary(doc(id).text);
+    assert.deepEqual([m.id, m.encerrada, m.feitos, m.total, m.falhas, m.sucessoPct], [id, closed, s.pass + s.fail + s.blocked + s.skip, s.total, s.fail + s.blocked, s.sucessoPct], id);
+    assert.equal(/http-equiv="refresh"/.test(html), !closed, `${id}: em andamento, a página se recarrega sozinha`);
+    assert.ok(index.includes(`<a href="${id}.html">`), id);
+  }
+  assert.equal(readRoundPageMeta(file('acompanhamento/EXEC-20261001-083000.html')).recomendacao, 'NÃO LIBERAR');
+  // o passo que falhou aparece como texto (sem ** nem [[ ]])
+  assert.match(file('acompanhamento/EXEC-20261008-084500.html'), /Passo 4: [^<*]+→ Mesmo defeito do BUG-002 \(ainda aberto\)/);
+  const card = (f) => JSON.parse(file(`acompanhamento/${f}`)).attachments[0].content;
+  assert.equal(card('teams-rodada-encerrada.json').type, 'AdaptiveCard');
+  assert.equal(card('teams-rodada-encerrada.json').body[0].text, '🏁 Rodada encerrada: Regressão do Pix — Execução #2');
+  assert.equal(card('teams-caso-critico.json').body[0].text, '❌ Caso crítico falhou: TC-010 — Pagar com Pix pelo copia e cola');
+  // comentários de revisão: o do Claude respondido e resolvido; o da Ana pendente
+  const tc11 = doc('TC-011');
+  assert.equal(approvalKey(tc11.text), 'em-revisao');
+  assert.deepEqual(countComments(tc11.text), { open: 1, resolved: 1 });
+  assert.deepEqual(findComments(tc11.text).map((c) => [c.author, c.resolved, c.replies]), [['Claude', true, 1], ['Ana', false, 0]]);
+});
+
+test('Claude: recursos/pedidos-ao-claude.md tem um pedido para cada ferramenta qa_* do MCP (as 39 da 1.60.0), uma vez só', () => {
+  const server = readFileSync(new URL('../../mcp/server.ts', import.meta.url), 'utf8');
+  const tools = new Set([...server.matchAll(/registerTool\('(qa_\w+)'/g)].map((m) => m[1]));
+  const rows = [...file('recursos/pedidos-ao-claude.md').matchAll(/^\| `(qa_\w+)` \|/gm)].map((m) => m[1]);
+  assert.equal(rows.length, new Set(rows).size, 'ferramenta repetida');
+  // nenhuma ferramenta citada sumiu ou mudou de nome; as de versões futuras não cobram (exemplos/ só ganha arquivos novos)
+  assert.deepEqual(rows.filter((r) => !tools.has(r)), []);
+  assert.equal(rows.length, 39);
 });

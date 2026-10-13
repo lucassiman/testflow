@@ -1,7 +1,7 @@
 # TestFlow — Roadmap
 
 > Levantamento de melhorias (sem implementação). Complementa o [PLANEJAMENTO.md](PLANEJAMENTO.md), que descreve o MVP.
-> Última revisão: 12/10/2026 (Fase 12 planejada: layout por módulo e exemplos novos). Antes: 29/09/2026 (Fase 9 planejada; respostas sobre Jira Cloud, PWA no Mac, evidências e planilhas — ver seção 5)
+> Última revisão: 12/10/2026 (Fase 12 concluída na 1.60.0: layout por módulo e exemplos de todos os módulos). Antes: 29/09/2026 (Fase 9 planejada; respostas sobre Jira Cloud, PWA no Mac, evidências e planilhas — ver seção 5)
 
 ---
 
@@ -542,7 +542,7 @@ Decidido em 11/10/2026 (ver seção 5): cada integração que manda dados para f
 
 Fora por ora: papéis, permissões e auditoria (fazem sentido em ferramenta de nuvem com time grande; o TestFlow é local com pasta compartilhada).
 
-### Fase 12 — Organizar por módulo e mostrar o que o app faz *(planejada em 12/10/2026)*
+### Fase 12 — Organizar por módulo e mostrar o que o app faz *(planejada em 12/10/2026 — ✅ concluída na 1.60.0)*
 
 Pedido em 12/10/2026: (1) os recursos das últimas versões (Fase 11 inteira) não têm exemplo na pasta `exemplos/`, que parou na Fase 10; (2) os menus do topo misturam tudo — **Novo ▾** tinha documento, execução e importação; **Salvar ▾** tinha publicar, histórico e backup; **Copiar ▾** tinha dados sensíveis e revisão de texto; o pacote do Notion estava em Copiar e em PDF —, e muita coisa (tendência, status personalizados, Teams, página da rodada, reporter, `.feature`, Jira pela API, edição em massa, aprovação, ambiente) **só existia na paleta**. Esforço: **P** / **M** / **G**. Ordem: 12.1 primeiro (os exemplos já citam os menus novos) e 12.2 depois.
 
@@ -555,20 +555,22 @@ Pedido em 12/10/2026: (1) os recursos das últimas versões (Fase 11 inteira) n�
 | **Painel da rodada e barra Execução** | ✅ 1.58.0 — o painel da rodada (eram 11 botões soltos) mostra só o da hora: ▶ Próximo caso, ↩ Execução, 📊 Como está, 🏁 Finalizar; encerrada, 🔂 Reteste, 🔁 Executar de novo, 📊 Como foi, 📑 Relatórios. O resto vai para o **⋯**, agrupado pelos módulos (Execução: atribuir, reteste, relatórios, ciclo de origem, tendência, página da rodada · Casos: vínculos, dispositivo · Automação: relatório). A barra Execução ganhou o mesmo **⋯**: num caso, Evidências/Casos/Compartilhar; numa execução, Execução/Casos/Automação/Compartilhar. Os textos e o módulo de cada item saem do registro (`moreItemsHtml`, `EXEC_BAR_MORE`); *Atribuir os casos* e *Abrir o ciclo de origem* entraram na paleta. | M |
 | **Tela inicial e "Onde fica…?"** | ✅ 1.58.0 — ⚡ Começar da tela inicial em colunas por módulo (`HOME_SHORTCUTS`; sem pasta, só o que não precisa dela). *Onde fica…?* do manual em uma tabela por módulo, na ordem do registro; `modules.test.mjs` confere os blocos e **todas** as referências `Menu ▾ → item` e `Ctrl+Shift+P → texto` do manual contra o registro (achou 4 antigas, corrigidas). | P |
 
-#### 12.2 — Exemplos dos recursos novos *(M–G)* — ✅ 1.59.0 Casos e Execução · 1.60.0 o resto
+#### 12.2 — Exemplos dos recursos novos *(M–G)* — ✅ concluída: 1.59.0 Casos e Execução · 1.60.0 Evidências, Automação, Publicar e Claude, `LEIA-ME` por módulo e a conferência
 
-Só arquivos **novos** na pasta `exemplos/` (regra do projeto: não sobrescrever a do usuário). Mesma história da Loja Demo, agora na Sprint 43 / release 2.15.0. O `LEIA-ME.md` passa a ser organizado pelos mesmos módulos, com um roteiro curto por módulo.
+Só arquivos **novos** na pasta `exemplos/` (regra do projeto: não sobrescrever a do usuário). Mesma história da Loja Demo, agora na Sprint 43 / release 2.15.0. O roteiro por módulo foi para um arquivo novo, `exemplos/LEIA-ME-por-modulo.md` (o `LEIA-ME.md` tem as marcações do usuário e não muda), com a história em ordem e um roteiro curto por menu do topo.
 
 | Módulo | Exemplos | Esforço |
 |---|---|---|
 | **Casos** | ✅ 1.59.0 — épico **QA-400 Pagamento com Pix** em `casos/QA-400 Pagamento com Pix/` com uma pasta por ticket (`QA-410 …`, `QA-420 …`: a história e os casos dela) e a história sem ticket `requisitos/HU-001`; `compartilhados/COMP-001` (logins geral/HML/PROD — a linha do ambiente troca a linha inteira; o gestor só no HML mostra *falta PROD* —, endereços, antes da rodada / de cada caso, bloco `↪ Fazer login`; `aplica-a: [pix, conta]` deixa os casos antigos de fora); TC-008 com 2 logins; TC-007 com tabela de iterações (3 linhas) e TC-009 com `iterar:` dos logins; TC-005 aprovado, TC-006 em revisão, TC-009 rascunho e TC-008 *aprovado · alterado* com a versão aprovada em `exemplos/.versoes/` (exceção no `.gitignore`); `importar/casos-testrail.csv` (4 casos, passos separados, 2 colunas que ficam de fora). | M |
 | **Execução** | ✅ 1.59.0 — ciclo salvo *Regressão do Pix* com 3 execuções: #1 (Sprint 42, encerrada), #2 (encerrada: TC-006 passou a falhar → BUG-002; estorno em dobro → BUG-003; os 4 relatórios com a decisão do time no aceite) e #3 em andamento (testadores Ana/Bruno/Lucas, durações no histórico para a previsão, `FALHA CONHECIDA` e `RETESTE` de `configuracao/status.md`, iteração 1/3); ciclo *Smoke do Pix* com matriz (HML · Chrome · Windows, HML · Safari · macOS, PROD · Chrome · Windows) **sem execução**, para o usuário executar; plano PT-002 (critérios de saída), release REL-001 (2.15.0) e `visoes/` (não executados, cobertura da regressão, rastreabilidade da 2.15, tendência). Gerados com as funções do próprio app (MCP) num relógio fixo de 22/09 a 09/10. | M |
-| **Evidências e bugs** | Bug com console, `.har` mascarado, vídeo do replay e a tabela de ambiente da extensão; bug com chave do Jira e reincidência. | P–M |
-| **Automação** | Relatórios que alternam PASS/FAIL (instáveis), `.feature` exportado, `playwright.config` com o reporter. | P |
-| **Publicar e Claude** | Página da rodada de exemplo (`acompanhamento/…html`), cartão do Teams (JSON), comentários de revisão num caso; `recursos/pedidos-ao-claude.md` com um pedido pronto por ferramenta `qa_*`. | P |
-| **Conferência** | Teste que valida todos os exemplos com o próprio validador do app (IDs únicos, `[[links]]` que resolvem, nenhum dado sensível real) e ajuste dos testes que leem `exemplos/` (`fase101`, `acessibilidade`, `views`, `reports`). — Começada na 1.59.0: `tests/unit/exemplos.test.mjs` (IDs únicos, sem `uid:`, sem link quebrado, e cada recurso de Casos e Execução) e `tests/e2e/exemplos.spec.mjs` (a pasta aberta no app); o `fase101` conta os casos pela pasta. `acessibilidade`, `views` e `reports` passaram sem mudar. Falta: dados sensíveis e os módulos da 1.60.0. | P |
+| **Evidências e bugs** | ✅ 1.60.0 — **TC-010** *Pagar com Pix pelo copia e cola* (separado do TC-006 a pedido da Ana) falha no passo 3 → **BUG-004** criado como no app com o replay e a extensão ligados: print do passo, vídeo (`…_TC-010-replay.webm`), tabela *Ambiente* com URL/Sistema/Tela, *Console e rede*, `.log` e `.har` com token, CPF e e-mail mascarados; `jira: QA-433` e `jira_status` (Jira pela API); fechado no rc3 (11/10) e **reincidência** em 12/10 (Edge, com cupom, com o console da 2ª captura), que o reabriu. Print e vídeo fictícios (`_local/exemplos-1.60/media/`). | P–M |
+| **Automação** | ✅ 1.60.0 — 3 noites (07–09/10) do reporter do Playwright, cada uma uma execução automatizada (finalizada de manhã): o teste do TC-005 alterna ✓✗✓ e o do comprovante passou só no retry (✓↻✓) → **⚠ instável** na coluna Obs e na tendência; os mesmos resultados em `automacao/noturno/*.json`; `automacao/playwright.config.ts` com o reporter (`execucao: 'nova'`); `automacao/features/cen-001-….feature` exportado do CEN-001. | P |
+| **Publicar e Claude** | ✅ 1.60.0 — `acompanhamento/`: a página da rodada da #2 (encerrada, *Não liberar*) e da #3 (em andamento, com previsão) e o `index.html`, montados com as funções do app (conferido: a do app é igual, menos o link do Jira, que no exemplo fica sem endereço); os cartões do Teams (🏁 rodada encerrada da #2 e ❌ caso crítico do TC-010); **TC-011** *Estorno parcial* em revisão com o comentário do Claude (respondido e resolvido) e o da Ana (pendente); `recursos/pedidos-ao-claude.md` com um pedido para **cada uma** das 39 ferramentas `qa_*`. A página da rodada e o Teams ficam em **Execução ▾** no app — no roteiro por módulo, estão em Execução. | P |
+| **Conferência** | ✅ 1.59.0–1.60.0 — `tests/unit/exemplos.test.mjs`: IDs únicos, sem `uid:`, sem `[[link]]` quebrado, o **`qa_validar` do app** na pasta inteira (só os avisos de sempre), **todo link relativo** (prints, vídeo, log, HAR, casos) existe, **nenhum dado sensível real** (e-mails só `@lojademo.test`, CPF/cartão só na área de teste, nada em HAR/log/página/Teams/relatório da automação) e cada recurso dos módulos; `pedidos-ao-claude.md` × as ferramentas do `mcp/server.ts`. `tests/unit/modules.test.mjs` confere a ordem dos módulos e as referências `Menu ▾ → item` do `LEIA-ME-por-modulo.md`. `tests/e2e/exemplos.spec.mjs`: a pasta aberta no app (BUG-004, TC-010 ainda aprovado, 💬 do TC-011, instáveis). | P |
 
-**Versões:** 1.57.0 registro + topo por módulo + paleta · 1.58.0 painel da rodada, barra Execução, tela inicial e *Onde fica…?* · ✅ 1.59.0 exemplos de Casos e Execução (e *Primeiros 15 minutos* do manual com onde olhar cada um) · 1.60.0 exemplos de Evidências, Automação, Publicar, `LEIA-ME` por módulo e o teste dos exemplos.
+**Versões:** ✅ 1.57.0 registro + topo por módulo + paleta · ✅ 1.58.0 painel da rodada, barra Execução, tela inicial e *Onde fica…?* · ✅ 1.59.0 exemplos de Casos e Execução (e *Primeiros 15 minutos* do manual com onde olhar cada um) · ✅ 1.60.0 exemplos de Evidências, Automação, Publicar e Claude, `LEIA-ME-por-modulo.md` e a conferência dos exemplos.
+
+**Achado ao montar os exemplos (corrigido na 1.60.0):** criar o bug a partir do passo que falhou punha a linha `🐞 Bug: [[…]]` na impressão digital da aprovação — o caso aprovado virava *aprovado · alterado* só por ter falhado. A linha saiu da definição (`definitionText`); a impressão antiga (com a linha) continua valendo, para nenhum caso aprovado mudar sozinho. E a página da rodada mostra o passo que falhou sem `**`/`[[ ]]`.
 
 ## 4. Ordem sugerida
 
@@ -582,7 +584,7 @@ Só arquivos **novos** na pasta `exemplos/` (regra do projeto: não sobrescrever
 8. **Fase 9** (29/09 em diante): 9.1 Consolidar → 9.2 Ler e navegar → 9.3 Visões e rastreabilidade → 9.4 Regressão e trabalho a dois → 9.5 **MCP local** (1.0). QoL pontuais entram entre as rodadas.
 9. ~~**Fase 10**~~ ✅ concluída na 1.30.0.
 10. **Fase 11** (09/10 em diante): 11.1 primeiro (passos e dados compartilhados, reexecutar falhas, tendência); a captura com console e rede (11.4) depois, como extensão opcional — ✅ **Fase 11 concluída** (11.1 a 11.5, até a 1.56.0).
-11. **Fase 12** (12/10 em diante): ✅ 12.1 layout por módulo (1.57.0–1.58.0) → 12.2 exemplos dos recursos novos (✅ 1.59.0 Casos e Execução → 1.60.0 o resto).
+11. **Fase 12** (12/10): ✅ 12.1 layout por módulo (1.57.0–1.58.0) → ✅ 12.2 exemplos dos recursos novos (1.59.0 Casos e Execução → 1.60.0 Evidências, Automação, Publicar e Claude) — ✅ **Fase 12 concluída na 1.60.0**.
 
 ---
 

@@ -1,0 +1,85 @@
+{
+  "type": "message",
+  "attachments": [
+    {
+      "contentType": "application/vnd.microsoft.card.adaptive",
+      "contentUrl": null,
+      "content": {
+        "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+        "type": "AdaptiveCard",
+        "version": "1.4",
+        "msteams": {
+          "width": "Full"
+        },
+        "body": [
+          {
+            "type": "TextBlock",
+            "text": "🏁 Rodada encerrada: Regressão do Pix — Execução #2",
+            "wrap": true,
+            "size": "Medium",
+            "weight": "Bolder",
+            "color": "attention"
+          },
+          {
+            "type": "FactSet",
+            "facts": [
+              {
+                "title": "Versão",
+                "value": "2.15.0"
+              },
+              {
+                "title": "Resultado",
+                "value": "50% de sucesso — ✅ 2 · ❌ 2 · ⛔ 0 · ⏭ 0"
+              },
+              {
+                "title": "Recomendação",
+                "value": "NÃO LIBERAR"
+              },
+              {
+                "title": "Período",
+                "value": "01/10/2026 08:30 → 01/10/2026 10:30 (2 h 00 min)"
+              },
+              {
+                "title": "Responsável",
+                "value": "Lucas"
+              },
+              {
+                "title": "Vínculos",
+                "value": "Jira: QA-410, QA-420 · Épico: QA-400 · Sprint: Sprint 43 · Versão (release): 2.15.0 · Plano de teste: PT-002"
+              }
+            ]
+          },
+          {
+            "type": "TextBlock",
+            "text": "**Falhas e bloqueios**",
+            "wrap": true,
+            "spacing": "Medium"
+          },
+          {
+            "type": "TextBlock",
+            "text": "- ❌ **TC-006** — QR Code do Pix expirado não aceita pagamento (passo 4: Pagar o QR Code expirado no simulador do banco ({{banco}}) → O simulador aceitou o pagamento e o pedido ficou **Pago** com o QR Code expirado) 🐞 BUG-002\n- ❌ **TC-008** — Atendente estorna um pedido pago com Pix (passo 5: Na janela do cliente, abrir **Meus pedidos** e o extrato do simulador do banco → O extrato do banco mostra **dois** lançamentos de estorno de R$ 49,90 — o clien…) 🐞 BUG-003",
+            "wrap": true
+          },
+          {
+            "type": "TextBlock",
+            "text": "**🐞 Bugs abertos (2)**",
+            "wrap": true,
+            "spacing": "Medium"
+          },
+          {
+            "type": "TextBlock",
+            "text": "- **BUG-002** — Pix pago com o QR Code já expirado (QA-431)\n- **BUG-003** — Estorno de Pix devolve o valor em dobro (QA-432)",
+            "wrap": true
+          },
+          {
+            "type": "TextBlock",
+            "text": "Enviado pelo TestFlow.",
+            "wrap": true,
+            "isSubtle": true,
+            "size": "Small"
+          }
+        ]
+      }
+    }
+  ]
+}

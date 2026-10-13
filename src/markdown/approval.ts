@@ -7,7 +7,8 @@
  *   aprovado_hash: 1a2b3c4d            (impressão digital da DEFINIÇÃO do caso quando foi aprovado)
  *
  * A definição é o que o revisor aprovou: título, objetivo, pré-condições, passos (Ação / Esperado), massa de dados…
- * Executar não mexe nela — status, obtido, Histórico de execuções, evidências, comentários e o resumo ficam de fora.
+ * Executar não mexe nela — status, obtido, Histórico de execuções, evidências, comentários, o resumo e a linha do bug
+ * criado no passo que falhou ("🐞 Bug: [[BUG-7]] — …") ficam de fora.
  * Mudou a definição depois de aprovado → "aprovado · alterado" (precisa aprovar de novo).
  * Sem o campo `aprovacao:` o documento não está no fluxo de aprovação (nada muda para ele).
  */
@@ -50,8 +51,14 @@ function meta(text: string): Record<string, unknown> {
 }
 const one = (v: unknown): string => (Array.isArray(v) ? String(v[0] ?? '') : String(v ?? '')).trim();
 
-/** O texto que o revisor aprova: o corpo sem o que a execução muda. */
-export function definitionText(text: string): string {
+/** Linha que o 🐞 Novo bug (ou um documento ligado) põe no caso: resultado da execução, não definição. */
+const LINKED_LINE = /^(🐞 Bug|🔗 Relacionado): \[\[[^\]]+\]\]/;
+
+/**
+ * O texto que o revisor aprova: o corpo sem o que a execução muda.
+ * `links`: mantém as linhas "🐞 Bug: [[…]]" — como era até a 1.59.0 (para reconhecer a impressão digital antiga).
+ */
+export function definitionText(text: string, { links = false }: { links?: boolean } = {}): string {
   const fm = detectFrontMatter(text);
   const lines = text.split('\n');
   const body = fm ? lines.slice(fm.end) : lines;
@@ -85,6 +92,7 @@ export function definitionText(text: string): string {
       out.push(splitRow(l).filter((_, k) => !cols.includes(k)).map((c) => c.replace(/\s+/g, ' ').trim()).join('|'));
       continue;
     } else if (!l.trim()) cols = [];
+    if (!links && LINKED_LINE.test(l.trim())) continue;
     // imagens (prints) não fazem parte da definição
     const clean = l.replace(/!\[[^\]]*\]\([^)]*\)/g, '').replace(/\s+/g, ' ').trim();
     if (clean.trim()) out.push(clean);
@@ -93,11 +101,19 @@ export function definitionText(text: string): string {
 }
 
 /** Impressão digital da definição do caso. */
-export function definitionHash(text: string): string {
+export function definitionHash(text: string, o: { links?: boolean } = {}): string {
   let h = 0x811c9dc5;
-  const s = definitionText(text);
+  const s = definitionText(text, o);
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
   return h.toString(16).padStart(8, '0');
+}
+
+/**
+ * O texto bate com a impressão digital aprovada? Vale também a conta de antes da 1.60.0 (com a linha do bug), para
+ * os casos aprovados quando já tinham bug ligado não virarem "alterado" sozinhos.
+ */
+export function matchesApproval(text: string, hash: string): boolean {
+  return !!hash && (hash === definitionHash(text) || hash === definitionHash(text, { links: true }));
 }
 
 export function approvalOf(text: string): Approval {
@@ -106,7 +122,7 @@ export function approvalOf(text: string): Approval {
   const hash = one(m.aprovado_hash);
   return {
     state,
-    changed: state === 'aprovado' && !!hash && hash !== definitionHash(text),
+    changed: state === 'aprovado' && !!hash && !matchesApproval(text, hash),
     revisor: one(m.revisor),
     por: one(m.aprovado_por),
     em: one(m.aprovado_em),

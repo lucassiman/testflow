@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Regressão do Pix — Execução #2 — rodada de testes</title>
+<style>
+:root{color-scheme:light dark;--bg:#fff;--fg:#1f2328;--muted:#59636e;--line:#d1d9e0;--card:#f6f8fa;--pass:#1a7f37;--fail:#cf222e;--blocked:#9a6700;--skip:#59636e;--pending:#d1d9e0;--brand:#b91c47;--on-badge:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--muted:#9198a1;--line:#30363d;--card:#151b23;--pass:#3fb950;--fail:#f85149;--blocked:#d29922;--skip:#9198a1;--pending:#30363d;--on-badge:#0d1117}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1040px;margin:0 auto;padding:24px 16px 48px}h1{font-size:24px;margin:0 0 4px}h2{font-size:17px;margin:28px 0 10px}
+.sub{color:var(--muted);margin:0 0 18px}.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}.tile b{display:block;font-size:24px;font-variant-numeric:tabular-nums}.tile span{color:var(--muted);font-size:13px}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--pending);margin:16px 0 6px}.bar i{display:block;height:100%}
+.bar .pass{background:var(--pass)}.bar .fail{background:var(--fail)}.bar .blocked{background:var(--blocked)}.bar .skip{background:var(--skip)}
+.legend{color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:4px 14px}
+.rec{margin-top:14px;padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card)}.rec.no{border-color:var(--fail)}.rec.ok{border-color:var(--pass)}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}table{border-collapse:collapse;width:100%;min-width:560px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:13px;color:var(--muted);font-weight:600;background:var(--card)}tr:last-child td{border-bottom:0}
+.badge{display:inline-block;font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;color:var(--on-badge);white-space:nowrap}
+td:first-child{white-space:nowrap}
+.badge.pass{background:var(--pass)}.badge.fail{background:var(--fail)}.badge.blocked{background:var(--blocked)}.badge.skip{background:var(--skip)}.badge.pending{background:var(--pending);color:var(--fg)}
+.step{color:var(--muted);font-size:13px;margin-top:2px}ul{padding-left:20px}a{color:var(--brand)}
+footer{margin-top:32px;color:var(--muted);font-size:12px}
+</style>
+<script type="application/json" id="testflow-rodada">{"id":"EXEC-20261001-083000","titulo":"Regressão do Pix — Execução #2","app":"","versao":"2.15.0","encerrada":true,"sucessoPct":50,"feitos":4,"total":4,"falhas":2,"atualizado":"2026-10-01T13:30:00.000Z","recomendacao":"NÃO LIBERAR"}</script>
+</head>
+<body>
+<main>
+<h1>🏁 Regressão do Pix — Execução #2</h1>
+<p class="sub">versão 2.15.0 · 01/10/2026 08:30 → 01/10/2026 10:30 (2 h 00 min) · responsável Lucas</p>
+<div class="tiles">
+<div class="tile"><b>50%</b><span>de sucesso (dos executados)</span></div>
+<div class="tile"><b>4/4</b><span>casos com resultado</span></div>
+<div class="tile"><b>2</b><span>falhas e bloqueios</span></div>
+<div class="tile"><b>2</b><span>bugs abertos</span></div>
+</div>
+<div class="bar" role="img" aria-label="2 PASS, 2 FAIL, 0 BLOCKED, 0 SKIP, 0 pendentes"><i class="pass" style="width:50.00%"></i><i class="fail" style="width:50.00%"></i></div>
+<div class="legend"><span>✅ 2 PASS</span><span>❌ 2 FAIL</span><span>⛔ 0 BLOCKED</span><span>⏭ 0 SKIP</span></div>
+<div class="rec no"><b>Recomendação:</b> NÃO LIBERAR</div>
+<p class="sub" style="margin-top:12px">🔗 Jira: QA-410, QA-420 · Épico: QA-400 · Sprint: Sprint 43 · Versão (release): 2.15.0 · Plano de teste: PT-002</p>
+<h2>Casos</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Caso</th><th>Título</th><th>Status</th><th>Testador</th><th>Executado em</th><th>Bugs</th></tr></thead>
+<tbody>
+<tr><td><b>TC-005</b></td><td>Pagar com Pix pelo QR Code</td><td><span class="badge pass">PASS</span></td><td></td><td>01/10/2026 08:51</td><td></td></tr>
+<tr><td><b>TC-006</b></td><td>QR Code do Pix expirado não aceita pagamento<div class="step">Passo 4: Pagar o QR Code expirado no simulador do banco ({{banco}}) → O simulador aceitou o pagamento e o pedido ficou Pago com o QR Code expirado</div></td><td><span class="badge fail">FAIL</span></td><td></td><td>01/10/2026 09:07</td><td>BUG-002</td></tr>
+<tr><td><b>TC-007</b></td><td>Limites de valor do Pix</td><td><span class="badge pass">PASS</span></td><td></td><td>01/10/2026 09:40</td><td></td></tr>
+<tr><td><b>TC-008</b></td><td>Atendente estorna um pedido pago com Pix<div class="step">Passo 5: Na janela do cliente, abrir Meus pedidos e o extrato do simulador do banco → O extrato do banco mostra dois lançamentos de estorno de R$ 49,90 — o cliente recebeu R$ 99,80</div></td><td><span class="badge fail">FAIL</span></td><td></td><td>01/10/2026 10:03</td><td>BUG-003</td></tr>
+</tbody></table></div>
+<h2>🐞 Bugs abertos (2)</h2><ul><li><b>BUG-002</b> — Pix pago com o QR Code já expirado · QA-431</li><li><b>BUG-003</b> — Estorno de Pix devolve o valor em dobro · QA-432</li></ul>
+
+<footer>Gerado pelo TestFlow em 01/10/2026 10:30 · rodada encerrada.</footer>
+</main>
+</body>
+</html>

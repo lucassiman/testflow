@@ -71,7 +71,7 @@ A skill **QA Markdown** faz o Claude gerar os documentos já no formato do edito
 
 ## 3. Primeiros 15 minutos
 
-A pasta **`exemplos/`** é um projeto fictício (Loja Demo) montado para o onboarding. Abra `exemplos/LEIA-ME.md`: ele tem um roteiro com checklist — ler, executar um teste, organizar e compartilhar.
+A pasta **`exemplos/`** é um projeto fictício (Loja Demo) montado para o onboarding. Abra `exemplos/LEIA-ME.md`: ele tem um roteiro com checklist — ler, executar um teste, organizar e compartilhar. Desde a 1.60.0, **`exemplos/LEIA-ME-por-modulo.md`** tem um roteiro curto para cada menu do topo (Casos, Execução, Evidências, Automação, Publicar, Compartilhar), com a história da Sprint 43 em ordem.
 
 Resumo do roteiro:
 
@@ -81,7 +81,7 @@ Resumo do roteiro:
 4. **📊 Painel** (aba Arquivos) e clique em **FAIL**.
 5. No `BUG-001`: **Compartilhar ▾ → Copiar para o Jira**.
 
-**Os recursos novos na Loja Demo (desde a 1.59.0).** A mesma pasta continua a história na Sprint 43: o épico **QA-400 Pagamento com Pix** da versão **2.15.0**. Arquivos só novos — o que você já tinha em `exemplos/` não muda. Por módulo:
+**Os recursos novos na Loja Demo (1.59.0 e 1.60.0).** A mesma pasta continua a história na Sprint 43: o épico **QA-400 Pagamento com Pix** da versão **2.15.0**. Arquivos só novos — o que você já tinha em `exemplos/` não muda. Por módulo (o roteiro de cada um está em `exemplos/LEIA-ME-por-modulo.md`):
 
 | Módulo | Onde olhar | O que mostra |
 | --- | --- | --- |
@@ -95,6 +95,13 @@ Resumo do roteiro:
 | | `relatorios/EXEC-20261001-083000/` | Os 4 relatórios da execução #2 — *Não liberar*, com a decisão do time escrita no aceite e o comparativo com a #1 (TC-006 passou a falhar). |
 | | `smoke-do-pix-multiplataforma` | Ciclo com **matriz** (HML · Chrome · Windows, HML · Safari · macOS, PROD · Chrome · Windows), ainda sem execução: clique em **▶ Executar este ciclo** e veja nascer uma execução por configuração. |
 | | `releases/REL-001…` · `visoes/` | A release 2.15.0 com o progresso (7.10) e as visões *não executados*, *cobertura da regressão*, *rastreabilidade* (só a 2.15) e *tendência* (11.1). |
+| | `acompanhamento/` | A **página da rodada para o time** (12.9) — `index.html`, a #2 encerrada com a recomendação e a #3 em andamento — e os **cartões do Teams** em JSON (12.8): 🏁 rodada encerrada e ❌ caso crítico falhou. Não são `.md`: abra pelo Explorer (as páginas no navegador). |
+| **Evidências e bugs** | `bugs/BUG-004…` | Bug criado no passo que falhou com a **extensão** e o **replay** ligados (8.1, 8.3): print do passo, 🎬 vídeo, a tabela *Ambiente* com URL, sistema e tela, o resumo *Console e rede* e os arquivos `.log` e `.har` em `bugs/evidencias/` — token, CPF e e-mail mascarados. Chave e status do Jira (12.7) e uma **reincidência** que reabriu o bug. |
+| | `TC-010` | O caso das 3 rodadas (FAIL, PASS, FAIL) — continua **aprovado** depois do 🐞 Novo bug. |
+| **Automação** | `execucoes/execucao-automatizada-loja-demo-e2e-…` | Três noites do reporter do Playwright (9): o teste do TC-005 alterna PASS → FAIL → PASS e o do comprovante só passou no retry — **⚠ instável** na coluna Obs e na tendência. Os mesmos resultados em `automacao/noturno/*.json` (arraste um no editor). |
+| | `automacao/playwright.config.ts` · `automacao/features/` | O projeto de automação com o reporter do TestFlow e o `.feature` exportado do `CEN-001`. |
+| **Publicar** | `TC-011` | Caso **em revisão** com dois comentários (6.7): o do Claude, respondido e resolvido, e o da Ana, pendente (💬 1). |
+| **Compartilhar** | `recursos/pedidos-ao-claude.md` | Um pedido pronto para **cada** ferramenta `qa_*` do Claude (12.6), com os documentos da Loja Demo. |
 
 ## 4. A tela
 
@@ -547,7 +554,7 @@ Nos passos, **`{{dado}}`** é a linha da vez: `{{dado.e-mail}}`, `{{dado.senha}}
 Para o time revisar os casos antes de usá-los nas rodadas: **rascunho → em revisão → aprovado**, no cabeçalho (`aprovacao:`). Casos e cenários BDD novos já nascem **rascunho**; documento sem o campo fica fora do fluxo (nada muda para ele).
 
 - A pílula no topo mostra o estado — **✍ em elaboração** (rascunho), **👀 em revisão**, **✅ aprovado** ou **⚠ aprovado · alterado**. Clique nela (ou `Ctrl+Shift+P` → *Aprovação do caso*) para **Enviar para revisão…** (com o nome de quem revisa), **Aprovar** ou **Voltar para rascunho**.
-- **Aprovar** grava quem (`aprovado_por`, o seu nome das preferências) e quando (`aprovado_em`) e uma impressão digital da **definição** do caso (`aprovado_hash`): título, objetivo, pré-condições, passos (Ação/Esperado), massa de dados… **Executar não tira a aprovação** — status, obtido, histórico, prints e comentários ficam de fora. Mudou um passo depois de aprovado → **⚠ aprovado · alterado** até alguém aprovar de novo.
+- **Aprovar** grava quem (`aprovado_por`, o seu nome das preferências) e quando (`aprovado_em`) e uma impressão digital da **definição** do caso (`aprovado_hash`): título, objetivo, pré-condições, passos (Ação/Esperado), massa de dados… **Executar não tira a aprovação** — status, obtido, histórico, prints, comentários e a linha do bug criado no passo que falhou (`🐞 Bug: [[BUG-…]]`) ficam de fora. Mudou um passo depois de aprovado → **⚠ aprovado · alterado** até alguém aprovar de novo.
 - **Só aprovados na rodada** (opcional): na janela de *Nova rodada* / *Novo ciclo*, **☐ só aprovados** esconde os outros (fica lembrado); com ele ligado, *Executar este ciclo* e o *Reteste* também deixam de fora os casos não aprovados, com aviso. Paleta: *Rodadas: só casos aprovados entram*.
 - **Para revisar:** na busca (`Ctrl+Shift+F`) o atalho **👀 Para revisar** (`aprovacao:em-revisao,alterado`); nas visões, o filtro `aprovacao:` (rascunho · em-revisao · aprovado · alterado · pendente = tudo o que não está aprovado · nenhuma) e a coluna `aprovacao`.
 - **O que mudou desde a aprovação:** aprovar salva o documento e guarda essa versão no histórico (**✅ aprovada**); com o caso *alterado*, a pílula → **Ver o que mudou desde a aprovação** mostra lado a lado e os passos alterados (10.4).

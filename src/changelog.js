@@ -8,6 +8,15 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.60.0', date: '12/10/2026',
+    items: [
+      { icon: '📸', text: '**Exemplos novos — Evidências e bugs**: o BUG-004 da Loja Demo nasceu como no ▶ Executar com a extensão do navegador e o replay ligados — print do passo, vídeo dos segundos antes do erro, a tabela *Ambiente* com URL, sistema e tela, o resumo *Console e rede* e os arquivos `.log` e `.har` com o token, o CPF e o e-mail mascarados. Ganhou a chave do Jira e uma **reincidência** que o reabriu.', manual: '3. Primeiros 15 minutos' },
+      { icon: '🤖', text: '**Automação e Publicar** na Loja Demo: três noites do reporter do Playwright com um teste **instável** (PASS → FAIL → PASS) e outro que só passou no retry, o `.feature` exportado e o `playwright.config.ts` com o reporter; a página da rodada para o time (`acompanhamento/`), os cartões do Teams e um caso em revisão com comentários (o do Claude resolvido, o da Ana pendente).', manual: '3. Primeiros 15 minutos' },
+      { icon: '🗺', text: '**`exemplos/LEIA-ME-por-modulo.md`**: um roteiro curto para cada menu do topo (Casos, Execução, Evidências, Automação, Publicar, Compartilhar), e `recursos/pedidos-ao-claude.md`, com um pedido pronto para cada ferramenta do Claude (MCP). Só arquivos novos — o `LEIA-ME.md` e o que você já tinha não mudam.', manual: '3. Primeiros 15 minutos' },
+      { icon: '✅', text: 'Correção: criar o bug a partir do passo que falhou não tira mais a **aprovação** do caso — a linha *🐞 Bug* é resultado da execução, não muda a definição. Casos que estavam como *aprovado · alterado* só por isso voltam a *aprovado*. Na página da rodada, o passo que falhou aparece sem a marcação do Markdown.', manual: '6.10 Aprovação do caso' },
+    ],
+  },
+  {
     version: '1.59.0', date: '12/10/2026',
     items: [
       { icon: '🧪', text: '**Exemplos novos — Casos**: a Loja Demo (`exemplos/`) chegou à Sprint 43 com o épico *Pagamento com Pix* (versão 2.15.0): pasta do épico com uma pasta por ticket, logins compartilhados por ambiente (geral, HML, PROD) e o passo `↪ Fazer login`, caso com dois logins, casos com dados (tabela e `iterar:`), os estados da aprovação — inclusive *aprovado · alterado*, com a versão aprovada para comparar — e uma planilha do TestRail para importar.', manual: '3. Primeiros 15 minutos' },

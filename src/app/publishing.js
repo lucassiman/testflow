@@ -1,7 +1,7 @@
 // @ts-check
 /** Pasta oficial (compartilhada), publicar e histórico de versões. */
 import { app } from './context.js';
-import { definitionHash, approvalOf } from '../markdown/approval.ts';
+import { matchesApproval, approvalOf } from '../markdown/approval.ts';
 import { ensureUid } from '../markdown/idRename.ts';
 import { refreshDocState } from './docState.js';
 import { loadPrefs, savePrefs } from '../io/drafts.js';
@@ -208,7 +208,7 @@ export async function openVersionHistory({ sinceApproval = false } = {}) {
     if (marked) select = marked.id;
     else if (hash) {
       for (const it of local.slice(0, 30)) {
-        try { if (definitionHash(await it.load()) === hash) { select = it.id; break; } } catch { /* ignora */ }
+        try { if (matchesApproval(await it.load(), hash)) { select = it.id; break; } } catch { /* ignora */ }
       }
     }
     note = select ? 'Comparando a versão aprovada com o documento aberto.' : 'A versão aprovada não está guardada neste computador — escolha uma versão para comparar.';

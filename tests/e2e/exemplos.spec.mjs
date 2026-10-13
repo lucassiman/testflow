@@ -1,5 +1,5 @@
-// 12.2 (1.59.0): a pasta exemplos/ aberta como pasta de trabalho mostra os recursos de Casos e Execução — a Loja Demo
-// na Sprint 43 (épico QA-400 Pagamento com Pix, release 2.15.0).
+// 12.2: a pasta exemplos/ aberta como pasta de trabalho — a Loja Demo na Sprint 43 (épico QA-400 Pagamento com Pix,
+// release 2.15.0). 1.59.0: Casos e Execução; 1.60.0: Evidências e bugs, Automação e Publicar.
 import { test, expect } from '@playwright/test';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -87,4 +87,28 @@ test('Execução: rodada em andamento com testadores, previsão e status persona
   await expect(page.locator('#preview .qa-view')).toContainText('Ainda não');
   await open(page, 'tendencia');
   await expect(page.locator('#preview .qa-view')).toContainText('EXEC-20260924-140000');
+});
+
+test('Evidências, Automação e Publicar: bug com captura e reincidência, caso aprovado com bug, testes instáveis e comentários de revisão', async ({ page }) => {
+  await openExamples(page, 'ws-exemplos-160');
+  const prev = page.locator('#preview');
+  // o bug com o que veio da extensão: Ambiente, replay, console e rede; a reincidência que reabriu
+  await open(page, 'BUG-004-copiar-codigo-do-pix-da-erro-e-nao-copia-nada');
+  await expect(prev.locator('td', { hasText: 'Windows 11' })).toHaveCount(1);
+  await expect(prev.locator('a', { hasText: '🎬' })).toHaveCount(1);
+  await expect(prev.locator('h3', { hasText: 'Console e rede' })).toHaveCount(1);
+  await expect(prev).toContainText('Bug reaberto (estava PASS)');
+  // o caso aprovado continua aprovado depois do 🐞 Novo bug (1.60.0)
+  await open(page, 'TC-010-pagar-com-pix-pelo-copia-e-cola');
+  await expect(page.locator('#docState [data-state="approval"]')).toContainText('aprovado');
+  await expect(page.locator('#docState [data-state="approval"]')).not.toContainText('alterado');
+  // comentários de revisão: o do Claude resolvido, o da Ana pendente (💬 1)
+  await open(page, 'TC-011-estorno-parcial-de-pix');
+  await expect(page.locator('#docState [data-state="comments"]')).toContainText('1');
+  // a noturna marca o teste instável; a tendência (ao vivo) lista os instáveis
+  await open(page, 'execucao-automatizada-loja-demo-e2e-09-10-2026');
+  await expect(prev.locator('td', { hasText: '⚠ instável: 2 trocas PASS↔FAIL em 3 execuções' })).toHaveCount(1);
+  await open(page, 'tendencia');
+  await expect(prev.locator('.qa-view')).toContainText('Testes automatizados instáveis');
+  await expect(prev.locator('.qa-view')).toContainText('comprovante do Pix em PDF');
 });

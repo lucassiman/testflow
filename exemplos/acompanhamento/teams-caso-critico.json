@@ -1,0 +1,78 @@
+{
+  "type": "message",
+  "attachments": [
+    {
+      "contentType": "application/vnd.microsoft.card.adaptive",
+      "contentUrl": null,
+      "content": {
+        "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+        "type": "AdaptiveCard",
+        "version": "1.4",
+        "msteams": {
+          "width": "Full"
+        },
+        "body": [
+          {
+            "type": "TextBlock",
+            "text": "❌ Caso crítico falhou: TC-010 — Pagar com Pix pelo copia e cola",
+            "wrap": true,
+            "size": "Medium",
+            "weight": "Bolder",
+            "color": "attention"
+          },
+          {
+            "type": "FactSet",
+            "facts": [
+              {
+                "title": "Prioridade",
+                "value": "Alta"
+              },
+              {
+                "title": "Ambiente",
+                "value": "HML"
+              },
+              {
+                "title": "Versão",
+                "value": "2.15.0"
+              },
+              {
+                "title": "Executado por",
+                "value": "Lucas"
+              },
+              {
+                "title": "Quando",
+                "value": "10/10/2026 14:09"
+              }
+            ]
+          },
+          {
+            "type": "TextBlock",
+            "text": "**Passo 3**: Clicar em **Copiar código**",
+            "wrap": true,
+            "spacing": "Medium"
+          },
+          {
+            "type": "FactSet",
+            "facts": [
+              {
+                "title": "Esperado",
+                "value": "Aviso \"Código copiado\" e o código na área de transferência"
+              },
+              {
+                "title": "Obtido",
+                "value": "Aviso **Não foi possível copiar o código**; nada na área de transferência (2 tentativas)"
+              }
+            ]
+          },
+          {
+            "type": "TextBlock",
+            "text": "Enviado pelo TestFlow.",
+            "wrap": true,
+            "isSubtle": true,
+            "size": "Small"
+          }
+        ]
+      }
+    }
+  ]
+}

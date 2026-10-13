@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="120">
+<title>Rodadas de teste — acompanhamento</title>
+<style>
+:root{color-scheme:light dark;--bg:#fff;--fg:#1f2328;--muted:#59636e;--line:#d1d9e0;--card:#f6f8fa;--pass:#1a7f37;--fail:#cf222e;--blocked:#9a6700;--skip:#59636e;--pending:#d1d9e0;--brand:#b91c47;--on-badge:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--muted:#9198a1;--line:#30363d;--card:#151b23;--pass:#3fb950;--fail:#f85149;--blocked:#d29922;--skip:#9198a1;--pending:#30363d;--on-badge:#0d1117}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1040px;margin:0 auto;padding:24px 16px 48px}h1{font-size:24px;margin:0 0 4px}h2{font-size:17px;margin:28px 0 10px}
+.sub{color:var(--muted);margin:0 0 18px}.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}.tile b{display:block;font-size:24px;font-variant-numeric:tabular-nums}.tile span{color:var(--muted);font-size:13px}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--pending);margin:16px 0 6px}.bar i{display:block;height:100%}
+.bar .pass{background:var(--pass)}.bar .fail{background:var(--fail)}.bar .blocked{background:var(--blocked)}.bar .skip{background:var(--skip)}
+.legend{color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:4px 14px}
+.rec{margin-top:14px;padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card)}.rec.no{border-color:var(--fail)}.rec.ok{border-color:var(--pass)}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}table{border-collapse:collapse;width:100%;min-width:560px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:13px;color:var(--muted);font-weight:600;background:var(--card)}tr:last-child td{border-bottom:0}
+.badge{display:inline-block;font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;color:var(--on-badge);white-space:nowrap}
+td:first-child{white-space:nowrap}
+.badge.pass{background:var(--pass)}.badge.fail{background:var(--fail)}.badge.blocked{background:var(--blocked)}.badge.skip{background:var(--skip)}.badge.pending{background:var(--pending);color:var(--fg)}
+.step{color:var(--muted);font-size:13px;margin-top:2px}ul{padding-left:20px}a{color:var(--brand)}
+footer{margin-top:32px;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<main>
+<h1>Rodadas de teste</h1>
+<p class="sub">Acompanhamento publicado pelo QA. Clique numa rodada para ver os casos, as falhas e os bugs.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Rodada</th><th>Aplicação</th><th>Situação</th><th>Casos</th><th>Sucesso</th><th>Falhas</th><th>Recomendação</th><th>Atualizada</th></tr></thead>
+<tbody>
+<tr><td><a href="EXEC-20261008-084500.html">Regressão do Pix — Execução #3</a></td><td> 2.15.0</td><td>▶ em andamento</td><td>2/4</td><td>50%</td><td>1</td><td></td><td>08/10/2026 10:30</td></tr>
+<tr><td><a href="EXEC-20261001-083000.html">Regressão do Pix — Execução #2</a></td><td> 2.15.0</td><td>🏁 encerrada</td><td>4/4</td><td>50%</td><td>2</td><td>NÃO LIBERAR</td><td>01/10/2026 10:30</td></tr>
+</tbody></table></div>
+<footer>Gerado pelo TestFlow em 08/10/2026 10:30.</footer>
+</main>
+</body>
+</html>

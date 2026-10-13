@@ -49,6 +49,19 @@ test('aprovar grava quem/quando/impressão; executar não muda; mudar a definiç
   assert.equal(approvalOf(back).changed, false);
 });
 
+test('1.60.0: o bug criado no passo que falhou não tira a aprovação; a impressão de antes (com a linha do bug) continua valendo', () => {
+  const ok = setApproval(TC, 'aprovado', { who: 'Ana' });
+  // 🐞 Novo bug: a linha com o link entra logo depois da tabela de passos — é resultado da execução
+  const withBug = ok.replace('| 2 | Entrar | Painel | | |\n', '| 2 | Entrar | Painel | Erro 500 | `FAIL` |\n\n🐞 Bug: [[BUG-7]] — Erro 500 ao entrar\n');
+  assert.equal(approvalKey(withBug), 'aprovado');
+  assert.equal(definitionHash(withBug), definitionHash(ok));
+  // aprovado (até a 1.59.0) quando já tinha a linha do bug: a conta antiga incluía a linha — não vira "alterado"
+  const old = withBug.replace(/^aprovado_hash: .*$/m, `aprovado_hash: ${definitionHash(withBug, { links: true })}`);
+  assert.equal(approvalKey(old), 'aprovado');
+  // mudar um passo continua pedindo nova aprovação
+  assert.equal(approvalKey(old.replace('| 1 | Abrir | Abre |', '| 1 | Abrir o app | Abre |')), 'alterado');
+});
+
 test('pílula e visões (filtro e coluna aprovacao)', () => {
   assert.equal(stateMarks(TC).find((m) => m.key === 'approval').label, 'em elaboração');
   assert.equal(stateMarks(TC.replace('aprovacao: rascunho\n', '')).some((m) => m.key === 'approval'), false);

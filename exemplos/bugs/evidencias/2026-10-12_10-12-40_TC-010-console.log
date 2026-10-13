@@ -1,0 +1,12 @@
+TestFlow — console da aba "Loja Demo — Pagamento com Pix"
+URL: https://hml.lojademo.test/checkout/pix?pedido=10688&cupom=DEMO10
+Navegador: Edge 141 · Windows 11 · tela 1920×1080 (janela 1536×730, escala 1.25)
+Capturado em: 12/10/2026 10:12 (America/Sao_Paulo) pela extensão 1.55.0
+Eventos: 3 (2 erros) · 1 requisição com falha (detalhes no .har) — o mais antigo primeiro
+
+[10:08:02.300] PÁGINA   Abriu https://hml.lojademo.test/checkout/pix?pedido=10688&cupom=DEMO10
+[10:09:47.501] REDE     GET https://hml.lojademo.test/api/pix/cobrancas/10688/copia-e-cola?token=•••••••• → 500 Internal Server Error · 412 ms
+[10:09:47.912] ERRO     Erro ao montar o copia e cola: Request failed with status code 500  — checkout-pix.js:204
+[10:09:47.918] PROMISE  Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'emv')  — checkout-pix.js:214
+    at CheckoutPix.copiar (https://hml.lojademo.test/static/js/checkout-pix.js:214:31)
+    at async HTMLButtonElement.<anonymous> (https://hml.lojademo.test/static/js/checkout-pix.js:120:5)

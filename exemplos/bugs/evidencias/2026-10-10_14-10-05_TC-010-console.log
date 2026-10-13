@@ -1,0 +1,20 @@
+TestFlow — console da aba "Loja Demo — Pagamento com Pix"
+URL: https://hml.lojademo.test/checkout/pix?pedido=10611
+Navegador: Chrome 141 · Windows 11 · tela 1920×1080 (janela 1536×730, escala 1.25)
+Capturado em: 10/10/2026 14:10 (America/Sao_Paulo) pela extensão 1.55.0
+Eventos: 7 (5 erros · 1 aviso) · 3 requisições com falha (detalhes no .har) — o mais antigo primeiro
+
+[14:04:51.118] PÁGINA   Abriu https://hml.lojademo.test/checkout/pix?pedido=10611
+[14:05:02.640] AVISO    Pix: websocket indisponível, usando polling do status a cada 2 s  — checkout-pix.js:88
+[14:05:03.009] REDE     GET https://hml.lojademo.test/static/icones/pix-copiar.svg → 404 Not Found · 38 ms
+[14:05:03.012] RECURSO  Falha ao carregar https://hml.lojademo.test/static/icones/pix-copiar.svg (404)
+[14:06:30.098] REDE     GET https://hml.lojademo.test/api/pix/cobrancas/10611/copia-e-cola?token=•••••••• → 500 Internal Server Error · 412 ms
+[14:06:30.514] ERRO     Erro ao montar o copia e cola: Request failed with status code 500  — checkout-pix.js:204
+[14:06:30.521] PROMISE  Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'emv')  — checkout-pix.js:214
+    at CheckoutPix.copiar (https://hml.lojademo.test/static/js/checkout-pix.js:214:31)
+    at async HTMLButtonElement.<anonymous> (https://hml.lojademo.test/static/js/checkout-pix.js:120:5)
+[14:06:40.817] REDE     GET https://hml.lojademo.test/api/pix/cobrancas/10611/copia-e-cola?token=•••••••• → 500 Internal Server Error · 412 ms
+[14:06:41.233] ERRO     Erro ao montar o copia e cola: Request failed with status code 500  — checkout-pix.js:204
+[14:06:41.240] PROMISE  Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'emv')  — checkout-pix.js:214
+    at CheckoutPix.copiar (https://hml.lojademo.test/static/js/checkout-pix.js:214:31)
+    at async HTMLButtonElement.<anonymous> (https://hml.lojademo.test/static/js/checkout-pix.js:120:5)

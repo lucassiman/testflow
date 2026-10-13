@@ -11,6 +11,9 @@ const walk = (d, b = '') => readdirSync(d).flatMap((n) => {
 });
 
 test('rodada com os exemplos: nasce em execucoes/, pendente × último resultado, BDD executa', async ({ page }) => {
+  // relógio depois de todas as datas dos exemplos: rodando no mesmo dia de uma rodada deles (ex.: 12/10/2026), os
+  // arquivos gravados agora no teste pareceriam mexidos nesta rodada ("em andamento")
+  await page.clock.setFixedTime(new Date(2026, 11, 1, 9, 0));
   await page.addInitScript(wsInit, 'ws-fase101');
   await openEditor(page, { mode: 'preview', prefs: { publisherName: 'Lucas' } });
   const files = walk('exemplos');

@@ -51,7 +51,8 @@ export async function buildRoundPage(c) {
       quando: t && t.cols.when >= 0 ? plain(r.cells[t.cols.when]) : '',
       testador: t && t.cols.tester >= 0 ? plain(r.cells[t.cols.tester]) : '',
       bugs: t && t.cols.bugs >= 0 ? [...(r.cells[t.cols.bugs] || '').matchAll(/\[\[([^\]|#]+)/g)].map((x) => x[1].trim()) : [],
-      passo: step ? { n: step.n, acao: step.acao, obtido: step.obtido } : null,
+      // o passo como texto, sem a marcação do Markdown (**Pago**, [[BUG-2]])
+      passo: step ? { n: step.n, acao: plain(step.acao), obtido: plain(step.obtido) } : null,
     };
   });
   // previsão (rodada aberta) pela duração média de cada caso; recomendação do Encerramento (rodada encerrada)

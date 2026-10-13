@@ -121,7 +121,11 @@ test('MANUAL: "Onde fica…?" organizado pelos módulos do registro', () => {
   for (const b of blocks) assert.equal(b.icon, MODULES.find((m) => m.label === b.label)?.icon, b.label);
 });
 
-test('MANUAL: todo "Menu ▾ → item" e "Ctrl+Shift+P → texto" existe no registro', () => {
+/**
+ * Referências "**Menu ▾ → item**" e "Ctrl+Shift+P → *texto*" de um texto que não existem no registro.
+ * @param {string} text @returns {{ bad: string[], checked: number }}
+ */
+function badRefs(text) {
   /** @type {Record<string, import('../../src/ui/modules.js').ModuleSection[]>} */
   const menus = {
     Novo: MODULES.flatMap((m) => m.sections.filter((s) => s.menu === 'newMenu')),
@@ -130,7 +134,7 @@ test('MANUAL: todo "Menu ▾ → item" e "Ctrl+Shift+P → texto" existe no regi
   for (const m of MODULES.filter((x) => x.top)) menus[m.short || m.label] = m.sections.filter((s) => s.menu === undefined);
   const bad = [];
   let checked = 0;
-  for (const [, menu, path] of manual.matchAll(/\*\*([^*▾]{1,30}?) ▾ → ([^*]+?)\*\*/g)) {
+  for (const [, menu, path] of text.matchAll(/\*\*([^*▾]{1,30}?) ▾ → ([^*]+?)\*\*/g)) {
     const secs = menus[menu.trim()];
     if (!secs) continue; // Tabela ▾, Código ▾… (menus da toolbar, fora do registro)
     checked++;
@@ -147,10 +151,33 @@ test('MANUAL: todo "Menu ▾ → item" e "Ctrl+Shift+P → texto" existe no regi
     if (!ok) bad.push(`${menu.trim()} ▾ → ${path}`);
   }
   const pal = paletteActions().map((a) => norm(a.label));
-  for (const [, ref] of manual.matchAll(/Ctrl\+Shift\+P`? → \*{1,2}([^*]+)\*{1,2}/g)) {
+  for (const [, ref] of text.matchAll(/Ctrl\+Shift\+P`? → \*{1,2}([^*]+)\*{1,2}/g)) {
     checked++;
     if (!pal.some((p) => p.startsWith(norm(ref)))) bad.push(`Ctrl+Shift+P → ${ref}`);
   }
+  return { bad, checked };
+}
+
+test('MANUAL: todo "Menu ▾ → item" e "Ctrl+Shift+P → texto" existe no registro', () => {
+  const { bad, checked } = badRefs(manual);
   assert.ok(checked > 100, `só ${checked} referências conferidas`);
+  assert.deepEqual(bad, []);
+});
+
+// ---------------------------------------------------------------- 1.60.0: o roteiro dos exemplos por módulo
+test('exemplos/LEIA-ME-por-modulo.md: os módulos do topo na ordem do app, cada um com roteiro; as referências existem no registro', () => {
+  const leia = readFileSync(new URL('../../exemplos/LEIA-ME-por-modulo.md', import.meta.url), 'utf8');
+  const heads = [...leia.matchAll(/^## (\S+) (.+)$/gm)].map((m) => ({ icon: m[1], title: m[2], at: m.index ?? 0 }));
+  const top = MODULES.filter((m) => m.top);
+  const found = top.map((m) => heads.find((h) => h.title === m.label || h.title.startsWith(`${m.label} —`)));
+  assert.deepEqual(found.map((h, i) => h ? h.icon : `falta ${top[i].label}`), top.map((m) => m.icon));
+  assert.deepEqual(found.map((h) => h?.at), [...found.map((h) => h?.at)].sort((a, b) => (a ?? 0) - (b ?? 0)), 'na ordem do topo');
+  // cada módulo com um roteiro (checklist) para marcar
+  for (const [i, h] of found.entries()) {
+    const next = heads.find((x) => x.at > (h?.at ?? 0));
+    assert.match(leia.slice(h?.at, next?.at), /^- \[ \] /m, top[i].label);
+  }
+  const { bad, checked } = badRefs(leia);
+  assert.ok(checked >= 8, `só ${checked} referências conferidas`);
   assert.deepEqual(bad, []);
 });
