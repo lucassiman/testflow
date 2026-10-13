@@ -117,6 +117,7 @@ O mesmo caso para vários perfis/massas **não** é copiado: vira um caso com it
 
 - No caso: `## Iterações` com uma tabela `| Chave | E-mail | Senha | Perfil |` (uma linha por execução); ou, no cabeçalho, `iterar: Logins` (todas as linhas de `## Dados: Logins` do compartilhado do escopo) / `iterar: [admin, cliente]`.
 - Nos passos: `{{dado}}`, `{{dado.campo}}` (`{{dado.e-mail}}`, `{{dado.perfil}}`) e `↪ Fazer login (dado)`. Senha: `{{dado.senha}}` — prefira `iterar:` com os logins do compartilhado a escrever senhas na tabela de Iterações.
+- **Qual forma usar:** valor que só faz sentido naquele caso (limites, entradas e saídas esperadas) → `## Iterações`; dado reutilizado por vários casos ou que muda por ambiente (login, URL, massa) → compartilhado + `iterar:`. Evite senha na tabela do caso.
 - O histórico ganha a coluna **Dados** (`admin (1/3)`); o caso só está feito na rodada quando todas as iterações foram concluídas, com o pior resultado entre elas.
 
 ### Status geral e resumo automático

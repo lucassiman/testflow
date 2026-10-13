@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.61.0', date: '13/10/2026',
+    items: [
+      { icon: '📖', text: '**Manual com Guia rápido**: as duas primeiras páginas (os primeiros 15 minutos e o essencial do "Onde fica…?") ficam antes da Referência, que segue com os mesmos capítulos. Também explica **Dividido × Ver ao lado**, os **cinco modos do painel de execução** e qual forma usar nos **dados de teste** (`## Iterações` ou `iterar:`).', manual: 'Guia rápido' },
+      { icon: '🧹', text: 'Menus mais enxutos: **Novo caso de teste** fica só em **Casos ▾** (saiu de **Novo ▾**, onde repetia), e a paleta deixou de listar *Texto 100%* e *Mover aba* — os atalhos de teclado continuam os mesmos.', manual: '13. Atalhos' },
+    ],
+  },
+  {
     version: '1.60.0', date: '12/10/2026',
     items: [
       { icon: '📸', text: '**Exemplos novos — Evidências e bugs**: o BUG-004 da Loja Demo nasceu como no ▶ Executar com a extensão do navegador e o replay ligados — print do passo, vídeo dos segundos antes do erro, a tabela *Ambiente* com URL, sistema e tela, o resumo *Console e rede* e os arquivos `.log` e `.har` com o token, o CPF e o e-mail mascarados. Ganhou a chave do Jira e uma **reincidência** que o reabriu.', manual: '3. Primeiros 15 minutos' },

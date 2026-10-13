@@ -45,7 +45,6 @@ export const MODULES = [
       {
         menu: 'newMenu', title: 'Documento',
         items: [
-          { cmd: 'newCase', label: '📄 Caso de teste', hint: 'do modelo, com o próximo ID — salve e ele vai para a pasta certa', palette: 'Novo caso de teste (do modelo)' },
           { cmd: 'newFromTemplate', label: '🧩 A partir de modelo…', keys: 'Alt+Shift+N', hint: 'bug, plano, BDD, checklist, sessão, épico, história, release e os seus modelos', palette: 'Novo a partir de modelo…' },
           { cmd: 'quickNote', label: '📝 Nota rápida', keys: 'Alt+Q', hint: 'já salva em _entrada/, para organizar depois', palette: 'Nota rápida (vai para _entrada/)' },
           { cmd: 'new', label: 'Em branco', keys: 'Alt+N', palette: 'Novo documento em branco' },
@@ -84,7 +83,7 @@ export const MODULES = [
       {
         title: 'Escrever',
         items: [
-          { cmd: 'newCase', label: '📄 Novo caso de teste', hint: 'do modelo, com o próximo ID', palette: false },
+          { cmd: 'newCase', label: '📄 Novo caso de teste', hint: 'do modelo, com o próximo ID — salve e ele vai para a pasta certa', palette: 'Novo caso de teste (do modelo)' },
           { cmd: 'sharedPanel', label: '🔑 Dados compartilhados', keys: 'Alt+K', hint: 'logins, URLs, massas e passos que valem para este documento — copiar', palette: 'Dados compartilhados: logins, URLs e passos que valem para este documento (copiar)' },
           { cmd: 'includeShared', label: '↪ Incluir passos compartilhados…', hint: 'ex.: ↪ Fazer login, no lugar de repetir os passos', palette: 'Incluir passos compartilhados (↪ Fazer login…)' },
           { cmd: 'envMenu', label: '🌐 Ambiente ativo…', hint: 'local, dev, hml, prod — troca a massa de dados', palette: 'Ambiente ativo (local, dev, hml, prod): trocar a massa de dados' },
@@ -344,13 +343,13 @@ export const MODULES = [
         { cmd: 'importSheet', label: 'Importar planilha', palette: 'Importar planilha (XLSX/CSV)…' },
         { cmd: 'zoomIn', label: 'A+', keys: 'Ctrl+Alt+=', palette: 'Aumentar texto' },
         { cmd: 'zoomOut', label: 'A−', keys: 'Ctrl+Alt+-', palette: 'Diminuir texto' },
-        { cmd: 'zoomReset', label: '100%', keys: 'Ctrl+Alt+0', palette: 'Texto 100%' },
+        { cmd: 'zoomReset', label: '100%', keys: 'Ctrl+Alt+0', palette: false },
         { cmd: 'toggleTheme', label: 'Tema', palette: 'Tema claro / escuro' },
         { cmd: 'closeTab', label: 'Fechar aba', keys: 'Alt+W', palette: 'Fechar aba' },
         { cmd: 'nextTab', label: 'Próxima aba', keys: 'Alt+PageDown', palette: 'Próxima aba' },
         { cmd: 'prevTab', label: 'Aba anterior', keys: 'Alt+PageUp', palette: 'Aba anterior' },
-        { cmd: 'moveTabLeft', label: 'Aba para a esquerda', keys: 'Alt+Shift+PageUp', palette: 'Mover aba para a esquerda' },
-        { cmd: 'moveTabRight', label: 'Aba para a direita', keys: 'Alt+Shift+PageDown', palette: 'Mover aba para a direita' },
+        { cmd: 'moveTabLeft', label: 'Aba para a esquerda', keys: 'Alt+Shift+PageUp', palette: false },
+        { cmd: 'moveTabRight', label: 'Aba para a direita', keys: 'Alt+Shift+PageDown', palette: false },
       ],
     }],
   },

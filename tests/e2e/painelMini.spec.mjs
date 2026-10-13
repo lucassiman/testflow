@@ -96,3 +96,30 @@ test('cancelar na rodada: o caso volta a "não começado" e a rodada antiga arqu
   await expect(page.locator('#preview table').first()).toContainText('PASS');
   await expect(panel.locator('.cp-item', { hasText: 'TC-1' })).not.toHaveClass(/cp-(atual|andamento)/);
 });
+
+// V1 / item M (4.4): os numerais aplicam status também no painel flutuante minimizado (⧉ Flutuar + ▁).
+// O Chromium do teste não abre a janelinha de verdade: troca-se a API por uma janela comum (popup) que faz o mesmo papel.
+test('flutuante minimizado: os numerais aplicam status na janelinha em foco', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 800 });
+  await page.addInitScript(() => {
+    // @ts-ignore
+    window.documentPictureInPicture = { requestWindow: async (opts) => window.open('', 'pipfake', `width=${opts?.width || 440},height=${opts?.height || 150}`) };
+  });
+  await openEditor(page, { mode: 'preview', doc: CASE });
+  await page.locator('.exec-bar [data-act="run"]').click();
+  const runner = page.locator('.runner');
+  const popupPromise = page.waitForEvent('popup');
+  await runner.locator('[data-act="float"]').first().click(); // ⧉ Flutuar
+  const pop = await popupPromise;
+  await pop.locator('.runner [data-act="compact"]').first().click(); // ▁ Minimizar, já na janelinha
+  await expect(pop.locator('.runner.compact')).toBeVisible();
+  await expect(pop.locator('.run-mini-step')).toContainText('1/');
+  await pop.bringToFront();
+  await pop.keyboard.press('1'); // PASS no passo 1
+  await expect(pop.locator('.run-mini-step')).toContainText('2/');
+  await pop.keyboard.press('2'); // FAIL no passo 2
+  await expect(pop.locator('.run-mini-step')).toContainText('3/');
+  const rows = await page.locator('#preview table').first().innerText();
+  expect(rows).toMatch(/PASS/);
+  expect(rows).toMatch(/FAIL/);
+});

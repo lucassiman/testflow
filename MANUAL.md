@@ -10,6 +10,41 @@ Guia completo do editor — para quem está chegando agora e para consulta rápi
 
 ---
 
+## Guia rápido (2 páginas)
+
+**Chegou agora?** Leia só esta página e a seguinte; o resto deste manual é a **Referência** — consulte quando precisar (`Ctrl+F` ou o **Sumário** em `☰`).
+
+**Os primeiros 15 minutos**
+
+1. `☰` → **Arquivos** → **Abrir…** → escolha a pasta `exemplos` (uma loja fictícia pronta para treinar).
+2. Abra `exemplos/LEIA-ME.md`: o roteiro com checklist leva da leitura à primeira execução. Depois, `exemplos/LEIA-ME-por-modulo.md` tem um roteiro curto para cada menu do topo.
+3. Abra `casos/TC-003-recuperar-senha.md` e clique em **▶ Executar**: marque o status de cada passo com **1–5** e cole prints com `Ctrl+V`.
+4. `Ctrl+Shift+F` busca em todos os arquivos; **📊 Painel** (aba Arquivos) lista a pasta por status.
+5. No `BUG-001`: **Compartilhar ▾ → Copiar para o Jira**.
+
+**Onde fica…? (o essencial)**
+
+| Quero… | Onde |
+| --- | --- |
+| Criar um caso de teste | **Casos ▾ → 📄 Novo caso de teste** |
+| Criar bug, plano, checklist… a partir de modelo | **Novo ▾ → A partir de modelo…** ou `Alt+Shift+N` |
+| Anotar algo rápido | `Alt+Q` (vai para `_entrada/`) |
+| Executar um caso | **▶ Executar** na barra do documento |
+| Tirar um print do que está testando | **Evidências ▾ → Capturar** ou `Ctrl+Alt+P` |
+| Ver o que falhou na pasta | **📊 Painel** (aba Arquivos) |
+| Levar o resultado para Jira, Notion ou Claude | **Compartilhar ▾** |
+| Qualquer ação pelo nome | `Ctrl+Shift+P` (paleta de comandos) |
+| Ajuda | `F1` (este manual) |
+
+**Três modos de edição:** *Raw* (`Alt+1`) é o Markdown puro, *Dividido* (`Alt+2`) mostra Markdown e visual do **mesmo** documento, *Preview* (`Alt+3`) é o visual editável. **Ver ao lado** é outra coisa: abre **outro** documento só para consulta (ver 6.6).
+
+Precisa de mais? A lista completa "Onde fica…?" está no capítulo 4 e os atalhos, no 13.
+
+---
+
+> [!NOTE]
+> **A partir daqui é a Referência.** Os capítulos seguem a ordem do app: conceitos (1–2), a tela (4), escrever (5), documentos de QA (6), executar (7), evidências (8), automação (9), pasta e arquivos (10), buscar (11), compartilhar (12), atalhos (13) e o resto.
+
 ## 1. O que é
 
 **TestFlow** é um editor de **Markdown para QA**: casos de teste, bugs, relatórios de execução, planos, checklists e sessões exploratórias — gerados pelo Claude ou escritos à mão — viram documentos **interativos**: status clicável, execução passo a passo com cronômetro e prints, resumo com gráfico, painel da pasta, cópia pronta para Jira/Notion/Claude.
@@ -108,7 +143,7 @@ Resumo do roteiro:
 | Área | O que tem |
 | --- | --- |
 | **Início** | Ao abrir o app sem documento, aparece a tela inicial: **🔁 rodada em andamento** (progresso, falhas, próximo caso e **▶ Continuar**, que abre o próximo caso já executando), **📋 pendências da pasta** (com falha, bloqueados, nunca executados, bugs abertos — clique para ver a lista na busca), **⚡ Começar** (atalhos **por módulo**, os mesmos do topo: *Casos* — novo caso, importar, edição em massa, nova visão; *Execução* — rodada, ciclo salvo, tendência, página da rodada; *Automação*; *Publicar*; *Arquivo* — modelo, nota rápida; *Pasta de trabalho* — painel, buscar) e **★ fixados / 🕘 recentes**. Some quando você abre ou cria um documento; volta pelo **logo** no canto ou `Ctrl+Shift+P` → *Início*. *Ver o documento de exemplo* abre o exemplo do formato. |
-| **Topo** | `☰` barra lateral · nome do arquivo (clique para renomear) · **estado do documento** (ver 4.1) · **Arquivo:** **Novo ▾** (caso de teste, a partir de modelo, nota rápida, em branco; importar casos de planilha ou do Notion) · **Abrir** · **Salvar ▾** (salvar como, renomear, salvar como modelo, salvar automaticamente) · **um menu por módulo** (ver *Menus por módulo* abaixo): **Casos ▾ · Execução ▾ · Evidências ▾ · Automação ▾ · Publicar ▾ · Compartilhar ▾** · modo **Raw / Dividido / Preview** · **A− 100% A+** (tamanho do texto) · **🔑** dados compartilhados · **⌘** paleta · **?** manual · **◐** tema claro/escuro. Em tela menor que ~1700 px os módulos ficam só com o ícone (o nome aparece ao passar o mouse). |
+| **Topo** | `☰` barra lateral · nome do arquivo (clique para renomear) · **estado do documento** (ver 4.1) · **Arquivo:** **Novo ▾** (a partir de modelo, nota rápida, em branco; importar casos de planilha ou do Notion) · **Abrir** · **Salvar ▾** (salvar como, renomear, salvar como modelo, salvar automaticamente) · **um menu por módulo** (ver *Menus por módulo* abaixo): **Casos ▾ · Execução ▾ · Evidências ▾ · Automação ▾ · Publicar ▾ · Compartilhar ▾** · modo **Raw / Dividido / Preview** · **A− 100% A+** (tamanho do texto) · **🔑** dados compartilhados · **⌘** paleta · **?** manual · **◐** tema claro/escuro. Em tela menor que ~1700 px os módulos ficam só com o ícone (o nome aparece ao passar o mouse). |
 | **Abas** | Aparecem quando há 2+ documentos abertos. `●` = não salvo; 🏛/✎/▶/⏱ = estado (ver 4.1). Botão do meio do mouse fecha. **Arraste** uma aba para mudar a ordem. Com abas demais para a largura, elas encolhem e depois **rolam** (roda do mouse sobre as abas, ou **‹ ›** à direita); **⌄ N** abre a lista de todas para escolher. |
 | **Toolbar** | Só o que mais se usa: desfazer/refazer · **B** *I* · **Aa ▾** (tachado, código inline, cor) · **Título ▾** (H1, H2, H3, citação) · **Lista ▾** (lista, numerada, checklist) · Link · **📸 Capturar** · **Tabela ▾** · **{ } Código ▾** · **Status ▾** · **Destaque ▾** · **＋ Inserir** (tudo o que dá para pôr no documento: blocos, modelos, imagem por URL, diagrama… — o mesmo menu do `/`). Todas as ações pelo nome: `Ctrl+Shift+P`. **No Preview, ela só aparece quando você está num bloco** (editando ou com ele selecionado) e fica por cima do documento, sem empurrar o texto; sai com `Esc` (sem editar) ou clicando fora. No Raw e no Dividido fica sempre. Para deixar fixa também no Preview: `Ctrl+Shift+P` → *Barra de formatação no Preview: só ao editar / sempre*. |
 | **Barra lateral** (`☰` ou `Ctrl+Shift+E`) | Abas (com a barra estreita, só a aberta mostra o nome) **Arquivos** (pasta de trabalho em árvore, 📊 Painel, recentes), **Sumário** (títulos), **Links** (quem cita / links de saída), **Buscar** (em todos os arquivos). **Arraste a borda direita** para mudar a largura (duplo clique volta ao padrão; com ela em foco, `←`/`→` ajustam). |
@@ -124,7 +159,7 @@ Cada ação mora num **módulo**. Os menus do topo e as categorias da paleta (`C
 
 | Módulo | O que tem |
 | --- | --- |
-| **Novo ▾ / Salvar ▾** (Arquivo) | Criar documento (caso, modelo, nota rápida, em branco), importar casos de planilha ou do Notion · salvar como, renomear, salvar como modelo, salvar automaticamente |
+| **Novo ▾ / Salvar ▾** (Arquivo) | Criar documento (modelo, nota rápida, em branco), importar casos de planilha ou do Notion · salvar como, renomear, salvar como modelo, salvar automaticamente |
 | **📋 Casos ▾** | **Escrever:** novo caso, 🔑 dados compartilhados, ↪ incluir passos compartilhados, 🌐 ambiente ativo, vínculos, dispositivo · **Revisar:** aprovação do caso, rodadas só com aprovados · **Vários casos:** edição em massa, importar de planilha, organizar por épico e ticket, nova visão |
 | **▶ Execução ▾** | **Começar:** rodada, ciclo de regressão, executar ciclo salvo, reteste das falhas · **Durante:** próximo caso (da rodada / da pasta), voltar à execução, como está, atribuir os casos, abrir o ciclo de origem, finalizar · **Resultados:** relatórios da execução, tendência entre rodadas · **Acompanhar com o time:** página da rodada, avisos no Teams · **Configurar:** status personalizados |
 | **📸 Evidências ▾** (evidências e bugs) | **Capturar:** print, outra janela, parar, gravar vídeo, ⏪ replay · **Bug:** novo bug ligado, console e rede da aba testada (extensão) · **Arquivos:** evidências do documento, reaproveitar print, limpar · **Preferências:** duração do replay, captura pela extensão, prints grandes |
@@ -271,6 +306,9 @@ Organizado pelos mesmos módulos dos menus do topo e da paleta. Um teste confere
 | **Preview** | `Alt+3` | Só o visual — e **editável** |
 
 `Ctrl+E` alterna entre os três. No modo Dividido, os comandos da toolbar valem para o lado onde você clicou por último.
+
+> [!NOTE]
+> **Dividido** mostra Raw + Preview do **mesmo** documento. **Ver ao lado** (6.6) abre **outro** documento, só para consulta.
 
 Todo documento **abre no Preview** — o novo (já com um bloco em edição para digitar), o aberto da pasta, o criado de um modelo e a nota rápida. Mude para Dividido ou Raw quando precisar. Prefere que abra no último modo usado? `Ctrl+Shift+P` → **Ao abrir documento: Preview ou o último modo usado**.
 
@@ -539,6 +577,8 @@ O mesmo caso executado **uma vez por linha de dados** — ex.: o menu conferido 
 
 - **De um compartilhado** — `iterar: Logins` no cabeçalho usa todas as linhas de `## Dados: Logins` do compartilhado do escopo (6.8); `iterar: [admin, cliente]` só essas.
 
+**Regra prática — qual forma usar?** Valor que só faz sentido **naquele caso** (limites, entradas e saídas esperadas) → `## Iterações` (ex.: o `TC-007` dos exemplos). Dado que **vários casos reutilizam** ou que muda **por ambiente** (login, URL, massa) → compartilhado + `iterar:` (ex.: o `TC-009` com o `COMP-001`). Evite senha na tabela do caso: use os logins do compartilhado.
+
 Nos passos, **`{{dado}}`** é a linha da vez: `{{dado.e-mail}}`, `{{dado.senha}}`, `{{dado.perfil}}`; e o bloco compartilhado recebe a linha com `↪ Fazer login (dado)`. No **Preview** o dado aparece como **🔁 perfil** — passe o mouse para ver o valor de cada iteração. `{{dado}}` sem iterações, ou um campo que não existe, vira aviso no rodapé.
 
 **Executar:** ▶ Executar mostra a iteração no topo do painel (**🔁 admin 1/2**), com os valores dela nos passos e no 🔑 (para copiar). **✓ Concluir iteração** registra a rodada no Histórico de execuções com a coluna **Dados** (`admin (1/2)`), guarda a tabela como `### Rodada N — … — admin (1/2)`, limpa os status e começa a próxima linha (o cronômetro zera e o "Antes de cada caso" aparece de novo). Na última, **✓ Concluir** fecha como sempre. Fechou o editor no meio? ▶ Executar continua na iteração seguinte à última registrada (até 12 h). **✕ Cancelar** desfaz só a iteração da vez.
@@ -599,6 +639,18 @@ Fechar o painel não perde nada: tudo já está no documento.
 **Começou sem querer?** **✕ Cancelar execução** (ao lado do cronômetro) esquece esta execução: se nada mudou, fecha na hora; se você já marcou status, escreveu obtido ou colou print, pede um segundo clique e **desfaz o que mudou desde que começou** (`Ctrl+Z` traz de volta). Na rodada (ciclo), o caso volta a *não começado* — inclusive a rodada antiga que tinha sido arquivada ao abrir.
 
 ### 7.4 Painel flutuante (por cima de outros programas)
+
+O painel do ▶ Executar tem **cinco modos**, e todos funcionam com o teclado (1–5, ←/→, `Enter`, `Esc`):
+
+| Modo | Como chegar | Quando usar |
+| --- | --- | --- |
+| **Encaixado** | Padrão com espaço (área do documento com 1000 px ou mais) | Coluna à direita, sem cobrir a tabela de passos |
+| **Flutuando no canto** | Padrão em tela estreita | Janela pequena dentro do editor |
+| **Minimizado** (▁ ou `M`) | Botão ▁ do painel | Um monitor só: sobra tela para o sistema testado |
+| **⧉ Flutuar** | Botão ⧉ do painel | Janelinha por cima de qualquer programa (Chrome/Edge) |
+| **Flutuar + minimizado** | ⧉ Flutuar e depois ▁ | Tela única e sistema testado em tela cheia |
+
+Os numerais **1–5 aplicam o status em todos os modos**, inclusive minimizado e na janelinha flutuante minimizada (com a janelinha em foco). Há um teste automatizado para isso.
 
 No painel ▶ Executar (ou ⏱ Sessão), **⧉ Flutuar** abre o painel numa janelinha que fica **sempre visível**, mesmo com o sistema testado em tela cheia. Marque status, obtido e cole prints por ela (1–5, ←/→ e `Ctrl+V` valem com a janelinha em foco). **⤓ Voltar** (ou fechar a janelinha) devolve o painel ao editor.
 

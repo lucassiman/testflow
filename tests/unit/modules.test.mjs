@@ -37,7 +37,7 @@ test('menus do topo: um por módulo, ações agrupadas, sem as misturas de antes
   for (const m of MODULES.filter((x) => x.top)) assert.match(html, new RegExp(`data-menu="mod-${m.id}"`));
   // Novo ▾ só cria documentos (rodada e ciclo foram para Execução ▾)
   const novo = menuHtml('newMenu');
-  assert.match(novo, /data-cmd="newCase"/);
+  assert.doesNotMatch(novo, /data-cmd="newCase"/); // o caso de teste mora em Casos ▾ (V1/K)
   assert.doesNotMatch(novo, /data-cmd="newRun"|data-cmd="newCycle"|data-cmd="newAutoRun"/);
   // Salvar ▾ só tem o que é do arquivo (publicar → Publicar ▾; backup → pasta de trabalho)
   const salvar = menuHtml('saveMenu');

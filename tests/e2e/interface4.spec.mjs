@@ -8,8 +8,11 @@ test('menu Novo agrupado; Caso de teste abre o modelo', async ({ page }) => {
   await page.click('button[data-menu="newMenu"]');
   const titles = page.locator('#newMenu .menu-title');
   await expect(titles).toHaveText(['Documento', 'Importar']);
+  await expect(page.locator('#newMenu [data-cmd="newCase"]')).toHaveCount(0);
   await expect(page.locator('#newMenu [data-cmd="newRun"]')).toHaveCount(0);
-  await page.click('#newMenu [data-cmd="newCase"]');
+  await page.keyboard.press('Escape');
+  await page.click('button[data-menu="mod-casos"]');
+  await page.click('#mod-casos [data-cmd="newCase"]');
   await expect.poll(() => raw(page)).toMatch(/^tipo: caso-de-teste$/m);
 });
 
