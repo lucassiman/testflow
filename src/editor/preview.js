@@ -13,6 +13,7 @@ const JIRA_BASE = typeof __JIRA_BASE__ !== 'undefined' ? __JIRA_BASE__ : '';
 import { buildMetaForm } from '../ui/metaForm.js';
 import { decorateStatusTable, decorateSections, summaryRanges } from './execution.js';
 import { createTableEditor } from './tableEdit.js';
+import { handleListTab, handleMarkdownShortcut, handleTaskEnter, handleInlineMarkdown, handleRawTab } from './autoformat.js';
 import { findSection } from '../markdown/runs.ts';
 import { HISTORY_TITLE } from '../markdown/status.ts';
 
@@ -542,12 +543,16 @@ export function createPreview({
     textarea.value = text;
     const hint = document.createElement('div');
     hint.className = 'block-raw-hint ui-only';
-    hint.textContent = 'Editando Markdown do bloco · Ctrl+Enter aplica · Esc cancela';
+    hint.textContent = ['code', 'mermaid', 'html'].includes(info.type)
+      ? 'Editando Markdown do bloco · Tab indenta · Ctrl+Enter aplica · Esc cancela'
+      : 'Editando Markdown do bloco · Ctrl+Enter aplica · Esc cancela';
     el.classList.add('editing', 'editing-raw');
     el.append(textarea, hint);
     editing = { el, textarea, hint, text, ...info, raw: true };
     const fit = () => { textarea.style.height = 'auto'; textarea.style.height = `${textarea.scrollHeight + 2}px`; };
     textarea.addEventListener('input', fit);
+    // código / diagrama / HTML: Tab indenta (Esc e Ctrl+Enter saem do bloco)
+    if (['code', 'mermaid', 'html'].includes(info.type)) textarea.addEventListener('keydown', (event) => { handleRawTab(event, textarea); });
     fit();
     textarea.focus({ preventScroll: true });
   }
@@ -687,7 +692,7 @@ export function createPreview({
   /** @param {VisualEdit} ed */
   function commitNewBlock(ed) {
     const { content } = ed;
-    const formatted = content.querySelector('b, strong, i, em, s, del, code, a, span[style], img, font, u');
+    const formatted = content.querySelector('b, strong, i, em, s, del, code, a, span[style], img, font, u, ul, ol, h1, h2, h3, h4, h5, h6, blockquote, input');
     let newText = formatted
       ? htmlToMarkdown(content, '')
       // texto puro: vale como Markdown (digitar "## Título" ou "- item" já vira título/lista)
@@ -885,7 +890,23 @@ export function createPreview({
     if (!editing) return;
     if (editing.table && editing.table.handleKey(event)) { event.preventDefault(); return; }
     if (event.key === 'Escape') { event.preventDefault(); cancel(); return; }
-    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); commit(); }
+    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); commit(); return; }
+    // Markdown ao digitar ("- ", "1. ", "# ", "> ", "[ ] ") e Tab / Shift+Tab em lista = indentar o item
+    if (!editing.raw && editing.content.contains(/** @type {Node} */ (event.target))) {
+      if (handleListTab(event, editing.content) || handleMarkdownShortcut(event, editing.content) || handleTaskEnter(event, editing.content)) return;
+    }
+  });
+
+  // **negrito**, *itálico*, `código`, ~~riscado~~: formata ao fechar o delimitador (compositionend cobre a tecla morta do ABNT2)
+  root.addEventListener('input', (event) => {
+    const e = /** @type {InputEvent} */ (event);
+    if (!editing || editing.raw || e.isComposing || e.inputType !== 'insertText' || !e.data) return;
+    if (editing.content.contains(/** @type {Node} */ (e.target))) handleInlineMarkdown(editing.content, e.data);
+  });
+  root.addEventListener('compositionend', (event) => {
+    const e = /** @type {CompositionEvent} */ (event);
+    if (!editing || editing.raw || !e.data) return;
+    if (editing.content.contains(/** @type {Node} */ (e.target))) handleInlineMarkdown(editing.content, e.data);
   });
 
   // colar no modo visual = texto puro (evita lixo de HTML de outras páginas)

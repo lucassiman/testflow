@@ -125,6 +125,41 @@ function createService(style) {
 }
 
 /**
+ * O Tab no Preview usa o indent do navegador, que aninha a lista como filha direta de outra (<ul><li>a</li><ul>…</ul></ul>)
+ * ou num <li style="list-style-type: none"> sem texto. Leva cada sublista para dentro do item anterior, como o Markdown espera.
+ * @param {HTMLElement} root
+ */
+function nestDirectLists(root) {
+  const isList = (/** @type {Node | null} */ n) => n?.nodeName === 'UL' || n?.nodeName === 'OL';
+  /** Junta a sublista ao item: se ele já termina numa sublista do mesmo tipo, os itens entram nela (senão a lista ficaria "solta"). @param {Element} item @param {Element} list */
+  const attach = (item, list) => {
+    const tail = item.lastElementChild;
+    if (tail && tail.nodeName === list.nodeName) { while (list.firstChild) tail.appendChild(list.firstChild); list.remove(); }
+    else item.appendChild(list);
+  };
+  const direct = [...root.querySelectorAll('ul, ol')].filter((l) => isList(l.parentNode));
+  for (const list of direct.reverse()) {
+    const prev = list.previousElementSibling;
+    if (prev && prev.nodeName === 'LI') attach(prev, list);
+    else {
+      const li = root.ownerDocument.createElement('li');
+      list.replaceWith(li);
+      li.appendChild(list);
+    }
+  }
+  for (const li of [...root.querySelectorAll('li')]) {
+    const only = li.firstElementChild;
+    // item sem texto próprio, só com uma sublista (o <li style="list-style-type: none"> do navegador)
+    const wrapper = li.children.length === 1 && isList(only) && [...li.childNodes].every((n) => n === only || (n.nodeType === 3 && !(/** @type {Text} */ (n).data.trim())));
+    const prev = li.previousElementSibling;
+    if (wrapper && prev && prev.nodeName === 'LI' && only) {
+      attach(prev, only);
+      li.remove();
+    }
+  }
+}
+
+/**
  * @param {HTMLElement} container elemento com o HTML editado do bloco
  * @param {string} originalMarkdown Markdown original do bloco
  */
@@ -145,6 +180,10 @@ export function htmlToMarkdown(container, originalMarkdown) {
     else box.removeAttribute('checked');
   });
 
+  nestDirectLists(/** @type {HTMLElement} */ (clone));
+  // ZWSP: separador invisível que o Preview usa para o cursor sair de um `código` recém-formatado
+  const texts = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT);
+  for (let n = texts.nextNode(); n; n = texts.nextNode()) if (/\u200b/.test(/** @type {Text} */ (n).data)) /** @type {Text} */ (n).data = /** @type {Text} */ (n).data.replace(/\u200b/g, '');
   let md = createService(detectStyle(originalMarkdown)).turndown(/** @type {HTMLElement} */ (clone));
   md = keepTableSeparator(md, originalMarkdown);
   return md.replace(/\u00a0/g, ' ').replace(/[ \t]+$/gm, (/** @type {string} */ m) => (m.length >= 2 ? '  ' : '')).trim();
