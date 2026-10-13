@@ -13,7 +13,8 @@ test('dispositivo da execução: Mobile iOS com versão vira campo, tag e chip',
   await page.locator('.sidebar button', { hasText: 'Abrir…' }).first().click();
   await expect(page.locator('[data-side="wsList"] .side-file')).toHaveCount(1);
   await page.click('button[data-menu="mod-execucao"]');
-  await page.click('#mod-execucao [data-cmd="newRun"]');
+  await page.click('#mod-execucao [data-cmd="startRun"]');
+  await page.click('.app-dialog button:has-text("Continuar")');
   const picker = page.locator('.cpk-dialog');
   await picker.locator('button', { hasText: 'Selecionar visíveis' }).click();
   await picker.locator('[data-cpk="name"]').fill('Mobile');

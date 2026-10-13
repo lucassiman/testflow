@@ -117,9 +117,10 @@ export const MODULES = [
       {
         title: 'Começar',
         items: [
-          { cmd: 'newRun', label: '▶ Rodada de execução…', hint: 'escolher os casos (por tag, épico, visão…) e já executar um por um', palette: 'Rodada de execução: nova (avulsa, escolher os casos)…' },
+          { cmd: 'startRun', label: '▶ Nova execução…', hint: 'avulsa (escolher os casos), de um ciclo salvo ou só automatizada (relatório)', palette: 'Nova execução (avulsa, de um ciclo salvo ou só automatizada)…' },
+          { cmd: 'newRun', label: 'Rodada avulsa', menu: false, palette: false },
           { cmd: 'newCycle', label: '🔁 Ciclo de regressão…', hint: 'salvar os casos da regressão e executá-la quantas vezes quiser (#1, #2…)', palette: 'Ciclo de regressão: novo (salvar os casos)…' },
-          { cmd: 'runCycle', label: '⏯ Executar um ciclo salvo…', hint: 'nova execução (#N) com os casos de um ciclo', palette: 'Ciclo de regressão: executar um ciclo salvo (nova execução)…' },
+          { cmd: 'runCycle', label: 'Executar um ciclo salvo', menu: false, palette: false },
           { cmd: 'rerunFailed', label: '🔂 Reteste das falhas', hint: 'nova rodada só com os FAIL/BLOCKED desta execução', palette: 'Reteste das falhas: nova rodada só com os FAIL/BLOCKED desta execução' },
         ],
       },
@@ -206,7 +207,7 @@ export const MODULES = [
       {
         title: 'Resultados',
         items: [
-          { cmd: 'newAutoRun', label: '🤖 Execução só automatizada…', hint: 'a partir de um relatório Playwright, JUnit ou Newman', palette: 'Execução só automatizada: criar a partir de um relatório…' },
+          { cmd: 'newAutoRun', label: 'Execução só automatizada', menu: false, palette: false },
           { cmd: 'attachAutomation', label: '📎 Anexar relatório à execução…', hint: 'entra como Testes automatizados, separado dos manuais', palette: 'Execução: anexar relatório de testes automatizados (Playwright, JUnit, Newman)…' },
           { cmd: 'importAutomation', label: '📄 Relatório como documento…', hint: 'JUnit / Playwright / Newman (ou arraste o arquivo)', palette: 'Relatório de automação como documento (JUnit, Playwright, Newman)…' },
           { cmd: 'reporterSetup', label: '⚡ Reporter ao vivo — como ligar…', hint: 'Playwright, Jest, Cypress gravam direto na execução', palette: 'Reporter da automação: resultado direto na execução (Playwright, Jest, Cypress) — como ligar…' },
@@ -507,8 +508,8 @@ export const EXEC_BAR_MORE = {
  */
 export const HOME_SHORTCUTS = [
   { cmd: 'newCase', ws: false }, { cmd: 'importCases' }, { cmd: 'bulkEdit' }, { cmd: 'newView' },
-  { cmd: 'newRun', ws: false }, { cmd: 'runCycle' }, { cmd: 'trend' }, { cmd: 'roundPage' },
-  { cmd: 'newAutoRun' }, { cmd: 'reporterSetup' },
+  { cmd: 'startRun', ws: false }, { cmd: 'trend' }, { cmd: 'roundPage' },
+  { cmd: 'reporterSetup' },
   { cmd: 'officialUpdate' },
   { cmd: 'newFromTemplate', ws: false }, { cmd: 'quickNote', ws: false },
   { cmd: 'dashboard' }, { cmd: 'searchAll' },

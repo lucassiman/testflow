@@ -29,7 +29,8 @@ test('tela inicial: aparece sem documento aberto, mostra pendências e a rodada,
   await expect(page.locator('[data-side="searchResults"]')).toContainText('TC-1');
 
   // nova rodada pelo atalho → o documento da execução abre (a tela some); Início mostra a rodada com ▶ Continuar
-  await home.locator('[data-home-cmd="newRun"]').click();
+  await home.locator('[data-home-cmd="startRun"]').click();
+  await page.click('.app-dialog button:has-text("Continuar")');
   const picker = page.locator('.cpk-dialog');
   await picker.locator('button', { hasText: 'Selecionar visíveis' }).click();
   await picker.locator('[data-cpk="name"]').fill('Sprint 9');

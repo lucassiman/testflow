@@ -110,7 +110,8 @@ test('execução: antes de cada caso, passos do bloco com e-mail e senha para co
 test('rodada: "antes da rodada" aparece no painel, com os dados resolvidos e marcável', async ({ page, context }) => {
   await setup(page, context);
   await page.click('button[data-menu="mod-execucao"]');
-  await page.click('#mod-execucao [data-cmd="newRun"]');
+  await page.click('#mod-execucao [data-cmd="startRun"]');
+  await page.click('.app-dialog button:has-text("Continuar")');
   const picker = page.locator('.cpk-dialog');
   await picker.locator('.cpk-item', { hasText: 'TC-1' }).click();
   await picker.locator('button', { hasText: 'Criar e começar' }).click();

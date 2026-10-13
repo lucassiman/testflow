@@ -92,7 +92,8 @@ test('resumo da rodada: bugs abertos e cópia para Teams e e-mail', async ({ pag
     ['aplicacoes/Portal/bugs/BUG-1.md', bug('BUG-1', 'TC-2')],
   ]);
   await page.click('button[data-menu="mod-execucao"]');
-  await page.click('#mod-execucao [data-cmd="newRun"]');
+  await page.click('#mod-execucao [data-cmd="startRun"]');
+  await page.click('.app-dialog button:has-text("Continuar")');
   const picker = page.locator('.cpk-dialog');
   await picker.locator('button', { hasText: 'Selecionar visíveis' }).click();
   await picker.locator('[data-cpk="name"]').fill('Sprint 42');

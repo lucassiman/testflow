@@ -18,7 +18,8 @@ test('checklist no ciclo: avaliado como um todo pelo painel; o resto da rodada s
   await expect(page.locator('[data-side="wsList"] .side-file')).toHaveCount(2);
 
   await page.click('button[data-menu="mod-execucao"]');
-  await page.click('#mod-execucao [data-cmd="newRun"]');
+  await page.click('#mod-execucao [data-cmd="startRun"]');
+  await page.click('.app-dialog button:has-text("Continuar")');
   const picker = page.locator('.cpk-dialog');
   await expect(picker.locator('.cpk-whole')).toHaveCount(1); // o checklist vem marcado "como um todo"
   await picker.locator('button', { hasText: 'Selecionar visíveis' }).click();

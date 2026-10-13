@@ -8,6 +8,12 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.64.0', date: '13/10/2026',
+    items: [
+      { icon: '▶', text: '**Nova execução…** é a porta única: pergunta se é *avulsa*, *de um ciclo salvo* ou *só automatizada*. Saíram do menu *Rodada de execução*, *Executar um ciclo salvo* e *Execução só automatizada*; o reteste das falhas e o *Executar de novo* seguem no painel da execução.', manual: '7.8 Ciclo de regressão' },
+    ],
+  },
+  {
     version: '1.63.0', date: '13/10/2026',
     items: [
       { icon: '📤', text: '**Uma porta só para exportar**: **Compartilhar ▾ → 📤 Exportar…** oferece PDF, HTML (página única), .zip de Markdown + imagens (Notion) e o **pacote do hub** — agora de uma **pasta inteira**, com subpastas, Markdown simples e imagens (subir à mão).', manual: '12.3 Exportar' },

@@ -38,13 +38,15 @@ test('menus do topo: um por módulo, ações agrupadas, sem as misturas de antes
   // Novo ▾ só cria documentos (rodada e ciclo foram para Execução ▾)
   const novo = menuHtml('newMenu');
   assert.doesNotMatch(novo, /data-cmd="newCase"/); // o caso de teste mora em Casos ▾ (V1/K)
-  assert.doesNotMatch(novo, /data-cmd="newRun"|data-cmd="newCycle"|data-cmd="newAutoRun"/);
+  assert.doesNotMatch(novo, /data-cmd="startRun"|data-cmd="newRun"|data-cmd="newCycle"|data-cmd="newAutoRun"/);
   // Salvar ▾ só tem o que é do arquivo (publicar → Publicar ▾; backup → pasta de trabalho)
   const salvar = menuHtml('saveMenu');
   assert.match(salvar, /id="autoSaveItem"/);
   assert.match(salvar, /data-autosave-label/);
   assert.doesNotMatch(salvar, /data-cmd="publish"|data-cmd="history"|data-cmd="backup"/);
-  assert.match(html, /id="mod-execucao"[^]*data-cmd="newRun"/);
+  assert.match(html, /id="mod-execucao"[^]*data-cmd="startRun"/);
+  // uma porta só para começar uma execução
+  assert.doesNotMatch(html, /data-cmd="(newRun|runCycle|newAutoRun)"/);
   assert.match(html, /id="mod-publicar"[^]*data-cmd="publish"/);
   // exportar é uma porta só: o diálogo Exportar…
   assert.equal((html.match(/data-cmd="exportDialog"/g) || []).length, 1);
@@ -107,10 +109,10 @@ test('⋯: agrupado por módulo, na ordem em que os módulos aparecem; data-cp p
 test('tela inicial: atalhos por módulo; sem pasta, só os que não precisam dela', () => {
   assert.deepEqual(homeShortcuts(true).map((g) => g.module.label), ['Casos', 'Execução', 'Automação', 'Publicar', 'Arquivo', 'Pasta de trabalho']);
   const semPasta = homeShortcuts(false).flatMap((g) => g.items.map((i) => i.item.cmd));
-  assert.deepEqual(semPasta, ['newCase', 'newRun', 'newFromTemplate', 'quickNote']);
+  assert.deepEqual(semPasta, ['newCase', 'startRun', 'newFromTemplate', 'quickNote']);
   // os atalhos de antes continuam (testes de tela clicam neles)
   const comPasta = homeShortcuts(true).flatMap((g) => g.items.map((i) => i.item.cmd));
-  for (const c of ['newCase', 'newRun', 'quickNote', 'newFromTemplate', 'dashboard', 'trend']) assert.ok(comPasta.includes(c), c);
+  for (const c of ['newCase', 'startRun', 'quickNote', 'newFromTemplate', 'dashboard', 'trend']) assert.ok(comPasta.includes(c), c);
 });
 
 /** Para comparar textos do manual com os do registro: sem emoji, sem "…", minúsculas. @param {string} s */

@@ -51,7 +51,8 @@ test('aprovação: rascunho → em revisão → aprovado; mudar o passo pede de 
 
   // rodada nova com "só aprovados": TC-2 (sem aprovação) some da lista
   await page.click('button[data-menu="mod-execucao"]');
-  await page.click('#mod-execucao [data-cmd="newRun"]');
+  await page.click('#mod-execucao [data-cmd="startRun"]');
+  await page.click('.app-dialog button:has-text("Continuar")');
   const picker = page.locator('.cpk-dialog');
   await expect(picker.locator('.cpk-item')).toHaveCount(2);
   await expect(picker.locator('.cpk-item', { hasText: 'TC-1' }).locator('.cpk-ap')).toHaveText('✅');
@@ -61,7 +62,8 @@ test('aprovação: rascunho → em revisão → aprovado; mudar o passo pede de 
   await picker.locator('[data-act="close"]').first().click();
   // a preferência fica lembrada
   await page.click('button[data-menu="mod-execucao"]');
-  await page.click('#mod-execucao [data-cmd="newRun"]');
+  await page.click('#mod-execucao [data-cmd="startRun"]');
+  await page.click('.app-dialog button:has-text("Continuar")');
   await expect(page.locator('.cpk-dialog [data-cpk="approved"]')).toBeChecked();
   await expect(page.locator('.cpk-dialog .cpk-item')).toHaveCount(1);
 });

@@ -45,7 +45,8 @@ test('segmento do épico: reunir pela árvore, caso novo na pasta do ticket herd
 
   // rodada pelo atalho do épico: a execução herda o épico e a tag em comum
   await page.click('button[data-menu="mod-execucao"]');
-  await page.click('#mod-execucao [data-cmd="newRun"]');
+  await page.click('#mod-execucao [data-cmd="startRun"]');
+  await page.click('.app-dialog button:has-text("Continuar")');
   const picker = page.locator('.cpk-dialog');
   await picker.locator('.cpk-chip', { hasText: '📚 PORTAL-10' }).click();
   await expect(picker.locator('[data-cpk="count"]')).toContainText('2 de 3');

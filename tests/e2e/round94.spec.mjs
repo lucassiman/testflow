@@ -60,7 +60,8 @@ test('ciclo de regressão: escolher os casos, próximo caso já executando, resu
   const dlg = page.locator('.app-dialog');
 
   await page.click('button[data-menu="mod-execucao"]');
-  await page.click('#mod-execucao [data-cmd="newRun"]');
+  await page.click('#mod-execucao [data-cmd="startRun"]');
+  await page.click('.app-dialog button:has-text("Continuar")');
   const picker = page.locator('.cpk-dialog');
   await expect(picker).toBeVisible();
   await picker.locator('.cpk-chip', { hasText: 'Regressão' }).first().click();
