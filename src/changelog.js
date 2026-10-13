@@ -8,6 +8,12 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.67.0', date: '13/10/2026',
+    items: [
+      { icon: '📅', text: '**Diário opcional**: numa pasta sem diário, o menu do diário e o cartão *Hoje* não aparecem — ligue em **Diário pessoal e lembretes** (`Ctrl+Shift+P`). Na mesma janela, **lembretes** de começar e fechar o dia, no app, no aviso do computador e, com um webhook, no **Teams** (só com o app aberto).', manual: '6.11 Diário' },
+    ],
+  },
+  {
     version: '1.66.0', date: '13/10/2026',
     items: [
       { icon: '📅', text: '**Dia** (novo menu no topo): **☀ Começar o dia** abre a nota de hoje já com o que ficou aberto nos dias anteriores (`↪ desde 09/10`); `Alt+T` anota uma tarefa de qualquer documento sem sair dele (`@amanhã`, `@sexta`, `@20/10`); **👥 Reunião** com decisões e ações — e **Marcar no Teams**; **🌙 Fechar o dia** decide o que fica para amanhã; **📅 Semana** mostra o que está atrasado, agendado e feito.', manual: '6.11 Diário' },

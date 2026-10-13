@@ -31,6 +31,7 @@ Os documentos públicos descrevem **o estado atual**, sem citar versões antigas
 - **Data de referência:** 12/10/2026. Fases 0–12 do roadmap interno concluídas (editor, execução, relatórios, MCP, integrações, layout por módulo, exemplos de todos os módulos).
 - **Documentação reorganizada em 12/10/2026:** README, MANUAL, ROADMAP, ARQUITETURA e `exemplos/LEIA-ME.md` reescritos para o estado atual e sem versões antigas; os anteriores foram para `antigos/`.
 - **13/10/2026:** tipo `teste-em-dupla` e comando **🤝 Teste em dupla do ticket** (`src/app/pairTest.js` + `src/markdown/pairTest.ts`). **Diário** (módulo *Dia*, `tipo: dia` em `diario/AAAA/MM/`, `src/app/diary.js` + `src/markdown/diary.ts`, visão `formato: semana`) e **Comparar JSON** (`src/app/jsonTool.js` + `src/markdown/jsonDiff.ts`, tela cheia, por partes acima de 1 MB). Pendente: reuniões do Outlook no diário (depende da empresa).
+- **Diário opcional (1.67.0):** desligado numa pasta sem `diario/` (preferência `diary` em `src/app/diaryReminder.js`), com lembretes de começar/fechar o dia (app, computador e Teams, só com o app aberto).
 - **Próximo trabalho:** ver "Próximos passos" no `ROADMAP-INTERNO.md` — inclui uma **análise de redundâncias a validar** (nenhuma remoção decidida).
 - **Pontos de atenção:** o MANUAL é importado pelo app (`import manualText from '../MANUAL.md?raw'`); `tests/unit/modules.test.mjs` confere "Onde fica…?" e todas as referências `Menu ▾ → item` / `Ctrl+Shift+P → texto` contra o registro de módulos.
 

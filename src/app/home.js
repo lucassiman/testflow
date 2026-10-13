@@ -15,6 +15,7 @@ import { pendingOf } from '../markdown/assign.ts';
 import { isRelease, releaseInfo, releaseSummary, releaseLine, versionIn } from '../markdown/release.ts';
 import { homeShortcuts } from '../ui/modules.js';
 import { todaySummary } from './diary.js';
+import { diaryOn } from './diaryReminder.js';
 
 /** @param {unknown} s */
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => /** @type {Record<string, string>} */ ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -100,7 +101,7 @@ export function createHome(actions) {
     const pinned = ready ? pins() : [];
     const my = ready ? mine() : [];
     const rels = ready ? releases() : [];
-    const day = ready ? todaySummary() : null;
+    const day = ready && diaryOn() ? todaySummary() : null; // diário opcional (pessoal)
     const recents = actions.recents().slice(0, 6);
     const label = (/** @type {string} */ p) => { const e = docIndex.get(p); return e ? `${e.id ? `<b>${esc(e.id)}</b> ` : ''}${esc(e.titulo || e.name.replace(/\.(md|markdown)$/i, ''))}` : esc(p.split('/').pop()); };
     const chip = (/** @type {string} */ q, /** @type {string} */ icon, /** @type {number} */ n, /** @type {string} */ text, /** @type {string} */ cls) => `<button type="button" class="home-stat ${cls}${n ? '' : ' zero'}" data-home-search="${esc(q)}" title="Buscar: ${esc(q)}"><span class="home-num">${n}</span><span>${icon} ${esc(text)}</span></button>`;

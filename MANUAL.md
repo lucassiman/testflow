@@ -206,6 +206,7 @@ Organizado pelos mesmos módulos dos menus do topo e da paleta. Um teste confere
 | Anotar uma reunião (decisões e ações) ou marcá-la no Teams | **Dia ▾ → 👥 Reunião…** |
 | Decidir o que fica para amanhã | **Dia ▾ → 🌙 Fechar o dia…** |
 | Ver a semana: em aberto, atrasadas, feitas, decisões | **Dia ▾ → 📅 Semana** |
+| Desligar o diário, ou ligar os lembretes de começar e fechar o dia (no computador e no Teams) | **Dia ▾ → ⚙ Diário e lembretes…** — com o menu Dia escondido, `Ctrl+Shift+P` → **Diário pessoal e lembretes** (ver 6.11) |
 
 **📋 Casos**
 
@@ -306,6 +307,7 @@ Organizado pelos mesmos módulos dos menus do topo e da paleta. Um teste confere
 | --- | --- |
 | Ver as novidades da versão | `Ctrl+Shift+P` → **O que mudou** |
 | Qualquer ação pelo nome | `Ctrl+Shift+P` (paleta) — as categorias são os módulos do topo |
+| Ligar ou desligar o diário pessoal e os lembretes | `Ctrl+Shift+P` → **Diário pessoal e lembretes** |
 
 ## 5. Escrever e editar
 
@@ -635,6 +637,16 @@ A nota tem *Foco do dia* (até três coisas), *Tarefas*, *Reuniões*, *Notas* e 
 > A rotina sugerida: ☀ ao chegar (escolha o foco), `Alt+T` durante o dia, 🌙 antes de sair. Segunda de manhã, 📅 Semana para ver o que está atrasado.
 
 O calendário do Outlook ainda não entra sozinho no diário (precisa que a empresa libere o calendário publicado ou o conector do Microsoft 365); por enquanto, anote as reuniões do dia com 👥.
+
+**O diário é opcional.** Numa pasta sem notas do diário ele começa desligado: o menu **Dia** e o cartão *Hoje* não aparecem e `Alt+T` só avisa como ligar. Numa pasta que já tem notas em `diario/`, ele já vem ligado. Para mudar: **Dia ▾ → ⚙ Diário e lembretes…** ou `Ctrl+Shift+P` → **Diário pessoal e lembretes** → *Usar o diário*. Desligar não apaga nada: as notas continuam na pasta.
+
+**Lembretes** (na mesma janela): *Lembrar de começar e de fechar o dia*, com o par de horários (ex.: começar às 09:00, fechar às 17:30) e *Só em dias úteis*. No horário de começar, se o dia ainda não foi começado, aparece o aviso com o botão **☀ Começar o dia**; no de fechar, se o dia foi começado e não foi fechado, o aviso com **🌙 Fechar o dia**. Cada um toca uma vez por dia. Com o app em segundo plano, sai também como aviso do computador (o navegador pergunta uma vez).
+
+| Lembrete no Teams | Como |
+| --- | --- |
+| Configurar | No Teams: **Fluxos de trabalho** (Workflows) → *Enviar mensagem em um chat quando uma solicitação de webhook for recebida* → copie a URL e cole em *Webhook do Teams para os lembretes*. **Salvar e testar o lembrete** manda um de exemplo |
+| Envio | Pela extensão do navegador do TestFlow (sem ela, o app tenta direto), como os avisos da rodada (ver 12.8) |
+| Limite | Os lembretes só saem **com o TestFlow aberto** (numa aba ou instalado), porque o app não tem servidor. Para ter o lembrete mesmo com tudo fechado, crie no Teams um fluxo *Recorrência* (ex.: dias úteis às 17:30) que manda uma mensagem para você |
 
 ## 7. Executar testes
 

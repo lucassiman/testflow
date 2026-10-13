@@ -84,6 +84,7 @@ import { captureFiles, captureToDocument, capturer, replaySeconds, replaySetting
 import { showWhatsNew, changesSince } from './ui/whatsNew.js';
 import { CHANGELOG } from './changelog.js';
 import { MODULES, paletteActions } from './ui/modules.js';
+import { applyDiaryVisibility, blockedDiaryCmd, diaryOn, onIndexReady as diaryIndexReady } from './app/diaryReminder.js';
 
 // o que os módulos de src/app/ usam do editor (getters: sempre o valor atual)
 Object.defineProperties(app, Object.getOwnPropertyDescriptors(/** @type {import('./app/context.js').AppContext} */ ({
@@ -170,6 +171,7 @@ const store = createStore('');
 const raw = createRaw({ host: els.raw, store, placeholderText: 'Comece a escrever em Markdown… ou arraste um arquivo .md para cá' });
 bindRawSlashMenu();
 bindLinkPicker(); // "/" no Raw: depois do CodeMirror (ele atualiza o texto antes)
+applyDiaryVisibility(); // diário opcional: o menu Dia só aparece ligado (ou com notas do diário na pasta)
 const rawFocused = () => els.raw.contains(document.activeElement);
 
 /** @type {ReturnType<typeof createBlockSelection> | null} */
@@ -572,6 +574,7 @@ async function readWorkspaceOnce() {
     checkOutsideRenames(); // código trocado fora do editor (uid igual, ID outro): links acompanham
     paintOfficialButton(); // ⇅ Sincronizar: o que enviar depende dos documentos lidos
     checkBackupReminder(); // 💾 há dias sem backup e mudou: lembra (uma vez por dia)
+    diaryIndexReady(); // diário opcional: menu Dia e lembretes de começar/fechar o dia
   });
 }
 
@@ -1451,7 +1454,8 @@ function openPalette() {
   const items = [];
   // usados recentemente primeiro (as ações escolhidas na paleta)
   const recent = /** @type {string[]} */ (loadPrefs().paletteRecent || []);
-  const actionItems = PALETTE_ACTIONS.map(({ label, cmd, value, keys, group, icon }) => ({
+  const diary = diaryOn();
+  const actionItems = PALETTE_ACTIONS.filter((a) => diary || a.group !== 'Dia').map(({ label, cmd, value, keys, group, icon }) => ({
     id: `act-${cmd}-${value}`, group, label, icon, hint: keys, kind: 'action', cmd, value, keywords: group,
   }));
   for (const id of recent) {
@@ -1555,6 +1559,7 @@ function run(cmd, value, event) {
   // atalhos de edição dentro de campos (busca, filtro) ficam com o próprio campo
   if (event && /** @type {HTMLElement | null} */ (event.target)?.tagName === 'INPUT' && ['undo', 'redo', 'bold', 'italic', 'link'].includes(cmd)) return false;
   const editingInPreview = preview.editing && /** @type {HTMLElement | null} */ (document.activeElement)?.closest?.('#preview');
+  if (blockedDiaryCmd(cmd)) return true; // diário desligado: só avisa como ligar
 
   switch (cmd) {
     case 'save': doSave(false); return true;
@@ -1612,6 +1617,7 @@ function run(cmd, value, event) {
     case 'newCycle': newCycle(); return true;
     case 'startRun': import('./app/startRun.js').then((m) => m.startRun()); return true;
     case 'pairTest': import('./app/pairTest.js').then((m) => m.newPairTest()); return true;
+    case 'diaryPref': import('./app/diaryReminder.js').then((m) => m.diarySetting()).then(() => home.refresh()); return true;
     case 'startDay': import('./app/diary.js').then((m) => m.startDay()); return true;
     case 'newTask': import('./app/diary.js').then((m) => m.newTask()); return true;
     case 'newMeeting': import('./app/diary.js').then((m) => m.newMeeting()); return true;

@@ -92,6 +92,7 @@ export const MODULES = [
       {
         title: 'Semana',
         items: [
+          { cmd: 'diaryPref', label: '⚙ Diário e lembretes…', hint: 'desligar, horários para começar e fechar o dia, aviso no Teams', palette: false },
           { cmd: 'week', label: '📅 Semana', hint: 'em aberto, atrasadas, agendadas, feitas e decisões das reuniões', palette: 'Semana do diário: em aberto, atrasadas, agendadas, feitas e decisões' },
         ],
       },
@@ -384,6 +385,7 @@ export const MODULES = [
         { cmd: 'whatsNew', label: 'O que mudou', palette: 'O que mudou (novidades desta versão)' },
         { cmd: 'tipsToggle', label: 'Dicas', palette: 'Dicas de primeira vez (ligar/desligar)' },
         { cmd: 'tipsReset', label: 'Dicas de novo', palette: 'Dicas de primeira vez: mostrar todas de novo' },
+        { cmd: 'diaryPref', label: '📅 Diário pessoal e lembretes…', palette: 'Diário pessoal e lembretes: ligar/desligar, horários de começar e fechar o dia, aviso no Teams…' },
       ],
     }],
   },

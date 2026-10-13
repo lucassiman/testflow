@@ -12,7 +12,7 @@ Os documentos são os seus próprios `.md` (formato **QA-MD**), legíveis també
 
 | Módulo (menu do topo) | Para quê |
 | --- | --- |
-| **Dia** | O seu diário: começar o dia com o que ficou aberto, tarefas de qualquer documento (`Alt+T`), reuniões com decisões e ações (e marcar no Teams), fechar o dia e ver a semana. |
+| **Dia** | O seu diário: começar o dia com o que ficou aberto, tarefas de qualquer documento (`Alt+T`), reuniões com decisões e ações (e marcar no Teams), fechar o dia e ver a semana, com lembretes (também no Teams). **Opcional**: aparece numa pasta que já tem diário ou quando ligado em *Diário pessoal e lembretes*. |
 | **Casos** | Escrever casos com dados compartilhados (logins, URLs, massa por ambiente), casos com dados (uma execução por linha), fluxo de aprovação, edição em massa, importação de TestRail/Zephyr/Xray/Excel e **visões** (consultas salvas, como bases de dados). |
 | **Execução** | Rodadas avulsas, **teste em dupla** com o dev por ticket e **ciclos de regressão** com várias execuções, painel da rodada, atribuição entre testadores, previsão de término, reteste das falhas, matriz de ambientes/navegadores, releases, tendência entre rodadas e **4 relatórios de fim de execução** (Go/No-Go, defeitos, rastreabilidade, log comparativo). |
 | **Evidências e bugs** | Colar ou capturar prints, anotar (seta, retângulo, borrão, numeração…), gravar vídeo, **replay dos últimos segundos**, bug criado a partir do passo que falhou (com reincidência), **comparador de JSON** local (diferenças lado a lado, por partes em arquivos grandes) e, com a extensão do navegador, console, requisições com falha e contexto da aba testada. |
