@@ -1,6 +1,6 @@
 # Roadmap do TestFlow
 
-*Atualizado em 12/10/2026.* Este documento mostra para onde o projeto vai, para quem não acompanhou o desenvolvimento. O que o app faz hoje está no [Manual](MANUAL.md); as novidades de cada versão aparecem no próprio app, em `Ctrl+Shift+P` → **O que mudou**.
+*Atualizado em 13/10/2026.* Este documento mostra para onde o projeto vai, para quem não acompanhou o desenvolvimento. O que o app faz hoje está no [Manual](MANUAL.md); as novidades de cada versão aparecem no próprio app, em `Ctrl+Shift+P` → **O que mudou**.
 
 ## Direção
 
@@ -27,6 +27,7 @@ A base está pronta e em uso diário. Em linhas gerais:
 | **Automação** | Importação de JUnit, Playwright e Newman, reporter ao vivo, testes instáveis, exportação de `.feature`. |
 | **Equipe** | Pasta oficial compartilhada com revisões, sincronização, histórico com comparação, comentários de revisão e aviso de edição simultânea. |
 | **Claude** | Skills `qa-markdown` e `qa-varredura`, servidor MCP com 39 ferramentas, cópia para o Claude e revisão de texto com conferência. |
+| **Rotina do QA** | Diário (começar e fechar o dia, tarefas que passam de um dia para o outro, reuniões com decisões e ações, a semana), teste em dupla com o dev por ticket e um comparador de JSON local. |
 | **Organização** | Estrutura por aplicação/épico/ticket, triagem da entrada, importação do Notion e de planilhas (TestRail, Zephyr, Xray, Excel), backup, busca com filtros. |
 | **Aprender** | Manual embutido, tela inicial, dicas de primeira vez e a pasta `exemplos/` com roteiros por módulo. |
 
@@ -41,6 +42,7 @@ Ideias em estudo, **sem data nem compromisso**. A ordem pode mudar conforme o us
 | **Extensão do navegador** | Cobrir iframes e simplificar a instalação. | Hoje a captura de console e rede não enxerga iframes e a instalação é manual. |
 | **Mais formatos de saída** | Exportar casos em formatos de outras ferramentas de teste e para wikis/hubs Markdown. | Facilitar a convivência com quem usa outro sistema. |
 | **Distribuição** | Atualização e instalação com menos passos de terminal. | Hoje exige Node e Git. |
+| **Agenda** | Trazer as reuniões do calendário do Outlook/Teams para o diário (calendário publicado ou conector do Microsoft 365). | Hoje as reuniões são anotadas à mão; o link do Teams só cria a reunião. |
 | **Resultados de automação** | Mais reporters e formatos de relatório. | Cobrir mais frameworks além de Playwright, JUnit e Newman. |
 
 ## Fora do escopo (por decisão)

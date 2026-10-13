@@ -1161,6 +1161,13 @@ button { font: inherit; color: inherit; }
 .app-dialog-checks label { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; line-height: 1.35; }
 .app-dialog-checks input { margin-top: 2px; accent-color: var(--brand, #b91c47); }
 .app-dialog-checks small { display: block; color: var(--muted); font-size: 11.5px; }
+.app-dialog-rows { display: grid; gap: 6px; margin-top: 12px; max-height: 46vh; overflow: auto; padding-right: 2px; }
+.app-dialog-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
+.app-dialog-row-label { line-height: 1.35; overflow-wrap: anywhere; }
+.app-dialog-row-label small { display: block; color: var(--muted); font-size: 11.5px; }
+.app-dialog-row select, .app-dialog-row input[type="date"] { font: inherit; font-size: 12.5px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
+.app-dialog-row input[type="date"] { grid-column: 2; }
+.app-dialog:has(.app-dialog-rows) { width: min(560px, 100%); }
 .app-dialog-error { color: var(--danger, #cf222e); font-style: normal; font-size: 12px; }
 .app-dialog-foot { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 18px; }
 .app-dialog-foot button {

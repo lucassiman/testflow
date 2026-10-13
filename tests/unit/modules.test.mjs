@@ -32,7 +32,7 @@ test('paleta: cada ação uma vez só, com categoria = módulo', () => {
 
 test('menus do topo: um por módulo, ações agrupadas, sem as misturas de antes', () => {
   const top = MODULES.filter((m) => m.top).map((m) => m.label);
-  assert.deepEqual(top, ['Casos', 'Execução', 'Evidências e bugs', 'Automação', 'Publicar', 'Compartilhar']);
+  assert.deepEqual(top, ['Dia', 'Casos', 'Execução', 'Evidências e bugs', 'Automação', 'Publicar', 'Compartilhar']);
   const html = topModulesHtml();
   for (const m of MODULES.filter((x) => x.top)) assert.match(html, new RegExp(`data-menu="mod-${m.id}"`));
   // Novo ▾ só cria documentos (rodada e ciclo foram para Execução ▾)

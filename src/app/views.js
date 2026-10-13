@@ -72,7 +72,7 @@ function viewHtml(src, docs) {
   const board = r.board ? `<div class="qa-board">${r.board.map((col) => `<div class="qa-board-col"><div class="qa-board-title">${col.badge ? `<code class="badge badge-${esc(col.badge)}">${esc(col.title)}</code>` : esc(col.title)}</div>${col.cards.map((c) => `<div class="qa-board-card">${cellHtml(c)}</div>`).join('') || '<div class="qa-board-empty">—</div>'}</div>`).join('')}</div>` : '';
   const tables = r.tables.map((t) => `${t.group ? `<div class="qa-view-group">${esc(t.group)}</div>` : ''}${t.rows.length
     ? `<table class="qa-view-table"><thead><tr>${t.head.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${t.rows.map((row) => `<tr>${row.map((c) => `<td>${cellHtml(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`
-    : '<p class="qa-view-note">Nenhum documento com esses filtros.</p>'}`).join('');
+    : `<p class="qa-view-note">${r.format === 'semana' ? 'Nenhuma nota do diário nesta semana ainda.' : 'Nenhum documento com esses filtros.'}</p>`}`).join('');
   const charts = (r.charts || []).map(chartHtml).join('');
   const empty = !r.board && !r.tables.length && !charts ? `<p class="qa-view-note">${r.format === 'tendencia' ? 'Nenhuma rodada (execução) com esses filtros ainda.' : 'Nenhum documento com esses filtros.'}</p>` : '';
   return head + errs + board + (charts ? `<div class="qa-charts">${charts}</div>` : '') + tables + empty;

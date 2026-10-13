@@ -14,6 +14,7 @@ import { lastRound } from '../markdown/linkInfo.ts';
 import { pendingOf } from '../markdown/assign.ts';
 import { isRelease, releaseInfo, releaseSummary, releaseLine, versionIn } from '../markdown/release.ts';
 import { homeShortcuts } from '../ui/modules.js';
+import { todaySummary } from './diary.js';
 
 /** @param {unknown} s */
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => /** @type {Record<string, string>} */ ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -99,6 +100,7 @@ export function createHome(actions) {
     const pinned = ready ? pins() : [];
     const my = ready ? mine() : [];
     const rels = ready ? releases() : [];
+    const day = ready ? todaySummary() : null;
     const recents = actions.recents().slice(0, 6);
     const label = (/** @type {string} */ p) => { const e = docIndex.get(p); return e ? `${e.id ? `<b>${esc(e.id)}</b> ` : ''}${esc(e.titulo || e.name.replace(/\.(md|markdown)$/i, ''))}` : esc(p.split('/').pop()); };
     const chip = (/** @type {string} */ q, /** @type {string} */ icon, /** @type {number} */ n, /** @type {string} */ text, /** @type {string} */ cls) => `<button type="button" class="home-stat ${cls}${n ? '' : ' zero'}" data-home-search="${esc(q)}" title="Buscar: ${esc(q)}"><span class="home-num">${n}</span><span>${icon} ${esc(text)}</span></button>`;
@@ -108,6 +110,14 @@ export function createHome(actions) {
           <h1>Olá${loadPrefs().publisherName ? `, ${esc(String(loadPrefs().publisherName).split(' ')[0])}` : ''} 👋</h1>
           <p>${ws ? `Pasta de trabalho <b>📂 ${esc(ws)}</b>${ready ? ` · ${docIndex.all().length} documentos` : ' · lendo…'}` : 'Abra a pasta onde ficam seus documentos de QA para ver rodadas, pendências e fixados.'}</p>
         </header>
+        ${day ? `<section class="home-card home-day">
+          <h2>📅 Hoje</h2>
+          ${day.started
+            ? `<div class="home-muted"><b>${day.open}</b> em aberto${day.late ? ` · <span class="home-fail">${day.late} atrasada${day.late === 1 ? '' : 's'}</span>` : ''} · <b>${day.done}</b> feita${day.done === 1 ? '' : 's'}${day.closed ? ' · dia fechado ✓' : ''}</div>
+          <div class="home-actions"><button type="button" class="primary" data-home-cmd="startDay">Abrir o dia</button><button type="button" data-home-cmd="newTask" title="Alt+T">＋ Tarefa</button><button type="button" data-home-cmd="finishDay">🌙 Fechar o dia</button><button type="button" data-home-cmd="week">📅 Semana</button></div>`
+            : `<div class="home-muted">${day.carried ? `<b>${day.carried}</b> tarefa${day.carried === 1 ? '' : 's'} em aberto de dias anteriores${day.overdue ? ` · <span class="home-fail">${day.overdue} atrasada${day.overdue === 1 ? '' : 's'}</span>` : ''}` : day.any ? 'Nada pendente dos dias anteriores.' : 'Tarefas, reuniões e decisões do dia numa nota só — o que ficar aberto passa para o dia seguinte.'}</div>
+          <div class="home-actions"><button type="button" class="primary" data-home-cmd="startDay">☀ Começar o dia</button>${day.any ? '<button type="button" data-home-cmd="week">📅 Semana</button>' : ''}</div>`}
+        </section>` : ''}
         ${round ? `<section class="home-card home-round">
           <h2>🔁 Rodada em andamento</h2>
           <div class="home-round-title">${esc(round.titulo)}</div>

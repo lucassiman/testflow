@@ -39,8 +39,9 @@ test('paleta: ações por categoria e as usadas recentemente no topo', async ({ 
 test('menus por módulo no topo (1.57.0): cada um com as suas ações; o atalho e o rótulo levam ao comando', async ({ page }) => {
   await openEditor(page, { mode: 'preview' });
   const mods = page.locator('#moduleMenus [data-menu]');
-  await expect(mods).toHaveCount(6);
-  await expect(mods.nth(1)).toHaveAttribute('aria-label', 'Execução');
+  await expect(mods).toHaveCount(7);
+  await expect(mods.nth(0)).toHaveAttribute('aria-label', 'Dia');
+  await expect(mods.nth(2)).toHaveAttribute('aria-label', 'Execução');
   await page.click('button[data-menu="mod-execucao"]');
   await expect(page.locator('button[data-menu="mod-execucao"]')).toHaveAttribute('aria-expanded', 'true');
   const pop = page.locator('#mod-execucao');

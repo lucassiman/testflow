@@ -42,6 +42,7 @@ aplicacoes/<App>/
   casos/[<ÉPICO>/<TICKET>/]    um caso por arquivo, uma pasta por épico e por ticket
   bugs/ planos/ sessoes/ relatorios/ docs/ requisitos/
 processos/  modelos/  visoes/  configuracao/
+diario/AAAA/MM/                o diário (uma nota por dia, tipo: dia)
 .versoes/  _lixeira/           histórico e lixeira (fora de listas e buscas)
 ```
 

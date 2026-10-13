@@ -8,6 +8,7 @@ import { jiraLabel } from './jiraLink.ts';
 import { VIEW_OPEN, VIEW_CLOSE, findViewBlocks } from './viewBlocks.ts';
 import { buildTrend, monthLabel, durLabel } from './trend.ts';
 import { automationRuns, flakyTests } from './flaky.ts';
+import { DAY_TYPE, dateOfPath, dayMonth, daysBetween, isoDate, weekSummary } from './diary.ts';
 
 /**
  * Visões: consultas salvas sobre os documentos da pasta de trabalho (funções puras).
@@ -24,10 +25,10 @@ import { automationRuns, flakyTests } from './flaky.ts';
  *
  * Filtros: tipo, app, status, tags, jira, epico, sprint, dispositivo (web, mobile, ios, android), versao, pasta, responsavel, prioridade, texto, execucao, automacao.
  * Listas separadas por vírgula; "!" na frente exclui (status: !PASS).
- * Formatos: lista (padrão) · quadro · cobertura (medida: execucao | automacao) · jira · rastreabilidade · tendencia (rodadas ao longo do tempo).
+ * Formatos: lista (padrão) · quadro · cobertura (medida: execucao | automacao) · jira · rastreabilidade · tendencia (rodadas ao longo do tempo) · semana (o diário: tarefas e reuniões da semana).
  */
 
-export type ViewFormat = 'lista' | 'quadro' | 'cobertura' | 'jira' | 'rastreabilidade' | 'tendencia' | 'release';
+export type ViewFormat = 'lista' | 'quadro' | 'cobertura' | 'jira' | 'rastreabilidade' | 'tendencia' | 'release' | 'semana';
 
 export interface ViewSpec {
   titulo: string;
@@ -76,10 +77,12 @@ export interface ViewDoc {
   last?: { round: number; date: string; overall: string } | null;
   /** texto do documento (a tendência lê as execuções, o histórico dos casos e a data dos bugs) */
   text?: string;
+  /** campo data: do cabeçalho (o diário usa) */
+  data?: string;
 }
 
 const FILTER_KEYS = ['segmento', 'tipo', 'app', 'status', 'tags', 'jira', 'epico', 'sprint', 'dispositivo', 'versao', 'pasta', 'responsavel', 'prioridade', 'execucao', 'automacao', 'comentarios', 'aprovacao'];
-const FORMATS: ViewFormat[] = ['lista', 'quadro', 'cobertura', 'jira', 'rastreabilidade', 'tendencia', 'release'];
+const FORMATS: ViewFormat[] = ['lista', 'quadro', 'cobertura', 'jira', 'rastreabilidade', 'tendencia', 'release', 'semana'];
 export const VIEW_COLUMNS: Record<string, string> = {
   id: 'ID', titulo: 'Título', tipo: 'Tipo', status: 'Status', app: 'App', prioridade: 'Prioridade', responsavel: 'Responsável',
   jira: 'Jira', tags: 'Tags', progresso: 'Progresso', rodada: 'Última rodada', automacao: 'Automação', pasta: 'Pasta', versao: 'Versão',
@@ -389,8 +392,9 @@ const groupLabel = (by: string, k: string): string => (by === 'execucao' ? EXEC_
 const APPROVAL_CELL: Record<string, string> = { rascunho: '✍ Rascunho', 'em-revisao': '👀 Em revisão', aprovado: '✅ Aprovado', alterado: '⚠ Alterado depois de aprovado', nenhuma: 'Sem aprovação' };
 
 /** Roda a visão sobre os documentos da pasta. */
-export function runView(spec: ViewSpec, all: ViewDoc[], errors: string[] = []): ViewResult {
+export function runView(spec: ViewSpec, all: ViewDoc[], errors: string[] = [], today = isoDate(new Date())): ViewResult {
   const docs = all.filter((d) => !isView(d));
+  if (spec.formato === 'semana') return weekView(spec, docs, errors, today);
   let rows = docs.filter((d) => matches(d, spec, all));
   const by = spec.ordenar || (spec.formato === 'lista' ? 'id' : '');
   if (by) rows = [...rows].sort((a, b) => { const x = sortValue(a, by); const y = sortValue(b, by); const r = typeof x === 'number' && typeof y === 'number' ? x - y : COLL.compare(String(x), String(y)); return (spec.desc ? -r : r) || COLL.compare(a.id || a.name, b.id || b.name); });
@@ -511,6 +515,41 @@ function releaseView(rows: ViewDoc[], all: ViewDoc[], base: { title: string; for
   if (s.bugs.abertos.length) tables.push({ group: 'Bugs abertos', head: ['Bug', 'Título'], rows: s.bugs.abertos.map((b) => [{ text: b.id, link: b.link }, { text: b.titulo }]) });
   if (s.planos.length) tables.push({ group: 'Planos', head: ['Plano', 'Título'], rows: s.planos.map((p) => [{ text: p.id, link: p.link }, { text: p.titulo }]) });
   return { ...base, tables, total: members.length, summary: `${s.versao ? `Versão ${s.versao}: ` : ''}${releaseLine(s)}${s.pronta ? ' — ✅ pronta' : ''}` };
+}
+
+/** Semana do diário: os dias, o que está aberto (atrasadas primeiro), agendado, feito e as decisões das reuniões. */
+function weekView(spec: ViewSpec, docs: ViewDoc[], errors: string[], today: string): ViewResult {
+  const notes = docs.filter((d) => d.tipo === DAY_TYPE && d.text).map((d) => ({ path: d.path, date: dateOfPath(d.path) || String(d.data || ''), text: d.text || '' })).filter((n) => /^\d{4}-\d{2}-\d{2}$/.test(n.date));
+  const w = weekSummary(notes, today);
+  const link = (path: string): string => path.replace(/\.(md|markdown)$/i, '');
+  const day = (date: string, path: string): ViewCell => ({ text: dayMonth(date), link: link(path) });
+  // [[TC-1]] no texto da tarefa vira o link da célula
+  const taskCell = (text: string): ViewCell => {
+    const target = /\[\[([^\]|#]+)/.exec(text)?.[1]?.trim();
+    return { text: text.replace(/\[\[([^\]|]+)(?:\|([^\]]*))?\]\]/g, (_, t: string, alias?: string) => alias || t), ...(target ? { link: target } : {}) };
+  };
+  const tables: ViewTable[] = [];
+  tables.push({
+    group: `Semana ${w.week} (${dayMonth(w.start)} a ${dayMonth(w.end)})`, head: ['Dia', 'Feitas', 'Abertas', 'Reuniões', 'Fechado'],
+    rows: w.days.map((d) => [{ text: d.title, link: link(d.path) }, { text: String(d.done) }, { text: String(d.open) }, { text: String(d.meetings) }, { text: d.closed ? '✓' : d.date < today ? '—' : '' }]),
+  });
+  if (w.open.length) {
+    tables.push({
+      group: 'Em aberto', head: ['Tarefa', 'Prazo', 'Desde', 'Nota'],
+      rows: w.open.map((t) => {
+        const age = daysBetween(t.since, today);
+        return [taskCell(t.text), t.due ? { text: dayMonth(t.due), badge: t.late ? 'fail' : t.due === today ? 'blocked' : undefined } : { text: '—' }, { text: age > 0 ? `${dayMonth(t.since)} (${age} dia${age === 1 ? '' : 's'})` : 'hoje' }, day(t.date, t.path)];
+      }),
+    });
+  }
+  if (w.scheduled.length) tables.push({ group: 'Agendadas', head: ['Prazo', 'Tarefa', 'Nota'], rows: w.scheduled.map((t) => [{ text: dayMonth(t.due) }, taskCell(t.text), day(t.date, t.path)]) });
+  if (w.done.length) tables.push({ group: 'Feitas na semana', head: ['Dia', 'Tarefa'], rows: w.done.map((t) => [day(t.date, t.path), taskCell(t.text)]) });
+  if (w.decisions.length) tables.push({ group: 'Decisões das reuniões', head: ['Dia', 'Reunião', 'Decisão'], rows: w.decisions.map((d) => [day(d.date, d.path), { text: d.meeting }, { text: d.text }]) });
+  const late = w.open.filter((t) => t.late).length;
+  const summary = notes.length
+    ? `${w.open.length} em aberto${late ? ` (${late} atrasada${late === 1 ? '' : 's'})` : ''} · ${w.done.length} feita${w.done.length === 1 ? '' : 's'} na semana · ${w.scheduled.length} agendada${w.scheduled.length === 1 ? '' : 's'}`
+    : 'Nenhuma nota do diário ainda — use ☀ Começar o dia.';
+  return { title: spec.titulo || 'Semana', format: 'semana', tables, total: w.open.length, summary, errors };
 }
 
 function trendView(spec: ViewSpec, docs: ViewDoc[], rows: ViewDoc[], base: { title: string; format: ViewFormat; total: number; errors: string[] }): ViewResult {
@@ -683,6 +722,11 @@ export const VIEW_PRESETS: ViewPreset[] = [
     id: 'tendencia', label: 'Tendência entre rodadas', hint: '% de sucesso por rodada e sprint, casos que mais falham, bugs no tempo', file: 'tendencia.md',
     text: doc('Tendência entre rodadas', 'Como a qualidade evolui: % de sucesso por rodada (e a variação para a anterior), por sprint, os casos que mais falham no histórico e os bugs por mês de abertura. Para uma aplicação só, preencha `app:`; para as últimas N rodadas, `limite: N`.',
       'titulo: Tendência entre rodadas\nformato: tendencia\n# app: Portal\n# sprint: Sprint 9\n# limite: 12'),
+  },
+  {
+    id: 'semana', label: 'Semana (diário)', hint: 'tarefas em aberto, atrasadas, agendadas e feitas; decisões das reuniões', file: 'semana.md',
+    text: doc('Semana', 'A semana do diário: os dias, o que está em aberto (atrasadas primeiro, com há quantos dias roda), o que está agendado, o que foi feito e as decisões das reuniões. Atualiza sozinha.',
+      'titulo: Semana\nformato: semana'),
   },
   {
     id: 'rastreabilidade', label: 'Rastreabilidade (ticket → casos → bugs)', hint: 'para uma versão: o que cada ticket cobre e o que ficou vermelho', file: 'rastreabilidade.md',

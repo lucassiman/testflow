@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.66.0', date: '13/10/2026',
+    items: [
+      { icon: '📅', text: '**Dia** (novo menu no topo): **☀ Começar o dia** abre a nota de hoje já com o que ficou aberto nos dias anteriores (`↪ desde 09/10`); `Alt+T` anota uma tarefa de qualquer documento sem sair dele (`@amanhã`, `@sexta`, `@20/10`); **👥 Reunião** com decisões e ações — e **Marcar no Teams**; **🌙 Fechar o dia** decide o que fica para amanhã; **📅 Semana** mostra o que está atrasado, agendado e feito.', manual: '6.11 Diário' },
+      { icon: '{ }', text: '**Comparar JSON** (**Evidências ▾**): estrutura e diferenças lado a lado, erro de sintaxe com linha e motivo, ignorar chaves e a ordem dos arrays, estatísticas — e a tabela das diferenças direto no caso ou no bug. JSON grande é comparado **por partes**, conforme você abre os ramos. Tudo local.', manual: '8.4 Comparar JSON' },
+    ],
+  },
+  {
     version: '1.65.0', date: '13/10/2026',
     items: [
       { icon: '🤝', text: '**Teste em dupla do ticket** (**Execução ▾**): um roteiro curto para a chamada com o dev antes de subir — os casos principais do ticket, um ou dois menos triviais (⚠) e os critérios de aceite da história; o resto fica em *Ficou para DEV/HML*. Na chamada, ▶ Executar e ⏱ Sessão; depois, o mesmo documento é o relatório (*Pode subir* / *Sobe com ajustes* / *Volta para o dev*).', manual: '7.11 Teste em dupla' },

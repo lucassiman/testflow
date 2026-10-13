@@ -197,6 +197,16 @@ Organizado pelos mesmos módulos dos menus do topo e da paleta. Um teste confere
 | Gravar sozinho, sem `Ctrl+S` | **Salvar ▾ → ☐ Salvar automaticamente** |
 | Trazer páginas do Notion | **Novo ▾ → Importar → 📥 Do Notion (.zip)…** ou arraste o `.zip` do export (ver 10.3) |
 
+**📅 Dia**
+
+| Quero… | Onde |
+| --- | --- |
+| Começar o dia com o que ficou aberto ontem | **Dia ▾ → ☀ Começar o dia** (ou o cartão *Hoje* na tela Início; ver 6.11) |
+| Anotar uma tarefa sem sair do documento | `Alt+T` ou **Dia ▾ → ＋ Nova tarefa…** |
+| Anotar uma reunião (decisões e ações) ou marcá-la no Teams | **Dia ▾ → 👥 Reunião…** |
+| Decidir o que fica para amanhã | **Dia ▾ → 🌙 Fechar o dia…** |
+| Ver a semana: em aberto, atrasadas, feitas, decisões | **Dia ▾ → 📅 Semana** |
+
 **📋 Casos**
 
 | Quero… | Onde |
@@ -238,6 +248,7 @@ Organizado pelos mesmos módulos dos menus do topo e da paleta. Um teste confere
 | Achar os prints para anexar no Jira | **Evidências ▾ → 🖼 Evidências do documento…** ou rodapé **📁 …/evidencias**: copiar imagem, baixar, copiar o caminho da pasta (ver 8.2) |
 | Apagar prints que ninguém usa | **Evidências ▾ → Limpar evidências que ninguém usa…** (vão para a lixeira) |
 | Erros do console, requisições com falha (HAR), URL, navegador e tela da aba testada no bug | Extensão do navegador (pasta `extensao/`) + **Evidências ▾ → Captura pela extensão: ligar/desligar** (anexar num documento: **Evidências ▾ → 🧩 Console e rede da aba testada…**) (ver 8.3) |
+| Comparar duas respostas de API (esperado × obtido, HML × PRD) e levar as diferenças para o caso ou o bug | **Evidências ▾ → { } Comparar JSON…** (ver 8.4) |
 
 **🤖 Automação**
 
@@ -600,6 +611,31 @@ Para o time revisar os casos antes de usá-los nas rodadas: **rascunho → em re
 - **O que mudou desde a aprovação:** aprovar salva o documento e guarda essa versão no histórico (**✅ aprovada**); com o caso *alterado*, a pílula → **Ver o que mudou desde a aprovação** mostra lado a lado e os passos alterados (10.4).
 - **Com o Claude:** os casos que ele escreve nascem rascunho; `qa_aprovacao` muda o estado (ele só aprova quando você pede) e `qa_rodada_criar { so_aprovados: true }` monta a rodada só com aprovados.
 
+### 6.11 Diário (o seu dia)
+
+Um controle pessoal: o que fazer hoje, o que saiu das reuniões e o que ficou pendente. Uma nota por dia, em `diario/AAAA/MM/AAAA-MM-DD.md` (`tipo: dia`), Markdown comum como o resto da pasta — dá para buscar, ligar com `[[…]]` e abrir fora do app. O que faz o diário funcionar é o ritual: **começar** e **fechar** o dia.
+
+**☀ Começar o dia** (**Dia ▾**, ou o cartão **📅 Hoje** da tela Início): abre a nota de hoje. Na primeira vez no dia, ela nasce com as tarefas que ficaram abertas nas notas anteriores, cada uma com `↪ desde 09/10` — dá para ver o que está rolando há dias. Na nota antiga, a tarefa vira `↪ … (passou para 13/10)`, sem caixa, para não contar duas vezes. As atrasadas vêm primeiro. **Desfazer** no aviso devolve as tarefas às notas de origem.
+
+A nota tem *Foco do dia* (até três coisas), *Tarefas*, *Reuniões*, *Notas* e *Fechamento*. Tarefa é `- [ ] texto`; prazo é `📅 2026-10-20`.
+
+| Quero… | Como |
+| --- | --- |
+| Anotar uma tarefa de qualquer lugar | `Alt+T`: escreva e `Enter`. Prazo rápido no texto: `@hoje`, `@amanhã`, `@seg`…`@dom` (a próxima), `@20/10`. Com um documento de ID aberto, *Ligar a [[TC-…]]* já vem marcado. Você continua no documento |
+| Tarefa para outro dia | Prazo depois de hoje: ela fica em *Agendadas* e só entra nas *Tarefas* quando o dia chegar |
+| Anotar uma reunião | **Dia ▾ → 👥 Reunião…** com `14:30 Teste em dupla QA-420`: entra em *Reuniões*, na ordem do horário, com *Com*, *Decisões* e *Ações*. Cada ação (`- [ ]`) é uma tarefa como as outras |
+| Marcar a reunião no Teams | Na mesma janela, **Marcar no Teams**: abre o Teams (ou o navegador) com a reunião nova já preenchida — assunto, dia e horário; você põe os participantes e envia. Sem integração nem senha: é o link de reunião nova do próprio Teams |
+| Reunião em outro dia | `@sexta` ou `@20/10` no texto: vira uma tarefa agendada para aquele dia |
+
+**🌙 Fechar o dia** (**Dia ▾**): lista as tarefas em aberto (com prazo e há quantos dias rodam) e, para cada uma, *Fica para amanhã* (continua aberta e vem no próximo Começar o dia), *Feita*, *Outra data…* (ganha o 📅 e vai para as agendadas) ou *Descartar* (fica riscada, para o registro). Grava em *Fechamento* a linha `Fechado às 18:10 — feitas · ficam abertas · descartadas`.
+
+**📅 Semana** (**Dia ▾**): abre `visoes/semana.md` (criada na primeira vez), uma visão que se atualiza sozinha: os dias da semana (feitas, abertas, reuniões, se fechou), o que está **em aberto** (atrasadas primeiro, com há quantos dias), as **agendadas**, as **feitas na semana** e as **decisões das reuniões**. Clique no dia para abrir a nota.
+
+> [!TIP]
+> A rotina sugerida: ☀ ao chegar (escolha o foco), `Alt+T` durante o dia, 🌙 antes de sair. Segunda de manhã, 📅 Semana para ver o que está atrasado.
+
+O calendário do Outlook ainda não entra sozinho no diário (precisa que a empresa libere o calendário publicado ou o conector do Microsoft 365); por enquanto, anote as reuniões do dia com 👥.
+
 ## 7. Executar testes
 
 ### 7.1 Status clicável
@@ -892,6 +928,25 @@ Para mandar a um colega sem o repositório: `npm run extensao` gera `extensao-di
 > **Privacidade:** a extensão não manda nada para a internet nem grava em disco — guarda só na memória da sessão do navegador (fechou o navegador, apagou). Só páginas **locais** com o TestFlow (`localhost`, `127.0.0.1`, arquivo) conseguem pedir a captura. **Cookies, `Authorization`, chaves de API e cabeçalhos de token nunca são guardados** (fica só o nome, com `••••`). Antes de ir para o documento, **tokens, senhas, CPF, cartão e e-mails são mascarados** (`••••`) no resumo, nas URLs, no log e nos corpos do HAR.
 
 **Limites:** só Chrome e Edge (Windows e Mac); não observa iframes; o TestFlow como arquivo único (`dist-single`, por `file://`) só fala com a extensão se você ligar *Permitir acesso a URLs de arquivo* nos detalhes dela. Com a extensão, o DevTools mostra `captura.js` como origem dos `console.error` (o erro é o mesmo; a linha original fica na pilha). Na rede: sem os tempos detalhados (DNS, conexão…) e sem o corpo de imagens/scripts; mensagens que só o navegador escreve no console (como o bloqueio de CORS) não são vistas — a requisição aparece como *Failed to fetch*.
+
+### 8.4 Comparar JSON
+
+**Evidências ▾ → { } Comparar JSON…** (`Ctrl+Shift+P` → *Comparar JSON*) abre a ferramenta em tela cheia, por cima do editor. Tudo fica no navegador: o conteúdo não vai para nenhum site nem para o armazenamento do app — dá para usar com dados sensíveis. `Esc` fecha; o que você colou continua lá até fechar o app.
+
+| Quero… | Como |
+| --- | --- |
+| Pôr os JSONs | Cole nos campos *Esquerda* e *Direita*, arraste um arquivo `.json` para o campo, **Abrir…** (arquivo do computador) ou **Da pasta…** (um `.json` da pasta de trabalho). Um `.har` (o que a extensão captura) pergunta de qual requisição é a resposta |
+| Dar nome aos lados | Clique em *Esquerda*/*Direita* e escreva (`HML`, `PRD`, `esperado`, `obtido`) — o nome vai para a tabela do documento |
+| Ver a estrutura de um JSON só | Cole só de um lado, ou desligue **Comparar**: cada lado mostra a própria árvore, com quantas chaves/itens cada nível tem |
+| Achar o erro de um JSON inválido | O lado mostra a linha, a coluna e o motivo (vírgula sobrando, aspas simples, falta fechar…); **Ir para o erro** seleciona o ponto no campo |
+| Andar pelas diferenças | **↓** / **↑** (ou `Alt+↓` / `Alt+↑`); o rodapé mostra o caminho (`itens[0→1].qtd`, com **copiar caminho**) e o valor antes → depois. **Só diferenças** esconde o que é igual |
+| Árvore ou texto | **Árvore** (chave: valor) ou **Linhas** (como o JSON formatado, com chaves e colchetes) |
+| Contar objetos, arrays e chaves | **📊 Estatísticas**: objetos, arrays, chaves, valores, profundidade e o maior array de cada lado |
+| Ignorar campos que sempre mudam | **Opções ▾ → Ignorar estas chaves** (`updatedAt, traceId`): em qualquer nível, aparecem apagadas e não contam como diferença |
+| Itens de arrays fora de ordem | Itens de objetos com `id` (ou `codigo`, `sku`… — **Opções ▾ → Parear itens de arrays por**) são pareados pelo id, mesmo com a ordem trocada; sem id, pelo conteúdo. **Ignorar a ordem dos itens dos arrays** compara arrays como conjuntos |
+| Levar para o caso ou o bug | **⤓ Inserir no documento**: no documento aberto entra a contagem e a tabela *Caminho · Esquerda · Direita* com cada diferença (e, se os JSONs forem pequenos, os dois recolhidos num `<details>`). **💾 Salvar em evidências** grava os dois `.json` em `evidencias/` do documento e põe os links |
+
+**JSON grande (acima de 1 MB somando os dois):** a comparação é feita **por partes**. A árvore abre com o primeiro nível; cada ramo só é montado e comparado quando você o abre — ramos pequenos já aparecem como *igual* ou *N dif.*, os grandes como *abrir para comparar*. **↓** abre só o caminho até a próxima diferença. **Comparar tudo** (na faixa de aviso) monta e compara o resto de uma vez — pode demorar em arquivos muito grandes. *Expandir tudo* fica desligado nesse modo. Ligue/desligue **Comparar** para ver só a estrutura, sem calcular diferenças.
 
 ## 9. Resultados de automação
 
@@ -1345,6 +1400,7 @@ Dados sensíveis (e-mail, senha, CPF, cartão, token) saem **mascarados** na pá
 | Fechar aba · próxima · anterior | `Alt+W` · `Alt+PageDown` · `Alt+PageUp` | `⌥W` · `⌥fn↓` · `⌥fn↑` |
 | Mover a aba atual (direita · esquerda) | `Alt+Shift+PageDown` · `Alt+Shift+PageUp` | `⌥⇧fn↓` · `⌥⇧fn↑` |
 | Nota rápida (vai para `_entrada/`) | `Alt+Q` | `⌥Q` |
+| Nova tarefa no diário (sem sair do documento) | `Alt+T` | `⌥T` |
 | Árvore de arquivos: renomear · lixeira · menu | `F2` · `Delete` · `Shift+F10` (ou clique direito) | `F2` (ou `fn+F2`) · `fn+⌫` · clique direito |
 | Barra lateral | `Ctrl+Shift+E` | `⌘⇧E` |
 | Buscar em todos os arquivos | `Ctrl+Shift+F` | `⌘⇧F` |

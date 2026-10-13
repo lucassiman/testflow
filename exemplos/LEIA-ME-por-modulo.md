@@ -1,6 +1,6 @@
 # Exemplos por módulo — um roteiro curto para cada menu
 
-A mesma Loja Demo do [LEIA-ME](LEIA-ME.md) (Sprint 42, versão 2.14.0) continua na **Sprint 43**: o épico **QA-400 Pagamento com Pix**, da versão **2.15.0**. Aqui os exemplos estão organizados pelos **mesmos módulos do topo do app** — **Casos · Execução · Evidências · Automação · Publicar · Compartilhar** —, com o que olhar e um roteiro curto em cada. O tour de 15 minutos do `LEIA-ME.md` continua valendo.
+A mesma Loja Demo do [LEIA-ME](LEIA-ME.md) (Sprint 42, versão 2.14.0) continua na **Sprint 43**: o épico **QA-400 Pagamento com Pix**, da versão **2.15.0**. Aqui os exemplos estão organizados pelos **mesmos módulos do topo do app** — **Dia · Casos · Execução · Evidências · Automação · Publicar · Compartilhar** —, com o que olhar e um roteiro curto em cada. O tour de 15 minutos do `LEIA-ME.md` continua valendo.
 
 > [!TIP]
 > **Antes de começar:** abra esta pasta `exemplos` como pasta de trabalho (`☰` → aba **Arquivos** → **Abrir…**). Nas preferências, use **Lucas** como o seu nome: a Ana, o Bruno e o Lucas dividem a execução #3, e o filtro **Minhas** mostra os casos do Lucas.
@@ -21,6 +21,21 @@ A mesma Loja Demo do [LEIA-ME](LEIA-ME.md) (Sprint 42, versão 2.14.0) continua 
 | 10/10 | O [[TC-010]] falha → [[BUG-004]] com print, vídeo do replay, console e rede; o [[TC-011]] em revisão, com comentários | [[BUG-004]], [[TC-011]] |
 | 11/10 | Build rc3: o BUG-004 corrigido e fechado | [[BUG-004]] → *Andamento* |
 | 12/10 | Com cupom no pedido, o defeito volta → **reincidência**, BUG-004 reaberto | [[BUG-004]] → *Reincidências* |
+
+## 📅 Dia — o seu diário
+
+| Onde olhar | O que mostra |
+| --- | --- |
+| `diario/2026/10/2026-10-09.md` | Um dia do Lucas: foco, tarefas (com prazo 📅 e ligadas a [[BUG-003]], [[TC-011]]), duas reuniões com *Decisões* e *Ações* e o fechamento do dia |
+| `visoes/semana.md` | A semana: em aberto (atrasadas primeiro, há quantos dias rodam), agendadas, feitas e as decisões das reuniões |
+
+**Roteiro:**
+
+- [ ] **Dia ▾ → ☀ Começar o dia**: a nota de hoje nasce com as tarefas que ficaram abertas no dia 09/10 (`↪ desde 09/10`); no dia 09, elas viram `↪ … (passou para …)`
+- [ ] Abra um caso qualquer e aperte `Alt+T`: escreva `Conferir o QR expirado @amanhã` — a tarefa vai para o dia, ligada ao caso, sem sair dele
+- [ ] **Dia ▾ → 👥 Reunião…** com `16:00 Alinhamento do Pix`: o bloco entra em *Reuniões* com *Decisões* e *Ações*
+- [ ] **Dia ▾ → 🌙 Fechar o dia…**: escolha *Feita*, *Fica para amanhã*, *Outra data* ou *Descartar* em cada tarefa
+- [ ] **Dia ▾ → 📅 Semana** (abre `visoes/semana.md`)
 
 ## 📋 Casos
 

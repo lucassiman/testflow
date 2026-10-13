@@ -40,7 +40,7 @@ function lintFrontMatter(block, warnings) {
   const at = (msg) => warnings.push({ line: 1, blockStart: 0, message: `Cabeçalho: ${msg}`, qa: true });
   if (data.tipo && !TYPE_LABELS[String(data.tipo)]) at(`tipo "${data.tipo}" não é da convenção (${Object.keys(TYPE_LABELS).join(', ')})`);
   // notas e documentação (nota rápida, importados do Notion) não precisam de ID
-  if (data.tipo && !data.id && !['nota', 'documentacao', 'visao'].includes(String(data.tipo))) at('falta o campo id');
+  if (data.tipo && !data.id && !['nota', 'documentacao', 'visao', 'dia'].includes(String(data.tipo))) at('falta o campo id');
   if (data.tipo && !data.titulo) at('falta o campo titulo');
   // versão do formato (qa-md: 1): documento de um formato mais novo que o deste editor
   const fmt = data['qa-md'];

@@ -140,8 +140,9 @@ test('release 2.15.0 e visões com a cópia gerada', () => {
   assert.equal(meta(rel.text).versao, '2.15.0');
   assert.match(rel.text, /```qa-visao\ntitulo: Progresso da release\nformato: release\nversao: 2\.15\.0\n```/);
   const views = docs.filter((d) => d.path.startsWith('visoes/')).map((d) => d.path).sort();
-  assert.deepEqual(views, ['visoes/casos-nao-executados.md', 'visoes/cobertura-regressao.md', 'visoes/rastreabilidade.md', 'visoes/tendencia.md']);
-  for (const v of [...views, rel.path]) assert.match(docs.find((d) => d.path === v).text, /<!-- qa:visao -->\n_Cópia gerada pelo TestFlow em [^\n]+\n[\s\S]*<!-- \/qa:visao -->/, v);
+  assert.deepEqual(views, ['visoes/casos-nao-executados.md', 'visoes/cobertura-regressao.md', 'visoes/rastreabilidade.md', 'visoes/semana.md', 'visoes/tendencia.md']);
+  // a semana depende do dia de hoje: sem cópia gerada guardada nos exemplos
+  for (const v of [...views.filter((v) => v !== 'visoes/semana.md'), rel.path]) assert.match(docs.find((d) => d.path === v).text, /<!-- qa:visao -->\n_Cópia gerada pelo TestFlow em [^\n]+\n[\s\S]*<!-- \/qa:visao -->/, v);
   assert.match(docs.find((d) => d.path === 'visoes/casos-nao-executados.md').text, /\| \[\[TC-009\]\] \| Menu da conta por perfil \|/);
 });
 

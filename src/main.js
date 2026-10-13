@@ -1612,6 +1612,12 @@ function run(cmd, value, event) {
     case 'newCycle': newCycle(); return true;
     case 'startRun': import('./app/startRun.js').then((m) => m.startRun()); return true;
     case 'pairTest': import('./app/pairTest.js').then((m) => m.newPairTest()); return true;
+    case 'startDay': import('./app/diary.js').then((m) => m.startDay()); return true;
+    case 'newTask': import('./app/diary.js').then((m) => m.newTask()); return true;
+    case 'newMeeting': import('./app/diary.js').then((m) => m.newMeeting()); return true;
+    case 'finishDay': import('./app/diary.js').then((m) => m.finishDay()); return true;
+    case 'week': import('./app/diary.js').then((m) => m.openWeek()); return true;
+    case 'jsonTool': import('./app/jsonTool.js').then((m) => m.openJsonTool()); return true;
     case 'newRun': newRun(); return true;
     case 'newAutoRun': newAutoRun(); return true;
     case 'attachAutomation': attachAutomation(); return true;

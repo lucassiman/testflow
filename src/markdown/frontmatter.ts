@@ -43,6 +43,7 @@ export const TYPE_LABELS: Record<string, string> = {
   'resumo-testes': 'Resumo de testes',
   documentacao: 'Documentação',
   nota: 'Nota',
+  dia: 'Dia (diário)',
   visao: 'Visão',
   epico: 'Épico',
   historia: 'História de usuário',

@@ -22,9 +22,12 @@
  *   input?: { value?: string, placeholder?: string, label?: string, hint?: string, validate?: (v: string) => string | null, multiline?: boolean },
  *   checks?: DialogCheck[],
  *   select?: { label?: string, value?: string, options: Array<{ value: string, label: string, group?: string }>, hint?: string },
+ *   rows?: DialogRow[],
  * }} DialogOptions
+ * @typedef {{ id: string, label: string, hint?: string, value?: string, options: Array<{ value: string, label: string }>, dateFor?: string, date?: string }} DialogRow
+ *   uma escolha por linha (ex.: o que fazer com cada tarefa); `dateFor`: a opção que mostra um campo de data
  * @typedef {{ id: string, label: string, checked?: boolean, hint?: string }} DialogCheck
- * @typedef {{ id: string, value: string, checks: Record<string, boolean>, choice: string } | null} DialogResult
+ * @typedef {{ id: string, value: string, checks: Record<string, boolean>, choice: string, rows?: Record<string, { value: string, date: string }> } | null} DialogResult
  */
 
 const esc = (/** @type {unknown} */ s) => String(s ?? '').replace(/[&<>"]/g, (c) => /** @type {Record<string,string>} */ ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -104,6 +107,10 @@ function open(opts) {
         <div class="app-dialog-checks">
           ${opts.checks.map((c) => `<label><input type="checkbox" data-check="${esc(c.id)}"${c.checked === false ? '' : ' checked'}><span>${esc(c.label)}${c.hint ? `<small>${esc(c.hint)}</small>` : ''}</span></label>`).join('')}
         </div>` : ''}
+        ${opts.rows?.length ? `
+        <div class="app-dialog-rows">
+          ${opts.rows.map((r) => `<div class="app-dialog-row" data-row="${esc(r.id)}"><span class="app-dialog-row-label">${esc(r.label)}${r.hint ? `<small>${esc(r.hint)}</small>` : ''}</span><select data-row-select aria-label="${esc(r.label)}">${r.options.map((o) => `<option value="${esc(o.value)}"${o.value === r.value ? ' selected' : ''}>${esc(o.label)}</option>`).join('')}</select>${r.dateFor ? `<input type="date" data-row-date value="${esc(r.date || '')}" aria-label="Data"${r.value === r.dateFor ? '' : ' hidden'}>` : ''}</div>`).join('')}
+        </div>` : ''}
         <div class="app-dialog-foot">
           ${buttons.map((b) => `<button type="button" data-id="${esc(b.id)}" class="${b.kind || 'secondary'}"${b.title ? ` title="${esc(b.title)}"` : ''}>${esc(b.label)}</button>`).join('')}
         </div>
@@ -116,6 +123,16 @@ function open(opts) {
     const error = /** @type {HTMLElement | null} */ (overlay.querySelector('.app-dialog-error'));
     const focusables = () => /** @type {HTMLElement[]} */ ([...dialog.querySelectorAll('button, input, textarea, select')]);
     const select = /** @type {HTMLSelectElement | null} */ (overlay.querySelector('select[data-select]'));
+    const rows = () => Object.fromEntries([.../** @type {NodeListOf<HTMLElement>} */ (dialog.querySelectorAll('[data-row]'))].map((r) => [r.dataset.row || '', {
+      value: /** @type {HTMLSelectElement} */ (r.querySelector('[data-row-select]')).value,
+      date: /** @type {HTMLInputElement | null} */ (r.querySelector('[data-row-date]'))?.value || '',
+    }]));
+    dialog.querySelectorAll('[data-row]').forEach((r) => {
+      const sel = /** @type {HTMLSelectElement} */ (r.querySelector('[data-row-select]'));
+      const date = /** @type {HTMLInputElement | null} */ (r.querySelector('[data-row-date]'));
+      const def = opts.rows?.find((x) => x.id === /** @type {HTMLElement} */ (r).dataset.row);
+      if (date && def?.dateFor) sel.addEventListener('change', () => { date.hidden = sel.value !== def.dateFor; if (!date.hidden) date.focus(); });
+    });
     const checks = () => Object.fromEntries([.../** @type {NodeListOf<HTMLInputElement>} */ (dialog.querySelectorAll('input[data-check]'))].map((c) => [c.dataset.check || '', c.checked]));
 
     /** @param {string | null} choice */
@@ -132,7 +149,7 @@ function open(opts) {
       if (!document.querySelector('.app-dialog-overlay')) document.documentElement.classList.remove('has-app-dialog');
       document.removeEventListener('keydown', onKey, true);
       try { previousFocus?.focus?.({ preventScroll: true }); } catch { /* elemento sumiu */ }
-      resolve(choice === null ? null : { id: choice, value: field?.value ?? '', checks: checks(), choice: select?.value ?? '' });
+      resolve(choice === null ? null : { id: choice, value: field?.value ?? '', checks: checks(), choice: select?.value ?? '', ...(opts.rows?.length ? { rows: rows() } : {}) });
     }
 
     /** @param {KeyboardEvent} event */

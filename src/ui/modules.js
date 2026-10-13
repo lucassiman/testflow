@@ -76,6 +76,28 @@ export const MODULES = [
     ],
   },
   {
+    id: 'dia', label: 'Dia', icon: '📅', top: true,
+    title: 'Dia: começar e fechar o dia, tarefas, reuniões e a semana (o seu diário)',
+    svg: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/>',
+    sections: [
+      {
+        title: 'Hoje',
+        items: [
+          { cmd: 'startDay', label: '☀ Começar o dia', hint: 'abre a nota de hoje — na primeira vez, traz as tarefas abertas dos dias anteriores', palette: 'Começar o dia: nota de hoje com as tarefas que ficaram abertas' },
+          { cmd: 'newTask', label: '＋ Nova tarefa…', keys: 'Alt+T', hint: 'de qualquer documento, sem sair dele — @amanhã, @sexta, @20/10 para o prazo', palette: 'Nova tarefa no dia (prazo com @amanhã, @sexta, @20/10)…' },
+          { cmd: 'newMeeting', label: '👥 Reunião…', hint: 'anotar com decisões e ações — e marcar no Teams', palette: 'Reunião: anotar no dia (decisões e ações) e marcar no Teams…' },
+          { cmd: 'finishDay', label: '🌙 Fechar o dia…', hint: 'o que fica para amanhã, o que foi feito, o que sai', palette: 'Fechar o dia: o que fica para amanhã, feito, outra data ou descartar…' },
+        ],
+      },
+      {
+        title: 'Semana',
+        items: [
+          { cmd: 'week', label: '📅 Semana', hint: 'em aberto, atrasadas, agendadas, feitas e decisões das reuniões', palette: 'Semana do diário: em aberto, atrasadas, agendadas, feitas e decisões' },
+        ],
+      },
+    ],
+  },
+  {
     id: 'casos', label: 'Casos', icon: '📋', top: true,
     title: 'Casos de teste: dados compartilhados, ambiente, aprovação, edição e importação em massa',
     svg: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 13l2 2 4-4"/>',
@@ -187,6 +209,12 @@ export const MODULES = [
           { cmd: 'evidencePanel', label: '🖼 Evidências do documento…', hint: 'copiar imagem, baixar, caminho da pasta (para o Jira)', palette: 'Evidências do documento (copiar imagem, baixar, caminho da pasta)…' },
           { cmd: 'reuseEvidence', label: 'Reaproveitar print de outro documento…', palette: 'Reaproveitar print de outro documento (galeria de evidências)…' },
           { cmd: 'cleanPrints', label: 'Limpar evidências que ninguém usa…', palette: 'Limpar evidências: prints que nenhum documento usa…' },
+        ],
+      },
+      {
+        title: 'Ferramentas',
+        items: [
+          { cmd: 'jsonTool', label: '{ } Comparar JSON…', hint: 'local: estrutura, diferenças lado a lado, levar para o caso ou bug', palette: 'Comparar JSON (local): estrutura, diferenças lado a lado e levar para o documento…' },
         ],
       },
       {
