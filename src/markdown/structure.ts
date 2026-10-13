@@ -35,6 +35,7 @@ export const TYPE_FOLDER: Record<string, string> = {
   'ciclo-regressao': 'planos',
   execucao: 'planos',
   'charter-exploratorio': 'sessoes',
+  'teste-em-dupla': 'sessoes',
   'relatorio-execucao': 'relatorios',
   'relatorio-automacao': 'relatorios',
   'resumo-testes': 'relatorios',
@@ -81,6 +82,8 @@ export interface Destination {
  */
 /** Tipos que ficam em casos/ — e, com ticket no campo jira, em casos/<TICKET>/. */
 export const CASE_TYPES = ['caso-de-teste', 'cenario-bdd', 'checklist'];
+/** Teste em dupla (QA + dev, no ambiente local do dev): um por ticket, na pasta do ticket — mas não é caso (não entra em rodadas nem na cobertura). */
+export const PAIR_TYPE = 'teste-em-dupla';
 const KEY_RE = /^[A-Z][A-Z0-9_]*-\d+$/;
 
 /** Primeira chave do Jira do campo jira (QA-12, ou tirada de …/browse/QA-12), ou ''. */
@@ -192,8 +195,9 @@ export function suggestDestination(info: { tipo?: string; app?: string; jira?: u
     } else if (tipo === 'historia' && own && epic) {
       dir = ticketDir(own, casos, dirs, epic);
       why = ` · épico ${epic} · ticket ${own}`;
-    } else if (CASE_TYPES.includes(tipo)) {
-      // casos com ticket: uma pasta por ticket (cada ticket tem vários casos), dentro da pasta do épico quando há épico
+    } else if (CASE_TYPES.includes(tipo) || tipo === PAIR_TYPE) {
+      // casos com ticket: uma pasta por ticket (cada ticket tem vários casos), dentro da pasta do épico quando há épico;
+      // o teste em dupla é de um ticket: mora junto dos casos dele (sem ticket, em sessoes/)
       const key = ticketKey(info.jira);
       if (key) { dir = ticketDir(key, casos, dirs, epic); why = `${epic ? ` · épico ${epic}` : ''} · jira: ${key}`; }
       else if (epic) { dir = `${casos}/${ticketFolder(epic, casos, dirs)}`; why = ` · épico ${epic}`; }

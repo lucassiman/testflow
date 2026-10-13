@@ -1611,6 +1611,7 @@ function run(cmd, value, event) {
     case 'includeShared': includeMenu(); return true;
     case 'newCycle': newCycle(); return true;
     case 'startRun': import('./app/startRun.js').then((m) => m.startRun()); return true;
+    case 'pairTest': import('./app/pairTest.js').then((m) => m.newPairTest()); return true;
     case 'newRun': newRun(); return true;
     case 'newAutoRun': newAutoRun(); return true;
     case 'attachAutomation': attachAutomation(); return true;

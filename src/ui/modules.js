@@ -121,6 +121,7 @@ export const MODULES = [
           { cmd: 'newRun', label: 'Rodada avulsa', menu: false, palette: false },
           { cmd: 'newCycle', label: '🔁 Ciclo de regressão…', hint: 'salvar os casos da regressão e executá-la quantas vezes quiser (#1, #2…)', palette: 'Ciclo de regressão: novo (salvar os casos)…' },
           { cmd: 'runCycle', label: 'Executar um ciclo salvo', menu: false, palette: false },
+          { cmd: 'pairTest', label: '🤝 Teste em dupla do ticket…', hint: 'roteiro curto com os casos do ticket para a chamada com o dev — vira o relatório depois', palette: 'Teste em dupla: roteiro do ticket para a chamada com o dev (vira o relatório)…' },
           { cmd: 'rerunFailed', label: '🔂 Reteste das falhas', hint: 'nova rodada só com os FAIL/BLOCKED desta execução', palette: 'Reteste das falhas: nova rodada só com os FAIL/BLOCKED desta execução' },
         ],
       },

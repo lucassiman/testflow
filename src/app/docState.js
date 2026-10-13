@@ -106,7 +106,7 @@ export function treeMark(path) {
   return mark;
 }
 
-const DOT_TYPES = new Set(['caso-de-teste', 'cenario-bdd', 'checklist', 'bug', 'execucao', 'ciclo-regressao', 'relatorio-execucao', 'charter-exploratorio']);
+const DOT_TYPES = new Set(['caso-de-teste', 'cenario-bdd', 'checklist', 'bug', 'execucao', 'ciclo-regressao', 'relatorio-execucao', 'charter-exploratorio', 'teste-em-dupla']);
 /**
  * Nome do arquivo na árvore: ID · título (do cabeçalho) e o status para a bolinha. null = mostra o nome do arquivo
  * (preferência "nome do arquivo", ou documento ainda não lido).

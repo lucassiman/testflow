@@ -215,6 +215,7 @@ Organizado pelos mesmos módulos dos menus do topo e da paleta. Um teste confere
 | Quero… | Onde |
 | --- | --- |
 | Executar a regressão caso a caso | **Execução ▾ → 🔁 Ciclo de regressão…** (salva os casos) → **▶ Executar este ciclo** → **▶ Próximo caso** (ver 7.8); sem ciclo: **Execução ▾ → ▶ Nova execução…** (*Avulsa*) |
+| Conferir o ticket com o dev antes de subir (teste em dupla) | **Execução ▾ → 🤝 Teste em dupla do ticket…** (ver 7.11) |
 | Continuar a rodada em andamento | Tela **Início → ▶ Continuar**, a pílula **🔁** no topo ou **▶ Próximo caso** no painel da rodada |
 | Dividir os casos entre os testadores | Painel da rodada → **⋯ → 👥 Atribuir os casos…**, ou **Execução ▾ → 👥 Atribuir os casos…** |
 | Vínculos, dispositivo e relatório automatizado da rodada | Painel da rodada → **⋯** (grupos *Casos* e *Automação*) |
@@ -405,6 +406,7 @@ Clique na **seta** ao lado de um título (fica mais visível ao passar o mouse; 
 | Cenários BDD | `cenario-bdd` | `CEN-001` |
 | Plano de teste | `plano-de-teste` | `PT-001` |
 | Sessão exploratória | `charter-exploratorio` | `SES-001` |
+| Teste em dupla | `teste-em-dupla` | `DUP-<TICKET>` (ver 7.11) |
 | Checklist | `checklist` | — |
 | Resumo de testes | `resumo-testes` | — |
 | Épico | `epico` | `EP-001` ou chave do Jira |
@@ -669,7 +671,7 @@ No painel ▶ Executar (ou ⏱ Sessão), **⧉ Flutuar** abre o painel numa jane
 
 ### 7.7 Sessão exploratória (SBTM)
 
-Em documentos *Sessão exploratória* aparece **⏱ Sessão**: cronômetro (⏸ pausa, ↺ zera; continua contando se você fechar o painel) e nota rápida. Escolha NOTA/BUG/DÚVIDA/IDEIA ou comece com `bug:`, `dúvida:`, `ideia:` e `Enter`. Cada nota vai com horário para *Notas da sessão*; **BUG** também entra na tabela *Bugs*. **Encerrar** preenche início, fim, duração real e o resumo.
+Em documentos *Sessão exploratória* (e no *Teste em dupla*, ver 7.11) aparece **⏱ Sessão**: cronômetro (⏸ pausa, ↺ zera; continua contando se você fechar o painel) e nota rápida. Escolha NOTA/BUG/DÚVIDA/IDEIA ou comece com `bug:`, `dúvida:`, `ideia:` e `Enter`. Cada nota vai com horário para *Notas da sessão*; **BUG** também entra na tabela *Bugs*. **Encerrar** preenche início, fim, duração real e o resumo.
 
 **Prints na sessão:** com o cursor no campo da nota, `Ctrl+V` (ou **📷 Colar print**) guarda o print em `evidencias/` e ele fica **preso à nota que você escrever** — escreva (`bug: botão Pagar travou`) e `Enter`: o print entra logo abaixo da nota, com a legenda do tipo e do horário (`Bug 14:32`), e — se for BUG — como link na tabela *Bugs*. Enquanto houver print esperando, aparece a faixa **📎 N prints esperando a nota** com **Anotar agora**. Nada se perde: ao **encerrar** a sessão ou fechar o painel, a nota que estiver escrita (mesmo sem `Enter`) e os prints soltos são gravados. Dá para colar mais de um print por nota; **tirar** solta os prints da nota (o arquivo fica).
 
@@ -790,6 +792,27 @@ Uma **release** junta tudo o que é de uma versão — planos, execuções (roda
 - **O quadro mostra:** casos executados e % de sucesso (cada caso vale o resultado da execução mais recente em que apareceu; na matriz, o pior entre as configurações), as execuções da versão, os casos com falha, os bugs abertos, os planos, os **critérios de saída** (a checklist da seção) e os dias até a data prevista — e **✅ Pronta para liberar** quando não falta nada (senão, o que falta).
 - **Pôr na release:** a rodada nasce com a versão pelo campo **🚀 Versão (release)** dos vínculos (na janela de nova rodada ou em 🔗 Vínculos); casos e bugs, pelo `versao:` do cabeçalho (ou pela ✎ Edição em massa).
 - A tela **Início** mostra as releases em andamento com a barra de progresso. Com o Claude: *"como está a release 2.14?"* (`qa_release`).
+
+### 7.11 Teste em dupla (com o dev, antes de subir)
+
+Antes de o ticket subir para DEV/HML, o dev compartilha a tela e mostra o trabalho rodando no ambiente local dele; QA e dev conferem juntos o básico. A chamada precisa ser curta, então o **teste em dupla** é um roteiro de apoio — os pontos principais do ticket e um ou dois casos menos triviais — e não a execução formal, que continua em DEV/HML.
+
+**Montar o roteiro:** abra um caso do ticket (ou a história) e use **Execução ▾ → 🤝 Teste em dupla do ticket…** (`Ctrl+Shift+P` → *Teste em dupla*). Fora da pasta de um ticket, o app pergunta de qual ticket. Ele cria `DUP-<TICKET>` **na pasta do ticket**, junto dos casos, com:
+
+| Seção | O que vem preenchido |
+| --- | --- |
+| Cabeçalho | `jira:`, `epico:`, `app:`, `ambiente: Local`; preencha `dev:` e `branch:` |
+| Critérios de aceite | Os da história do ticket, como checklist (se houver a história) |
+| Roteiro | Até **5 principais** (os de prioridade mais alta primeiro) e até **2 menos triviais** (⚠ — negativo, borda, erro, inválido, limite…, pelo título ou pelas tags), cada um com o link do caso e o resultado esperado do último passo |
+| Ficou para DEV/HML | Os casos que não entraram, como checklist — nada some, só não toma o tempo da chamada |
+
+Enxugue à vontade: junte linhas, apague o que não faz sentido ver no local. O caso que você acha que o dev pode não ter entendido é o melhor candidato para ficar.
+
+**Na chamada:** **▶ Executar** marca cada linha com `1`–`5` (`PASS` funcionou, `FAIL` precisa de ajuste, `SKIP` não deu tempo); **⏱ Sessão** conta o tempo (a meta é 15 min) e anota com horário — `bug: …` vai também para a tabela *Bugs e ajustes*. Use *Combinado com o dev* para o que ele vai corrigir antes de subir; só vira bug no Jira o que não for corrigido.
+
+**Depois:** o mesmo documento é o relatório. Marque os critérios de aceite vistos, escreva em *Resumo e resultado* um de **Pode subir**, **Sobe com ajustes** ou **Volta para o dev**, e passe as linhas `SKIP` para *Ficou para DEV/HML*. Nova chamada depois dos ajustes: abra o mesmo documento e use **🔁 Nova rodada** — a anterior fica no histórico. Rodar o comando de novo no mesmo ticket oferece abrir o existente.
+
+O teste em dupla **não é caso**: não entra em rodadas, no "Próximo caso" nem na cobertura. Com o Claude: *"monta o teste em dupla do PORTAL-120"* (a skill escolhe os principais e os menos triviais e cria pelo MCP).
 
 ## 8. Evidências (prints e arquivos)
 

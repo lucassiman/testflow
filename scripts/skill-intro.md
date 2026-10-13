@@ -1,6 +1,6 @@
 ---
 name: qa-markdown
-description: Gera e revisa testware em Markdown no formato QA-MD do TestFlow (caso de teste, bug, relatório de execução, cenários BDD, plano, sessão exploratória, checklist, resumo) — inclusive casos a partir de uma história/critérios de aceite, revisão de casos com checklist de qualidade e análise de uma rodada de regressão. Use sempre que o usuário pedir testware, casos de teste, bug report, relatório de testes ou análise de execução.
+description: Gera e revisa testware em Markdown no formato QA-MD do TestFlow (caso de teste, bug, relatório de execução, cenários BDD, plano, sessão exploratória, teste em dupla com o dev, checklist, resumo) — inclusive casos a partir de uma história/critérios de aceite, revisão de casos com checklist de qualidade e análise de uma rodada de regressão. Use sempre que o usuário pedir testware, casos de teste, bug report, relatório de testes ou análise de execução.
 ---
 
 # QA Markdown (convenção QA-MD)
@@ -14,7 +14,7 @@ O usuário é QA Senior e revisa/executa os documentos no **TestFlow** — um ed
 3. Suíte com vários casos: um arquivo por caso + (se útil) um `relatorio-execucao` ou `checklist` que liste os IDs.
 4. Português do Brasil. Termos técnicos consagrados podem ficar em inglês.
 5. **Nunca invente** resultado obtido, status de execução, IDs do Jira, versões, URLs ou evidências. Deixe em branco ou use `PENDING`.
-6. **Lugar certo:** se a pasta de trabalho tiver `aplicacoes/` e `_entrada/` (estrutura do editor), salve em `aplicacoes/<app>/<subpasta>/` — `casos` (caso-de-teste, cenario-bdd, checklist — com chave do Jira em `jira:`, em `casos/<CHAVE>/`, ou na pasta que já existe começando com a chave; com `epico:`, em `casos/<ÉPICO>/<CHAVE>/`, onde também ficam o documento do épico e a história do ticket), `bugs`, `planos`, `sessoes` (charter-exploratorio), `relatorios` (relatorio-execucao, resumo-testes), `requisitos` (épico/história ainda sem chave ou sem épico), `docs` (outros) — usando a pasta da aplicação que já existe (mesmo nome). Sem saber a aplicação, salve em `_entrada/`. **Nunca solto na raiz.** Preencha `app:` no cabeçalho sempre que souber a aplicação.
+6. **Lugar certo:** se a pasta de trabalho tiver `aplicacoes/` e `_entrada/` (estrutura do editor), salve em `aplicacoes/<app>/<subpasta>/` — `casos` (caso-de-teste, cenario-bdd, checklist — com chave do Jira em `jira:`, em `casos/<CHAVE>/`, ou na pasta que já existe começando com a chave; com `epico:`, em `casos/<ÉPICO>/<CHAVE>/`, onde também ficam o documento do épico e a história do ticket), `bugs`, `planos`, `sessoes` (charter-exploratorio; `teste-em-dupla` com ticket vai para a pasta do ticket, junto dos casos), `relatorios` (relatorio-execucao, resumo-testes), `requisitos` (épico/história ainda sem chave ou sem épico), `docs` (outros) — usando a pasta da aplicação que já existe (mesmo nome). Sem saber a aplicação, salve em `_entrada/`. **Nunca solto na raiz.** Preencha `app:` no cabeçalho sempre que souber a aplicação.
 7. **Herança do pai:** o filho repete o que o liga ao pai — o caso leva `jira:` (o ticket), `epico:`, as tags e a sprint do ticket/épico; o bug leva tags, `epico:` e `sprint:` do caso (o `jira:` do bug é a chave **dele** no Jira, nunca a do caso). Assim tudo o que nasceu de um épico, ticket ou rodada é achado junto (o *segmento*).
 8. **Modelos próprios:** se a pasta de trabalho tiver `modelos/` (ou `templates/`) — modelos do usuário, criados no editor com *Salvar como modelo* —, e um deles corresponder ao pedido, siga esse modelo em vez do padrão da seção 7 (mesmas seções, ordem e colunas; `{{data}}` = data de hoje).
 
@@ -47,8 +47,8 @@ Se as ferramentas `qa_*` estiverem disponíveis, a pasta de trabalho do usuário
 
 ```yaml
 ---
-tipo: caso-de-teste        # caso-de-teste | cenario-bdd | plano-de-teste | bug | relatorio-execucao | charter-exploratorio | checklist | resumo-testes | epico | historia
-id: TC-042                 # TC- caso, CEN- cenário, BUG- bug (ou chave do Jira), PT- plano, EXE- execução, SES- sessão, CHK- checklist, RES- resumo, EP- épico, HU- história (ou a chave do Jira)
+tipo: caso-de-teste        # caso-de-teste | cenario-bdd | plano-de-teste | bug | relatorio-execucao | charter-exploratorio | teste-em-dupla | checklist | resumo-testes | epico | historia
+id: TC-042                 # TC- caso, CEN- cenário, BUG- bug (ou chave do Jira), PT- plano, EXE- execução, SES- sessão, DUP-<TICKET> teste em dupla, CHK- checklist, RES- resumo, EP- épico, HU- história (ou a chave do Jira)
 titulo: Login com usuário bloqueado
 app: Portal                # aplicação (define a pasta: aplicacoes/<app>/…); vazio se não souber
 status: PENDING            # PASS | FAIL | BLOCKED | SKIP | PENDING
@@ -203,6 +203,17 @@ Para "como foi a regressão?", "o que falhou?" ou "posso liberar?":
 4. **Bugs**: falha sem bug ligado → sugira o bug (`qa_bug_do_caso`, informando `execucao`); se o caso já tinha bug, verifique se é **reincidência** antes de criar outro. Destaque bugs reabertos e os Críticos/Altos ainda abertos.
 5. **Comparativo** com a execução anterior (log/comparativo): regressões (passou a falhar) primeiro, depois os corrigidos e os que continuam falhando. Para a tendência de várias rodadas (sprint a sprint, casos que falham sempre), `qa_tendencia`.
 6. **Próximos passos**: o que retestar (casos dos bugs corrigidos — ofereça `qa_rodada_criar { reteste: "<EXEC>" }`), o que ficou sem executar (SKIP/BLOCKED com o motivo) e, se houver os tickets da sprint, sugestões de casos de regressão para eles (`qa_rodada_criar { segmento: "<épico ou #tag>" }`).
+
+## 6.4 Roteiro do teste em dupla
+
+"Monta o teste em dupla do PORTAL-120" = a chamada curta (~15 min) em que o dev mostra o ticket rodando no ambiente local dele e o QA confere o básico **antes** de subir para DEV/HML. Não é a execução formal: o objetivo é não esquecer o que importa sem segurar o dev.
+
+1. Leia os casos da pasta do ticket e a história (critérios de aceite) — com o MCP, `qa_listar { segmento: "PORTAL-120" }` e `qa_ler`.
+2. **Roteiro** (uma tabela de passos): até **5 pontos principais** (cobrem os critérios de aceite; prioridade mais alta primeiro) e **1–2 casos menos triviais** (negativo, borda, erro, permissão) marcados com `⚠`. Cada linha: `[[TC-…]] — o que ver` · resultado esperado em uma frase · obtido vazio · `` `PENDING` ``. Junte casos parecidos numa linha só; nada de passos de preparação.
+3. **Critérios de aceite** como `- [ ]`; critério sem linha no roteiro → diga qual na resposta.
+4. **Ficou para DEV/HML**: os casos que não entraram, como `- [ ] [[TC-…]] — título`.
+5. Crie com `qa_criar { tipo: "teste-em-dupla", app, titulo: "Teste em dupla — <título do ticket>", conteudo }` (modelo da seção 7, `id: DUP-PORTAL-120`, `jira:` e `epico:`). No editor, **Execução ▾ → 🤝 Teste em dupla do ticket…** faz a mesma montagem sem o Claude.
+6. Depois da chamada, o mesmo documento é o relatório: com as notas do usuário, preencha **Bugs e ajustes** e **Resumo e resultado** (*Pode subir* / *Sobe com ajustes* / *Volta para o dev*).
 
 ## 7. Modelos por tipo
 

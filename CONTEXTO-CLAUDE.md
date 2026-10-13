@@ -30,6 +30,7 @@ Os documentos públicos descrevem **o estado atual**, sem citar versões antigas
 
 - **Data de referência:** 12/10/2026. Fases 0–12 do roadmap interno concluídas (editor, execução, relatórios, MCP, integrações, layout por módulo, exemplos de todos os módulos).
 - **Documentação reorganizada em 12/10/2026:** README, MANUAL, ROADMAP, ARQUITETURA e `exemplos/LEIA-ME.md` reescritos para o estado atual e sem versões antigas; os anteriores foram para `antigos/`.
+- **13/10/2026:** tipo `teste-em-dupla` e comando **🤝 Teste em dupla do ticket** (`src/app/pairTest.js` + `src/markdown/pairTest.ts`). Propostas de **diário/agenda** e **comparador de JSON** registradas na seção 6 do `ROADMAP-INTERNO.md`, aguardando decisão.
 - **Próximo trabalho:** ver "Próximos passos" no `ROADMAP-INTERNO.md` — inclui uma **análise de redundâncias a validar** (nenhuma remoção decidida).
 - **Pontos de atenção:** o MANUAL é importado pelo app (`import manualText from '../MANUAL.md?raw'`); `tests/unit/modules.test.mjs` confere "Onde fica…?" e todas as referências `Menu ▾ → item` / `Ctrl+Shift+P → texto` contra o registro de módulos.
 

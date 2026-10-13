@@ -262,7 +262,7 @@ export function createExecutionBar({ pane, root, onSummary, onRun, onSession, on
     const tasks = countTasks(source);
     const hasSummary = findSummaryBlocks(source.split('\n')).length > 0;
     const stale = hasSummary && summaryIsStale(source);
-    const charter = /^tipo[ \t]*:[ \t]*charter-exploratorio\b/m.test(source.slice(0, 2000));
+    const charter = /^tipo[ \t]*:[ \t]*(charter-exploratorio|teste-em-dupla)\b/m.test(source.slice(0, 2000));
     const cycle = /^tipo[ \t]*:[ \t]*(ciclo-regressao|execucao)\b/m.test(source.slice(0, 2000));
     // caso terminado (todos os passos com status): ⏭ Próximo caso da pasta (ou do ciclo)
     const isCase = /^tipo[ \t]*:[ \t]*(caso-de-teste|cenario-bdd|checklist)\b/m.test(source.slice(0, 2000));

@@ -13,7 +13,7 @@ import { docIndex, els, menu } from './shared.js';
 /** @typedef {import('../types').DocEntry} DocEntry */
 
 const ICONS = /** @type {Record<string, string>} */ ({
-  'caso-de-teste': '🧪', 'cenario-bdd': '🧪', checklist: '☑', bug: '🐞', 'plano-de-teste': '🗺', 'charter-exploratorio': '⏱',
+  'caso-de-teste': '🧪', 'cenario-bdd': '🧪', checklist: '☑', bug: '🐞', 'plano-de-teste': '🗺', 'charter-exploratorio': '⏱', 'teste-em-dupla': '🤝',
   'relatorio-execucao': '📊', 'resumo-testes': '📊', epico: '📚', historia: '📖', visao: '🔎', 'ciclo-regressao': '🔁', execucao: '▶', 'relatorio-encerramento': '🏁', 'relatorio-defeitos': '🐞', 'relatorio-rastreabilidade': '🧭', 'relatorio-log': '📜',
 });
 const COLL = new Intl.Collator('pt-BR', { numeric: true, sensitivity: 'base' });

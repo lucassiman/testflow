@@ -93,7 +93,7 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
   server.registerTool('qa_listar', {
     title: 'Listar documentos', description: 'Lista documentos com filtros (listas separadas por vírgula; "!" na frente exclui). Devolve tabela com ID, título, tipo, status, app, progresso e pasta.',
     inputSchema: {
-      tipo: z.string().optional().describe('caso-de-teste, bug, plano-de-teste, relatorio-execucao, charter-exploratorio, checklist, cenario-bdd, resumo-testes, epico, historia, ciclo-regressao…'),
+      tipo: z.string().optional().describe('caso-de-teste, bug, plano-de-teste, relatorio-execucao, charter-exploratorio, teste-em-dupla, checklist, cenario-bdd, resumo-testes, epico, historia, ciclo-regressao…'),
       app: z.string().optional(), status: z.string().optional().describe('PASS, FAIL, BLOCKED, SKIP, PENDING, sem-status'),
       tags: z.string().optional(), pasta: z.string().optional().describe('começo do caminho, ex.: aplicacoes/Portal'),
       texto: z.string().optional().describe('palavra no ID, título, caminho, tags, responsável…'),
@@ -181,7 +181,7 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
   server.registerTool('qa_criar', {
     title: 'Criar documento', description: 'Cria um documento QA-MD a partir do modelo do tipo (ou do texto completo em "conteudo"), com o próximo ID livre e no lugar certo pelo app: (aplicacoes/<App>/<casos|bugs|planos…>/; casos com chave no jira: vão para casos/<TICKET>/; sem app: _entrada/). Nunca sobrescreve. Devolve o caminho e os avisos da validação.',
     inputSchema: {
-      tipo: z.string().describe('caso-de-teste, bug, relatorio-execucao, cenario-bdd, plano-de-teste, charter-exploratorio, checklist, resumo-testes, epico, historia — ou o nome de um modelo da pasta modelos/'),
+      tipo: z.string().describe('caso-de-teste, bug, relatorio-execucao, cenario-bdd, plano-de-teste, charter-exploratorio, teste-em-dupla, checklist, resumo-testes, epico, historia — ou o nome de um modelo da pasta modelos/'),
       titulo: z.string(), app: z.string().optional(),
       campos: z.record(z.string(), z.string()).optional().describe('outros campos do cabeçalho: prioridade, severidade, ambiente, versao, responsavel, jira, tags ("[a, b]")…'),
       conteudo: z.string().optional().describe('documento completo em QA-MD (com cabeçalho ---), quando você já escreveu tudo'),

@@ -9,7 +9,7 @@ import { TYPE_LABELS, detectFrontMatter, parseFrontMatter } from '../markdown/fr
  * Variáveis: {{data}} (AAAA-MM-DD), {{data_br}} (DD/MM/AAAA), {{hora}} (HH:MM)
  */
 
-const ORDER = ['caso-de-teste', 'bug', 'relatorio-execucao', 'cenario-bdd', 'plano-de-teste', 'charter-exploratorio', 'checklist', 'resumo-testes', 'epico', 'historia', 'compartilhado', 'release'];
+const ORDER = ['caso-de-teste', 'bug', 'relatorio-execucao', 'cenario-bdd', 'plano-de-teste', 'charter-exploratorio', 'teste-em-dupla', 'checklist', 'resumo-testes', 'epico', 'historia', 'compartilhado', 'release'];
 /** @type {Record<string, string>} */
 const HINTS = {
   'caso-de-teste': 'passos com esperado/obtido/status',
@@ -18,6 +18,7 @@ const HINTS = {
   'cenario-bdd': 'Gherkin: Dado / Quando / Então',
   'plano-de-teste': 'escopo, estratégia, critérios, riscos',
   'charter-exploratorio': 'missão, notas da sessão, bugs',
+  'teste-em-dupla': 'roteiro curto do ticket para a chamada com o dev — vira o relatório',
   checklist: 'itens - [ ] por área',
   'resumo-testes': 'métricas e recomendação de release',
   epico: 'objetivo, escopo, histórias com critérios de aceite',
