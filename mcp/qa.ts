@@ -40,7 +40,7 @@ import { suggestDestination, runDestination, INBOX_DIR, fillApp, fillJira, fillF
 import { inheritHeader, segmentMembers, commonHeader, headerOf } from '../src/markdown/segment.ts';
 import {
   cycleDoc, cycleTable, isCycle, isCycleDef, cycleStart, cycleClosed, syncCycle, caseResult, needsFreshRound, closeCycle, skipPending, cycleSummary,
-  configOf, configFromLabel, combos, parseConfigs, defCases, execNumber, cicloOf, nextExecNumber, cycleProgress, unexecuted, nextCase, execInfo, syncDefExecutions, retestCases, runsOf,
+  configOf, configFromLabel, combos, parseConfigs, defCases, execNumber, cicloOf, nextExecNumber, cycleProgress, unexecuted, nextCase, execInfo, syncDefExecutions, retestCases, retestBugs, runsOf,
   attachAutomation as attachAutoToText,
 } from '../src/markdown/cycle.ts';
 import type { CaseLookup } from '../src/markdown/cycle.ts';
@@ -48,6 +48,7 @@ import { planSharedSweep, sharedDocText, applyCasePlan, sharedSweepReport } from
 import { approvalOf, approvalText, approvalKey, setApproval, normalizeApproval, isApprovable } from '../src/markdown/approval.ts';
 import { parseShared, scopeFor, parseInclude, expandInclude, resolveText, sharedWarnings, maskSecretColumns, iterationsOf, iterBinding, iterLabel, parseIterLabel, normEnv, envLabel, envCoverage, prepareEnvSections, ENVS, SHARED_TYPE, type SharedDoc, type SharedScopeResult, type Segment, type SharedVar } from '../src/markdown/shared.ts';
 import { buildReports, linkReports, REPORT_TYPES } from '../src/markdown/reports.ts';
+import { ensureConfirmSteps, logConfirmation } from '../src/markdown/confirm.ts';
 import { readLinks } from '../src/markdown/linkTypes.ts';
 import { findBrokenLinks } from '../src/markdown/brokenLinks.ts';
 import { sweepLinks, applySweep, sweepReport } from '../src/markdown/sweep.ts';
@@ -930,11 +931,11 @@ export class QaWorkspace {
    * Nova rodada: os casos vêm da lista, de um segmento (épico, ticket, #tag, execução…), de uma consulta (sintaxe das
    * visões) ou de um ciclo salvo (vira a execução #N dele). A execução herda o que os casos têm em comum.
    */
-  roundCreate(o: { nome?: string; casos?: string[]; segmento?: string; consulta?: string; ciclo?: string; app?: string; vinculos?: Record<string, string>; reteste?: string; reteste_skip?: boolean; so_aprovados?: boolean; ambientes?: string[]; navegadores?: string[]; dispositivos?: string[] }): Promise<string> {
+  roundCreate(o: { nome?: string; casos?: string[]; segmento?: string; consulta?: string; ciclo?: string; app?: string; vinculos?: Record<string, string>; reteste?: string; reteste_skip?: boolean; reteste_bugs?: boolean; bugs?: string[]; so_aprovados?: boolean; ambientes?: string[]; navegadores?: string[]; dispositivos?: string[] }): Promise<string> {
     return this.exclusive(() => this.roundCreateNow(o));
   }
 
-  private async roundCreateNow(o: { nome?: string; casos?: string[]; segmento?: string; consulta?: string; ciclo?: string; app?: string; vinculos?: Record<string, string>; reteste?: string; reteste_skip?: boolean; so_aprovados?: boolean; ambientes?: string[]; navegadores?: string[]; dispositivos?: string[] }): Promise<string> {
+  private async roundCreateNow(o: { nome?: string; casos?: string[]; segmento?: string; consulta?: string; ciclo?: string; app?: string; vinculos?: Record<string, string>; reteste?: string; reteste_skip?: boolean; reteste_bugs?: boolean; bugs?: string[]; so_aprovados?: boolean; ambientes?: string[]; navegadores?: string[]; dispositivos?: string[] }): Promise<string> {
     await this.refresh(true);
     const all = this.index.all();
     const isCaseDoc = (e: DocEntry) => CASE_TYPES.includes(e.tipo);
@@ -945,12 +946,25 @@ export class QaWorkspace {
     /** reteste: a execução de origem (herda vínculos, tags, dispositivo) */
     let retestText = '';
     let retestTitle = '';
+    /** testes de confirmação de bug: os pedidos e, no reteste, os ligados às falhas */
+    const confirm: Array<{ key: string; titulo: string; origem?: string }> = [];
+    for (const b of o.bugs || []) {
+      const e = await this.find(b);
+      if (e.tipo !== 'bug') throw new Error(`${e.id || e.path} não é um bug (tipo: ${e.tipo || '?'})`);
+      confirm.push({ key: e.id || e.name.replace(/\.(md|markdown)$/i, ''), titulo: '' });
+    }
+    const onlyBugs = !!o.bugs?.length && !o.casos?.length && !o.segmento && !o.consulta && !o.ciclo && !o.reteste;
     if (o.reteste) {
       const ex = await this.find(o.reteste);
       retestText = ex.text || '';
       if (!isCycle(retestText)) throw new Error(`${ex.path} não é uma execução (rodada)`);
       const cases = retestCases(retestText, o.reteste_skip ? ['SKIP'] : []);
-      if (!cases.length) throw new Error(`${ex.id || ex.path} não tem casos com FAIL ou BLOCKED${o.reteste_skip ? ' (nem SKIP)' : ''} — nada para retestar`);
+      if (o.reteste_bugs !== false) {
+        const docs = this.viewDocs();
+        const isOpen = (k: string) => { const b = this.index.resolve(k); const row = b && docs.find((d) => d.path === b.path); return !row || bugOpen(row); };
+        confirm.push(...retestBugs(retestText, isOpen, o.reteste_skip ? ['SKIP'] : []));
+      }
+      if (!cases.length && !confirm.length) throw new Error(`${ex.id || ex.path} não tem casos com FAIL ou BLOCKED${o.reteste_skip ? ' (nem SKIP)' : ''} — nada para retestar`);
       picked = cases.map((c) => this.index.resolve(c.key)).filter((x): x is DocEntry => !!x);
       origem = `reteste das falhas de [[${ex.id || ex.name.replace(/\.(md|markdown)$/i, '')}]]`;
       retestTitle = `${String(meta(retestText).titulo || ex.titulo || 'Execução').replace(/\s+—\s+Reteste$/i, '')} — Reteste`;
@@ -963,7 +977,7 @@ export class QaWorkspace {
       const execs = all.filter((x) => isCycle(x.text || '') && cicloOf(x.text || '').toLowerCase() === key.toLowerCase()).map((x) => ({ numero: execNumber(x.text || '') }));
       link = { ciclo: key, numero: nextExecNumber(execs) };
       origem = `ciclo ${def.titulo || def.name}`;
-    } else {
+    } else if (!onlyBugs) {
       const sets: DocEntry[][] = [];
       if (o.casos?.length) {
         const list: DocEntry[] = [];
@@ -984,16 +998,30 @@ export class QaWorkspace {
       origem = [o.segmento && `segmento ${o.segmento}`, o.consulta && 'consulta', o.casos?.length && `${o.casos.length} caso(s) escolhido(s)`].filter(Boolean).join(' + ');
     }
     picked = [...new Map(picked.map((e) => [e.path, e])).values()].sort((a, b) => (a.id || a.name).localeCompare(b.id || b.name, 'pt-BR', { numeric: true }));
-    if (!picked.length) throw new Error('nenhum caso de teste encontrado com esse critério');
+    if (!picked.length && !confirm.length) throw new Error('nenhum caso de teste encontrado com esse critério');
+    // bugs: sem repetir, com o título do bug e o caso em que foi encontrado
+    const bugs = [...new Map(confirm.map((b) => [b.key.toLowerCase(), b])).values()].map((b) => {
+      const e = this.index.resolve(b.key);
+      const origem = b.origem || [...(e?.text || '').matchAll(/\[\[([^\]|#]+)/g)].map((m) => this.index.resolve(m[1].trim())).find((x) => x && CASE_TYPES.includes(x.tipo))?.id || '';
+      return { key: b.key, titulo: b.titulo || e?.titulo || e?.heading || b.key, ...(origem ? { origem } : {}) };
+    });
+    // o bug ganha a tabela do teste de confirmação (pelos passos dele), se ainda não tem
+    for (const b of bugs) {
+      const e = this.index.resolve(b.key);
+      if (!e) continue;
+      const doc = await this.readDoc(e.path);
+      const r = ensureConfirmSteps(doc.text);
+      if (r.added) await this.writeDoc(e.path, r.text, doc);
+    }
     // só casos aprovados (aprovação do caso)
     let leftOut = '';
-    if (o.so_aprovados) {
+    if (o.so_aprovados && picked.length) {
       const out = picked.filter((e) => approvalKey(e.text || '') !== 'aprovado');
-      if (out.length === picked.length) throw new Error(`nenhum caso aprovado entre os ${picked.length} escolhidos (${picked.map((e) => `${e.id || e.name}: ${approvalKey(e.text || '') || 'sem aprovação'}`).join(', ')})`);
+      if (out.length === picked.length && !bugs.length) throw new Error(`nenhum caso aprovado entre os ${picked.length} escolhidos (${picked.map((e) => `${e.id || e.name}: ${approvalKey(e.text || '') || 'sem aprovação'}`).join(', ')})`);
       picked = picked.filter((e) => !out.includes(e));
       leftOut = ` Ficaram fora (não aprovados): ${out.map((e) => `${e.id || e.name} (${approvalKey(e.text || '') || 'sem aprovação'})`).join(', ')}.`;
     }
-    const apps = [...new Set(picked.map((e) => e.app).filter(Boolean))];
+    const apps = [...new Set([...picked, ...bugs.map((b) => this.index.resolve(b.key)).filter((x): x is DocEntry => !!x)].map((e) => e.app).filter(Boolean))];
     const appName = o.app || (apps.length === 1 ? apps[0] : '');
     // herança: do ciclo (vínculos, tags) ou o que todos os casos têm em comum; vínculos informados valem mais
     const common = commonHeader(picked);
@@ -1001,7 +1029,8 @@ export class QaWorkspace {
     const links: Record<string, string[]> = defText ? readLinks(defText) : retestText ? readLinks(retestText) : { ...(common.jira.length ? { jira: common.jira } : {}), ...(common.epico.length ? { epico: common.epico } : {}), ...(common.sprint.length ? { sprint: common.sprint } : {}) };
     for (const [k, v] of Object.entries(o.vinculos || {})) links[k] = String(v).split(/[,;]+/).map((x) => x.trim()).filter(Boolean);
     const now = new Date();
-    const titulo = o.nome || retestTitle || (link ? `${String(meta(defText).titulo || link.ciclo)} — Execução #${link.numero}` : `Rodada${appName ? ` ${appName}` : ''} — ${now.toLocaleDateString('pt-BR')}`);
+    const titulo = o.nome || retestTitle || (link ? `${String(meta(defText).titulo || link.ciclo)} — Execução #${link.numero}` : onlyBugs ? (bugs.length === 1 ? `Confirmação do ${bugs[0].key} — ${bugs[0].titulo}` : `Confirmação de ${bugs.length} bugs — ${now.toLocaleDateString('pt-BR')}`) : `Rodada${appName ? ` ${appName}` : ''} — ${now.toLocaleDateString('pt-BR')}`);
+    if (onlyBugs) origem = `teste de confirmação de ${bugs.map((b) => `[[${b.key}]]`).join(', ')}`;
     const start = link && link.numero > 1 ? new Date(Math.ceil((now.getTime() + 1) / 60000) * 60000) : now;
     // matriz: as combinações pedidas ou as configurações salvas no ciclo; o reteste fica na configuração de origem
     const configs = combos({ ambientes: o.ambientes, navegadores: o.navegadores, dispositivos: o.dispositivos });
@@ -1026,7 +1055,7 @@ export class QaWorkspace {
     const retestCfg = retestText ? configOf(retestText) : '';
     let text = cycleDoc({
       titulo, app: appName, origem, cases: picked.map((e) => ({ key: e.id || e.name.replace(/\.(md|markdown)$/i, ''), titulo: e.titulo || e.heading || e.name })),
-      start, responsavel: this.opts.who || '', links, tags: fromDef ? [...fromDef.tags, ...(retestText ? ['reteste'] : [])] : common.tags, ...(link ? { ciclo: link.ciclo, numero: link.numero } : {}),
+      bugs, start, responsavel: this.opts.who || '', links, tags: fromDef ? [...fromDef.tags, ...(retestText ? ['reteste'] : [])] : onlyBugs ? ['confirmacao'] : common.tags, ...(link ? { ciclo: link.ciclo, numero: link.numero } : {}),
       ...(retestCfg ? { config: configFromLabel(retestCfg) } : {}),
     });
     const dispositivo = defText || retestText ? String(meta(defText || retestText).dispositivo || '') : '';
@@ -1036,7 +1065,7 @@ export class QaWorkspace {
     const slug = titulo.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'rodada';
     const path = await this.createDoc(dir, `${slug}.md`, text);
     const id = String(meta(text).id || '');
-    return `Criada: ${path} (${id}) com ${picked.length} caso(s): ${picked.map((e) => e.id || e.name).join(', ')}.${Object.keys(links).length ? ` Vínculos: ${Object.entries(links).map(([k, v]) => `${k}: ${v.join(', ')}`).join(' · ')}.` : ''} ${leftOut} Registre cada caso com qa_rodada_registrar; no fim, qa_rodada_finalizar.`;
+    return `Criada: ${path} (${id}) com ${picked.length} caso(s)${picked.length ? `: ${picked.map((e) => e.id || e.name).join(', ')}` : ''}${bugs.length ? ` e ${bugs.length} teste(s) de confirmação de bug (antes dos casos): ${bugs.map((b) => b.key).join(', ')}` : ''}.${Object.keys(links).length ? ` Vínculos: ${Object.entries(links).map(([k, v]) => `${k}: ${v.join(', ')}`).join(' · ')}.` : ''} ${leftOut} Registre cada caso com qa_rodada_registrar; no fim, qa_rodada_finalizar.`;
   }
 
   /**
@@ -1060,7 +1089,7 @@ export class QaWorkspace {
     let detail = '';
     if (o.passos?.length) {
       const cdoc = await this.readDoc(c.path);
-      let text = cdoc.text;
+      let text = row.confirm ? ensureConfirmSteps(cdoc.text).text : cdoc.text;
       // marcas de antes desta rodada: vão para o Histórico antes (como o ▶ Próximo caso do app)
       if (needsFreshRound(text, since, countStatuses(text), configOf(exDoc.text))) { const nr = newRound(text); if (nr) { text = nr.source; detail += ` Rodada antiga ${nr.round} (${nr.overall}) arquivada.`; } }
       for (const p of o.passos) {
@@ -1083,6 +1112,16 @@ export class QaWorkspace {
         const r = this.concludeRun(text, c, o.iteracao, o.ambiente || String(meta(exDoc.text).ambiente || ''), (round, overall) => ` Rodada ${round} do caso concluída (${overall}).`, configOf(exDoc.text));
         text = r.text;
         detail += r.detail;
+        if (row.confirm) {
+          // teste de confirmação: o resultado vai para o Andamento do bug (fechar é com o OK do usuário)
+          const overall = deriveOverall(countStatuses(text)) || 'PENDING';
+          const st = stepTable(text);
+          const bad = st && st.status >= 0 ? st.rows.findIndex((x) => ['fail', 'blocked'].includes(cellStatus(x.cells[st.status]) || '')) : -1;
+          const failed = bad >= 0 && st ? `${(st.id >= 0 && cellToText(st.rows[bad].cells[st.id]).trim()) || bad + 1}${st.actual >= 0 && cellToText(st.rows[bad].cells[st.actual]).trim() ? ` — obtido: ${cellToText(st.rows[bad].cells[st.actual]).trim()}` : ''}` : '';
+          const lc = logConfirmation(text, { overall, when: new Date(), exec: String(meta(exDoc.text).id || ''), versao: String(meta(exDoc.text).versao || ''), ambiente: o.ambiente || String(meta(exDoc.text).ambiente || ''), failed });
+          text = lc.text;
+          detail += overall === 'PASS' ? ' Confirmação PASS (corrigido) — o bug continua aberto: pergunte ao usuário se fecha (qa_atualizar_cabecalho { status: PASS }).' : lc.reopened ? ` Confirmação ${overall}: bug reaberto (estava ${lc.previous}).` : ` Confirmação ${overall}: anotado no Andamento do bug.`;
+        }
       } else detail += ` ${counts.total - counts.pending}/${counts.total} passos marcados (falta concluir os outros).`;
       await this.writeDoc(c.path, text, cdoc);
       await this.refresh(true);
@@ -1093,8 +1132,8 @@ export class QaWorkspace {
       const pad = (n: number) => String(n).padStart(2, '0');
       const when = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
       const lines = exDoc.text.split('\n');
-      let line = setCell(lines[row.line], t.cols.status, `\`${w}\``);
-      if (t.cols.when >= 0) line = setCell(line, t.cols.when, when);
+      let line = setCell(lines[row.line], row.cols.status, `\`${w}\``);
+      if (row.cols.when >= 0) line = setCell(line, row.cols.when, when);
       lines[row.line] = line;
       exDoc.text = lines.join('\n');
       detail += ` Status ${w} gravado na execução (o caso inteiro).`;

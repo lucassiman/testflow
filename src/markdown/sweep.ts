@@ -125,7 +125,7 @@ export function sweepLinks(input: Array<{ path: string; text: string }>, dirs: s
 
     if (isCycle(d.text)) {
       // execução antiga: o que todos os casos dela têm em comum
-      const rows = cycleTable(d.text)?.rows || [];
+      const rows = (cycleTable(d.text)?.rows || []).filter((r) => !r.confirm);
       const cases = rows.map((r) => by.get(norm(r.key))).filter((x): x is Doc => !!x);
       if (cases.length) {
         const common = commonHeader(cases.map((c) => ({ tags: list(c.data.tags), jira: jiraValues(c.data.jira).map(jiraLabel).join(','), epico: list(c.data.epico).join(',') || epicKeyFromCase(c, storyByTicket, dirs, epicDirs), sprint: str(c.data.sprint) })));

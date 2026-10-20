@@ -14,7 +14,7 @@
  * com data a partir do início do ciclo. Status marcado à mão (ex.: SKIP) é mantido enquanto o caso não tiver resultado.
  */
 import { detectFrontMatter, parseFrontMatter, formatValue } from './frontmatter.ts';
-import { splitRow, setCell, normHeader, cellStatus, countStatuses, deriveOverall, setFrontMatterStatus, updateSummaryBlocks, HISTORY_TITLE, SUMMARY_OPEN, SUMMARY_CLOSE } from './status.ts';
+import { splitRow, setCell, normHeader, cellStatus, countStatuses, confirmCounts, confirmLine, deriveOverall, setFrontMatterStatus, updateSummaryBlocks, HISTORY_TITLE, CONFIRM_TITLE, SUMMARY_OPEN, SUMMARY_CLOSE } from './status.ts';
 import { findSection, fmtDuration } from './runs.ts';
 import { parseIterLabel } from './shared.ts';
 import { linksHeader } from './linkTypes.ts';
@@ -73,7 +73,20 @@ export const cycleStart = (text: string): Date | null => parseStart(meta(text).i
 /** Ciclo encerrado (fim: no cabeçalho). */
 export const cycleClosed = (text: string): boolean => !!String(meta(text).fim || '').trim();
 
-export interface CycleCase { key: string; titulo: string }
+export interface CycleCase { key: string; titulo: string; /** teste de confirmação: o caso em que o bug foi encontrado ([[TC-…]]) */ origem?: string }
+
+/** Cabeçalho da tabela "Confirmação de bugs" (as colunas Status e Executado em no mesmo lugar da de casos). */
+const CONFIRM_HEAD = '| # | Bug | Título | Status | Executado em | Origem |';
+
+/** A seção "## Confirmação de bugs" de uma execução: um bug por linha, executado antes dos casos. */
+export function confirmSection(bugs: CycleCase[]): string[] {
+  return [
+    '## Confirmação de bugs', '',
+    'Teste de confirmação de cada bug: refaz os passos dele na versão corrigida (`PASS` = corrigido). Conta à parte dos casos e vem antes deles.', '',
+    CONFIRM_HEAD, '| --- | --- | --- | --- | --- | --- |',
+    ...bugs.map((b, i) => `| ${i + 1} | [[${b.key}]] | ${cellEsc(b.titulo)} |  |  | ${b.origem ? `[[${b.origem}]]` : ''} |`), '',
+  ];
+}
 
 /** A versão vai na linha versao: própria do documento (não repete pelos vínculos). */
 const withoutVersion = (links: Record<string, string[]> = {}): Record<string, string[]> => Object.fromEntries(Object.entries(links).filter(([k]) => k !== 'versao'));
@@ -120,7 +133,7 @@ export function parseConfigs(list: unknown): string[] {
 }
 
 /** O documento de um ciclo novo. */
-export function cycleDoc(o: { titulo: string; app?: string; versao?: string; origem?: string; cases: CycleCase[]; start?: Date; responsavel?: string; ciclo?: string; numero?: number; links?: Record<string, string[]>; dispositivo?: string; tags?: string[]; config?: RunConfig; matriz?: string; /** várias criadas no mesmo segundo (matriz): -1, -2… no ID */ seq?: number }): string {
+export function cycleDoc(o: { titulo: string; app?: string; versao?: string; origem?: string; cases: CycleCase[]; /** testes de confirmação (bugs), antes dos casos */ bugs?: CycleCase[]; start?: Date; responsavel?: string; ciclo?: string; numero?: number; links?: Record<string, string[]>; dispositivo?: string; tags?: string[]; config?: RunConfig; matriz?: string; /** várias criadas no mesmo segundo (matriz): -1, -2… no ID */ seq?: number }): string {
   const start = o.start || new Date();
   const id = `EXEC-${start.getFullYear()}${pad(start.getMonth() + 1)}${pad(start.getDate())}-${pad(start.getHours())}${pad(start.getMinutes())}${pad(start.getSeconds())}${o.seq ? `-${o.seq}` : ''}`;
   const fm = [
@@ -136,32 +149,41 @@ export function cycleDoc(o: { titulo: string; app?: string; versao?: string; ori
     `inicio: ${iso(start)}`, 'status: PENDING', `tags: ${tagsField(o.tags)}`, 'qa-md: 1', '---',
   ];
   const rows = o.cases.map((c, i) => `| ${i + 1} | [[${c.key}]] | ${cellEsc(c.titulo)} |  |  |  |`);
+  const bugs = o.bugs || [];
+  const onlyBugs = !o.cases.length && bugs.length > 0;
+  const what = o.cases.length
+    ? `com ${o.cases.length} caso(s)${bugs.length ? ` e ${bugs.length} teste(s) de confirmação de bug` : ''}`
+    : onlyBugs ? `de confirmação de ${bugs.length} bug(s)` : 'só de testes automatizados';
   return [
     ...fm, '', `# ${o.titulo}`, '',
-    `${o.ciclo ? `Execução #${o.numero || 1} do ciclo [[${o.ciclo}]]` : o.cases.length ? 'Rodada avulsa' : 'Execução'} ${o.cases.length ? `com ${o.cases.length} caso(s)` : 'só de testes automatizados'}${o.config ? ` na configuração **${o.config.label}**` : ''}${o.origem ? ` (${o.origem})` : ''}, iniciada em ${dmy(start)} às ${hm(start)}. `
-      + (o.cases.length
-        ? 'O status de cada caso vem da execução dele (▶ Executar → ✓ Concluir); **▶ Próximo caso** abre o próximo pendente. Status marcado à mão aqui (ex.: `SKIP`) fica. O relatório de testes automatizados (🤖) entra na seção "Testes automatizados", separado dos manuais.'
+    `${o.ciclo ? `Execução #${o.numero || 1} do ciclo [[${o.ciclo}]]` : o.cases.length ? 'Rodada avulsa' : onlyBugs ? 'Teste' : 'Execução'} ${what}${o.config ? ` na configuração **${o.config.label}**` : ''}${o.origem ? ` (${o.origem})` : ''}, iniciada em ${dmy(start)} às ${hm(start)}. `
+      + (o.cases.length || onlyBugs
+        ? `O status de cada ${onlyBugs ? 'bug' : 'caso'} vem da execução dele (▶ Executar → ✓ Concluir); **▶ Próximo caso** abre o próximo pendente${bugs.length && o.cases.length ? ' (as confirmações de bug primeiro)' : ''}. Status marcado à mão aqui (ex.: \`SKIP\`) fica.${o.cases.length ? ' O relatório de testes automatizados (🤖) entra na seção "Testes automatizados", separado dos manuais.' : ''}`
         : 'O resultado está na seção "Testes automatizados" (relatório importado). Dá para somar casos manuais depois, editando a tabela "Casos do ciclo".'),
     '', SUMMARY_OPEN, SUMMARY_CLOSE, '',
-    '## Casos do ciclo', '',
-    '| # | Caso | Título | Status | Executado em | Bugs |',
-    '| --- | --- | --- | --- | --- | --- |',
-    ...rows, '',
+    ...(bugs.length ? confirmSection(bugs) : []),
+    ...(onlyBugs ? [] : [
+      '## Casos do ciclo', '',
+      '| # | Caso | Título | Status | Executado em | Bugs |',
+      '| --- | --- | --- | --- | --- | --- |',
+      ...rows, '',
+    ]),
   ].join('\n');
 }
 
-export interface CycleRow { line: number; key: string; status: StatusWord | null; cells: string[] }
-interface CycleTable { rows: CycleRow[]; cols: { caso: number; status: number; when: number; bugs: number; titulo: number; /** Testador (atribuição, 11.3) */ tester: number } }
+type CycleCols = { caso: number; status: number; when: number; bugs: number; titulo: number; /** Testador (atribuição, 11.3) */ tester: number; /** confirmação de bug: o caso em que foi encontrado */ origem?: number };
+export interface CycleRow { line: number; key: string; status: StatusWord | null; cells: string[]; /** teste de confirmação de um bug (seção "Confirmação de bugs") */ confirm: boolean; /** colunas da tabela desta linha */ cols: CycleCols }
+interface CycleTable { rows: CycleRow[]; cols: CycleCols }
 
-/** A tabela "Casos do ciclo". */
-export function cycleTable(text: string): CycleTable | null {
-  const lines = text.split('\n');
-  const sec = findSection(lines, CASES_TITLE);
+/** Uma tabela de execução numa seção (Casos do ciclo, ou Confirmação de bugs com a coluna Bug). */
+function sectionTable(lines: string[], title: RegExp, confirm: boolean): { rows: CycleRow[]; cols: CycleCols } | null {
+  const sec = findSection(lines, title);
   if (!sec) return null;
   for (let i = sec.start; i < sec.end - 1; i++) {
     if (!lines[i].includes('|') || !/^\s*\|?\s*:?-{2,}/.test(lines[i + 1])) continue;
     const head = splitRow(lines[i]).map(normHeader);
-    const cols = { caso: head.indexOf('caso'), status: head.findIndex((h) => h === 'status' || h === 'situacao'), when: head.indexOf('executado em'), bugs: head.indexOf('bugs'), titulo: head.indexOf('titulo'), tester: head.findIndex((h) => /^(testador|testadora|atribuido a|responsavel|executor|quem)$/.test(h)) };
+    const caso = confirm ? head.findIndex((h) => h === 'bug' || h === 'caso') : head.indexOf('caso');
+    const cols = { caso, status: head.findIndex((h) => h === 'status' || h === 'situacao'), when: head.indexOf('executado em'), bugs: confirm ? -1 : head.indexOf('bugs'), titulo: head.indexOf('titulo'), tester: head.findIndex((h) => /^(testador|testadora|atribuido a|responsavel|executor|quem)$/.test(h)), ...(confirm ? { origem: head.indexOf('origem') } : {}) };
     if (cols.caso < 0 || cols.status < 0) continue;
     const rows: CycleRow[] = [];
     for (let j = i + 2; j < sec.end && lines[j].includes('|') && lines[j].trim(); j++) {
@@ -170,12 +192,27 @@ export function cycleTable(text: string): CycleTable | null {
       if (!key) continue;
       const kind = cellStatus(cells[cols.status]);
       const raw = (cells[cols.status] || '').replace(/[`*\s]/g, '');
-      rows.push({ line: j, key, status: kind && raw ? (kind.toUpperCase() as StatusWord) : null, cells });
+      rows.push({ line: j, key, status: kind && raw ? (kind.toUpperCase() as StatusWord) : null, cells, confirm, cols });
     }
     return { rows, cols };
   }
   return null;
 }
+
+/**
+ * As linhas da execução: as confirmações de bug ("Confirmação de bugs", que vêm antes) e os casos ("Casos do ciclo").
+ * `cols` é o da tabela de casos (ou o das confirmações, numa execução só delas); cada linha traz o seu (`row.cols`).
+ */
+export function cycleTable(text: string): CycleTable | null {
+  const lines = text.split('\n');
+  const cases = sectionTable(lines, CASES_TITLE, false);
+  const bugs = sectionTable(lines, CONFIRM_TITLE, true);
+  if (!cases && !bugs) return null;
+  return { rows: [...(bugs?.rows || []), ...(cases?.rows || [])], cols: (cases || bugs)!.cols };
+}
+
+/** Os testes de confirmação (bugs) de uma execução, na ordem. */
+export const confirmRows = (text: string): CycleRow[] => cycleTable(text)?.rows.filter((r) => r.confirm) || [];
 
 /**
  * Reteste (11.1): os casos da execução que terminaram em FAIL ou BLOCKED, na ordem da tabela — para uma rodada nova
@@ -188,12 +225,38 @@ export function retestCases(text: string, incluir: StatusWord[] = []): CycleCase
   const seen = new Set<string>();
   const out: CycleCase[] = [];
   for (const r of t.rows) {
-    if (!r.status || !want.has(r.status) || seen.has(r.key.toLowerCase())) continue;
+    if (r.confirm || !r.status || !want.has(r.status) || seen.has(r.key.toLowerCase())) continue;
     seen.add(r.key.toLowerCase());
-    const titulo = t.cols.titulo >= 0 ? (r.cells[t.cols.titulo] || '').replace(/\\\|/g, '|').trim() : '';
+    const titulo = r.cols.titulo >= 0 ? (r.cells[r.cols.titulo] || '').replace(/\\\|/g, '|').trim() : '';
     out.push({ key: r.key, titulo: titulo || r.key });
   }
   return out;
+}
+
+const linksIn = (cell: string): string[] => [...(cell || '').matchAll(/\[\[([^\]|#]+)/g)].map((m) => m[1].trim());
+
+/**
+ * Reteste: os bugs a confirmar — os da coluna Bugs dos casos que falharam (FAIL/BLOCKED, mais `incluir`) e as
+ * confirmações que não passaram (FAIL/BLOCKED) — sem repetir, com o caso de origem. O título fica para quem chama
+ * (vem do bug); `open(key)` = false deixa de fora os bugs já fechados.
+ */
+export function retestBugs(text: string, open: (key: string) => boolean = () => true, incluir: StatusWord[] = []): CycleCase[] {
+  const t = cycleTable(text);
+  if (!t) return [];
+  const want = new Set<StatusWord>(['FAIL', 'BLOCKED', ...incluir]);
+  const out = new Map<string, CycleCase>();
+  for (const r of t.rows) {
+    if (!r.status || !want.has(r.status)) continue;
+    if (r.confirm) {
+      const origem = (r.cols.origem ?? -1) >= 0 ? linksIn(r.cells[r.cols.origem as number] || '')[0] || '' : '';
+      if (!out.has(r.key.toLowerCase())) out.set(r.key.toLowerCase(), { key: r.key, titulo: r.cols.titulo >= 0 ? (r.cells[r.cols.titulo] || '').replace(/\\\|/g, '|').trim() : '', ...(origem ? { origem } : {}) });
+      continue;
+    }
+    for (const b of r.cols.bugs >= 0 ? linksIn(r.cells[r.cols.bugs]) : []) {
+      if (!out.has(b.toLowerCase()) && open(b)) out.set(b.toLowerCase(), { key: b, titulo: '', origem: r.key });
+    }
+  }
+  return [...out.values()];
 }
 
 /** Soma "12 min" + "1 h 05 min" + "00:12:30" (Duração do histórico). */
@@ -341,16 +404,16 @@ export function syncCycle(text: string, lookup: (key: string) => CaseLookup | nu
     if (!info) continue;
     let line = lines[row.line];
     if (info.result.state === 'feito' && info.result.status) {
-      line = setCell(line, t.cols.status, `\`${info.result.status}\``);
-      if (t.cols.when >= 0) line = setCell(line, t.cols.when, info.result.when);
-    } else if (info.result.state === 'andamento' && !row.status && t.cols.when >= 0) {
-      line = setCell(line, t.cols.when, info.result.when ? `em andamento (${info.result.when})` : 'em andamento');
+      line = setCell(line, row.cols.status, `\`${info.result.status}\``);
+      if (row.cols.when >= 0) line = setCell(line, row.cols.when, info.result.when);
+    } else if (info.result.state === 'andamento' && !row.status && row.cols.when >= 0) {
+      line = setCell(line, row.cols.when, info.result.when ? `em andamento (${info.result.when})` : 'em andamento');
     }
-    if (t.cols.bugs >= 0) {
+    if (row.cols.bugs >= 0) {
       const want = info.bugs.map((b) => `[[${b}]]`).join(', ');
-      const had = (row.cells[t.cols.bugs] || '').trim();
+      const had = (row.cells[row.cols.bugs] || '').trim();
       // bugs ligados à mão (texto que não é [[link]]) ficam
-      if (!had || /^(\[\[[^\]]+\]\](,\s*)?)+$/.test(had)) line = setCell(line, t.cols.bugs, want);
+      if (!had || /^(\[\[[^\]]+\]\](,\s*)?)+$/.test(had)) line = setCell(line, row.cols.bugs, want);
     }
     lines[row.line] = line;
   }
@@ -360,9 +423,9 @@ export function syncCycle(text: string, lookup: (key: string) => CaseLookup | nu
   return updateSummaryBlocks(next);
 }
 
-/** Status geral da execução: os casos manuais e o relatório automatizado (se houver) juntos. */
+/** Status geral da execução: os casos manuais, as confirmações de bug e o relatório automatizado (se houver) juntos. */
 export function overallOf(text: string): StatusWord | null {
-  return deriveOverall(addCounts(countStatuses(text), autoCounts(text)));
+  return deriveOverall(addCounts(addCounts(countStatuses(text), confirmCounts(text)), autoCounts(text)));
 }
 
 export interface CycleProgress { total: number; done: number; failed: number; next: string | null }
@@ -388,10 +451,10 @@ export function nextCase(text: string, current = '', who = ''): string | null {
   const t = cycleTable(text);
   if (!t) return null;
   let open = t.rows.filter((r) => !r.status || r.status === 'PENDING');
-  if (who.trim() && t.cols.tester >= 0) {
+  if (who.trim() && t.rows.some((r) => r.cols.tester >= 0)) {
     const k = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/^@/, '').trim();
     const me = k(who);
-    const of = (r: CycleRow) => k((r.cells[t.cols.tester] || '').replace(/\\\|/g, '|'));
+    const of = (r: CycleRow) => (r.cols.tester < 0 ? '' : k((r.cells[r.cols.tester] || '').replace(/\\\|/g, '|')));
     const mine = open.filter((r) => { const o = of(r); return !!o && (o === me || o.split(/\s+/)[0] === me || me.split(/\s+/)[0] === o); });
     const free = open.filter((r) => !of(r));
     open = mine.length ? mine : free;
@@ -408,13 +471,17 @@ export function closeCycle(text: string, now = new Date()): string {
   const counts = countStatuses(text);
   const auto = autoSummary(text);
   const overall = overallOf(text) || 'PENDING';
-  const bad = t.rows.filter((r) => r.status === 'FAIL' || r.status === 'BLOCKED');
-  const notRun = t.rows.filter((r) => !r.status || r.status === 'PENDING');
-  const bugsOf = (r: CycleRow): string => (t.cols.bugs >= 0 ? (r.cells[t.cols.bugs] || '').trim() : '');
-  const bugs = [...new Set(t.rows.flatMap((r) => bugsOf(r).match(/\[\[[^\]]+\]\]/g) || []))];
+  const caseRows = t.rows.filter((r) => !r.confirm);
+  const conf = t.rows.filter((r) => r.confirm);
+  const bad = caseRows.filter((r) => r.status === 'FAIL' || r.status === 'BLOCKED');
+  const notRun = caseRows.filter((r) => !r.status || r.status === 'PENDING');
+  const bugsOf = (r: CycleRow): string => (r.cols.bugs >= 0 ? (r.cells[r.cols.bugs] || '').trim() : '');
+  const CONF_WHAT: Record<string, string> = { PASS: 'corrigido', FAIL: 'não corrigido', BLOCKED: 'bloqueado', SKIP: 'não executado' };
+  const bugs = [...new Set(caseRows.flatMap((r) => bugsOf(r).match(/\[\[[^\]]+\]\]/g) || []))];
   const block = [
-    `Encerrado em ${dmy(now)} às ${hm(now)} — resultado \`${overall}\`${t.rows.length ? `: ${counts.pass} PASS · ${counts.fail} FAIL · ${counts.blocked} BLOCKED · ${counts.skip} SKIP${notRun.length ? ` · ${notRun.length} não executado(s)` : ''}` : ''}.`,
+    `Encerrado em ${dmy(now)} às ${hm(now)} — resultado \`${overall}\`${caseRows.length ? `: ${counts.pass} PASS · ${counts.fail} FAIL · ${counts.blocked} BLOCKED · ${counts.skip} SKIP${notRun.length ? ` · ${notRun.length} não executado(s)` : ''}` : ''}.`,
     '',
+    ...(conf.length ? [`**Confirmação de bugs:** ${confirmLine(confirmCounts(text))}`, '', ...conf.map((r) => `- [[${r.key}]] ${r.status ? `\`${r.status}\` — ${CONF_WHAT[r.status] || ''}` : 'pendente'}`), ''] : []),
     ...(auto ? [`**Testes automatizados (${auto.tool}):** ${auto.total} teste(s) — ${auto.pass} PASS · ${auto.fail} FAIL${auto.blocked ? ` · ${auto.blocked} BLOCKED` : ''}${auto.skip ? ` · ${auto.skip} SKIP` : ''}${auto.flaky ? ` · ${auto.flaky} flaky` : ''}${auto.sucessoPct == null ? '' : ` (${auto.sucessoPct}% de sucesso)`}.`, ''] : []),
     ...(bad.length ? ['**Falhas e bloqueios:**', '', ...bad.map((r) => `- [[${r.key}]] \`${r.status}\`${bugsOf(r) ? ` — ${bugsOf(r)}` : ''}`), ''] : []),
     ...(notRun.length ? [`**Não executados:** ${notRun.map((r) => `[[${r.key}]]`).join(', ')}`, ''] : []),
@@ -443,8 +510,8 @@ export function skipPending(text: string): string {
   const lines = text.split('\n');
   for (const r of t.rows) {
     if (r.status && r.status !== 'PENDING') continue;
-    let line = setCell(lines[r.line], t.cols.status, '`SKIP`');
-    if (t.cols.when >= 0) line = setCell(line, t.cols.when, 'não executado');
+    let line = setCell(lines[r.line], r.cols.status, '`SKIP`');
+    if (r.cols.when >= 0) line = setCell(line, r.cols.when, 'não executado');
     lines[r.line] = line;
   }
   return updateSummaryBlocks(lines.join('\n'));
@@ -472,17 +539,23 @@ export interface CycleSummary {
   casos: Array<{ key: string; status: StatusWord | null }>;
   /** relatório de testes automatizados anexado (nunca entra nos números acima) */
   auto: AutoSummary | null;
+  /** testes de confirmação de bug (à parte dos casos): PASS = corrigido */
+  confirmacoes: { total: number; corrigidos: number; naoCorrigidos: number; bloqueados: number; skip: number; pendentes: number; itens: Array<{ key: string; status: StatusWord | null }> };
 }
 
 /** Números da rodada ("Como foi essa rodada?") a partir do documento do ciclo. */
 export function cycleSummary(text: string, now = new Date()): CycleSummary | null {
-  const t = cycleTable(text);
-  if (!t) return null;
+  const all = cycleTable(text);
+  if (!all) return null;
+  // os números são dos casos; as confirmações de bug vêm à parte
+  const t = { ...all, rows: all.rows.filter((r) => !r.confirm) };
+  const conf = all.rows.filter((r) => r.confirm);
+  const cc = (s: StatusWord): number => conf.filter((r) => r.status === s).length;
   const m = meta(text);
   const inicio = parseStart(m.inicio);
   const fim = parseStart(m.fim);
   const count = (s: StatusWord): number => t.rows.filter((r) => r.status === s).length;
-  const bugsOf = (r: CycleRow): string[] => (t.cols.bugs >= 0 ? (r.cells[t.cols.bugs] || '').match(/\[\[([^\]|#]+)/g) || [] : []).map((b) => b.replace('[[', '').trim());
+  const bugsOf = (r: CycleRow): string[] => (r.cols.bugs >= 0 ? (r.cells[r.cols.bugs] || '').match(/\[\[([^\]|#]+)/g) || [] : []).map((b) => b.replace('[[', '').trim());
   const pass = count('PASS');
   const fail = count('FAIL');
   const blocked = count('BLOCKED');
@@ -500,6 +573,11 @@ export function cycleSummary(text: string, now = new Date()): CycleSummary | nul
     bugs: [...new Set(t.rows.flatMap(bugsOf))],
     casos: t.rows.map((r) => ({ key: r.key, status: r.status && r.status !== 'PENDING' ? r.status : null })),
     auto: autoSummary(text),
+    confirmacoes: {
+      total: conf.length, corrigidos: cc('PASS'), naoCorrigidos: cc('FAIL'), bloqueados: cc('BLOCKED'), skip: cc('SKIP'),
+      pendentes: conf.filter((r) => !r.status || r.status === 'PENDING').length,
+      itens: conf.map((r) => ({ key: r.key, status: r.status && r.status !== 'PENDING' ? r.status : null })),
+    },
   };
 }
 
@@ -621,8 +699,8 @@ export function applySkipped(text: string, keys: string[]): string {
   let changed = false;
   for (const r of t.rows) {
     if (!want.has(r.key.toLowerCase()) || (r.status && r.status !== 'PENDING')) continue;
-    let line = setCell(lines[r.line], t.cols.status, '`SKIP`');
-    if (t.cols.when >= 0) line = setCell(line, t.cols.when, 'pulado');
+    let line = setCell(lines[r.line], r.cols.status, '`SKIP`');
+    if (r.cols.when >= 0) line = setCell(line, r.cols.when, 'pulado');
     lines[r.line] = line;
     changed = true;
   }
@@ -644,8 +722,8 @@ export function applyWhole(text: string, marks: Record<string, { status: StatusW
   for (const r of t.rows) {
     const m = byKey.get(r.key.toLowerCase());
     if (!m) continue;
-    let line = setCell(lines[r.line], t.cols.status, `\`${m.status}\``);
-    if (t.cols.when >= 0) line = setCell(line, t.cols.when, m.when);
+    let line = setCell(lines[r.line], r.cols.status, `\`${m.status}\``);
+    if (r.cols.when >= 0) line = setCell(line, r.cols.when, m.when);
     if (line !== lines[r.line]) { lines[r.line] = line; changed = true; }
   }
   return changed ? updateSummaryBlocks(lines.join('\n')) : text;

@@ -70,6 +70,7 @@ import { refreshStatuses, editStatuses } from './app/statuses.js';
 import { newCycle, newRun, newAutoRun, attachAutomation, editDevice, runCycle, editLinks, nextCycleCase, finishCycle, showRoundSummary, openCycle, onCaseFinished, refreshCycleDoc, syncCycleForSave, rerunFailed, roundOfOpenCase, openCycleDef } from './app/cycle.js';
 import { assignRound } from './app/assign.js';
 import { goNextCase, offerNextCase } from './app/nextCase.js';
+import { isBugText } from './markdown/confirm.ts';
 import { bindLinkPicker } from './app/linkPicker.js';
 import { pendingIdChange, prepareSave, afterSave, checkOutsideRenames } from './app/idSync.js';
 import { updateDocPlace, placeMenu, placeTabMark, askDiskRoot } from './app/place.js';
@@ -243,6 +244,8 @@ runner = createRunner({
     if (res.overall === 'FAIL') { const text = store.source; const path = currentWorkspacePath(); import('./app/teams.js').then((m) => m.notifyCaseFailed({ text, path })).catch(() => {}); }
     // 🌐 página da rodada para o time (se ligada): regrava depois que o app salvar
     import('./app/roundPage.js').then((m) => m.scheduleRoundPage()).catch(() => {});
+    // bug (teste de confirmação): anota no Andamento e, se passou, pergunta se fecha — depois segue a rodada
+    if (isBugText(store.source)) { import('./app/confirm.js').then((m) => m.afterConfirmRun(res)); return true; }
     if (onCaseFinished(res, { auto: true })) return true; // ciclo: abre o próximo caso
     offerNextCase(res);
     return false;
@@ -1650,6 +1653,7 @@ function run(cmd, value, event) {
     case 'openCycle': openCycle(); return true;
     case 'finishCycle': finishCycle(); return true;
     case 'rerunFailed': rerunFailed(); return true;
+    case 'confirmBug': import('./app/confirm.js').then((m) => m.confirmOpenBug()); return true;
     case 'assignRound': assignRound(); return true;
     case 'openCycleDef': openCycleDef(); return true;
     case 'trend': import('./app/views.js').then((m) => m.openTrend()); return true;

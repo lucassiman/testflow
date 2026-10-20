@@ -80,14 +80,20 @@ test('rodada pelo MCP: criar pelo épico, registrar, status, bug com reincidênc
   assert.match(enc, /^plano: PT-1$/m);
   await assert.rejects(ws.roundFinish({}), /nenhuma execução em andamento/);
 
-  // 11.1: reteste só com as falhas (FAIL/BLOCKED) — herda vínculos e tags (+ reteste)
+  // 11.1: reteste com as falhas (FAIL/BLOCKED) — herda vínculos e tags (+ reteste); 1.68.0: e, antes, a confirmação
+  // do bug aberto ligado a elas (o BUG-001 do TC-2), que ganha a tabela do teste de confirmação
   const execId = /^id: (EXEC-\S+)$/m.exec(exec)[1];
   const rt = await ws.roundCreate({ reteste: execId });
-  assert.match(rt, /^Criada: aplicacoes\/Portal\/execucoes\/regressao-pagamentos-reteste\.md .* com 2 caso\(s\): TC-2, TC-3\. Vínculos: epico: PORTAL-10\./);
+  assert.match(rt, /^Criada: aplicacoes\/Portal\/execucoes\/regressao-pagamentos-reteste\.md .* com 2 caso\(s\): TC-2, TC-3 e 1 teste\(s\) de confirmação de bug \(antes dos casos\): BUG-001\. Vínculos: epico: PORTAL-10\./);
   const rtText = readFileSync(join(dir, 'aplicacoes/Portal/execucoes/regressao-pagamentos-reteste.md'), 'utf8');
   assert.match(rtText, /^tags: \[regressao, pix, reteste\]$/m);
   assert.match(rtText, new RegExp(`reteste das falhas de \\[\\[${execId}\\]\\]`));
   assert.doesNotMatch(rtText, /\[\[TC-1\]\]/);
+  assert.match(rtText, /## Confirmação de bugs[^]*\| 1 \| \[\[BUG-001\]\] \|[^\n]*\| \[\[TC-2\]\] \|[^]*## Casos do ciclo/);
+  assert.match(readdirSync(join(dir, 'aplicacoes/Portal/bugs')).filter((f) => f.endsWith('.md')).map((f) => readFileSync(join(dir, 'aplicacoes/Portal/bugs', f), 'utf8')).join('\n'), /## Teste de confirmação/);
+  // só a regressão, sem os bugs
+  const rt2 = await ws.roundCreate({ reteste: execId, reteste_bugs: false, nome: 'Só regressão' });
+  assert.match(rt2, /com 2 caso\(s\): TC-2, TC-3\. /);
 
   // regerar preserva o aceite escrito
   writeFileSync(encPath, enc.replace('| Aprovado por | |', '| Aprovado por | Maria |'));

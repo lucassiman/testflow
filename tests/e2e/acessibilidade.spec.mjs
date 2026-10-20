@@ -41,6 +41,8 @@ test('telas principais sem violações críticas/sérias (claro e escuro)', asyn
   await expectClean(page, 'seletor de casos');
   await picker.locator('button', { hasText: 'Selecionar visíveis' }).click();
   await picker.locator('button', { hasText: 'Criar e começar' }).click();
+  // bug aberto ligado aos casos: a janela 🎯 sugere a confirmação — aqui, sem ela
+  await page.locator('.app-dialog button', { hasText: 'Sem confirmações' }).click();
   await expect(page.locator('.cp-item').first()).toBeVisible();
   await expectClean(page, 'rodada');
   await page.evaluate(() => { document.documentElement.dataset.theme = 'dark'; });

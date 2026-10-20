@@ -52,6 +52,8 @@ test('segmento do épico: reunir pela árvore, caso novo na pasta do ticket herd
   await expect(picker.locator('[data-cpk="count"]')).toContainText('2 de 3');
   await picker.locator('[data-cpk="name"]').fill('Pagamentos');
   await picker.locator('button', { hasText: 'Criar e começar' }).click();
+  // bug aberto ligado aos casos: a janela 🎯 sugere a confirmação — aqui, sem ela
+  await page.locator('.app-dialog button', { hasText: 'Sem confirmações' }).click();
   await expect(page.locator('#cyclePanel .cp-item')).toHaveCount(2);
   await expect(page.locator('#fileName')).toContainText('pagamentos');
   const exec = await raw(page);

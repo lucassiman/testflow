@@ -21,7 +21,7 @@ A base está pronta e em uso diário. Em linhas gerais:
 | --- | --- |
 | **Escrever e editar** | Raw e Preview editável, tabelas, diagramas Mermaid, colar inteligente (Excel, JSON, logs, prints), links `[[ID]]` que acompanham renomeações, modelos próprios. |
 | **Documentos de QA** | Casos, bugs, planos, BDD, sessões exploratórias, checklists, épicos, histórias e releases; dados e passos compartilhados por ambiente; casos com dados; aprovação do caso. |
-| **Executar** | Status clicável, execução passo a passo com cronômetro, painel flutuante, rodadas e ciclos de regressão, atribuição entre testadores, previsão de término, reteste das falhas, matriz de configurações, status personalizados. |
+| **Executar** | Status clicável, execução passo a passo com cronômetro, painel flutuante, rodadas e ciclos de regressão, atribuição entre testadores, previsão de término, reteste das falhas com o teste de confirmação dos bugs, matriz de configurações, status personalizados. |
 | **Relatórios e acompanhamento** | Quatro relatórios de fim de execução (Go/No-Go, defeitos, rastreabilidade, log comparativo), tendência entre rodadas, visões salvas, painel da pasta, página da rodada para o time, avisos no Teams. |
 | **Evidências e bugs** | Prints com anotação, captura de tela, vídeo, replay instantâneo, bug ligado ao passo que falhou com reincidência, console e rede da aba testada (extensão). |
 | **Automação** | Importação de JUnit, Playwright e Newman, reporter ao vivo, testes instáveis, exportação de `.feature`. |
@@ -41,7 +41,8 @@ Ideias em estudo, **sem data nem compromisso**. A ordem pode mudar conforme o us
 | **Clareza de uso** | Revisar menus, nomes e caminhos da interface com quem está chegando agora, e melhorar o roteiro de primeiros passos. | O app cresceu rápido; o objetivo é que continue fácil de aprender. |
 | **Extensão do navegador** | Cobrir iframes e simplificar a instalação. | Hoje a captura de console e rede não enxerga iframes e a instalação é manual. |
 | **Mais formatos de saída** | Exportar casos em formatos de outras ferramentas de teste e para wikis/hubs Markdown. | Facilitar a convivência com quem usa outro sistema. |
-| **Distribuição** | Atualização e instalação com menos passos de terminal. | Hoje exige Node e Git. |
+| **Distribuição** | Abrir e instalar o app por um link, sem Node nem Git; a atualização chega sozinha. Os dados continuam no computador de cada um. | Hoje exige Node e Git, o maior obstáculo para outra pessoa começar. |
+| **Retrato da qualidade** | Um relatório por sprint ou mês, gerado a partir dos documentos: bugs por fase (teste em dupla, DEV, HML, PRD), o que escapou para homologação, tempo de execução e reincidência. | Mostrar o trabalho de QA em números, sem planilha à parte, e saber se o teste em dupla está pegando os bugs antes. |
 | **Agenda** | Trazer as reuniões do calendário do Outlook/Teams para o diário (calendário publicado ou conector do Microsoft 365). | Hoje as reuniões são anotadas à mão; o link do Teams só cria a reunião. |
 | **Resultados de automação** | Mais reporters e formatos de relatório. | Cobrir mais frameworks além de Playwright, JUnit e Newman. |
 

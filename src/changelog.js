@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.68.0', date: '20/10/2026',
+    items: [
+      { icon: '🎯', text: '**Teste de confirmação do bug**: com o bug aberto, **Execução ▾ → 🎯 Teste de confirmação do bug** cria uma execução só dele e abre o ▶ Executar com os passos do bug (montados pelos *Passos para reproduzir*, o último com o resultado esperado). `PASS` pergunta se fecha o bug; `FAIL` anota que a correção não resolveu e reabre o bug fechado — tudo no *Andamento* do bug.', manual: '7.8 Ciclo de regressão' },
+      { icon: '🔂', text: '**Reteste = confirmação + regressão**: o reteste das falhas traz antes a confirmação dos bugs ligados a elas (dá para desmarcar um dos dois). Nas rodadas avulsas e nas execuções de um ciclo, a janela 🎯 sugere os bugs abertos ligados aos casos ou já concluídos no Jira. As confirmações contam à parte dos casos, no resumo e nos relatórios.', manual: '7.8 Ciclo de regressão' },
+    ],
+  },
+  {
     version: '1.67.2', date: '20/10/2026',
     items: [
       { icon: '📅', text: '**O diário não vai para a pasta oficial**: as notas do dia são suas — ficam fora do *Publicar* e do **⇅ Sincronizar** (não vão nem vêm), não aparecem como novidade e escrever nelas não avisa ninguém ("está editando").', manual: '6.11 Diário' },

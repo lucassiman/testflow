@@ -55,12 +55,13 @@ Como trabalhar:
 - Antes de escrever testware do zero, leia qa_convencoes. Não invente dados, resultados, IDs do Jira nem evidências.
 - Nada é publicado na pasta oficial nem apagado por aqui; o editor aberto percebe a mudança e oferece recarregar.
 - Jira: qa_para_jira devolve o bug pronto (resumo, prioridade, descrição, anexos); depois de criar o ticket com o conector do Jira, grave a chave com qa_atualizar_cabecalho { jira: "CHAVE-123" }.
-- Rodada de regressão: qa_rodada_criar (por segmento — épico, ticket, #tag —, consulta, lista de casos, ciclo salvo, ou reteste: EXEC-… só com as falhas) → qa_rodada_registrar por caso → qa_rodada_status para ver como está → qa_rodada_finalizar (SKIP nos pendentes e os 4 relatórios: encerramento/Go-No-Go, defeitos, rastreabilidade, log + comparativo). qa_relatorios regera.
+- Rodada de regressão: qa_rodada_criar (por segmento — épico, ticket, #tag —, consulta, lista de casos, ciclo salvo, ou reteste: EXEC-… com as falhas e a confirmação dos bugs delas) → qa_rodada_registrar por caso → qa_rodada_status para ver como está → qa_rodada_finalizar (SKIP nos pendentes e os 4 relatórios: encerramento/Go-No-Go, defeitos, rastreabilidade, log + comparativo). qa_relatorios regera.
 - Bug de um caso que já tem bug ligado: qa_bug_do_caso devolve os bugs; pergunte ao usuário se é reincidência (reincidencia: "BUG-…") ou bug novo (novo: true).
 - Evolução da qualidade (sprint, % de sucesso no tempo, casos que mais falham, testes automatizados instáveis): qa_tendencia.
 - Cenários BDD como .feature para o repositório da automação: qa_exportar_feature (devolve os arquivos; grave com as suas ferramentas).
 - Rodou os testes automatizados (Playwright, Jest, Cypress…)? qa_anexar_automacao { arquivo } põe o resultado na execução em andamento (ou numa nova).
 - Status personalizados: um documento tipo status (configuracao/status.md, tabela Palavra | Conta como | Cor) cria palavras a mais (ex.: RETESTE, FALHA CONHECIDA) que valem nos passos e contam como um dos 5 — use só as que existem (qa_marcar_passos avisa).
+- Teste de confirmação do bug (refazer o bug na versão corrigida: PASS = corrigido): qa_rodada_criar { bugs: ["BUG-…"] } (só os bugs = execução só de confirmação; com casos, os bugs vêm antes, na seção "Confirmação de bugs", e contam à parte). O bug ganha a seção "## Teste de confirmação" (passos tirados dos "Passos para reproduzir"); registre com qa_rodada_registrar { caso: "BUG-…", passos }. O resultado vai para o "## Andamento" do bug; FAIL reabre o bug fechado; PASS não fecha sozinho — pergunte ao usuário e, com o OK, qa_atualizar_cabecalho { status: PASS }.
 - Aprovação do caso (rascunho → em-revisao → aprovado): casos novos nascem "rascunho"; qa_aprovacao muda (aprovar só quando o usuário pedir); consulta "aprovacao: em-revisao, alterado" lista o que falta revisar; qa_rodada_criar so_aprovados=true deixa de fora os não aprovados.
 - Massa por ambiente: no compartilhado, "## Dados: Logins (hml)" / "(prod)"… com as mesmas chaves (sem ambiente = vale para todos); o caso continua {{admin.e-mail}} e o app troca pelo ambiente ativo. qa_preparar_ambientes cria as seções com as chaves e os valores em branco para o QA preencher; qa_compartilhados { ambiente } mostra o que falta em cada ambiente.
 - Caso com dados (o mesmo caso para vários perfis/massas): seção "## Iterações" no caso (tabela Chave | campos…, uma linha por execução) ou "iterar: <grupo de Dados compartilhado>" no cabeçalho; nos passos {{dado}} / {{dado.campo}} e "↪ Bloco (dado)". qa_compartilhados { documento } lista as iterações; registre uma a uma (iteracao: nome ou número) em qa_marcar_passos concluir=true / qa_rodada_registrar.
@@ -266,14 +267,16 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
   }, async (a) => run(() => ws.roundStatus(a.execucao || ''), text));
 
   server.registerTool('qa_rodada_criar', {
-    title: 'Nova rodada de execução', description: 'Cria a execução (rodada) com os casos de um segmento (épico, ticket, #tag, execução anterior), de uma consulta (sintaxe das visões), de uma lista de IDs — combinados, vale a interseção — ou de um ciclo salvo (vira a execução #N dele) — ou o reteste das falhas de uma execução (reteste: EXEC-…). A execução herda as tags/épico/ticket/sprint que todos os casos têm (ou os do ciclo) e nasce junto das outras execuções.',
+    title: 'Nova rodada de execução', description: 'Cria a execução (rodada) com os casos de um segmento (épico, ticket, #tag, execução anterior), de uma consulta (sintaxe das visões), de uma lista de IDs — combinados, vale a interseção — ou de um ciclo salvo (vira a execução #N dele) — ou o reteste das falhas de uma execução (reteste: EXEC-…, com a confirmação dos bugs ligados às falhas antes dos casos). bugs: testes de confirmação de bug (sozinhos = execução só de confirmação). A execução herda as tags/épico/ticket/sprint que todos os casos têm (ou os do ciclo) e nasce junto das outras execuções.',
     inputSchema: {
       nome: z.string().optional(), casos: z.array(z.string()).optional().describe('IDs dos casos'),
       segmento: z.string().optional().describe('ex.: PORTAL-10, PORTAL-120, #pix, EXEC-20261001-0900'),
       consulta: z.string().optional().describe('ex.: "tags: regressao\napp: Portal\nprioridade: Alta"'),
       ciclo: z.string().optional().describe('ID do ciclo salvo (tipo ciclo-regressao) para executar de novo'),
       app: z.string().optional(), vinculos: z.record(z.string(), z.string()).optional().describe('jira, epico, sprint, plano'),
-      reteste: z.string().optional().describe('ID de uma execução (EXEC-…): cria o reteste só com os casos FAIL/BLOCKED dela (herda vínculos, tags + reteste, dispositivo)'),
+      reteste: z.string().optional().describe('ID de uma execução (EXEC-…): cria o reteste com os casos FAIL/BLOCKED dela e, antes, a confirmação dos bugs abertos ligados a eles (herda vínculos, tags + reteste, dispositivo)'),
+      reteste_bugs: z.boolean().optional().describe('com reteste: false deixa de fora a confirmação dos bugs (só a regressão dos casos)'),
+      bugs: z.array(z.string()).optional().describe('IDs de bugs para o teste de confirmação (refazer o bug na versão corrigida; PASS = corrigido). Sozinhos = execução só de confirmação; com casos, vêm antes e contam à parte'),
       reteste_skip: z.boolean().optional().describe('com reteste: inclui também os SKIP'),
       so_aprovados: z.boolean().optional().describe('só os casos aprovados (aprovacao: aprovado, sem mudança depois); os outros ficam de fora e são listados'),
       ambientes: z.array(z.string()).optional().describe('matriz: uma execução por combinação de ambientes × navegadores × dispositivos (ex.: ["HML", "PROD"])'),
@@ -282,7 +285,7 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
   }, async (a) => run(() => ws.roundCreate(a), text));
 
   server.registerTool('qa_rodada_registrar', {
-    title: 'Registrar caso na rodada', description: 'Registra o resultado de um caso na rodada. Com passos: marca no caso (arquiva a rodada antiga se as marcas eram de antes) e, com todos marcados, conclui a rodada do caso. Sem passos: status do caso inteiro (checklist, ou "não deu para executar") na execução. A execução se atualiza (status, executado em, bugs abertos).',
+    title: 'Registrar caso na rodada', description: 'Registra o resultado de um caso (ou do teste de confirmação de um bug: caso = BUG-…) na rodada. Com passos: marca no caso (arquiva a rodada antiga se as marcas eram de antes) e, com todos marcados, conclui a rodada do caso. Sem passos: status do caso inteiro (checklist, ou "não deu para executar") na execução. A execução se atualiza (status, executado em, bugs abertos).',
     inputSchema: {
       execucao: z.string().optional().describe('sem ela, a última em andamento'), caso: docArg,
       passos: z.array(z.object({ passo: z.string(), status: z.string().optional(), obtido: z.string().optional() })).optional(),

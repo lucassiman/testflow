@@ -24,6 +24,8 @@ const FENCE_RE = /^\s{0,3}(`{3,}|~{3,})/;
 const SEPARATOR_RE = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
 const HEADING_RE = /^\s{0,3}(#{1,6})\s+(.*?)\s*#*\s*$/;
 export const HISTORY_TITLE = /^hist[oó]rico de execu[cç](?:[oõ]es|ao|ão)\b/i;
+/** "## Confirmação de bugs" de uma execução: os testes de confirmação contam à parte dos casos. */
+export const CONFIRM_TITLE = /^confirma[cç][aã]o de bugs\b/i;
 const TASK_RE = /^\s*(?:[-*+]|\d+[.)])\s+\[([ xX])\]/;
 
 export const normHeader = (s: string): string => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[`*_]/g, '').trim();
@@ -88,9 +90,9 @@ const isEmpty = (c: string): boolean => c === '' || c === '-' || c === '—';
 
 /**
  * Linhas "de texto" do documento: fora do cabeçalho, de blocos de código e do bloco de resumo.
- * Chama visit(line, index) para cada uma.
+ * Chama visit(line, index) para cada uma. `part`: 'main' pula a seção "Confirmação de bugs" da execução; 'confirm' é só ela.
  */
-function scanLines(lines: string[], visit: (line: string, index: number) => void): void {
+function scanLines(lines: string[], visit: (line: string, index: number) => void, part: 'main' | 'confirm' = 'main'): void {
   const fm = detectFrontMatter(lines.join('\n'));
   // cópias geradas das visões (<!-- qa:visao -->): tabelas de outros documentos, não passos deste
   const skip = new Set<number>();
@@ -98,6 +100,7 @@ function scanLines(lines: string[], visit: (line: string, index: number) => void
   let fence: string | null = null;
   let inSummary = false;
   let inHistory = 0;
+  let inConfirm = 0;
   for (let i = fm ? fm.end : 0; i < lines.length; i++) {
     const line = lines[i];
     if (skip.has(i)) continue;
@@ -116,9 +119,12 @@ function scanLines(lines: string[], visit: (line: string, index: number) => void
     if (h) {
       const level = h[1].length;
       if (inHistory && level <= inHistory) inHistory = 0;
+      if (inConfirm && level <= inConfirm) inConfirm = 0;
       if (!inHistory && HISTORY_TITLE.test(h[2])) { inHistory = level; continue; }
+      if (!inHistory && !inConfirm && CONFIRM_TITLE.test(h[2])) { inConfirm = level; continue; }
     }
     if (inHistory) continue;
+    if ((part === 'confirm') !== !!inConfirm) continue;
     visit(line, i);
   }
 }
@@ -131,8 +137,9 @@ export interface StatusTable { header: number; col: number; rows: StatusRow[] }
 /**
  * Tabelas com coluna de status que representam execução: têm ao menos um status
  * conhecido OU uma coluna "Resultado esperado" (passos ainda não executados).
+ * `part: 'confirm'`: só as da seção "Confirmação de bugs" (que as contagens normais deixam de fora).
  */
-export function collectStatusTables(source: string): StatusTable[] {
+export function collectStatusTables(source: string, part: 'main' | 'confirm' = 'main'): StatusTable[] {
   const lines = source.split('\n');
   const tables: StatusTable[] = [];
   let current: (StatusTable & { last: number; expected: boolean }) | null = null;
@@ -163,7 +170,7 @@ export function collectStatusTables(source: string): StatusTable[] {
       }
     }
     prev = isRow ? { line, index: i } : null;
-  });
+  }, part);
   finish();
   return tables;
 
@@ -201,6 +208,11 @@ export function countStatuses(source: string, tables: StatusTable[] = collectSta
   return counts;
 }
 
+/** Contagem dos testes de confirmação da execução (seção "Confirmação de bugs"). */
+export const confirmCounts = (source: string): StatusCounts => countStatuses(source, collectStatusTables(source, 'confirm'));
+
+export const addCounts = (a: StatusCounts, b: StatusCounts): StatusCounts => ({ pass: a.pass + b.pass, fail: a.fail + b.fail, blocked: a.blocked + b.blocked, skip: a.skip + b.skip, pending: a.pending + b.pending, total: a.total + b.total });
+
 /**
  * Status geral: algum FAIL → FAIL; senão algum BLOCKED → BLOCKED; senão algum pendente → PENDING;
  * senão tudo SKIP → SKIP; senão PASS. Sem passos → null (não mexe no cabeçalho).
@@ -216,11 +228,15 @@ export function deriveOverall(counts: StatusCounts): StatusWord | null {
 
 // ---------------------------------------------------------------- cabeçalho
 
-/** Troca o status: do front-matter (se existir essa linha). Retorna o texto novo. */
+/**
+ * Troca o status: do front-matter (se existir essa linha). Retorna o texto novo.
+ * No bug, o status é do QA (aberto/fechado): os passos do teste de confirmação não mexem nele.
+ */
 export function setFrontMatterStatus(source: string, word: string | null | undefined): string {
   const fm = detectFrontMatter(source);
   if (!fm || !word) return source;
   const lines = source.split('\n');
+  if (lines.slice(1, fm.end - 1).some((l) => /^tipo[ \t]*:[ \t]*["']?bug["']?[ \t]*(#.*)?$/.test(l))) return source;
   for (let i = 1; i < fm.end - 1; i++) {
     const m = /^(status[ \t]*:[ \t]*)([^#]*?)([ \t]*(#.*)?)$/.exec(lines[i]);
     if (!m) continue;
@@ -246,14 +262,26 @@ export function frontMatterStatus(source: string): string | null {
 
 const pct = (n: number, total: number): string => (total ? `${Math.round((n / total) * 100)}%` : '—');
 
-/** Conteúdo (sem os marcadores) do bloco de resumo. */
-export function buildSummary(counts: StatusCounts, tasks: TaskCounts = { done: 0, total: 0 }): string {
+/** "1 de 2 · 1 corrigido(s) · 0 não corrigido(s)" (testes de confirmação). */
+export function confirmLine(c: StatusCounts): string {
+  return [`${c.total - c.pending} de ${c.total}`, `${c.pass} corrigido(s)`, `${c.fail} não corrigido(s)`, ...(c.blocked ? [`${c.blocked} bloqueado(s)`] : []), ...(c.skip ? [`${c.skip} SKIP`] : [])].join(' · ');
+}
+
+/**
+ * Conteúdo (sem os marcadores) do bloco de resumo. `confirm`: os testes de confirmação da execução, numa linha à parte
+ * (numa execução só de confirmações, a tabela e o gráfico são deles).
+ */
+export function buildSummary(counts: StatusCounts, tasks: TaskCounts = { done: 0, total: 0 }, confirm: StatusCounts | null = null): string {
+  const onlyConfirm = !counts.total && !!confirm?.total;
+  const both = !onlyConfirm && !!confirm?.total;
+  if (onlyConfirm && confirm) counts = confirm;
   const executed = counts.total - counts.pending;
-  const overall = deriveOverall(counts);
+  const overall = deriveOverall(both && confirm ? addCounts(counts, confirm) : counts);
   const out: string[] = [];
-  const facts = [`**Executados:** ${executed} de ${counts.total} (${pct(executed, counts.total)})`];
+  const facts = [`**${onlyConfirm ? 'Confirmações executadas' : 'Executados'}:** ${executed} de ${counts.total} (${pct(executed, counts.total)})`];
   if (overall) facts.push(`**Status geral:** \`${overall}\``);
   if (tasks.total) facts.push(`**Checklist:** ${tasks.done} de ${tasks.total}`);
+  if (confirm?.total) facts.push(`**Confirmação de bugs:** ${confirmLine(confirm)}`);
   out.push(facts.join(' · '), '');
   out.push('| Status | Qtde | % |', '| --- | ---: | ---: |');
   for (const word of STATUS_ORDER) {
@@ -297,7 +325,7 @@ export function updateSummaryBlocks(source: string): string {
   const lines = source.split('\n');
   const blocks = findSummaryBlocks(lines);
   if (!blocks.length) return source;
-  const body = buildSummary(countStatuses(source), countTasks(source)).split('\n');
+  const body = buildSummary(countStatuses(source), countTasks(source), confirmCounts(source)).split('\n');
   for (const { open, close } of blocks.reverse()) {
     lines.splice(open + 1, close - open - 1, '', ...body, '');
   }
@@ -320,7 +348,7 @@ export function applyCellStatus(source: string, { line, col }: { line: number; c
   lines[line] = setCell(lines[line], col, word ? `\`${word}\`` : '');
   let next = lines.join('\n');
   if (syncHeader) {
-    const overall = deriveOverall(countStatuses(next));
+    const overall = deriveOverall(addCounts(countStatuses(next), confirmCounts(next)));
     if (overall) next = setFrontMatterStatus(next, overall);
   }
   return updateSummaryBlocks(next);
@@ -328,7 +356,7 @@ export function applyCellStatus(source: string, { line, col }: { line: number; c
 
 /** Recalcula status geral e resumo (comando "Atualizar resumo" e ao salvar). */
 export function syncExecution(source: string, { onlyExecuted = false }: { onlyExecuted?: boolean } = {}): string {
-  const counts = countStatuses(source);
+  const counts = addCounts(countStatuses(source), confirmCounts(source));
   // ao salvar: só mexe no cabeçalho se algum passo já foi executado
   const overall = onlyExecuted && counts.pending === counts.total ? null : deriveOverall(counts);
   const next = overall ? setFrontMatterStatus(source, overall) : source;

@@ -5,7 +5,7 @@
  * casos a uma pessoa, distribuir os pendentes entre várias (equilibrando pelo tempo previsto ou pela quantidade) e ver
  * a carga de cada uma. "Minhas" = os atribuídos ao seu nome (o das preferências / do MCP).
  */
-import { splitRow, setCell, updateSummaryBlocks } from './status.ts';
+import { splitRow, setCell, updateSummaryBlocks, CONFIRM_TITLE } from './status.ts';
 import { cycleTable, type CycleRow } from './cycle.ts';
 import { findSection } from './runs.ts';
 import { DEFAULT_CASE_MS } from './forecast.ts';
@@ -22,37 +22,43 @@ export function samePerson(a: string, b: string): boolean {
   return x === y || x.split(/\s+/)[0] === y || y.split(/\s+/)[0] === x;
 }
 
-/** Índice da coluna Testador (ou -1). */
+/** Índice da coluna Testador (ou -1) — de alguma das tabelas (casos ou confirmações de bug). */
 export function testerCol(text: string): number {
-  return cycleTable(text)?.cols.tester ?? -1;
+  const t = cycleTable(text);
+  return t ? (t.cols.tester >= 0 ? t.cols.tester : t.rows.find((r) => r.cols.tester >= 0)?.cols.tester ?? -1) : -1;
 }
 
 /** Quem está com cada caso (chave em minúsculas → nome; vazio = ninguém). */
 export function assignees(text: string): Map<string, string> {
   const t = cycleTable(text);
-  const col = testerCol(text);
   const out = new Map<string, string>();
   if (!t) return out;
-  for (const r of t.rows) out.set(r.key.toLowerCase(), col >= 0 ? clean(r.cells[col] || '') : '');
+  for (const r of t.rows) out.set(r.key.toLowerCase(), r.cols.tester >= 0 ? clean(r.cells[r.cols.tester] || '') : '');
   return out;
 }
 
-/** Garante a coluna Testador no fim da tabela; devolve o texto e o índice dela. */
+/** Garante a coluna Testador no fim de cada tabela (casos e confirmações de bug); devolve o texto e se há a coluna. */
 function ensureCol(text: string): { text: string; col: number } {
-  const col = testerCol(text);
-  if (col >= 0) return { text, col };
+  const t = cycleTable(text);
+  if (!t) return { text, col: -1 };
   const lines = text.split('\n');
-  const sec = findSection(lines, CASES_TITLE);
-  if (!sec) return { text, col: -1 };
-  for (let i = sec.start; i < sec.end - 1; i++) {
-    if (!lines[i].includes('|') || !/^\s*\|?\s*:?-{2,}/.test(lines[i + 1])) continue;
-    const n = splitRow(lines[i]).length;
-    lines[i] = `${lines[i].replace(/\s*$/, '')} Testador |`;
-    lines[i + 1] = `${lines[i + 1].replace(/\s*$/, '')} --- |`;
-    for (let j = i + 2; j < sec.end && lines[j].includes('|') && lines[j].trim(); j++) lines[j] = `${lines[j].replace(/\s*$/, '')}  |`;
-    return { text: lines.join('\n'), col: n };
+  let col = -1;
+  for (const title of [CASES_TITLE, CONFIRM_TITLE]) {
+    const sec = findSection(lines, title);
+    if (!sec) continue;
+    for (let i = sec.start; i < sec.end - 1; i++) {
+      if (!lines[i].includes('|') || !/^\s*\|?\s*:?-{2,}/.test(lines[i + 1])) continue;
+      const head = splitRow(lines[i]);
+      const has = head.findIndex((h) => /^(testador|testadora|atribu[ií]do a|respons[aá]vel|executor|quem)$/i.test(h.trim()));
+      if (has >= 0) { col = has; break; }
+      lines[i] = `${lines[i].replace(/\s*$/, '')} Testador |`;
+      lines[i + 1] = `${lines[i + 1].replace(/\s*$/, '')} --- |`;
+      for (let j = i + 2; j < sec.end && lines[j].includes('|') && lines[j].trim(); j++) lines[j] = `${lines[j].replace(/\s*$/, '')}  |`;
+      col = head.length;
+      break;
+    }
   }
-  return { text, col: -1 };
+  return { text: lines.join('\n'), col };
 }
 
 /** Atribui (ou tira, com `who` vazio) os casos à pessoa. `keys` vazio = nenhum. */
@@ -66,9 +72,9 @@ export function assign(text: string, keys: string[], who: string): { text: strin
   const lines = e.text.split('\n');
   const changed: string[] = [];
   for (const r of t.rows) {
-    if (!want.has(r.key.toLowerCase())) continue;
-    if (clean(r.cells[e.col] || '') === who.trim()) continue;
-    lines[r.line] = setCell(lines[r.line], e.col, who.trim());
+    if (!want.has(r.key.toLowerCase()) || r.cols.tester < 0) continue;
+    if (clean(r.cells[r.cols.tester] || '') === who.trim()) continue;
+    lines[r.line] = setCell(lines[r.line], r.cols.tester, who.trim());
     changed.push(r.key);
   }
   return { text: changed.length ? updateSummaryBlocks(lines.join('\n')) : text, changed };

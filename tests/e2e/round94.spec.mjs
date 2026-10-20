@@ -68,6 +68,10 @@ test('ciclo de regressão: escolher os casos, próximo caso já executando, resu
   await expect(picker.locator('[data-cpk="count"]')).toContainText('2 de 2');
   await picker.locator('[data-cpk="name"]').fill('Regressão — Portal');
   await picker.locator('button', { hasText: 'Criar e começar' }).click();
+  // BUG-3 (aberto, citando o TC-2) é sugerido para o teste de confirmação — aqui, sem ele
+  await expect(dlg).toContainText('Teste de confirmação de bugs');
+  await expect(dlg.locator('label', { hasText: 'BUG-3 — Envio falha' }).locator('input')).toBeChecked();
+  await dlg.locator('button', { hasText: 'Sem confirmações' }).click();
   await expect(page.locator('#fileName')).toContainText('regressao-portal');
   expect(await page.evaluate(() => window.__ls('aplicacoes/Portal/planos'))).toHaveLength(1);
   await expect(page.locator('.exec-bar [data-act="cycleNext"]')).toBeVisible();

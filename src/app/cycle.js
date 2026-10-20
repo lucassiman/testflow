@@ -11,7 +11,7 @@ import { forecast, caseAvgMs } from '../markdown/forecast.ts';
 import { filterApproved, onlyApproved } from './approval.js';
 import {
   CYCLE_TYPE, cycleDoc, cycleStart, cycleClosed, cycleProgress, nextCase, syncCycle, closeCycle, caseResult, lastResultBefore, needsFreshRound, cycleTable, isCycle, unexecuted, skipPending, cycleSummary,
-  EXEC_TYPE, configOf, configFromLabel, parseConfigs, isCycleDef, cycleDefDoc, defCases, retestCases, execInfo, nextExecNumber, syncDefExecutions, applySkipped, applyWhole, cicloOf, execNumber, attachAutomation as attachAutoToText,
+  EXEC_TYPE, configOf, configFromLabel, parseConfigs, isCycleDef, cycleDefDoc, defCases, retestCases, retestBugs, execInfo, nextExecNumber, syncDefExecutions, applySkipped, applyWhole, cicloOf, execNumber, attachAutomation as attachAutoToText,
 } from '../markdown/cycle.ts';
 import { autoSummary } from '../markdown/cycleAuto.ts';
 import { buildAutomationBlock } from '../markdown/automationReport.js';
@@ -37,6 +37,7 @@ import { stepTable, cellToText } from '../markdown/runs.ts';
 import { cellStatus } from '../markdown/status.ts';
 import { docIndex, menu, todayIso, JIRA_BASE } from './shared.js';
 import { programmatic } from './collab.js';
+import { askConfirmBugs, ensureOpenBugSteps } from './confirm.js';
 
 /** @typedef {import('../types').DocEntry} DocEntry */
 
@@ -187,7 +188,7 @@ const applyMarks = (text, cyclePath) => applyWhole(applySkipped(text, skippedOf(
  * abre para marcar os itens e o resultado (PASS/FAIL/BLOCKED) é registrado no painel, sem o executor de passos.
  * @param {{ counts: { total: number } } | null | undefined} e
  */
-const isWhole = (e) => !!e && e.counts.total === 0;
+const isWhole = (e) => !!e && e.counts.total === 0 && /** @type {{ tipo?: string }} */ (e).tipo !== 'bug';
 
 /** Caminho da execução a que um texto pertence (a aberta, ou a ativa). @param {string} text */
 function currentCycleKey(text) {
@@ -239,7 +240,7 @@ export async function skipCycleCase(key) {
 }
 
 // ---------------------------------------------------------------- checklist da rodada (painel lateral)
-/** @typedef {{ key: string, titulo: string, state: 'feito' | 'atual' | 'andamento' | 'pendente', status: string | null, when: string, aberto: boolean, whole: boolean, last: { status: string, when: string } | null, dur: string, tester: string }} ChecklistItem */
+/** @typedef {{ key: string, titulo: string, state: 'feito' | 'atual' | 'andamento' | 'pendente', status: string | null, when: string, aberto: boolean, whole: boolean, last: { status: string, when: string } | null, dur: string, tester: string, confirm: boolean }} ChecklistItem */
 
 /**
  * Dados do painel da rodada: um item por caso, na ordem do ciclo (null = não há ciclo a mostrar).
@@ -263,10 +264,10 @@ export function cycleChecklist() {
   const cfg = configOf(c.text);
   /** @type {ChecklistItem[]} */
   const items = t.rows.map((r) => {
-    const titulo = (t.cols.caso + 1 < r.cells.length ? r.cells[t.cols.caso + 1] : '').replace(/\[\[|\]\]/g, '').replace(/\\\|/g, '|').trim() || docIndex.resolve(r.key)?.titulo || '';
+    const titulo = (r.cols.caso + 1 < r.cells.length ? r.cells[r.cols.caso + 1] : '').replace(/\[\[|\]\]/g, '').replace(/\\\|/g, '|').trim() || docIndex.resolve(r.key)?.titulo || '';
     /** @type {string | null} */
     let status = r.status && r.status !== 'PENDING' ? r.status : null;
-    let when = status && t.cols.when >= 0 ? (r.cells[t.cols.when] || '').trim() : '';
+    let when = status && r.cols.when >= 0 ? (r.cells[r.cols.when] || '').trim() : '';
     /** @type {ChecklistItem['state']} */
     let state = status ? 'feito' : 'pendente';
     /** @type {ChecklistItem['last']} */
@@ -291,7 +292,7 @@ export function cycleChecklist() {
       }
       if (state !== 'feito' && sameKey(r.key, cursor)) state = 'atual';
     }
-    return { key: r.key, titulo, state, status, when, aberto: sameKey(r.key, openKey), whole: isWhole(docIndex.resolve(r.key)), last, dur, tester: who.get(r.key.toLowerCase()) || '' };
+    return { key: r.key, titulo, state, status, when, aberto: sameKey(r.key, openKey), whole: isWhole(docIndex.resolve(r.key)), last, dur, tester: who.get(r.key.toLowerCase()) || '', confirm: r.confirm };
   });
   const doneItems = items.filter((i) => i.state === 'feito');
   // com testadores: o próximo meu, depois um livre
@@ -436,6 +437,8 @@ export async function goToCycleCase(key) {
     if (currentWorkspacePath() !== e.path) return;
     if (previousWasCase && previous && previous !== app.tabs.activeId && app.tabs.find(previous) && !app.tabs.find(previous)?.doc?.dirty) await app.closeTab(previous);
   }
+  // bug (teste de confirmação): sem a tabela de passos ainda, monta pelos "Passos para reproduzir"
+  if (e.tipo === 'bug') ensureOpenBugSteps();
   if (isWhole(e)) {
     // checklist e afins: sem passos para executar — abre para marcar os itens; o resultado vai pelo painel (✅ Passou / ❌ Falhou / ⛔ Bloqueado)
     setCursor(c.path, key);
@@ -812,10 +815,12 @@ export function newRun() {
   pickCases({
     title: 'Nova rodada de execução — quais casos?', confirmLabel: 'Criar e começar',
     defaultName: `Rodada${onlyAppName() ? ` ${onlyAppName()}` : ''} — ${new Date().toLocaleDateString('pt-BR')}`,
-    onPick: (picked, name, origem, appName, links, configs) => {
+    onPick: async (picked, name, origem, appName, links, configs) => {
       const h = inherited(picked, links);
       if (configs.length) return createMatrix(picked.map(caseRef), appName, origem, name, null, h.links, h.tags, configs);
-      return createExecution(picked.map(caseRef), appName, origem, name, null, h.links, undefined, h.tags);
+      const bugs = await askConfirmBugs(picked, { appName });
+      if (!bugs) return;
+      return createExecution(picked.map(caseRef), appName, origem, name, null, h.links, undefined, h.tags, { bugs });
     },
     matrix: true,
   });
@@ -851,25 +856,44 @@ async function createDefinition(pick, appName, origem, titulo, links = {}, tags 
  * @param {(text: string) => string} [transform] ajuste final do texto (ex.: já anexar o relatório automatizado)
  * @param {string[]} [tags] tags herdadas (dos casos em comum ou do ciclo), além de regressao
  */
-async function createExecution(cases, appName, origem, titulo, link, links = {}, transform = (/** @type {string} */ t) => t, tags = /** @type {string[]} */ ([]), extra = /** @type {{ config?: import('../markdown/cycle.ts').RunConfig, matriz?: string, seq?: number, quiet?: boolean }} */ ({})) {
-  // preferência "só casos aprovados entram na rodada" (aprovação do caso)
+async function createExecution(cases, appName, origem, titulo, link, links = {}, transform = (/** @type {string} */ t) => t, tags = /** @type {string[]} */ ([]), extra = /** @type {{ config?: import('../markdown/cycle.ts').RunConfig, matriz?: string, seq?: number, quiet?: boolean, bugs?: import('../markdown/cycle.ts').CycleCase[] }} */ ({})) {
+  const bugs = extra.bugs || [];
+  // preferência "só casos aprovados entram na rodada" (aprovação do caso) — não vale para os bugs
   if (cases.length) {
     const { keep, left } = filterApproved(cases);
-    if (left.length && !keep.length) { app.toast(`Nenhum caso aprovado — com "só aprovados" ligado a rodada não foi criada. Fora: ${left.join(', ')}.`, 'error', { duration: 12000 }); return; }
+    if (left.length && !keep.length && !bugs.length) { app.toast(`Nenhum caso aprovado — com "só aprovados" ligado a rodada não foi criada. Fora: ${left.join(', ')}.`, 'error', { duration: 12000 }); return; }
     if (left.length) app.toast(`Só aprovados: ${left.length} caso(s) ficaram fora da rodada — ${left.join(', ')}.`, 'info', { duration: 12000 });
     cases = keep;
   }
   let d = new Date();
   // nova execução de um ciclo que já rodou: começa no minuto seguinte, para as rodadas das execuções anteriores (gravadas só com hora e minuto) não contarem nela
   if (link && link.numero > 1) d = new Date(Math.ceil((d.getTime() + 1) / 60000) * 60000);
-  const text = transform(cycleDoc({ titulo, app: appName, origem, cases, start: d, responsavel: loadPrefs().publisherName || '', links, tags, ...(link ? { ciclo: link.ciclo, numero: link.numero } : {}), config: extra.config, matriz: extra.matriz, seq: extra.seq }));
+  const text = transform(cycleDoc({ titulo, app: appName, origem, cases, bugs, start: d, responsavel: loadPrefs().publisherName || '', links, tags, ...(link ? { ciclo: link.ciclo, numero: link.numero } : {}), config: extra.config, matriz: extra.matriz, seq: extra.seq }));
   const dir = runDir(EXEC_TYPE, appName, (e) => e.tipo === EXEC_TYPE || e.tipo === 'relatorio-execucao');
   const path = await createDocIn(dir, text, `${slugOf(titulo)}.md`);
   if (!path) return;
   if (extra.quiet) return path;
   setActive(path);
-  if (!cases.length) { app.toast(`🤖 Execução automatizada criada em ${path}. Para somar casos manuais, edite a tabela "Casos do ciclo".`, 'info', { duration: 8000 }); return; }
-  app.toast(`▶ ${link ? `Execução #${link.numero}` : 'Rodada'} criada em ${path} — ▶ Próximo caso abre o primeiro e já começa a execução.`, 'info', { duration: 8000, action: { label: '▶ Começar', run: () => nextCycleCase() } });
+  if (!cases.length && !bugs.length) { app.toast(`🤖 Execução automatizada criada em ${path}. Para somar casos manuais, edite a tabela "Casos do ciclo".`, 'info', { duration: 8000 }); return; }
+  app.toast(`▶ ${link ? `Execução #${link.numero}` : 'Rodada'} criada em ${path}${bugs.length ? ` (${bugs.length} confirmação(ões) de bug primeiro)` : ''} — ▶ Próximo caso abre o primeiro e já começa a execução.`, 'info', { duration: 8000, action: { label: '▶ Começar', run: () => nextCycleCase() } });
+  return path;
+}
+
+/**
+ * 🎯 Teste de confirmação de um bug: uma execução só dele (herda app, vínculos e tags do bug, + confirmacao) e já
+ * começa — o bug abre no executor de passos.
+ * @param {import('../markdown/cycle.ts').CycleCase} bug @param {DocEntry} e
+ */
+export async function newConfirmRun(bug, e) {
+  const text = textAt(e.path) || '';
+  const h = headerOf(text);
+  const links = readLinks(text);
+  const titulo = `Confirmação do ${bug.key} — ${bug.titulo}`;
+  const path = await createExecution([], e.app || '', `teste de confirmação do [[${bug.key}]]`, titulo, null, links, undefined, [...h.tags.filter((t) => !/^regress/i.test(t)), 'confirmacao'], { bugs: [bug], quiet: true });
+  if (!path) return;
+  setActive(path);
+  app.toast(`🎯 Teste de confirmação criado em ${path} — começando pelo ${bug.key}.`, 'info', { duration: 6000 });
+  await goToCycleCase(bug.key);
 }
 
 /** O ciclo (definição) aberto agora, se o documento ativo for um. @returns {DocEntry | null} */
@@ -924,8 +948,11 @@ export async function runCycle(defPath = '') {
   // matriz: uma execução #N por configuração do ciclo
   const configs = parseConfigs(/^configuracoes:\s*(.*)$/m.exec(text.split(/\n---/)[0] || '')?.[1] || '').map(configFromLabel);
   if (configs.length) { await createMatrix(cases, def.app || '', `ciclo ${def.titulo || def.name}`, titulo, { ciclo: keyOf(def), numero }, readLinks(text), headerOf(text).tags, configs); return; }
+  // testes de confirmação: os bugs ligados aos casos do ciclo (ou concluídos no Jira) entram antes da regressão
+  const bugs = await askConfirmBugs(cases.map((c) => docIndex.resolve(c.key)).filter((x) => !!x).map((x) => /** @type {DocEntry} */ (x)), { appName: def.app || '', intro: `Execução #${numero} de "${def.titulo || def.name}".` });
+  if (!bugs) return;
   // a execução herda do ciclo: vínculos, dispositivo e tags
-  await createExecution(cases, def.app || '', `ciclo ${def.titulo || def.name}`, titulo, { ciclo: keyOf(def), numero }, readLinks(text), (t) => (dispositivo ? setDevice(t, dispositivo) : t), headerOf(text).tags);
+  await createExecution(cases, def.app || '', `ciclo ${def.titulo || def.name}`, titulo, { ciclo: keyOf(def), numero }, readLinks(text), (t) => (dispositivo ? setDevice(t, dispositivo) : t), headerOf(text).tags, { bugs });
 }
 
 /**
@@ -955,8 +982,9 @@ async function createMatrix(cases, appName, origem, titulo, link, links, tags, c
 }
 
 /**
- * 🔂 Reteste das falhas (11.1): uma rodada nova só com os casos FAIL/BLOCKED da execução aberta (ou da ativa) — para
- * validar as correções. Herda app, vínculos, dispositivo e tags (+ reteste); a origem aponta para a execução de antes.
+ * 🔂 Reteste das falhas (11.1): uma rodada nova com os casos FAIL/BLOCKED da execução aberta (ou da ativa) — a regressão
+ * — e, antes deles, o teste de confirmação dos bugs ligados a essas falhas (e das confirmações que não passaram). Dá para
+ * desmarcar um dos dois blocos. Herda app, vínculos, dispositivo e tags (+ reteste); a origem aponta para a execução de antes.
  * @param {string} [execPath] a execução de origem (omitida: a aberta / ativa)
  */
 export async function rerunFailed(execPath = '') {
@@ -964,30 +992,44 @@ export async function rerunFailed(execPath = '') {
   if (!c || !c.text || !isCycle(c.text)) { app.toast('Abra uma execução (rodada) para retestar as falhas dela.', 'error'); return; }
   const fails = retestCases(c.text);
   const skips = retestCases(c.text, ['SKIP']).length - fails.length;
-  if (!fails.length && !skips) { app.toast('Esta execução não tem casos com FAIL ou BLOCKED — nada para retestar. 🎉'); return; }
+  const docs = viewDocs();
+  const isOpen = (/** @type {string} */ k) => { const b = docIndex.resolve(k); const row = b && docs.find((d) => d.path === b.path); return !row || bugOpen(row); };
+  const bugsFor = (/** @type {import('../types').StatusWord[]} */ incluir) => retestBugs(c.text, isOpen, incluir).map((b) => ({ ...b, titulo: b.titulo || docIndex.resolve(b.key)?.titulo || b.key }));
+  const failBugs = bugsFor([]);
+  if (!fails.length && !skips && !failBugs.length) { app.toast('Esta execução não tem casos com FAIL ou BLOCKED — nada para retestar. 🎉'); return; }
   const h = headerOf(c.text);
   const e = docIndex.get(c.path);
   const id = h.id || (e ? keyOf(e) : '');
   const tituloAtual = e?.titulo || /^#\s+(.+)$/m.exec(c.text)?.[1]?.trim() || '';
   const nf = fails.length;
+  const nb = failBugs.length;
+  const list = (/** @type {Array<{ key: string }>} */ l) => (l.length > 6 ? `${l.slice(0, 6).map((x) => x.key).join(', ')} e mais ${l.length - 6}` : l.map((x) => x.key).join(', '));
   const res = await showDialog({
     title: '🔂 Reteste das falhas', icon: '🔂',
-    message: `Cria uma rodada nova só com ${nf ? `os ${nf} caso(s) com FAIL ou BLOCKED` : 'os casos pulados'} de "${tituloAtual || c.path}" — para validar as correções. A rodada de agora não muda.`,
+    message: `Cria uma rodada nova com ${nf ? `os ${nf} caso(s) com FAIL ou BLOCKED` : skips ? 'os casos pulados' : 'a confirmação dos bugs'} de "${tituloAtual || c.path}" — para validar as correções.${nb ? ' Os testes de confirmação dos bugs vêm antes da regressão.' : ''} A rodada de agora não muda.`,
+    checks: nb && (nf || skips) ? [
+      { id: 'bugs', label: `🎯 Confirmação dos bugs (${nb})`, hint: list(failBugs), checked: true },
+      { id: 'casos', label: '🔁 Regressão: os casos que falharam', hint: list(fails), checked: true },
+    ] : [],
     buttons: [
       { id: 'cancel', label: 'Cancelar' },
       ...(skips ? [{ id: 'skip', label: `Incluir os SKIP também (${nf + skips})` }] : []),
-      ...(nf ? [{ id: 'go', label: `Criar reteste (${nf})`, kind: /** @type {'primary'} */ ('primary') }] : []),
+      ...(nf || nb ? [{ id: 'go', label: nf ? `Criar reteste (${nf})` : `Criar reteste (${nb} bug(s))`, kind: /** @type {'primary'} */ ('primary') }] : []),
     ],
-    defaultId: nf ? 'go' : 'skip', cancelId: 'cancel',
+    defaultId: nf || nb ? 'go' : 'skip', cancelId: 'cancel',
   });
   if (!res || res.id === 'cancel') return;
-  const cases = res.id === 'skip' ? retestCases(c.text, ['SKIP']) : fails;
+  const withBugs = !(nb && (nf || skips)) || res.checks.bugs !== false;
+  const withCases = !(nb && (nf || skips)) || res.checks.casos !== false;
+  const cases = !withCases ? [] : res.id === 'skip' ? retestCases(c.text, ['SKIP']) : fails;
+  const bugs = !withBugs ? [] : res.id === 'skip' ? bugsFor(['SKIP']) : failBugs;
+  if (!cases.length && !bugs.length) { app.toast('Nada marcado — o reteste não foi criado.', 'info'); return; }
   const base = (tituloAtual || 'Execução').replace(/\s+—\s+Reteste( \d+)?$/i, '');
   const titulo = `${base} — Reteste`;
   const dispositivo = readDevice(c.text);
   const cfgLabel = configOf(c.text);
   await createExecution(cases, e?.app || '', `reteste das falhas de [[${id}]]`, titulo, null, readLinks(c.text),
-    (t) => (dispositivo ? setDevice(t, dispositivo) : t), [...h.tags, 'reteste'], cfgLabel ? { config: configFromLabel(cfgLabel) } : {});
+    (t) => (dispositivo ? setDevice(t, dispositivo) : t), [...h.tags, 'reteste'], { ...(cfgLabel ? { config: configFromLabel(cfgLabel) } : {}), bugs });
 }
 
 /** Abre o ciclo (definição) a que esta execução pertence. */

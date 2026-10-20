@@ -98,6 +98,8 @@ test('resumo da rodada: bugs abertos e cópia para Teams e e-mail', async ({ pag
   await picker.locator('button', { hasText: 'Selecionar visíveis' }).click();
   await picker.locator('[data-cpk="name"]').fill('Sprint 42');
   await picker.locator('button', { hasText: 'Criar e começar' }).click();
+  // bug aberto ligado aos casos: a janela 🎯 sugere a confirmação — aqui, sem ela
+  await page.locator('.app-dialog button', { hasText: 'Sem confirmações' }).click();
   const panel = page.locator('#cyclePanel');
   await expect(panel.locator('.cp-item')).toHaveCount(2);
   await panel.locator('[data-cp="finish"]').click();

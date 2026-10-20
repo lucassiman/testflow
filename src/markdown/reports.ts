@@ -91,11 +91,13 @@ interface BugInfo {
   casos: string[]; criado: Date | null; recorrencias: Date[]; nova: boolean; reaberta: boolean;
 }
 interface Criterion { texto: string; esperado: string; obtido: string; ok: boolean | null; origem: string }
+/** Teste de confirmação de um bug na rodada: PASS = corrigido. */
+interface ConfirmRun { key: string; titulo: string; status: StatusWord | null; when: string; origem: string; path: string | null; bugStatus: string; open: boolean }
 
 export interface ReportData {
   execPath: string; execId: string; titulo: string; numero: number; ciclo: string; app: string; versao: string; ambiente: string; dispositivo: string;
   responsavel: string; inicio: Date | null; fim: Date | null; closed: boolean; overall: string; links: Record<string, string[]>; tags: string[];
-  summary: CycleSummary; casos: CaseRun[]; log: LogRow[]; bugs: BugInfo[];
+  summary: CycleSummary; casos: CaseRun[]; log: LogRow[]; bugs: BugInfo[]; confirmacoes: ConfirmRun[];
   plan: { key: string; titulo: string; how: string } | null; criteria: Criterion[];
   previous: { key: string; titulo: string; numero: number; casos: Map<string, StatusWord | null>; pct: number | null } | null;
   now: Date;
@@ -216,15 +218,27 @@ export function reportData(execPath: string, input: RDoc[], now = new Date()): R
   const inicio = parseStart(m.inicio);
   const fim = parseStart(m.fim);
   const end = fim || now;
-  const casos: CaseRun[] = t.rows.map((r) => {
+  const casos: CaseRun[] = t.rows.filter((r) => !r.confirm).map((r) => {
     const doc = docs.get(r.key);
-    const tituloCell = t.cols.caso + 1 < r.cells.length ? r.cells[t.cols.caso + 1] : '';
+    const tituloCell = r.cols.caso + 1 < r.cells.length ? r.cells[r.cols.caso + 1] : '';
     return {
       key: r.key, titulo: tituloCell.replace(/\[\[|\]\]/g, '').replace(/\\\|/g, '|').trim() || str(doc?.data.titulo),
       status: r.status && r.status !== 'PENDING' ? r.status : null,
-      when: t.cols.when >= 0 ? (r.cells[t.cols.when] || '').trim() : '',
-      bugs: t.cols.bugs >= 0 ? [...(r.cells[t.cols.bugs] || '').matchAll(/\[\[([^\]|#]+)/g)].map((x) => x[1].trim()) : [],
+      when: r.cols.when >= 0 ? (r.cells[r.cols.when] || '').trim() : '',
+      bugs: r.cols.bugs >= 0 ? [...(r.cells[r.cols.bugs] || '').matchAll(/\[\[([^\]|#]+)/g)].map((x) => x[1].trim()) : [],
       path: doc?.path || null,
+    };
+  });
+  // testes de confirmação de bug (à parte dos casos)
+  const confirmacoes: ConfirmRun[] = t.rows.filter((r) => r.confirm).map((r) => {
+    const doc = docs.get(r.key);
+    const bugStatus = str(doc?.data.status);
+    return {
+      key: r.key, titulo: (r.cols.titulo >= 0 ? r.cells[r.cols.titulo] || '' : '').replace(/\[\[|\]\]/g, '').replace(/\\\|/g, '|').trim() || str(doc?.data.titulo),
+      status: r.status && r.status !== 'PENDING' ? r.status : null,
+      when: r.cols.when >= 0 ? (r.cells[r.cols.when] || '').trim() : '',
+      origem: (r.cols.origem ?? -1) >= 0 ? (/\[\[([^\]|#]+)/.exec(r.cells[r.cols.origem as number] || '')?.[1] || '').trim() : '',
+      path: doc?.path || null, bugStatus, open: !bugStatus || !bugClosed(bugStatus),
     };
   });
 
@@ -245,6 +259,7 @@ export function reportData(execPath: string, input: RDoc[], now = new Date()): R
   const caseKeys = new Set(casos.flatMap((c) => { const d = docs.get(c.key); return [c.key.toLowerCase(), ...(d ? [d.id.toLowerCase(), baseName(d.path).toLowerCase()] : [])].filter(Boolean); }));
   const bugDocs = new Map<string, (typeof docs.all)[number]>();
   for (const c of casos) for (const b of c.bugs) { const d = docs.get(b); if (d) bugDocs.set(d.path, d); }
+  for (const c of confirmacoes) { const d = c.path ? docs.get(c.path) : null; if (d) bugDocs.set(d.path, d); }
   for (const d of docs.all) if (d.tipo === 'bug' && targetsOf(d.text).some((k) => caseKeys.has(k))) bugDocs.set(d.path, d);
   const day0 = inicio ? new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate()).getTime() : 0;
   const bugs: BugInfo[] = [...bugDocs.values()].map((d) => {
@@ -291,21 +306,21 @@ export function reportData(execPath: string, input: RDoc[], now = new Date()): R
   if (ciclo) prev = execs.filter((d) => str(d.data.ciclo).replace(/^\[\[|\]\]$/g, '').toLowerCase() === ciclo.toLowerCase() && (Number(d.data.numero) || 0) < numero).sort((a, b) => (Number(b.data.numero) || 0) - (Number(a.data.numero) || 0))[0] || null;
   if (!prev && inicio) {
     const mine = new Set(casos.map((c) => (docs.get(c.key)?.path || c.key).toLowerCase()));
-    prev = execs.filter((d) => { const s = parseStart(d.data.inicio); return !!s && s < inicio && !!str(d.data.fim) && (cycleTable(d.text)?.rows || []).some((r) => mine.has((docs.get(r.key)?.path || r.key).toLowerCase())); })
+    prev = execs.filter((d) => { const s = parseStart(d.data.inicio); return !!s && s < inicio && !!str(d.data.fim) && (cycleTable(d.text)?.rows || []).filter((r) => !r.confirm).some((r) => mine.has((docs.get(r.key)?.path || r.key).toLowerCase())); })
       .sort((a, b) => (parseStart(b.data.inicio)?.getTime() || 0) - (parseStart(a.data.inicio)?.getTime() || 0))[0] || null;
   }
   let previous: ReportData['previous'] = null;
   if (prev) {
     const ps = cycleSummary(prev.text, now);
     const map = new Map<string, StatusWord | null>();
-    for (const r of cycleTable(prev.text)?.rows || []) map.set((docs.get(r.key)?.path || r.key).toLowerCase(), r.status && r.status !== 'PENDING' ? r.status : null);
+    for (const r of (cycleTable(prev.text)?.rows || []).filter((x) => !x.confirm)) map.set((docs.get(r.key)?.path || r.key).toLowerCase(), r.status && r.status !== 'PENDING' ? r.status : null);
     previous = { key: keyOfDoc(prev), titulo: str(prev.data.titulo), numero: Number(prev.data.numero) || 0, casos: map, pct: ps?.sucessoPct ?? null };
   }
 
   return {
     execPath, execId: str(m.id) || baseName(execPath), titulo: summary.titulo, numero, ciclo, app: str(m.app), versao: str(m.versao), ambiente: str(m.ambiente),
     dispositivo: str(m.dispositivo), responsavel: str(m.responsavel), inicio, fim, closed: !!fim, overall: str(m.status) || 'PENDING', links, tags: list(m.tags),
-    summary, casos, log, bugs, plan, criteria, previous, now,
+    summary, casos, log, bugs, confirmacoes, plan, criteria, previous, now,
   };
 }
 
@@ -367,6 +382,7 @@ function encerramento(d: ReportData): string {
     `| Sucesso | ${s.sucessoPct == null ? '—' : `${s.sucessoPct}%`} (PASS ÷ executados) |`,
     `| Duração | ${s.duracaoMs == null ? '—' : fmtMs(s.duracaoMs)} |`,
     `| Bugs | ${d.bugs.length} ligado(s) · ${openBugs.length} aberto(s) |`,
+    ...(s.confirmacoes.total ? [`| Confirmação de bugs | ${s.confirmacoes.total} — ${s.confirmacoes.corrigidos} corrigido(s) · ${s.confirmacoes.naoCorrigidos} não corrigido(s)${s.confirmacoes.bloqueados ? ` · ${s.confirmacoes.bloqueados} bloqueado(s)` : ''}${s.confirmacoes.skip ? ` · ${s.confirmacoes.skip} SKIP` : ''}${s.confirmacoes.pendentes ? ` · ${s.confirmacoes.pendentes} pendente(s)` : ''} |`] : []),
     ...(s.auto ? [`| Automatizados (${cell(s.auto.tool)}) | ${s.auto.total} — ${s.auto.pass} PASS · ${s.auto.fail} FAIL${s.auto.skip ? ` · ${s.auto.skip} SKIP` : ''}${s.auto.sucessoPct == null ? '' : ` (${s.auto.sucessoPct}%)`} |`] : []),
     ...(d.responsavel ? [`| Responsável | ${cell(d.responsavel)} |`] : []),
     '',
@@ -378,9 +394,10 @@ function encerramento(d: ReportData): string {
     '',
     '## Riscos e pendências', '',
     ...(s.problemas.length ? ['**Falhas e bloqueios:**', '', ...s.problemas.map((p) => `- [[${p.key}]] ${badge(p.status)}${p.bugs.length ? ` — ${p.bugs.map((b) => `[[${b}]]`).join(', ')}` : ' — sem bug ligado'}`), ''] : []),
+    ...(d.confirmacoes.some((c) => c.status && c.status !== 'PASS') ? ['**Bugs não confirmados como corrigidos:**', '', ...d.confirmacoes.filter((c) => c.status && c.status !== 'PASS').map((c) => `- [[${c.key}]]${c.titulo ? ` — ${cell(c.titulo)}` : ''} ${badge(c.status)}${c.status === 'FAIL' ? ' — a correção não resolveu' : ''}`), ''] : []),
     ...(s.skipped.length ? [`**Não executados (SKIP):** ${s.skipped.map((k) => `[[${k}]]`).join(', ')}`, ''] : []),
     ...(openBugs.length ? ['**Bugs abertos:**', '', ...openBugs.map((b) => `- [[${b.key}]]${b.titulo ? ` — ${cell(b.titulo)}` : ''}${b.severidade ? ` · severidade ${b.severidade}` : ''}${b.jira ? ` · ${b.jira}` : ''}`), ''] : []),
-    ...(!s.problemas.length && !s.skipped.length && !openBugs.length ? ['Nenhuma falha, bloqueio, caso pulado ou bug aberto.', ''] : []),
+    ...(!s.problemas.length && !s.skipped.length && !openBugs.length && !d.confirmacoes.some((c) => c.status && c.status !== 'PASS') ? ['Nenhuma falha, bloqueio, caso pulado ou bug aberto.', ''] : []),
     ...manual('riscos', '<!-- Riscos, contornos e observações do QA (preservado ao regerar) -->\n'),
     '',
     '## Recomendação', '',
@@ -416,6 +433,7 @@ function defeitos(d: ReportData): string {
     `| Reabertos (reincidência) | ${reabertos.length} |`,
     `| Ainda abertos (de antes) | ${abertos.length} |`,
     `| Fechados ligados aos casos | ${fechados.length} |`,
+    ...(d.confirmacoes.length ? [`| Teste de confirmação | ${d.confirmacoes.length} — ${d.confirmacoes.filter((c) => c.status === 'PASS').length} corrigido(s) · ${d.confirmacoes.filter((c) => c.status === 'FAIL').length} não corrigido(s) |`] : []),
     `| Densidade | ${executados ? `${(found / executados).toFixed(2).replace('.', ',')} bug(s) novo(s)/reaberto(s) por caso executado (${found} em ${executados})` : '—'} |`,
     '',
     ...(bySev.size ? ['**Por severidade (novos, reabertos e abertos):** ' + [...bySev.entries()].sort((a, b) => a[0] - b[0]).map(([k, n]) => `${SEV_LABEL[k]} ${n}`).join(' · '), ''] : []),
@@ -423,6 +441,12 @@ function defeitos(d: ReportData): string {
     '## 🔁 Reabertos (reincidências)', '', ...table(reabertos, 'Nenhuma reincidência registrada nesta rodada.'),
     '## ⏳ Ainda abertos', '', ...table(abertos, 'Nenhum bug de antes continua aberto.'),
     ...(fechados.length ? ['## ✅ Fechados (ligados aos casos da rodada)', '', ...table(fechados, '')] : []),
+    ...(d.confirmacoes.length ? [
+      '## 🎯 Teste de confirmação', '',
+      'Cada bug refeito na versão corrigida: `PASS` = corrigido. O status do bug é o de agora (fechar é do QA).', '',
+      '| Bug | Título | Confirmação | Executado em | Status do bug | Encontrado em |', '| --- | --- | --- | --- | --- | --- |',
+      ...d.confirmacoes.map((c) => `| [[${c.key}]] | ${cell(c.titulo)} | ${badge(c.status)}${c.status === 'PASS' ? ' corrigido' : c.status === 'FAIL' ? ' não corrigido' : ''} | ${cell(c.when) || '—'} | ${c.bugStatus ? badge(c.bugStatus) : '—'}${c.status === 'PASS' && c.open ? ' ⚠ ainda aberto' : ''} | ${c.origem ? `[[${c.origem}]]` : '—'} |`), '',
+    ] : []),
     '## Por caso', '',
     ...(byCase.length ? ['| Caso | Resultado | Bugs |', '| --- | --- | --- |', ...byCase.map(({ c, bs }) => `| [[${c.key}]] ${cell(c.titulo)} | ${badge(c.status)} | ${bs.map((b) => `[[${b.key}]]${b.open ? '' : ' (fechado)'}`).join(', ')} |`), ''] : ['Nenhum caso da rodada tem bug ligado.', '']),
     ...(s.problemas.some((p) => !p.bugs.length) ? [`> [!WARNING]\n> Falhas sem bug ligado: ${s.problemas.filter((p) => !p.bugs.length).map((p) => `[[${p.key}]]`).join(', ')}. Abra o caso e use 🐞 Bug novo (ou registre a reincidência).`, ''] : []),

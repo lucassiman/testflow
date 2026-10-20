@@ -28,6 +28,8 @@ test('rodada com os exemplos: nasce em execucoes/, pendente × último resultado
   await picker.locator('button', { hasText: 'Selecionar visíveis' }).click();
   await picker.locator('[data-cpk="name"]').fill('Regressão');
   await picker.locator('button', { hasText: 'Criar e começar' }).click();
+  // bug aberto ligado aos casos: a janela 🎯 sugere a confirmação — aqui, sem ela
+  await page.locator('.app-dialog button', { hasText: 'Sem confirmações' }).click();
 
   const panel = page.locator('#cyclePanel');
   // todos os casos, cenários e checklists da pasta (a .versoes/ não conta)

@@ -46,11 +46,11 @@ export async function buildRoundPage(c) {
     const step = (status === 'FAIL' || status === 'BLOCKED') ? det?.steps?.[0] : null;
     return {
       key: r.key,
-      titulo: (t && t.cols.titulo >= 0 ? plain(r.cells[t.cols.titulo]) : '') || det?.titulo || '',
+      titulo: `${r.confirm ? '🎯 Confirmação: ' : ''}${(r.cols.titulo >= 0 ? plain(r.cells[r.cols.titulo]) : '') || det?.titulo || ''}`,
       status,
-      quando: t && t.cols.when >= 0 ? plain(r.cells[t.cols.when]) : '',
-      testador: t && t.cols.tester >= 0 ? plain(r.cells[t.cols.tester]) : '',
-      bugs: t && t.cols.bugs >= 0 ? [...(r.cells[t.cols.bugs] || '').matchAll(/\[\[([^\]|#]+)/g)].map((x) => x[1].trim()) : [],
+      quando: r.cols.when >= 0 ? plain(r.cells[r.cols.when]) : '',
+      testador: r.cols.tester >= 0 ? plain(r.cells[r.cols.tester]) : '',
+      bugs: r.cols.bugs >= 0 ? [...(r.cells[r.cols.bugs] || '').matchAll(/\[\[([^\]|#]+)/g)].map((x) => x[1].trim()) : [],
       // o passo como texto, sem a marcação do Markdown (**Pago**, [[BUG-2]])
       passo: step ? { n: step.n, acao: plain(step.acao), obtido: plain(step.obtido) } : null,
     };
