@@ -18,7 +18,7 @@ import { currentWorkspacePath } from './links.js';
 import { currentEntry, sameWorkspaceFile } from './organize.js';
 import { sensitive } from './share.js';
 import { errMsg } from './shared.js';
-import { scanOfficial, officialPublished, releaseLock, programmatic } from './collab.js';
+import { scanOfficial, officialChanged, officialPublished, releaseLock, programmatic } from './collab.js';
 
 // ---------------------------------------------------------------- pasta oficial, publicar e histórico de versões
 /** @type {FileSystemDirectoryHandle | null} pasta oficial (compartilhada) da pasta de trabalho atual */
@@ -31,7 +31,7 @@ export async function refreshOfficial() {
   if (!same) officialDir = next;
   app.sidebar.setOfficial(officialDir?.name || null);
   refreshDocState();
-  scanOfficial({ force: true });
+  officialChanged(); // a pasta inteira não é lida sozinha (na nuvem, travaria o editor) — só o documento aberto
 }
 
 /** Escolher / trocar / desligar a pasta oficial. @returns {Promise<FileSystemDirectoryHandle | null>} */
@@ -67,6 +67,7 @@ export async function configureOfficial() {
   await setOfficial(ws.name, dir);
   await refreshOfficial();
   app.toast(`🏛 Pasta oficial: ${dir.name}`);
+  scanOfficial(); // acabou de escolher: confere o que há nela (com progresso; dá para parar)
   return dir;
 }
 

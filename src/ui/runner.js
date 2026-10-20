@@ -645,14 +645,21 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
 
   /** Ao começar (ou retomar) a execução, o passo vai para o meio da tela uma vez; depois, só o necessário. */
   let centerNext = false;
+  /** passo que o painel mostrou por último (tabela:linha): o documento só rola quando ele muda @type {string} */
+  let shownStep = '';
   /** @param {StepTable | null} t @param {number} [index] */
   function highlightRow(t, index = -1) {
     root.querySelectorAll('tr.run-current').forEach((tr) => tr.classList.remove('run-current'));
-    if (mode !== 'exec' || !t) return;
+    if (mode !== 'exec' || !t) { shownStep = ''; return; }
     const block = [...root.querySelectorAll(':scope > .md-block.type-table')].find((b) => Number(/** @type {HTMLElement} */ (b).dataset.start) === t.header);
     const tr = block?.querySelectorAll('tbody tr')[index];
     if (!tr) return;
     tr.classList.add('run-current');
+    // o documento mudou por outro lado (ex.: status marcado em outra tabela, texto editado): o passo é o mesmo, não rola até ele
+    const step = `${ex().ordinal}:${index}`;
+    const moved = step !== shownStep;
+    shownStep = step;
+    if (!centerNext && !moved) return;
     if (centerNext) {
       centerNext = false;
       tr.scrollIntoView({ block: 'center' });

@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.67.1', date: '20/10/2026',
+    items: [
+      { icon: '🏛', text: '**Pasta oficial no OneDrive sem travar o editor**: a pasta inteira só é conferida quando você pede (ao escolher a pasta, em **🏛 Oficial** e em **⇅ Sincronizar**), um arquivo por vez, com o andamento no botão e **Parar**. Se a nuvem demorar, a conferência para sozinha e **Tentar de novo** continua de onde parou. Sozinho, o editor só confere o documento aberto.', manual: '10.4 Publicar' },
+      { icon: '▶', text: '**Segunda tabela com Status** no mesmo documento: 1–5 marcam e descem na tabela em que você clicou — o painel ▶ Executar não puxa mais o documento de volta para o passo dele.', manual: '7.1 Status' },
+    ],
+  },
+  {
     version: '1.67.0', date: '13/10/2026',
     items: [
       { icon: '📅', text: '**Diário opcional**: numa pasta sem diário, o menu do diário e o cartão *Hoje* não aparecem — ligue em **Diário pessoal e lembretes** (`Ctrl+Shift+P`). Na mesma janela, **lembretes** de começar e fechar o dia, no app, no aviso do computador e, com um webhook, no **Teams** (só com o app aberto).', manual: '6.11 Diário' },
