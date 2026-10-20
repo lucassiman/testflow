@@ -33,3 +33,21 @@ test('enviar para a oficial: alterados, nunca publicados, conflitos, _entrada, a
   const plan = planOfficialPush(docs, (p) => heads[p] ?? null, { dirtyOpen: (p) => p === 'a/ABERTO.md', flagged: (t) => t.includes('cpf') });
   assert.deepEqual(plan, { changed: ['a/ALT.md'], fresh: ['a/NOVO.md'], conflict: ['a/ALT-VELHO.md', 'a/NOVO-LA.md'], inbox: ['_entrada/nota.md'], open: ['a/ABERTO.md'], sensitive: ['a/CPF.md'] });
 });
+
+test('o diário fica fora da pasta oficial: não vai no ⇅, não vem como novidade (pela pasta diario/ ou pelo tipo: dia)', async () => {
+  const { planOfficialPush, personalDoc } = await import('../../src/markdown/officialSync.ts');
+  const dia = '---\ntipo: dia\ntitulo: Segunda, 20/10/2026\ndata: 2026-10-20\n---\n\n# Segunda\n';
+  assert.equal(personalDoc('diario/2026/10/2026-10-20.md'), true);
+  assert.equal(personalDoc('notas/2026-10-20.md', dia), true); // nota do dia movida para outra pasta
+  assert.equal(personalDoc('notas/2026-10-20.md', '﻿---\ntipo: "dia"\n---\n'), true);
+  assert.equal(personalDoc('diarios/x.md', '---\ntipo: caso-de-teste\n---\n\ntipo: dia\n'), false); // só o cabeçalho conta
+  assert.equal(personalDoc('aplicacoes/Portal/casos/TC-1.md', '---\ntipo: caso-de-teste\n---\n'), false);
+  const plan = planOfficialPush([
+    { path: 'diario/2026/10/2026-10-20.md', text: dia },
+    { path: 'notas/hoje.md', text: dia },
+    { path: 'a/NOVO.md', text: '---\nid: A-4\n---\n# rascunho\n' },
+  ], () => null);
+  assert.deepEqual(plan.fresh, ['a/NOVO.md']);
+  const pull = planOfficialUpdate({ behind: [{ path: 'diario/2026/10/2026-10-19.md' }], only: ['diario/2026/10/2026-10-18.md', 'a/TC-9.md'] }, () => dia);
+  assert.deepEqual(pull, { safe: [], mine: [], fresh: ['a/TC-9.md'], open: [] });
+});

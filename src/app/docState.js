@@ -16,6 +16,7 @@ import { scheduleCyclePanel } from './cyclePanel.js';
 import { listComments } from './comments.js';
 import { countComments } from '../markdown/comments.ts';
 import { lockMessage } from '../markdown/lock.ts';
+import { personalDoc } from '../markdown/officialSync.ts';
 import { approvalMenu } from './approval.js';
 
 /** @typedef {import('../markdown/docState.ts').StateMark} StateMark */
@@ -34,7 +35,7 @@ export function refreshDocState() {
   const r = app.runner;
   const rel = currentWorkspacePath();
   current = stateMarks(app.store.source, {
-    official: !!officialDir && !!rel,
+    official: !!officialDir && !!rel && !personalDoc(rel, app.store.source), // o diário não é "rascunho" da oficial
     behind: rel ? behindOf(rel, app.store.source) : null,
     editing: editingOthers().map((l) => l.quem),
     comments: countComments(app.store.source).open,

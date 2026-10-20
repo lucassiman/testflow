@@ -1,6 +1,6 @@
 {
   "name": "testflow",
-  "version": "1.67.1",
+  "version": "1.67.2",
   "description": "Editor Markdown leve para documentação de QA (Raw, Preview editável, Mermaid).",
   "scripts": {
     "dev": "vite",

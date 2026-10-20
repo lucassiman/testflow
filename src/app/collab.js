@@ -26,7 +26,8 @@ import { loadPrefs, savePrefs } from '../io/drafts.js';
 import { LOCKS_DIR, LOCK_TTL_MIN, lockName, makeLock, parseLock, lockState, lockMessage, officialBehind } from '../markdown/lock.ts';
 import { saveVersion } from '../io/versions.js';
 import { readPublishMeta } from '../markdown/publish.ts';
-import { planOfficialUpdate, planOfficialPush } from '../markdown/officialSync.ts';
+import { planOfficialUpdate, planOfficialPush, personalDoc } from '../markdown/officialSync.ts';
+import { DIARY_DIR } from '../markdown/diary.ts';
 import { checkPublish, stampPublish, stampNow } from '../markdown/publish.ts';
 import { ensureUid } from '../markdown/idRename.ts';
 import { decodeText } from '../io/files.js';
@@ -192,7 +193,8 @@ export function scanOfficial() {
     tick();
     /** @type {Array<{ path: string, handle: FileSystemFileHandle }>} */
     const files = [];
-    // as mesmas regras da pasta de trabalho (senão um arquivo que o editor não lê lá pareceria "só na oficial")
+    // as mesmas regras da pasta de trabalho (senão um arquivo que o editor não lê lá pareceria "só na oficial");
+    // o diário é pessoal: um diario/ que tenha ido parar na oficial não é lido nem trazido
     /** @param {FileSystemDirectoryHandle} dir @param {string} prefix @param {number} depth */
     const walk = async (dir, prefix, depth) => {
       if (depth > MAX_DEPTH || halted) return;
@@ -200,7 +202,7 @@ export function scanOfficial() {
       for await (const [name, h] of /** @type {any} */ (dir).entries()) {
         tick();
         if (halted) return;
-        if (name.startsWith('.') || (depth === 0 && name === '_lixeira') || IGNORE.has(name)) continue;
+        if (name.startsWith('.') || (depth === 0 && (name === '_lixeira' || name === DIARY_DIR)) || IGNORE.has(name)) continue;
         const path = prefix ? `${prefix}/${name}` : name;
         if (h.kind === 'directory') await walk(h, path, depth + 1);
         else if (/\.(md|markdown)$/i.test(name)) files.push({ path, handle: h });
@@ -268,6 +270,7 @@ export function officialNews() {
   /** @type {string[]} */
   const only = [];
   for (const [path, head] of heads) {
+    if (personalDoc(path, head)) continue;
     const e = docIndex.get(path);
     if (!e) {
       // só os publicados (com revisão) e que você não mandou esconder (apagou/moveu aqui de propósito)
@@ -341,7 +344,7 @@ let docChecked = { rel: '', at: 0 };
 async function checkOpenDoc({ force = false } = {}) {
   const rel = currentWorkspacePath();
   const off = officialDir;
-  if (!rel || !off) return;
+  if (!rel || !off || personalDoc(rel, app.store.source)) return;
   if (!force && docChecked.rel === rel && Date.now() - docChecked.at < 60_000) return;
   await autoOfficial(async () => {
     if (!(await granted(off, 'read'))) return;
@@ -706,7 +709,7 @@ export function editingOthers() {
 /** Confere as travas dos outros no documento ativo; avisa uma vez por pessoa/sessão. */
 export async function checkLocks() {
   const rel = currentWorkspacePath();
-  if (!rel || !officialDir) { if (others.length) { others = []; refreshDocState(); } return; }
+  if (!rel || !officialDir || personalDoc(rel, app.store.source)) { if (others.length) { others = []; refreshDocState(); } return; }
   const found = await autoOfficial(() => readOthers(rel));
   if (!found || currentWorkspacePath() !== rel) return; // não consultou (oficial ocupada ou lenta): fica como estava
   const sig = (/** @type {EditLock[]} */ l) => l.map((x) => `${x.cliente}:${x.desde}`).sort().join('|');
@@ -736,6 +739,7 @@ function onEdit() {
   lastEditAt = Date.now();
   const rel = currentWorkspacePath();
   if (!rel || !officialDir) return;
+  if (personalDoc(rel, app.store.source)) { if (mine) releaseLock(); return; } // o diário não avisa ninguém
   if (!mine || mine.rel !== rel || Date.now() - mine.writtenAt > 4 * 60_000) holdLock(rel);
 }
 
@@ -746,7 +750,7 @@ async function heartbeat() {
     const idle = Date.now() - lastEditAt > (LOCK_TTL_MIN - 5) * 60_000 && !app.store.dirty;
     if (mine.rel !== rel || idle) await releaseLock();
     else if (Date.now() - mine.writtenAt > 4 * 60_000) await holdLock(mine.rel);
-  } else if (rel && app.store.dirty && Date.now() - lastEditAt < (LOCK_TTL_MIN - 5) * 60_000) {
+  } else if (rel && app.store.dirty && !personalDoc(rel, app.store.source) && Date.now() - lastEditAt < (LOCK_TTL_MIN - 5) * 60_000) {
     await holdLock(rel); // a trava não foi gravada na alteração (oficial ocupada ou lenta): tenta de novo
   }
   await autoCheck();

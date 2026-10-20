@@ -12,6 +12,7 @@ import { listVersions, readVersion, saveVersion } from '../io/versions.js';
 import { checkPublish, readPublishMeta, stampNow, stampPublish } from '../markdown/publish.ts';
 import { baseOf } from '../markdown/relink.ts';
 import { INBOX_DIR, inInbox } from '../markdown/structure.ts';
+import { personalDoc } from '../markdown/officialSync.ts';
 import { confirmDialog, showDialog } from '../ui/dialog.js';
 import { openHistory } from '../ui/history.js';
 import { currentWorkspacePath } from './links.js';
@@ -80,6 +81,7 @@ export async function publishDocument() {
   const ws = app.workspaceDir;
   const entry = await currentEntry();
   if (!entry || !ws) return;
+  if (personalDoc(entry.path, app.store.source)) { app.toast('O diário é pessoal: ele não vai para a pasta oficial.', 'error'); return; }
   const off = officialDir || (await configureOfficial());
   if (!off) return;
   if (!(await ensurePermission(ws, 'readwrite')) || !(await ensurePermission(off, 'readwrite'))) { app.toast('O navegador não liberou o acesso às pastas.', 'error'); return; }
@@ -180,7 +182,7 @@ export async function openVersionHistory({ sinceApproval = false } = {}) {
   const plain = (/** @type {string} */ t) => decodeText(t).text;
   /** @type {import('../ui/history.js').HistoryGroup[]} */
   const groups = [];
-  const off = officialDir;
+  const off = personalDoc(rel, app.store.source) ? null : officialDir; // o diário não tem versão oficial
   if (off && (await ensurePermission(off, 'read'))) {
     /** @type {import('../ui/history.js').HistoryItem[]} */
     const items = [];

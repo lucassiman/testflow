@@ -8,6 +8,17 @@
  */
 import { publishInfo } from './docState.ts';
 import { readPublishMeta } from './publish.ts';
+import { DIARY_DIR, DAY_TYPE } from './diary.ts';
+
+/**
+ * Documento pessoal: fica fora da pasta oficial (não é publicado, não vai nem vem no ⇅, não vira novidade nem "está editando").
+ * Hoje, o diário — pela pasta `diario/` ou pelo `tipo: dia` (uma nota do dia movida para outro lugar).
+ */
+export function personalDoc(path: string, text = ''): boolean {
+  if (path === DIARY_DIR || path.startsWith(`${DIARY_DIR}/`)) return true;
+  const fm = /^﻿?---\r?\n([\s\S]*?)\r?\n---/.exec(text);
+  return !!fm && new RegExp(`^tipo[ \\t]*:[ \\t]*["']?${DAY_TYPE}["']?[ \\t]*$`, 'm').test(fm[1]);
+}
 
 export interface OfficialPlan { safe: string[]; mine: string[]; fresh: string[]; open: string[] }
 
@@ -18,11 +29,12 @@ export function planOfficialUpdate(
 ): OfficialPlan {
   const plan: OfficialPlan = { safe: [], mine: [], fresh: [], open: [] };
   for (const { path } of news.behind) {
+    if (personalDoc(path, textOf(path) ?? '')) continue;
     if (dirtyOpen(path)) { plan.open.push(path); continue; }
     const text = textOf(path) ?? '';
     (publishInfo(text).state === 'published' ? plan.safe : plan.mine).push(path);
   }
-  for (const path of news.only) (dirtyOpen(path) ? plan.open : plan.fresh).push(path);
+  for (const path of news.only) if (!personalDoc(path)) (dirtyOpen(path) ? plan.open : plan.fresh).push(path);
   return plan;
 }
 
@@ -53,6 +65,7 @@ export function planOfficialPush(
   const plan: PushPlan = { changed: [], fresh: [], conflict: [], inbox: [], open: [], sensitive: [] };
   const inbox = `${o.inboxDir || '_entrada'}/`;
   for (const { path, text } of docs) {
+    if (personalDoc(path, text)) continue; // o diário não vai para a oficial
     const info = publishInfo(text);
     if (info.state === 'published') continue; // igual ao que foi publicado
     const head = headOf(path);

@@ -8,6 +8,12 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.67.2', date: '20/10/2026',
+    items: [
+      { icon: '📅', text: '**O diário não vai para a pasta oficial**: as notas do dia são suas — ficam fora do *Publicar* e do **⇅ Sincronizar** (não vão nem vêm), não aparecem como novidade e escrever nelas não avisa ninguém ("está editando").', manual: '6.11 Diário' },
+    ],
+  },
+  {
     version: '1.67.1', date: '20/10/2026',
     items: [
       { icon: '🏛', text: '**Pasta oficial no OneDrive sem travar o editor**: a pasta inteira só é conferida quando você pede (ao escolher a pasta, em **🏛 Oficial** e em **⇅ Sincronizar**), um arquivo por vez, com o andamento no botão e **Parar**. Se a nuvem demorar, a conferência para sozinha e **Tentar de novo** continua de onde parou. Sozinho, o editor só confere o documento aberto.', manual: '10.4 Publicar' },

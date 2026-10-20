@@ -39,6 +39,9 @@ test('sincronizar com a oficial nos dois sentidos: traz os mais novos e os novos
     await window.__write('ws', `${C}/TC-6.md`, a6); // publicado r1 e alterado depois; oficial ainda r1: vai como r2
     await window.__write('off', `${C}/TC-6.md`, o6);
     await window.__write('ws', '_entrada/rascunho.md', '# rascunho\n'); // na entrada: só se pedir
+    // o diário é pessoal: o meu não vai e o de alguém que foi parar na oficial não vem (as contagens não mudam)
+    await window.__write('ws', 'diario/2026/10/2026-10-20.md', '---\ntipo: dia\ntitulo: Segunda, 20/10/2026\ndata: 2026-10-20\n---\n\n# Segunda\n');
+    await window.__write('off', 'diario/2026/10/2026-10-19.md', '---\ntipo: dia\ntitulo: Domingo\nrevisao: 1\npublicado_por: Ana\n---\n\n# Domingo\n');
   }, [C, doc('TC-1', 1, 'Lucas', 'Minha r1.'), doc('TC-2', 1, 'Lucas', 'Minha r1, alterada depois.', 'deadbeef'), doc('TC-1', 3, 'Ana', 'Da Ana r3.'), doc('TC-2', 2, 'Ana', 'Da Ana r2.'),
     doc('TC-9', 1, 'Ana', '![p](evidencias/p9.png)'), doc('TC-6', 1, 'Lucas', 'Meu texto alterado.', 'deadbeef'), doc('TC-6', 1, 'Lucas', 'Texto r1.')]);
   await page.click('#sidebarBtn');
@@ -76,6 +79,8 @@ test('sincronizar com a oficial nos dois sentidos: traz os mais novos e os novos
   expect(await read('ws', `${C}/TC-5.md`)).toContain('revisao: 1');
   expect(await read('off', `${C}/TC-6.md`)).toMatch(/revisao: 2[\s\S]*Meu texto alterado\./);
   expect(await read('off', '_entrada/rascunho.md')).toBeNull();
+  expect(await read('off', 'diario/2026/10/2026-10-20.md')).toBeNull();
+  expect(await read('ws', 'diario/2026/10/2026-10-19.md')).toBeNull();
   await expect(btn).toHaveText('⇅ Sincronizar ⬇1');
 
   // desfazer: volta o que veio (o enviado fica — a versão oficial anterior está em .versoes/ da oficial)
