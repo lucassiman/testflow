@@ -46,6 +46,13 @@ test('🎯 no bug: execução só dele, os passos do bug no executor, PASS fecha
   expect(saved).toMatch(/^status: PASS$/m);
   expect(saved).toMatch(/## Andamento\n\n- \d\d\/\d\d\/\d{4} \d\d:\d\d — ✅ Teste de confirmação `PASS` em \[\[EXEC-[\d-]+\]\]: corrigido — bug fechado\./);
   expect(saved).toMatch(/## Histórico de execuções/);
+  // 🏁 Finalizar: o "Como foi" conta o bug (antes ficava tudo zerado)
+  await page.locator('.exec-bar [data-act="cycleFinish"]').click();
+  await dlg.locator('button', { hasText: 'Finalizar execução' }).click();
+  const rs = page.locator('.rs-dialog');
+  await expect(rs.locator('.rs-tile', { hasText: 'bugs confirmados' })).toContainText('1');
+  await expect(rs.locator('.rs-tile.rs-pass')).toContainText('1');
+  await expect(rs.locator('.rs-tile.rs-rate')).toContainText('100%');
 });
 
 test('reteste das falhas: a confirmação do bug da falha vem antes da regressão (e dá para desmarcar)', async ({ page }) => {

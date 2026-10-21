@@ -218,7 +218,8 @@ export function reportData(execPath: string, input: RDoc[], now = new Date()): R
   const inicio = parseStart(m.inicio);
   const fim = parseStart(m.fim);
   const end = fim || now;
-  const casos: CaseRun[] = t.rows.filter((r) => !r.confirm).map((r) => {
+  // execução só de confirmação: os bugs fazem o papel dos casos (log, comparativo, números)
+  const casos: CaseRun[] = t.rows.filter((r) => summary.soConfirmacao || !r.confirm).map((r) => {
     const doc = docs.get(r.key);
     const tituloCell = r.cols.caso + 1 < r.cells.length ? r.cells[r.cols.caso + 1] : '';
     return {
@@ -377,12 +378,12 @@ function encerramento(d: ReportData): string {
     '## Resultado geral', '',
     '| Indicador | Valor |', '| --- | --- |',
     `| Resultado | ${badge(d.overall)} |`,
-    `| Casos | ${s.total} — ${s.pass} PASS · ${s.fail} FAIL · ${s.blocked} BLOCKED · ${s.skip} SKIP${s.pendente ? ` · ${s.pendente} pendente(s)` : ''} |`,
+    `| ${s.soConfirmacao ? 'Confirmações de bug' : 'Casos'} | ${s.total} — ${s.pass} PASS · ${s.fail} FAIL · ${s.blocked} BLOCKED · ${s.skip} SKIP${s.pendente ? ` · ${s.pendente} pendente(s)` : ''} |`,
     `| Executados | ${executados} de ${s.total} (${pctOf(executados, s.total)}) |`,
     `| Sucesso | ${s.sucessoPct == null ? '—' : `${s.sucessoPct}%`} (PASS ÷ executados) |`,
     `| Duração | ${s.duracaoMs == null ? '—' : fmtMs(s.duracaoMs)} |`,
     `| Bugs | ${d.bugs.length} ligado(s) · ${openBugs.length} aberto(s) |`,
-    ...(s.confirmacoes.total ? [`| Confirmação de bugs | ${s.confirmacoes.total} — ${s.confirmacoes.corrigidos} corrigido(s) · ${s.confirmacoes.naoCorrigidos} não corrigido(s)${s.confirmacoes.bloqueados ? ` · ${s.confirmacoes.bloqueados} bloqueado(s)` : ''}${s.confirmacoes.skip ? ` · ${s.confirmacoes.skip} SKIP` : ''}${s.confirmacoes.pendentes ? ` · ${s.confirmacoes.pendentes} pendente(s)` : ''} |`] : []),
+    ...(s.confirmacoes.total && !s.soConfirmacao ? [`| Confirmação de bugs | ${s.confirmacoes.total} — ${s.confirmacoes.corrigidos} corrigido(s) · ${s.confirmacoes.naoCorrigidos} não corrigido(s)${s.confirmacoes.bloqueados ? ` · ${s.confirmacoes.bloqueados} bloqueado(s)` : ''}${s.confirmacoes.skip ? ` · ${s.confirmacoes.skip} SKIP` : ''}${s.confirmacoes.pendentes ? ` · ${s.confirmacoes.pendentes} pendente(s)` : ''} |`] : []),
     ...(s.auto ? [`| Automatizados (${cell(s.auto.tool)}) | ${s.auto.total} — ${s.auto.pass} PASS · ${s.auto.fail} FAIL${s.auto.skip ? ` · ${s.auto.skip} SKIP` : ''}${s.auto.sucessoPct == null ? '' : ` (${s.auto.sucessoPct}%)`} |`] : []),
     ...(d.responsavel ? [`| Responsável | ${cell(d.responsavel)} |`] : []),
     '',

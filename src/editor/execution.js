@@ -257,7 +257,9 @@ export function createExecutionBar({ pane, root, onSummary, onRun, onSession, on
 
   /** @param {string} source */
   function update(source) {
-    const tables = collectStatusTables(source);
+    // na execução, a barra conta também a "Confirmação de bugs" (uma execução só de confirmação não tem casos)
+    const isExec = /^tipo[ \t]*:[ \t]*(ciclo-regressao|execucao)\b/m.test(source.slice(0, 2000));
+    const tables = isExec ? [...collectStatusTables(source, 'confirm'), ...collectStatusTables(source)] : collectStatusTables(source);
     const counts = countStatuses(source, tables);
     const tasks = countTasks(source);
     const hasSummary = findSummaryBlocks(source.split('\n')).length > 0;

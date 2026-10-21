@@ -540,6 +540,8 @@ export interface CycleSummary {
   /** relatório de testes automatizados anexado (nunca entra nos números acima) */
   auto: AutoSummary | null;
   /** testes de confirmação de bug (à parte dos casos): PASS = corrigido */
+  /** execução só de confirmação (sem casos): os números acima (total, PASS…, % de sucesso) são dos bugs */
+  soConfirmacao: boolean;
   confirmacoes: { total: number; corrigidos: number; naoCorrigidos: number; bloqueados: number; skip: number; pendentes: number; itens: Array<{ key: string; status: StatusWord | null }> };
 }
 
@@ -547,15 +549,17 @@ export interface CycleSummary {
 export function cycleSummary(text: string, now = new Date()): CycleSummary | null {
   const all = cycleTable(text);
   if (!all) return null;
-  // os números são dos casos; as confirmações de bug vêm à parte
-  const t = { ...all, rows: all.rows.filter((r) => !r.confirm) };
+  // os números são dos casos; as confirmações de bug vêm à parte — numa execução só de confirmação, são delas
   const conf = all.rows.filter((r) => r.confirm);
+  const soConfirmacao = conf.length > 0 && conf.length === all.rows.length;
+  const t = { ...all, rows: soConfirmacao ? conf : all.rows.filter((r) => !r.confirm) };
   const cc = (s: StatusWord): number => conf.filter((r) => r.status === s).length;
   const m = meta(text);
   const inicio = parseStart(m.inicio);
   const fim = parseStart(m.fim);
   const count = (s: StatusWord): number => t.rows.filter((r) => r.status === s).length;
-  const bugsOf = (r: CycleRow): string[] => (r.cols.bugs >= 0 ? (r.cells[r.cols.bugs] || '').match(/\[\[([^\]|#]+)/g) || [] : []).map((b) => b.replace('[[', '').trim());
+  // a linha de uma confirmação é o próprio bug
+  const bugsOf = (r: CycleRow): string[] => (r.confirm ? [r.key] : r.cols.bugs >= 0 ? (r.cells[r.cols.bugs] || '').match(/\[\[([^\]|#]+)/g) || [] : []).map((b) => b.replace('[[', '').trim());
   const pass = count('PASS');
   const fail = count('FAIL');
   const blocked = count('BLOCKED');
@@ -573,6 +577,7 @@ export function cycleSummary(text: string, now = new Date()): CycleSummary | nul
     bugs: [...new Set(t.rows.flatMap(bugsOf))],
     casos: t.rows.map((r) => ({ key: r.key, status: r.status && r.status !== 'PENDING' ? r.status : null })),
     auto: autoSummary(text),
+    soConfirmacao,
     confirmacoes: {
       total: conf.length, corrigidos: cc('PASS'), naoCorrigidos: cc('FAIL'), bloqueados: cc('BLOCKED'), skip: cc('SKIP'),
       pendentes: conf.filter((r) => !r.status || r.status === 'PENDING').length,

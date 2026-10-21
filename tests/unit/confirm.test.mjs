@@ -163,13 +163,35 @@ test('relatórios: confirmações no Go/No-Go e no de defeitos, fora dos número
   exec = closeCycle(skipPending(exec.replace('| 1 | [[BUG-003]] | Estorno |  |', '| 1 | [[BUG-003]] | Estorno | `FAIL` |')), new Date(2026, 9, 20, 10, 0));
   const { files } = buildReports('execucoes/confirmacao.md', [{ path: 'execucoes/confirmacao.md', text: exec }, { path: 'bugs/BUG-003.md', text: bug }]);
   const enc = files.find((f) => f.kind === 'encerramento').text;
-  assert.match(enc, /\| Casos \| 0 — 0 PASS/);
-  assert.match(enc, /\| Confirmação de bugs \| 1 — 0 corrigido\(s\) · 1 não corrigido\(s\) \|/);
+  // execução só de confirmação: os números são dos bugs
+  assert.match(enc, /\| Confirmações de bug \| 1 — 0 PASS · 1 FAIL/);
+  assert.doesNotMatch(enc, /\| Casos \|/);
   assert.match(enc, /\*\*Bugs não confirmados como corrigidos:\*\*\n\n- \[\[BUG-003\]\] — Estorno `FAIL` — a correção não resolveu/);
   const def = files.find((f) => f.kind === 'defeitos').text;
   assert.match(def, /## 🎯 Teste de confirmação/);
   assert.match(def, /\| \[\[BUG-003\]\] \| Estorno \| `FAIL` não corrigido \| 20\/10\/2026|\| \[\[BUG-003\]\] \| Estorno \| `FAIL` não corrigido \|/);
   assert.match(def, /\| \[\[TC-008\]\] \|/);
+});
+
+test('execução só de confirmação que passou: Como foi e relatórios contam o bug (não ficam zerados)', () => {
+  let bug = ensureConfirmSteps(BUG).text;
+  const st = stepTable(bug);
+  for (const r of st.rows) bug = setStepStatus(bug, r.line, st.status, 'PASS');
+  bug = logConfirmation(bug, { overall: 'PASS', when: new Date(2026, 9, 21, 10, 14), close: true }).text;
+  let exec = cycleDoc({ titulo: 'Confirmação do BUG-003', cases: [], bugs: [{ key: 'BUG-003', titulo: 'Estorno', origem: 'TC-008' }], start: new Date(2026, 9, 21, 9, 36) });
+  exec = closeCycle(skipPending(exec.replace('| 1 | [[BUG-003]] | Estorno |  |  |', '| 1 | [[BUG-003]] | Estorno | `PASS` | 21/10/2026 10:13 |')), new Date(2026, 9, 21, 10, 14));
+  const s = cycleSummary(exec);
+  assert.equal(s.soConfirmacao, true);
+  assert.deepEqual([s.total, s.pass, s.fail, s.pendente, s.sucessoPct], [1, 1, 0, 0, 100]);
+  assert.deepEqual(s.casos, [{ key: 'BUG-003', status: 'PASS' }]);
+  const { files } = buildReports('execucoes/confirmacao.md', [{ path: 'execucoes/confirmacao.md', text: exec }, { path: 'bugs/BUG-003.md', text: bug }]);
+  const enc = files.find((f) => f.kind === 'encerramento').text;
+  assert.match(enc, /\| Confirmações de bug \| 1 — 1 PASS · 0 FAIL · 0 BLOCKED · 0 SKIP \|/);
+  assert.match(enc, /\| Executados \| 1 de 1 \(100%\) \|/);
+  assert.match(enc, /\| Sucesso \| 100% /);
+  assert.match(enc, /^recomendacao: LIBERAR$/m);
+  const log = files.find((f) => f.kind === 'log').text;
+  assert.match(log, /\[\[BUG-003\]\]/);
 });
 
 const tpl = Object.fromEntries(readdirSync('src/templates').filter((f) => f.endsWith('.md')).map((f) => [f.replace(/\.md$/, ''), readFileSync(join('src/templates', f), 'utf8')]));

@@ -8,6 +8,12 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.68.1', date: '21/10/2026',
+    items: [
+      { icon: '🎯', text: '**Execução só de confirmação conta o bug**: o *Como foi essa rodada?*, os relatórios de fim de execução e o resumo copiado deixam de vir zerados — os números (PASS, FAIL, % de sucesso, executados) são os dos bugs confirmados. A barra Execução também aparece nela. Numa execução com casos, o *Como foi* ganha o bloco **🎯 Confirmação de bugs**.', manual: '7.8 Ciclo de regressão' },
+    ],
+  },
+  {
     version: '1.68.0', date: '20/10/2026',
     items: [
       { icon: '🎯', text: '**Teste de confirmação do bug**: com o bug aberto, **Execução ▾ → 🎯 Teste de confirmação do bug** cria uma execução só dele e abre o ▶ Executar com os passos do bug (montados pelos *Passos para reproduzir*, o último com o resultado esperado). `PASS` pergunta se fecha o bug; `FAIL` anota que a correção não resolveu e reabre o bug fechado — tudo no *Andamento* do bug.', manual: '7.8 Ciclo de regressão' },

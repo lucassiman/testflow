@@ -33,12 +33,14 @@ export function fmtSpan(ms) {
  * @param {CycleSummary} s @param {CaseDetails} details
  */
 export function summaryMarkdown(s, details = {}, linksText = '', bugs = /** @type {RoundBug[]} */ ([])) {
+  const c = s.confirmacoes;
   const out = [
     `## ${s.titulo}`,
     '',
     `- Período: ${when(s.inicio)} → ${s.fim ? when(s.fim) : 'em andamento'} (${fmtSpan(s.duracaoMs)})`,
-    `- Casos: ${s.total} — ${s.pass} PASS · ${s.fail} FAIL · ${s.blocked} BLOCKED · ${s.skip} SKIP${s.pendente ? ` · ${s.pendente} sem resultado` : ''}`,
-    `- Sucesso: ${s.sucessoPct == null ? '—' : `${s.sucessoPct}%`} dos casos executados`,
+    `- ${s.soConfirmacao ? 'Confirmações de bug' : 'Casos'}: ${s.total} — ${s.pass} PASS · ${s.fail} FAIL · ${s.blocked} BLOCKED · ${s.skip} SKIP${s.pendente ? ` · ${s.pendente} sem resultado` : ''}`,
+    `- Sucesso: ${s.sucessoPct == null ? '—' : `${s.sucessoPct}%`} dos ${s.soConfirmacao ? 'bugs confirmados' : 'casos executados'}`,
+    ...(c?.total && !s.soConfirmacao ? [`- Confirmação de bugs: ${c.total} — ${c.corrigidos} corrigido(s) · ${c.naoCorrigidos} não corrigido(s)${c.bloqueados ? ` · ${c.bloqueados} bloqueado(s)` : ''}${c.pendentes ? ` · ${c.pendentes} sem resultado` : ''}`] : []),
     ...(linksText ? [`- Vínculos: ${linksText}`] : []),
   ];
   if (s.problemas.length) {
@@ -86,7 +88,8 @@ export function summaryTeams(s, details = {}, linksText = '', bugs = []) {
   const out = [
     `*📊 ${s.titulo}* — ${s.fim ? `encerrada em ${when(s.fim)}` : 'em andamento'} (${fmtSpan(s.duracaoMs)})`,
   ];
-  if (s.total) out.push(`${countsLine(s)} — *${s.sucessoPct == null ? '—' : `${s.sucessoPct}%`}* de sucesso (${s.total} caso${s.total === 1 ? '' : 's'})`);
+  if (s.total) out.push(`${countsLine(s)} — *${s.sucessoPct == null ? '—' : `${s.sucessoPct}%`}* de sucesso (${s.total} ${s.soConfirmacao ? `confirmação${s.total === 1 ? '' : 'ões'} de bug` : `caso${s.total === 1 ? '' : 's'}`})`);
+  if (s.confirmacoes?.total && !s.soConfirmacao) out.push(`🎯 Confirmação de bugs: ${s.confirmacoes.corrigidos} corrigido(s) · ${s.confirmacoes.naoCorrigidos} não corrigido(s) de ${s.confirmacoes.total}`);
   if (linksText) out.push(`🔗 ${linksText}`);
   if (s.problemas.length) {
     out.push('', '*Falhas e bloqueios*');
@@ -125,7 +128,7 @@ export function summaryEmail(s, details = {}, linksText = '', bugs = []) {
     `<p style="margin:0 0 12px;color:#57606a">${esc(when(s.inicio))} → ${s.fim ? esc(when(s.fim)) : 'em andamento'} · ${esc(fmtSpan(s.duracaoMs))}${linksText ? ` · ${esc(linksText)}` : ''}</p>`,
   ];
   if (s.total) {
-    h.push(`<table style="border-collapse:collapse;margin:0 0 12px"><tr><th style="${cell}">Casos</th>${['PASS', 'FAIL', 'BLOCKED', 'SKIP'].map((k) => `<th style="${cell};color:${color[k]}">${k}</th>`).join('')}<th style="${cell}">Sucesso</th></tr>`
+    h.push(`<table style="border-collapse:collapse;margin:0 0 12px"><tr><th style="${cell}">${s.soConfirmacao ? 'Bugs' : 'Casos'}</th>${['PASS', 'FAIL', 'BLOCKED', 'SKIP'].map((k) => `<th style="${cell};color:${color[k]}">${k}</th>`).join('')}<th style="${cell}">Sucesso</th></tr>`
       + `<tr><td style="${cell}">${s.total}</td><td style="${cell}">${s.pass}</td><td style="${cell}">${s.fail}</td><td style="${cell}">${s.blocked}</td><td style="${cell}">${s.skip}</td><td style="${cell}"><b>${rate}</b></td></tr></table>`);
   }
   if (s.problemas.length) {
@@ -173,6 +176,12 @@ export function openRoundSummary({ summary: s, details = {}, title = 'Como foi e
     const seg = (/** @type {number} */ n, /** @type {string} */ cls, /** @type {string} */ label) => (n ? `<span class="rs-seg ${cls}" style="flex:${n}" title="${n} ${label}"></span>` : '');
     const tile = (/** @type {string|number} */ v, /** @type {string} */ label, cls = '') => `<div class="rs-tile ${cls}"><b>${esc(v)}</b><span>${esc(label)}</span></div>`;
     const noManual = s.total === 0 && !!s.auto;
+    const cf = s.confirmacoes;
+    const LBL = /** @type {Record<string, string>} */ ({ PASS: 'corrigido', FAIL: 'não corrigido', BLOCKED: 'bloqueado', SKIP: 'não executado' });
+    const confirmBlock = cf?.total && !s.soConfirmacao ? `<div class="rs-auto"><h4>🎯 Confirmação de bugs</h4>
+        <div class="rs-tiles">${tile(cf.total, 'bugs')}${tile(cf.corrigidos, 'corrigidos', 'rs-pass')}${tile(cf.naoCorrigidos, 'não corrigidos', 'rs-fail')}${cf.bloqueados ? tile(cf.bloqueados, 'bloqueados', 'rs-fail') : ''}${cf.pendentes ? tile(cf.pendentes, 'sem resultado', 'rs-skip') : ''}</div>
+        <ul class="rs-list">${cf.itens.map((i) => `<li class="rs-problem"><div><b>${esc(i.key)}</b>${details[i.key]?.titulo ? ` — ${esc(details[i.key]?.titulo)}` : ''} ${i.status ? `<span class="rs-badge rs-b-${i.status.toLowerCase()}">${esc(LBL[i.status] || i.status)}</span>` : '<span class="rs-badge">pendente</span>'}</div></li>`).join('')}</ul>
+        <p class="rs-note">Teste de confirmação (refazer o bug na versão corrigida) — separado dos casos (não entra na % de sucesso deles).</p></div>` : '';
     const problems = s.problemas.map((p) => {
       const d = details[p.key];
       const steps = (d?.steps || []).map((st) => `<li><span class="rs-n">Passo ${esc(st.n)}</span> ${esc(st.acao)}${st.obtido ? ` <em>→ ${esc(st.obtido)}</em>` : ''}</li>`).join('');
@@ -200,13 +209,14 @@ export function openRoundSummary({ summary: s, details = {}, title = 'Como foi e
           ${links.length ? `<div class="rs-links">${links.map((l) => (l.url ? `<a class="cp-chip" href="${esc(l.url)}" target="_blank" rel="noopener">${l.icon} ${esc(l.label)}</a>` : `<span class="cp-chip" title="${esc(l.typeLabel)}">${l.icon} ${esc(l.label)}</span>`)).join('')}</div>` : ''}
           <div class="rs-when">${esc(when(s.inicio))} → ${s.fim ? esc(when(s.fim)) : '<i>em andamento</i>'} · <b>${esc(fmtSpan(s.duracaoMs))}</b></div>
           ${noManual ? '' : `          <div class="rs-tiles">
-            ${tile(s.total, 'casos')}
+            ${tile(s.total, s.soConfirmacao ? 'bugs confirmados' : 'casos')}
             ${tile(s.pass, 'PASS', 'rs-pass')}${tile(s.fail, 'FAIL', 'rs-fail')}${tile(s.blocked, 'BLOCKED', 'rs-fail')}${tile(s.skip, 'SKIP', 'rs-skip')}
             ${s.pendente ? tile(s.pendente, 'sem resultado', 'rs-skip') : ''}
             ${tile(s.sucessoPct == null ? '—' : `${s.sucessoPct}%`, 'de sucesso', 'rs-rate')}
           </div>
           <div class="rs-bar" role="img" aria-label="Distribuição dos resultados">${seg(s.pass, 'rs-pass', 'PASS')}${seg(s.fail, 'rs-fail', 'FAIL')}${seg(s.blocked, 'rs-blocked', 'BLOCKED')}${seg(s.skip, 'rs-skip', 'SKIP')}${seg(s.pendente, 'rs-none', 'sem resultado')}</div>
-          <p class="rs-note">Sucesso = PASS ÷ (PASS + FAIL + BLOCKED): só conta o que foi de fato executado; SKIP fica de fora.</p>`}
+          <p class="rs-note">${s.soConfirmacao ? 'Teste de confirmação: PASS = corrigido. ' : ''}Sucesso = PASS ÷ (PASS + FAIL + BLOCKED): só conta o que foi de fato executado; SKIP fica de fora.</p>`}
+          ${confirmBlock}
           ${s.auto ? autoBlock(s.auto) : ''}
           ${problems ? `<h4>Falhas e bloqueios (${s.problemas.length})</h4><ul class="rs-list">${problems}</ul>` : noManual ? '' : '<p class="rs-ok">Nenhuma falha ou bloqueio nesta rodada. ✅</p>'}
           ${notes}
