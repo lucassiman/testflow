@@ -8,6 +8,12 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.70.0', date: '23/10/2026',
+    items: [
+      { icon: '🤝', text: '**Teste em dupla com mais de um ticket**: o dev vai mostrar vários tickets na mesma chamada? No **🤝 Teste em dupla do ticket…**, use **Mais um ticket…** — sai um documento só, com `jira:` de todos e os critérios, o roteiro (uma tabela por ticket) e o que fica para DEV/HML separados por ticket.', manual: '7.11 Teste em dupla' },
+    ],
+  },
+  {
     version: '1.69.0', date: '22/10/2026',
     items: [
       { icon: '🏷️', text: '**Abas com o mesmo nome da árvore**: a aba mostra **ID · título** com a bolinha do status, como na árvore — o nome do arquivo fica na dica e na lista **⌄ Todas as abas**, embaixo do título. A paleta (*Árvore e abas: …*) volta os dois para o nome do arquivo.', manual: '10.' },

@@ -103,3 +103,40 @@ test('MCP: qa_criar tipo teste-em-dupla nasce na pasta do ticket, com jira e ép
   const out = await ws.create({ tipo: 'teste-em-dupla', titulo: 'Teste em dupla — PORTAL-120', app: 'Portal', campos: { jira: 'PORTAL-120', epico: 'PORTAL-10' } });
   assert.match(out, /Criado: aplicacoes\/Portal\/casos\/PORTAL-10 Pagamentos\/PORTAL-120 Pix\/DUP-001-/);
 });
+
+test('vários tickets na mesma chamada: jira com todos, um bloco por ticket, uma tabela executável por ticket', () => {
+  const text = buildPairTest({
+    template: TEMPLATE, ticket: 'PORTAL-120', app: 'Portal', cases: [],
+    tickets: [
+      { ticket: 'PORTAL-120', titulo: 'Pagamento Pix', epico: 'PORTAL-10', criterios: ['CA1 — QR code'],
+        cases: [caso('TC-1', 'Pagar com Pix', { esperado: 'QR code' }), caso('TC-2', 'Pix expirado'), caso('TC-3', 'Comprovante'), caso('TC-4', 'Histórico'), caso('TC-5', 'Filtro')] },
+      { ticket: 'PORTAL-121', titulo: 'Boleto', epico: 'PORTAL-10', criterios: [], cases: [caso('TC-9', 'Gerar boleto')] },
+      { ticket: 'PORTAL-130', titulo: 'PORTAL-130', epico: 'PORTAL-11', cases: [] },
+    ],
+  });
+  const info = describeDoc(text);
+  assert.equal(info.id, 'DUP-PORTAL-120');
+  assert.equal(info.titulo, 'Teste em dupla — PORTAL-120 + PORTAL-121 + PORTAL-130');
+  assert.match(text, /^jira: \[PORTAL-120, PORTAL-121, PORTAL-130\]$/m);
+  assert.match(text, /^epico: \[PORTAL-10, PORTAL-11\]$/m);
+  assert.match(text, /^# DUP-PORTAL-120 — Teste em dupla — PORTAL-120 \+ PORTAL-121 \+ PORTAL-130$/m);
+  // critérios: só os tickets que têm
+  assert.match(text, /## Critérios de aceite\n\n### PORTAL-120 — Pagamento Pix\n\n- \[ \] CA1 — QR code\n\n## Roteiro/);
+  // roteiro: até 3 principais + 1 menos trivial por ticket; ticket sem casos ganha uma linha em branco
+  assert.match(text, /## Roteiro\n\n### PORTAL-120 — Pagamento Pix\n\n\| # \| Ação [^\n]+\n\| --- [^\n]+\n\| 1 \| \[\[TC-1\]\] — Pagar com Pix \| QR code \| \| `PENDING` \|\n\| 2 \| \[\[TC-3\]\][^\n]+\n\| 3 \| \[\[TC-4\]\][^\n]+\n\| 4 \| ⚠ \[\[TC-2\]\][^\n]+\n\n### PORTAL-121 — Boleto\n\n\| # [^\n]+\n\| --- [^\n]+\n\| 1 \| \[\[TC-9\]\][^\n]+\n\n### PORTAL-130\n\n\| # [^\n]+\n\| --- [^\n]+\n\| 1 \| \| \| \| `PENDING` \|\n\n## Duração/);
+  assert.match(text, /\| 45 min \|/);
+  assert.match(text, /## Ficou para DEV\/HML\n\n### PORTAL-120 — Pagamento Pix\n\n- \[ \] \[\[TC-5\]\] — Filtro\n\n## Resumo/);
+  const tables = collectStatusTables(text);
+  assert.equal(tables.length, 3);
+  assert.equal(info.counts.total, 6);
+  // destino: a pasta do primeiro ticket
+  const dest = suggestDestination({ tipo: 'teste-em-dupla', app: 'Portal', jira: ['PORTAL-120', 'PORTAL-121'], epico: 'PORTAL-10' }, ['aplicacoes/Portal/casos/PORTAL-10/PORTAL-120 Pix', 'aplicacoes/Portal/casos/PORTAL-10/PORTAL-121']);
+  assert.match(dest.dir, /PORTAL-120 Pix$/);
+});
+
+test('um ticket só pela lista tickets: igual ao de sempre', () => {
+  const cases = [caso('TC-2', 'Pagar com Pix')];
+  const a = buildPairTest({ template: TEMPLATE, ticket: 'PORTAL-120', titulo: 'Pix', app: 'Portal', epico: 'PORTAL-10', cases });
+  const b = buildPairTest({ template: TEMPLATE, ticket: 'PORTAL-120', app: 'Portal', cases: [], tickets: [{ ticket: 'PORTAL-120', titulo: 'Pix', epico: 'PORTAL-10', cases }] });
+  assert.equal(b, a);
+});

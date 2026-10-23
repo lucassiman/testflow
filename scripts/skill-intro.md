@@ -214,6 +214,7 @@ Para "como foi a regressão?", "o que falhou?" ou "posso liberar?":
 3. **Critérios de aceite** como `- [ ]`; critério sem linha no roteiro → diga qual na resposta.
 4. **Ficou para DEV/HML**: os casos que não entraram, como `- [ ] [[TC-…]] — título`.
 5. Crie com `qa_criar { tipo: "teste-em-dupla", app, titulo: "Teste em dupla — <título do ticket>", conteudo }` (modelo da seção 7, `id: DUP-PORTAL-120`, `jira:` e `epico:`). No editor, **Execução ▾ → 🤝 Teste em dupla do ticket…** faz a mesma montagem sem o Claude.
+**Vários tickets na mesma chamada** ("o dev vai mostrar o PORTAL-120 e o PORTAL-121"): **um documento só** — `id: DUP-<primeiro ticket>`, `titulo: Teste em dupla — PORTAL-120 + PORTAL-121`, `jira: [PORTAL-120, PORTAL-121]` (e `epico:` em lista, se forem épicos diferentes), salvo na pasta do primeiro ticket. Em *Critérios de aceite*, *Roteiro* (uma tabela por ticket) e *Ficou para DEV/HML*, um `### PORTAL-120 — título` por ticket; menos linhas por ticket (até 3 principais + 1 menos trivial) e 15 min de duração planejada por ticket.
 6. Depois da chamada, o mesmo documento é o relatório: com as notas do usuário, preencha **Bugs e ajustes** e **Resumo e resultado** (*Pode subir* / *Sobe com ajustes* / *Volta para o dev*).
 
 ## 7. Modelos por tipo

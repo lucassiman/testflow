@@ -54,3 +54,50 @@ test('teste em dupla: roteiro do ticket a partir de um caso dele; de novo, ofere
   await page.click('.app-dialog button:has-text("Abrir o existente")');
   await expect(page.locator('#fileName')).toContainText('DUP-PORTAL-120');
 });
+
+test('teste em dupla com mais de um ticket: "Mais um ticket…" monta um documento só, separado por ticket', async ({ page }) => {
+  const T2 = `${E}/PORTAL-121 Boleto`;
+  const tc2 = (id, titulo) => tc(id, titulo).replace('jira: PORTAL-120', 'jira: PORTAL-121');
+  await page.addInitScript(wsInit, 'ws-dupla-multi');
+  await openEditor(page, { mode: 'preview' });
+  await page.evaluate(async (list) => { for (const [p, t] of list) await window.__write(p, t); }, [
+    ...files,
+    [`${T2}/TC-21.md`, tc2('TC-21', 'Gerar boleto')],
+    [`${T2}/TC-22.md`, tc2('TC-22', 'Boleto inválido')],
+  ]);
+  await page.click('#sidebarBtn');
+  await page.locator('.sidebar button', { hasText: 'Abrir…' }).first().click();
+  await expect(page.locator('[data-side="wsList"] .side-file')).toHaveCount(files.length + 2);
+  await page.locator('[data-side="wsList"] .side-file', { hasText: 'TC-1' }).first().click();
+  await expect(page.locator('#fileName')).toContainText('TC-1');
+
+  await page.click('button[data-menu="mod-execucao"]');
+  await page.click('#mod-execucao [data-cmd="pairTest"]');
+  await expect(page.locator('.app-dialog')).toContainText('só deste ticket');
+  await page.click('.app-dialog button:has-text("Mais um ticket")');
+  await page.locator('.cmd-menu .cmd-item', { hasText: 'PORTAL-121 Boleto' }).click();
+  // não sobrou outro ticket com casos: cria direto
+
+  await expect(page.locator('#fileName')).toContainText('DUP-PORTAL-120');
+  const doc = await raw(page);
+  expect(doc).toMatch(/^jira: \[PORTAL-120, PORTAL-121\]$/m);
+  expect(doc).toMatch(/^titulo: Teste em dupla — PORTAL-120 \+ PORTAL-121$/m);
+  expect(doc).toMatch(/### PORTAL-120 — Pagamento com Pix\n\n- \[ \] QR code aparece/);
+  expect(doc).toMatch(/## Roteiro\n\n### PORTAL-120 — Pagamento com Pix\n\n\| # /);
+  expect(doc).toMatch(/### PORTAL-121 — Boleto\n\n\| # [^\n]+\n[^\n]+\n\| 1 \| \[\[TC-21\]\] — Gerar boleto \|[^\n]+\n\| 2 \| ⚠ \[\[TC-22\]\] — Boleto inválido \|/);
+  // na pasta do primeiro ticket
+  const names = await page.evaluate((d) => window.__ls(d), T);
+  expect(names.some((n) => n.startsWith('DUP-PORTAL-120'))).toBe(true);
+  // ▶ Executar percorre as duas tabelas
+  await expect(page.locator('.exec-action[data-act="run"]')).toBeVisible();
+
+  // começando pelo outro ticket: acha o existente (que já tem o PORTAL-121)
+  await page.locator('[data-side="wsList"] .side-file', { hasText: 'TC-21' }).first().click();
+  await expect(page.locator('#fileName')).toContainText('TC-21');
+  await page.click('button[data-menu="mod-execucao"]');
+  await page.click('#mod-execucao [data-cmd="pairTest"]');
+  await page.click('.app-dialog button:has-text("Criar o roteiro")');
+  await expect(page.locator('.app-dialog')).toContainText('já tem um teste em dupla');
+  await page.click('.app-dialog button:has-text("Abrir o existente")');
+  await expect(page.locator('#fileName')).toContainText('DUP-PORTAL-120');
+});

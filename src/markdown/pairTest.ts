@@ -29,9 +29,22 @@ export interface PairInput {
   /** critérios de aceite (da história do ticket) */
   criterios?: string[];
   cases: PairCase[];
-  /** máximo de pontos principais (5) e de casos menos triviais (2) no roteiro */
+  /**
+   * Chamada com mais de um ticket: um bloco por ticket (critérios, roteiro e o que ficou para DEV/HML).
+   * O primeiro dá o ID e a pasta; `ticket`, `titulo`, `criterios` e `cases` de cima são ignorados.
+   */
+  tickets?: PairTicket[];
+  /** máximo de pontos principais (5; 3 por ticket com vários) e de casos menos triviais (2; 1 por ticket) no roteiro */
   mainMax?: number;
   edgeMax?: number;
+}
+
+export interface PairTicket {
+  ticket: string;
+  titulo?: string;
+  epico?: string;
+  criterios?: string[];
+  cases: PairCase[];
 }
 
 const EDGE_RE = /(^|[^\p{L}])(negativ|borda|limite|edge|erro|inv[aá]lid|exce[cç]|alternativ|vazi[oa]|sem permiss|bloquead|expirad|timeout|duplicad|concorr|m[aá]xim|m[ií]nim|incorret)/iu;
@@ -128,6 +141,9 @@ export const pairTestId = (ticket: string): string => `DUP-${ticket}`;
 
 /** Monta o teste em dupla do ticket a partir do modelo (o modelo continua valendo: só as seções conhecidas mudam). */
 export function buildPairTest(input: PairInput): string {
+  if (input.tickets && input.tickets.length > 1) return buildMultiPairTest(input, input.tickets);
+  const one = input.tickets?.[0];
+  if (one) input = { ...input, ticket: one.ticket, titulo: one.titulo, criterios: one.criterios, cases: one.cases, epico: one.epico || input.epico };
   const { ticket, cases } = input;
   const id = pairTestId(ticket);
   // o ticket já está no ID e no jira: — o título fica com o nome dele
@@ -160,5 +176,59 @@ export function buildPairTest(input: PairInput): string {
     ]);
   }
   if (rest.length) replaceSection(lines, /^ficou para\b/i, rest.map((c) => `- [ ] [[${c.id}]] — ${oneLine(c.titulo)}`));
+  return lines.join('\n');
+}
+
+const TABLE_HEAD = ['| # | Ação | Resultado esperado | Resultado obtido | Status |', '| --- | --- | --- | --- | --- |'];
+const pairRow = (c: PairCase, n: number, mark = ''): string => `| ${n} | ${mark}[[${c.id}]] — ${cell(c.titulo)} | ${cell(caseExpectation(c.text || ''))} | | \`PENDING\` |`;
+
+/**
+ * Uma chamada com vários tickets (o dev mostra mais de um no mesmo encontro): um documento só, com `jira: [A, B]`
+ * (as visões e segmentos acham por qualquer um) e um "### TICKET — título" por ticket nos critérios, no roteiro (uma
+ * tabela por ticket, cada uma executável) e no que ficou para DEV/HML. Menos casos por ticket, para a chamada não crescer.
+ */
+function buildMultiPairTest(input: PairInput, groups: PairTicket[]): string {
+  const keys = groups.map((g) => g.ticket);
+  const id = pairTestId(keys[0]);
+  const titulo = `Teste em dupla — ${keys.join(' + ')}`;
+  const heading = (g: PairTicket): string => `### ${g.ticket}${g.titulo && g.titulo !== g.ticket ? ` — ${oneLine(g.titulo, 120)}` : ''}`;
+  const epics = [...new Set(groups.map((g) => g.epico || input.epico || '').filter(Boolean))];
+  const lines = input.template.split('\n');
+  const fm = detectFrontMatter(input.template);
+  if (fm) {
+    let end = fm.end;
+    const before = lines.length;
+    setHeader(lines, end, 'id', id);
+    setHeader(lines, end, 'titulo', titulo);
+    setHeader(lines, end, 'jira', `[${keys.join(', ')}]`);
+    if (input.app) setHeader(lines, end, 'app', input.app);
+    end += lines.length - before;
+    if (epics.length) setHeader(lines, end, 'epico', epics.length === 1 ? epics[0] : `[${epics.join(', ')}]`);
+  }
+  const h1 = lines.findIndex((l) => /^#\s/.test(l));
+  if (h1 >= 0) lines[h1] = `# ${id} — ${titulo}`;
+  // a duração planejada do modelo (15 min) vale por ticket
+  const dur = sectionRange(lines, /^dura[cç][aã]o\b/i);
+  if (dur) for (let i = dur.start; i < dur.end; i++) lines[i] = lines[i].replace(/^\|\s*15 min\s*\|/, `| ${15 * groups.length} min |`);
+
+  /** @returns blocos "### TICKET" com o corpo de cada ticket (os sem corpo ficam de fora) */
+  const blocks = (body: (g: PairTicket) => string[]): string[] =>
+    groups.flatMap((g) => { const b = body(g); return b.length ? [heading(g), '', ...b, ''] : []; }).slice(0, -1);
+
+  if (groups.some((g) => g.criterios?.length)) replaceSection(lines, /^crit[eé]rios de aceite/i, blocks((g) => (g.criterios || []).map((c) => `- [ ] ${oneLine(c, 300)}`)));
+  const mainMax = input.mainMax ?? 3;
+  const edgeMax = input.edgeMax ?? 1;
+  const picks = new Map(groups.map((g) => [g, pickPairCases(g.cases, { mainMax, edgeMax })]));
+  if (groups.some((g) => g.cases.length)) {
+    replaceSection(lines, /^roteiro\b/i, blocks((g) => {
+      const { main, edge } = picks.get(g)!;
+      // ticket sem casos: uma linha em branco para o que o dev mostrar
+      const rows = main.length || edge.length
+        ? [...main.map((c, i) => pairRow(c, i + 1)), ...edge.map((c, i) => pairRow(c, main.length + i + 1, '⚠ '))]
+        : ['| 1 | | | | `PENDING` |'];
+      return [...TABLE_HEAD, ...rows];
+    }));
+  }
+  if (groups.some((g) => picks.get(g)!.rest.length)) replaceSection(lines, /^ficou para\b/i, blocks((g) => picks.get(g)!.rest.map((c) => `- [ ] [[${c.id}]] — ${oneLine(c.titulo)}`)));
   return lines.join('\n');
 }
