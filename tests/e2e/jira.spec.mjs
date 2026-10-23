@@ -59,7 +59,7 @@ test('criar a issue: escolhe o projeto, manda a descrição em wiki e o print co
   await dlg.locator('select[data-select]').selectOption('PORT');
   await expect(dlg.locator('input[data-check="anexos"]')).toBeChecked();
   await dlg.locator('button', { hasText: 'Criar no Jira' }).click();
-  await expect(page.locator('#toast')).toContainText('PORT-12 (Bug) criada no Jira — 1 anexo(s)');
+  await expect(page.locator('#toast')).toContainText('PORT-12 (Bug) criada no Jira — BUG-7 virou PORT-12 (código, título, links e nome do arquivo) · 1 anexo(s)');
   const sent = await page.evaluate(() => window.__jira.criar);
   expect(sent.projeto).toBe('PORT');
   expect(sent.tipo).toBe('Bug');
@@ -69,7 +69,13 @@ test('criar a issue: escolhe o projeto, manda a descrição em wiki e o print co
   expect(sent.anexos).toEqual([{ nome: 'erro.png', tipo: 'image/png', base64: expect.any(String) }]);
   expect(sent.anexos[0].base64.length).toBeGreaterThan(40);
   // gravado no arquivo (o documento já estava salvo)
-  await expect.poll(() => page.evaluate(() => window.__read('aplicacoes/Portal/bugs/BUG-7.md'))).toMatch(/^jira: PORT-12$/m);
+  // o bug virou ticket: o código é a chave e o arquivo acompanha (BUG-7.md → PORT-12.md)
+  await expect.poll(() => page.evaluate(() => window.__read('aplicacoes/Portal/bugs/PORT-12.md'))).toMatch(/^jira: PORT-12$/m);
+  const saved = await page.evaluate(() => window.__read('aplicacoes/Portal/bugs/PORT-12.md'));
+  expect(saved).toMatch(/^id: PORT-12$/m);
+  expect(saved).toMatch(/^# PORT-12 — Pagamento trava$/m);
+  expect(await page.evaluate(() => window.__read('aplicacoes/Portal/bugs/BUG-7.md'))).toBeNull();
+  await expect(page.locator('#fileName')).toContainText('PORT-12');
   // projeto lembrado para a aplicação
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('mdqa:prefs')).jiraProjetos)).toEqual({ Portal: 'PORT' });
   // de novo: avisa que já tem issue
@@ -122,9 +128,9 @@ test('criar uma História (ou outro tipo): sugerido pelo documento, vai o tipo e
   await expect(tipo).toHaveValue('História');
   await expect(tipo.locator('option')).toHaveCount(9);
   await dlg.locator('button', { hasText: 'Criar no Jira' }).click();
-  await expect(page.locator('#toast')).toContainText('PORT-12 (História) criada no Jira');
+  await expect(page.locator('#toast')).toContainText('PORT-12 (História) criada no Jira — HU-3 virou PORT-12');
   expect((await page.evaluate(() => window.__jira.criar)).tipo).toBe('História');
-  const hu = await page.evaluate(() => window.__read('aplicacoes/Portal/requisitos/HU-3.md'));
+  const hu = await page.evaluate(() => window.__read('aplicacoes/Portal/requisitos/PORT-12.md'));
   expect(hu).toMatch(/^jira: PORT-12$/m);
   expect(hu).toMatch(/^jira_tipo: História$/m);
 

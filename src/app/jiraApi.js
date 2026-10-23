@@ -137,9 +137,13 @@ export async function createJiraIssue() {
   // issue que não é bug: o tipo fica no cabeçalho (o "trazer o status" passa a acompanhar este documento)
   const tipoCriado = created.tipo || tipo;
   if (norm(tipoCriado) !== 'bug') next = setFrontMatterFields(next, { jira_tipo: tipoCriado });
+  const idBefore = String(metaOf(app.store.source).id || '');
   app.store.setSource(next, { origin: 'command' });
-  if (app.store.fileHandle) await app.doSave(false);
+  // salvar troca o código pela chave (bug/história/épico) — o aviso espera o arquivo renomear e os links
+  if (app.store.fileHandle) { await app.doSave(false); await app.idSyncDone(); }
+  const idAfter = String(metaOf(app.store.source).id || '');
   const notes = [
+    idBefore && idAfter && idBefore !== idAfter ? `${idBefore} virou ${idAfter} (código, título, links e nome do arquivo)` : '',
     created.anexos ? `${created.anexos} anexo(s)` : '',
     created.semPrioridade ? 'sem prioridade (o nome não existe no seu Jira)' : '',
     created.semRotulos ? 'sem rótulos (o Jira recusou neste tipo)' : '',
@@ -174,14 +178,14 @@ export async function syncJiraStatus() {
   const busy = [];
   /** @type {string[]} */
   const missing = [];
-  /** @type {Array<{ id: string, jira: string, status: string }>} */
+  /** @type {Array<{ id: string, jira: string, status: string, titulo: string }>} */
   const retest = [];
   for (const { e, text } of bugs) {
     const key = jiraKeysOf(text)[0];
     const st = byKey.get(key);
     if (!st) { missing.push(key); continue; }
     const r = applyJiraStatus(text, st);
-    if (r.done && e.tipo === 'bug' && !bugClosed(String(metaOf(text).status || ''))) retest.push({ id: e.id || e.name, jira: key, status: st.status });
+    if (r.done && e.tipo === 'bug' && !bugClosed(String(metaOf(text).status || ''))) retest.push({ id: e.id || e.name, jira: key, status: st.status, titulo: e.titulo || '' });
     if (!r.changed) continue;
     if (e.path !== active && open.has(e.path)) { busy.push(e.id || e.name); continue; }
     try {
@@ -204,7 +208,8 @@ export async function syncJiraStatus() {
   await showDialog({
     title: `${retest.length} bug(s) concluído(s) no Jira aguardam o reteste`, icon: '🔁',
     message: `${msg}.\n\nNo Jira estes estão concluídos, mas aqui o bug continua aberto — retestar e, passando, fechar o bug (o status do bug não muda sozinho):`,
-    detail: retest.map((r) => `• ${r.id} — ${r.jira}: ${r.status}`).join('\n'),
+    // o código já é a chave (virou ticket): mostra o título no lugar da chave repetida
+    detail: retest.map((r) => `• ${r.id} — ${r.id.toUpperCase() === r.jira ? r.titulo || r.jira : r.jira}: ${r.status}`).join('\n'),
     buttons: [{ id: 'ok', label: 'OK', kind: 'primary' }],
   });
 }

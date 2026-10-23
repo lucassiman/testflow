@@ -175,23 +175,23 @@ test('extensão de verdade + Jira falso local: configurar nas opções, criar a 
     await expect(dlg.locator('select[data-select]')).toHaveValue('PORT');
     await expect(dlg.locator('[data-row="tipo"] select')).toHaveValue('Bug');
     await dlg.locator('button', { hasText: 'Criar no Jira' }).click();
-    await expect(page.locator('#toast')).toContainText('PORT-1 (Bug) criada no Jira — 1 anexo(s)');
+    await expect(page.locator('#toast')).toContainText('PORT-1 (Bug) criada no Jira — BUG-1 virou PORT-1 (código, título, links e nome do arquivo) · 1 anexo(s)');
     expect(got.issue.fields).toMatchObject({ project: { key: 'PORT' }, issuetype: { id: '10004' }, summary: '[BUG-1] Pagamento trava', priority: { name: 'High' } });
     expect(got.issue.fields.description).toContain('!erro.png|thumbnail!');
     expect(got.anexo.headers['x-atlassian-token']).toBe('no-check');
     expect(got.anexo.body).toMatch(/filename="erro\.png"[\s\S]*PNG-DE-TESTE/);
-    await expect.poll(() => page.evaluate(() => window.__read('aplicacoes/Portal/bugs/BUG-1.md'))).toMatch(/^jira: PORT-1$/m);
+    await expect.poll(() => page.evaluate(() => window.__read('aplicacoes/Portal/bugs/PORT-1.md'))).toMatch(/^jira: PORT-1$/m);
     // o TestFlow nunca recebeu o token
     expect(await page.evaluate(() => JSON.stringify(localStorage) + document.documentElement.outerHTML)).not.toContain('token-de-teste');
 
     await page.keyboard.press('Control+Shift+P');
     await page.keyboard.type('Jira: trazer o status');
     await page.keyboard.press('Enter');
-    await expect(dlg).toContainText('BUG-1 — PORT-1: Pronto para teste');
+    await expect(dlg).toContainText('PORT-1 — Pagamento trava: Pronto para teste');
     await dlg.locator('button', { hasText: 'OK' }).click();
     // o bug está aberto: a mudança entra no editor e espera o Ctrl+S
     await page.keyboard.press('Control+s');
-    await expect.poll(() => page.evaluate(() => window.__read('aplicacoes/Portal/bugs/BUG-1.md'))).toMatch(/^jira_status: Pronto para teste \(concluído\)$/m);
+    await expect.poll(() => page.evaluate(() => window.__read('aplicacoes/Portal/bugs/PORT-1.md'))).toMatch(/^jira_status: Pronto para teste \(concluído\)$/m);
   } finally {
     await ctx.close();
     server.close();

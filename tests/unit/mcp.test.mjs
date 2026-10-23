@@ -189,3 +189,19 @@ test('MCP: trocar o ID pelo cabeçalho — o documento e os links da pasta acomp
   const bug = readFileSync(join(dir, bugPath), 'utf8');
   assert.match(bug, /Encontrado em \[\[TC-010\]\] \(ver \[TC-010 — Login\]\(\.\.\/casos\/TC-001-login\.md\)\)/);
 });
+
+test('MCP: gravar a chave do Jira num bug troca o código pela chave (com os links); num caso, não', async () => {
+  const { dir, ws } = setup();
+  const created = await ws.bugFromCase({ caso: 'TC-001' });
+  const bugPath = /Criado: (\S+\.md)/.exec(created)[1];
+  const r = await ws.setFields({ doc: 'BUG-001', campos: { jira: 'PORT-12' } });
+  assert.match(r, /Código trocado: BUG-001 → PORT-12 \(a chave do Jira\)\. Links para BUG-001 atualizados em 1 documento\(s\)\. O nome do arquivo acompanha/);
+  const b = readFileSync(join(dir, bugPath), 'utf8');
+  assert.match(b, /^id: PORT-12$/m);
+  assert.match(b, /^jira: PORT-12$/m);
+  assert.match(b, /^# PORT-12 — /m);
+  assert.match(readFileSync(join(dir, 'aplicacoes/Portal/casos/TC-001-login.md'), 'utf8'), /🐞 Bug: \[\[PORT-12\]\]/);
+  // caso de teste: jira é o ticket testado, o código fica
+  assert.doesNotMatch(await ws.setFields({ doc: 'TC-001', campos: { jira: 'PORT-120' } }), /Código trocado/);
+  assert.match(readFileSync(join(dir, 'aplicacoes/Portal/casos/TC-001-login.md'), 'utf8'), /^id: TC-001$/m);
+});

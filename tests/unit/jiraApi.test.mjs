@@ -1,7 +1,7 @@
 // 11.5 (1.54.0): Jira pela API — o rascunho da issue (app) e as chamadas da extensão (com um fetch falso).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addJiraKey, applyJiraStatus, jiraDraft, jiraKeysOf, localLinksToAttachments, suggestIssueType } from '../../src/markdown/jiraApi.ts';
+import { addJiraKey, applyJiraStatus, jiraDraft, jiraIdSwap, jiraKeysOf, localLinksToAttachments, suggestIssueType } from '../../src/markdown/jiraApi.ts';
 import { authHeader, jiraCreate, jiraError, jiraIssueTypes, jiraStatuses, normalizeSite } from '../../extensao/jira.js';
 
 const BUG = `---
@@ -200,4 +200,21 @@ test('resumo sem título no cabeçalho: o título do documento (sem o ID repetid
   assert.equal(jiraDraft('---\ntipo: historia\nid: HU-3\n---\n\n# HU-3 — Pagar com Pix\n\ntexto\n').resumo, '[HU-3] Pagar com Pix');
   assert.equal(jiraDraft('# Melhorar o log\n').resumo, 'Melhorar o log');
   assert.equal(jiraDraft('só texto').resumo, 'Sem título');
+});
+
+test('virou ticket no Jira: o código passa a ser a chave só quando a chave acabou de entrar e o documento é o ticket', () => {
+  const doc = (tipo, jira = '', extra = '') => `---\ntipo: ${tipo}\nid: BUG-007\ntitulo: x\njira: ${jira}\n${extra}---\n\n# BUG-007 — x\n`;
+  assert.equal(jiraIdSwap(doc('bug'), doc('bug', 'PORT-12')), 'PORT-12');
+  assert.equal(jiraIdSwap('', doc('bug', 'port-12')), 'PORT-12'); // documento novo
+  assert.equal(jiraIdSwap(doc('historia'), doc('historia', 'PORT-30')), 'PORT-30');
+  assert.equal(jiraIdSwap(doc('nota'), doc('nota', 'PORT-31', 'jira_tipo: Tarefa\n')), 'PORT-31');
+  // caso de teste: o jira: é o ticket que ele testa
+  assert.equal(jiraIdSwap(doc('caso-de-teste'), doc('caso-de-teste', 'PORT-12')), '');
+  assert.equal(jiraIdSwap(doc('nota'), doc('nota', 'PORT-12')), '');
+  // a chave já estava (salvo antes), duas chaves, já é o código, outro documento usa
+  assert.equal(jiraIdSwap(doc('bug', 'PORT-12'), doc('bug', 'PORT-12')), '');
+  assert.equal(jiraIdSwap(doc('bug'), doc('bug', '[PORT-12, PORT-13]')), '');
+  assert.equal(jiraIdSwap(doc('bug', 'PORT-12'), doc('bug', 'PORT-12').replace(/BUG-007/g, 'PORT-12').replace('jira: PORT-12', 'jira: [PORT-12, PORT-40]')), '');
+  assert.equal(jiraIdSwap(doc('bug'), doc('bug', 'PORT-12'), (k) => k === 'PORT-12'), '');
+  assert.equal(jiraIdSwap(doc('bug'), doc('bug', 'https://empresa.atlassian.net/browse/PORT-12')), 'PORT-12');
 });

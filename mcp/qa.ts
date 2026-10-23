@@ -53,9 +53,9 @@ import { readLinks } from '../src/markdown/linkTypes.ts';
 import { findBrokenLinks } from '../src/markdown/brokenLinks.ts';
 import { sweepLinks, applySweep, sweepReport } from '../src/markdown/sweep.ts';
 import { setFrontMatterFields, readPublishMeta, PUBLISH_KEYS } from '../src/markdown/publish.ts';
-import { addJiraKey } from '../src/markdown/jiraApi.ts';
+import { addJiraKey, jiraIdSwap } from '../src/markdown/jiraApi.ts';
 import { buildJiraCopy } from '../src/markdown/jira.ts';
-import { jiraValues, jiraUrl } from '../src/markdown/jiraLink.ts';
+import { jiraValues, jiraUrl, jiraLabel } from '../src/markdown/jiraLink.ts';
 import { copyFailures, copySummary } from '../src/markdown/share.ts';
 import { findComments, commentBlock } from '../src/markdown/comments.ts';
 import { findRefs, isRelativeHref, resolveHref, uniqueName, dirOf, baseOf, relativePath, encodePath, joinPath, TRASH_DIR } from '../src/markdown/relink.ts';
@@ -778,6 +778,10 @@ export class QaWorkspace {
       delete fields.jira;
     }
     if (Object.keys(fields).length) text = syncReleaseBlock(writeFields(text, fields));
+    // virou ticket no Jira (a chave acabou de entrar no jira: de um bug/história/épico): o código passa a ser a chave
+    const jiraId = 'id' in o.campos ? '' : jiraIdSwap(doc.text, text, (key) => this.index.all().some((x) => x.path !== e.path
+      && (x.id.toUpperCase() === key || (['bug', 'historia', 'epico'].includes(x.tipo) && jiraValues(x.jira).map(jiraLabel).includes(key)))));
+    if (jiraId) text = writeFields(text, { id: jiraId });
     // id/titulo mudou: o resto do documento acompanha (título "# ID — …", menções do código antigo)
     const before = headerIds(doc.text);
     const after = headerIds(text);
@@ -792,6 +796,7 @@ export class QaWorkspace {
         extra = n ? ` Links para ${before.id} atualizados em ${n} documento(s).` : '';
       }
     }
+    if (changed && jiraId) extra = ` Código trocado: ${before.id} → ${jiraId} (a chave do Jira).${extra} O nome do arquivo acompanha quando o editor reler a pasta.`;
     return changed ? `${e.path}: cabeçalho atualizado (${Object.keys(o.campos).join(', ')}).${extra}` : `${e.path}: nada mudou (os valores já eram esses).`;
   }
 

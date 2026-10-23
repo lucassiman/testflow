@@ -103,7 +103,7 @@ Object.defineProperties(app, Object.getOwnPropertyDescriptors(/** @type {import(
   get workspaceDir() { return workspaceDir; },
   get workspaceDirs() { return workspaceDirs; },
   get workspaceMdFiles() { return workspaceMdFiles; },
-  toast, target, rawFocused: () => rawFocused(), setMode, doSave, loadDocument, prepareTab, persistTabs, openFromHandle, switchTab, closeTab,
+  toast, target, rawFocused: () => rawFocused(), setMode, doSave, idSyncDone: () => idSyncDone, loadDocument, prepareTab, persistTabs, openFromHandle, switchTab, closeTab,
   loadWorkspaceFiles, refreshRecents, pickAndLoadWorkspace,
 })));
 
@@ -1110,6 +1110,9 @@ async function doOpen() {
   }
 }
 
+/** Troca de código (links e nome do arquivo) do último Ctrl+S — quem salvou e quer avisar depois espera por ela. @type {Promise<void>} */
+let idSyncDone = Promise.resolve();
+
 async function doSave(asNew = false, { auto = false } = {}) {
   // organizando a pasta (mover/renomear/lixeira): espera terminar para não gravar no lugar antigo
   if (organizer.writing) {
@@ -1123,9 +1126,12 @@ async function doSave(asNew = false, { auto = false } = {}) {
   if (auto && idChange) { els.saveStatus.textContent = `Código alterado (${idChange}) — Ctrl+S salva e atualiza os links`; return; }
   /** @type {import('./app/idSync.js').Rename | null} */
   let rename = null;
+  /** @type {{ from: string, to: string } | null} */
+  let jiraId = null;
   if (!auto) {
     const prep = prepareSave(store.source);
     rename = prep.rename;
+    jiraId = prep.jiraId;
     if (prep.text !== store.source) store.setSource(prep.text, { origin: 'command' });
   }
   // resumo automático e status geral saem atualizados no arquivo
@@ -1186,11 +1192,12 @@ async function doSave(asNew = false, { auto = false } = {}) {
       drawViews(document);
       if (placedInWorkspace) { await loadWorkspaceFiles(); sidebar.expandFolder(dirOf(wsPath)); }
       // código trocado: links dos outros documentos e nome do arquivo acompanham
-      if (rename && wsPath) setTimeout(() => { afterSave(rename); }, 0);
+      if (rename && wsPath) idSyncDone = new Promise((done) => { setTimeout(() => { afterSave(rename).finally(() => done(undefined)); }, 0); });
     }
     const time = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     els.saveStatus.textContent = result.downloaded ? `Baixado às ${time}` : auto ? `Salvo automaticamente às ${time}` : `Salvo às ${time}`;
-    if (!auto) toast(result.downloaded ? `Arquivo baixado: ${result.name}` : placedInWorkspace ? `Salvo em ${currentWorkspacePath()}` : `Salvo: ${result.name}`);
+    if (jiraId && !result.downloaded) toast(`🎫 ${jiraId.from} virou ${jiraId.to} (a chave do Jira no campo jira:) — o título${rename ? ', os [[links]] dos outros documentos e o nome do arquivo acompanham' : ' acompanha'}. Para voltar, troque o id: e salve.`, 'info', { duration: 9000 });
+    else if (!auto) toast(result.downloaded ? `Arquivo baixado: ${result.name}` : placedInWorkspace ? `Salvo em ${currentWorkspacePath()}` : `Salvo: ${result.name}`);
   } catch (err) {
     if (auto) {
       autoSave.failed = true;

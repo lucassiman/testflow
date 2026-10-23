@@ -34,6 +34,7 @@
  * @property {() => boolean} rawFocused
  * @property {(next: string) => void} setMode
  * @property {(asNew?: boolean, opts?: { auto?: boolean }) => Promise<void>} doSave
+ * @property {() => Promise<void>} idSyncDone espera o último código trocado ao salvar (links e nome do arquivo) terminar
  * @property {(doc: DocLoad) => void} loadDocument carrega um documento na aba ativa
  * @property {() => void} prepareTab guarda o documento atual numa aba e abre uma aba nova
  * @property {(opts?: { handles?: boolean }) => void} persistTabs

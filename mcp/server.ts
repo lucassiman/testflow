@@ -54,7 +54,7 @@ Como trabalhar:
 - Para escrever, prefira as ferramentas específicas (qa_criar, qa_bug_do_caso, qa_marcar_passos, qa_anexar_evidencia, qa_atualizar_cabecalho, qa_comentar) em vez de reescrever arquivos: elas seguem as regras do formato, dão o próximo ID, põem no lugar certo pelo app: e guardam a versão anterior em .versoes/.
 - Antes de escrever testware do zero, leia qa_convencoes. Não invente dados, resultados, IDs do Jira nem evidências.
 - Nada é publicado na pasta oficial nem apagado por aqui; o editor aberto percebe a mudança e oferece recarregar.
-- Jira: qa_para_jira devolve o bug pronto (resumo, prioridade, descrição, anexos); depois de criar o ticket com o conector do Jira, grave a chave com qa_atualizar_cabecalho { jira: "CHAVE-123" }.
+- Jira: qa_para_jira devolve o bug pronto (resumo, prioridade, descrição, anexos); depois de criar o ticket com o conector do Jira, grave a chave com qa_atualizar_cabecalho { jira: "CHAVE-123" } — num bug/história/épico o id vira a chave (BUG-7 → CHAVE-123): use a chave nas respostas daí em diante.
 - Rodada de regressão: qa_rodada_criar (por segmento — épico, ticket, #tag —, consulta, lista de casos, ciclo salvo, ou reteste: EXEC-… com as falhas e a confirmação dos bugs delas) → qa_rodada_registrar por caso → qa_rodada_status para ver como está → qa_rodada_finalizar (SKIP nos pendentes e os 4 relatórios: encerramento/Go-No-Go, defeitos, rastreabilidade, log + comparativo). qa_relatorios regera.
 - Bug de um caso que já tem bug ligado: qa_bug_do_caso devolve os bugs; pergunte ao usuário se é reincidência (reincidencia: "BUG-…") ou bug novo (novo: true).
 - Evolução da qualidade (sprint, % de sucesso no tempo, casos que mais falham, testes automatizados instáveis): qa_tendencia.
@@ -244,7 +244,7 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
   }, async (a) => run(() => ws.attachAutomation(a), text));
 
   server.registerTool('qa_atualizar_cabecalho', {
-    title: 'Atualizar cabeçalho', description: 'Muda campos do cabeçalho YAML (status, prioridade, responsavel, versao, jira…). "jira" acrescenta a chave (sem apagar as que já existem), a não ser com substituir_jira. Trocar "id" (ex.: SES-002 → SES-005) atualiza o título e as menções no documento e os [[links]] dos outros documentos da pasta. Campos de publicação e "uid" (identidade fixa) não mudam por aqui.',
+    title: 'Atualizar cabeçalho', description: 'Muda campos do cabeçalho YAML (status, prioridade, responsavel, versao, jira…). "jira" acrescenta a chave (sem apagar as que já existem), a não ser com substituir_jira. Trocar "id" (ex.: SES-002 → SES-005) atualiza o título e as menções no documento e os [[links]] dos outros documentos da pasta. Gravar a chave em "jira" de um bug, história ou épico que ainda não tinha (o documento virou ticket) troca também o id pela chave (BUG-7 → PORT-12), com os links; o editor renomeia o arquivo. Campos de publicação e "uid" (identidade fixa) não mudam por aqui.',
     inputSchema: { doc: docArg, campos: z.record(z.string(), z.string()), substituir_jira: z.boolean().optional() },
     annotations: RW,
   }, async (a) => run(() => ws.setFields(a), text));

@@ -78,6 +78,28 @@ export function suggestIssueType(docTipo: string, types: string[], remembered = 
   return types[0];
 }
 
+/** Documentos em que o `jira:` é o próprio ticket (no caso de teste, é o ticket que ele testa). */
+const OWN_TICKET_TYPES = new Set(['bug', 'historia', 'epico']);
+
+/**
+ * O documento virou ticket no Jira (pela API ou copiado e colado): o código passa a ser a chave (BUG-007 → PORT-12).
+ * Só quando o `jira:` acabou de ganhar a chave (não estava em `before`), ela é a única, o documento é o ticket
+ * (bug, história, épico ou criado como outro tipo — `jira_tipo:`) e nenhum outro documento já usa esse código.
+ * Devolve a chave, ou '' para não trocar.
+ */
+export function jiraIdSwap(before: string, after: string, taken: (key: string) => boolean = () => false): string {
+  const m = meta(after);
+  if (!OWN_TICKET_TYPES.has(norm(String(m.tipo || ''))) && !String(m.jira_tipo || '').trim()) return '';
+  // a chave como foi escrita: port-12, PORT-12 ou o endereço …/browse/PORT-12
+  const keysOf = (text: string): string[] => jiraValues(meta(text).jira).map((v) => jiraLabel(v).toUpperCase()).filter((k) => /^[A-Z][A-Z0-9_]*-\d+$/.test(k));
+  const keys = keysOf(after);
+  if (keys.length !== 1) return '';
+  const key = keys[0];
+  const id = String(m.id || '').trim();
+  if (!id || id.toUpperCase() === key || keysOf(before).includes(key)) return '';
+  return taken(key) ? '' : key;
+}
+
 /** Status de uma issue como a extensão devolve. */
 export interface JiraIssueStatus { chave: string; status: string; categoria: string; resolucao?: string; atualizado?: string }
 

@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.72.0', date: '23/10/2026',
+    items: [
+      { icon: '🪪', text: '**Virou ticket no Jira? O código vira a chave**: num bug, história ou épico, pôr a chave no `jira:` — pela API, copiando e colando no Jira ou pelo Claude — troca o código no `Ctrl+S` (`BUG-7` → `PORT-55`), com o título, os `[[links]]` dos outros documentos e o **nome do arquivo**. No caso de teste nada muda (lá o `jira:` é o ticket testado).', manual: '6.6 Links' },
+      { icon: '📄', text: '**Código trocado fora do editor também renomeia o arquivo**: quando o Claude (ou outro programa) muda o `id:`, ao reler a pasta o editor atualiza os links e renomeia o arquivo que começava com o código antigo.', manual: '6.6 Links' },
+    ],
+  },
+  {
     version: '1.71.0', date: '23/10/2026',
     items: [
       { icon: '🎫', text: '**Criar no Jira qualquer tipo de issue**: **Jira → 🎫 Criar a issue no Jira (API)…** funciona com bug, história, nota… e o **tipo de issue** vira uma lista com os tipos do seu Jira (Tarefa, História, Epic, Spike…). Ele já vem sugerido pelo documento (bug → Bug, história → História, o resto → Tarefa), e o último escolhido vale por tipo de documento — criar uma Tarefa não muda o padrão dos bugs.', manual: '12.7 Jira pela API' },
