@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "TestFlow — captura de bug",
   "short_name": "TestFlow",
-  "version": "1.55.0",
+  "version": "1.56.0",
   "description": "Guarda os erros do console e as requisições com falha das abas testadas e entrega ao TestFlow quando você cria um bug; opcional: cria a issue no Jira e traz o status (o token fica só aqui) e manda os avisos do TestFlow para o Teams. Nada sai do computador sem você pedir.",
   "minimum_chrome_version": "111",
   "icons": { "128": "icones/icone.png" },

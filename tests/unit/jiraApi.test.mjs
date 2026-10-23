@@ -1,8 +1,8 @@
 // 11.5 (1.54.0): Jira pela API — o rascunho da issue (app) e as chamadas da extensão (com um fetch falso).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addJiraKey, applyJiraStatus, jiraDraft, jiraKeysOf, localLinksToAttachments } from '../../src/markdown/jiraApi.ts';
-import { authHeader, jiraCreate, jiraError, jiraStatuses, normalizeSite } from '../../extensao/jira.js';
+import { addJiraKey, applyJiraStatus, jiraDraft, jiraKeysOf, localLinksToAttachments, suggestIssueType } from '../../src/markdown/jiraApi.ts';
+import { authHeader, jiraCreate, jiraError, jiraIssueTypes, jiraStatuses, normalizeSite } from '../../extensao/jira.js';
 
 const BUG = `---
 tipo: bug
@@ -93,10 +93,12 @@ test('extensão: cria a issue (tenta de novo sem a prioridade recusada) e sobe o
   const r = await jiraCreate(CFG, { projeto: 'PORT', tipo: 'Bug', resumo: '[BUG-7] x', descricao: 'h2. a', prioridade: 'High', rotulos: ['qa-md'], anexos: [{ nome: 'erro.png', tipo: 'image/png', base64: Buffer.from('PNG').toString('base64') }] }, f);
   assert.deepEqual(r, { chave: 'PORT-12', url: 'https://empresa.atlassian.net/browse/PORT-12', anexos: 1, falhas: [], semPrioridade: true });
   assert.equal(tries, 2);
-  const body = JSON.parse(calls[1].init.body);
+  // Jira sem o createmeta novo (404): o tipo vai pelo nome, como antes
+  const posts = calls.filter((c) => c.init.method === 'POST' && /\/issue$/.test(c.url));
+  const body = JSON.parse(posts[1].init.body);
   assert.deepEqual(body.fields, { project: { key: 'PORT' }, issuetype: { name: 'Bug' }, summary: '[BUG-7] x', description: 'h2. a', labels: ['qa-md'] });
   assert.equal(calls[0].init.headers.Authorization, authHeader(CFG));
-  const up = calls[2];
+  const up = calls.find((c) => /attachments$/.test(c.url));
   assert.equal(up.init.headers['X-Atlassian-Token'], 'no-check');
   const file = up.init.body.get('file');
   assert.equal(file.name, 'erro.png');
@@ -120,4 +122,82 @@ test('addJiraKey: grava a chave no campo jira, não repete e acrescenta a segund
   assert.match(withKey, /^jira: QA-57$/m);
   assert.equal(addJiraKey(withKey, 'QA-57'), withKey);
   assert.match(addJiraKey(withKey, 'QA-1'), /^jira: \[QA-57, QA-1\]$/m);
+});
+
+// tipos do Jira da empresa (Jira em português): "História" é a Story traduzida
+const TYPES = { issueTypes: [
+  { id: '10001', name: 'Tarefa', untranslatedName: 'Task' }, { id: '10002', name: 'História', untranslatedName: 'Story' }, { id: '10004', name: 'Bug' },
+  { id: '10000', name: 'Epic' }, { id: '10010', name: 'Hot Fix' }, { id: '10011', name: 'Débito Técnico' }, { id: '10012', name: 'Spike' },
+  { id: '10013', name: 'Ação de Melhoria' }, { id: '10014', name: 'Ticket' }, { id: '10005', name: 'Subtarefa', subtask: true },
+] };
+const field = (fieldId, name, required = false, hasDefaultValue = false) => ({ fieldId, name, required, hasDefaultValue });
+
+test('extensão: tipos pelo createmeta (sem subtarefa); sem ele, os do projeto', async () => {
+  const a = fakeFetch([[/^GET \/rest\/api\/2\/issue\/createmeta\/PORT\/issuetypes\?/, () => [200, TYPES]]]);
+  assert.deepEqual(await jiraIssueTypes(CFG, 'PORT', a.f), ['Tarefa', 'História', 'Bug', 'Epic', 'Hot Fix', 'Débito Técnico', 'Spike', 'Ação de Melhoria', 'Ticket']);
+  const b = fakeFetch([[/^GET \/rest\/api\/2\/project\/PORT$/, () => [200, { issueTypes: [{ name: 'Bug' }, { name: 'Sub', subtask: true }] }]]]);
+  assert.deepEqual(await jiraIssueTypes(CFG, 'PORT', b.f), ['Bug']);
+});
+
+test('extensão: História vai pelo id; campos fora da tela (rótulos, prioridade) ficam de fora', async () => {
+  let sent = null;
+  const { f } = fakeFetch([
+    [/^GET \/rest\/api\/2\/issue\/createmeta\/PORT\/issuetypes\?/, () => [200, TYPES]],
+    [/^GET \/rest\/api\/2\/issue\/createmeta\/PORT\/issuetypes\/10002\?/, () => [200, { fields: [field('summary', 'Resumo', true), field('issuetype', 'Tipo', true), field('project', 'Projeto', true), field('description', 'Descrição'), field('reporter', 'Relator', true, true)] }]],
+    [/^POST \/rest\/api\/2\/issue$/, (init) => { sent = JSON.parse(init.body); return [201, { key: 'PORT-30' }]; }],
+  ]);
+  const r = await jiraCreate(CFG, { projeto: 'PORT', tipo: 'historia', resumo: '[HU-1] Pix', descricao: 'h2. a', prioridade: 'High', rotulos: ['qa-md'] }, f);
+  assert.deepEqual(sent.fields, { project: { key: 'PORT' }, issuetype: { id: '10002' }, summary: '[HU-1] Pix', description: 'h2. a' });
+  assert.equal(r.chave, 'PORT-30');
+  assert.equal(r.tipo, 'História');
+});
+
+test('extensão: obrigatório que o TestFlow não preenche avisa antes; tipo que o projeto não tem lista os que tem', async () => {
+  const meta = (fields) => fakeFetch([
+    [/^GET \/rest\/api\/2\/issue\/createmeta\/PORT\/issuetypes\?/, () => [200, TYPES]],
+    [/^GET \/rest\/api\/2\/issue\/createmeta\/PORT\/issuetypes\/\d+\?/, () => [200, { fields }]],
+    [/^POST \/rest\/api\/2\/issue$/, () => [201, { key: 'PORT-31' }]],
+  ]);
+  const a = meta([field('summary', 'Resumo', true), field('customfield_10016', 'Story Points', true), field('customfield_10014', 'Sprint', false)]);
+  await assert.rejects(jiraCreate(CFG, { projeto: 'PORT', tipo: 'História', resumo: 'x', descricao: 'y' }, a.f), /"História" exige Story Points/);
+  assert.equal(a.calls.filter((c) => c.init.method === 'POST').length, 0);
+  const b = meta([]);
+  await assert.rejects(jiraCreate(CFG, { projeto: 'PORT', tipo: 'Story Point', resumo: 'x', descricao: 'y' }, b.f), /não tem o tipo "Story Point" — tipos dele: Tarefa, História, Bug/);
+  // pelo nome sem tradução também acha (Story → História)
+  const c = meta([]);
+  assert.equal((await jiraCreate(CFG, { projeto: 'PORT', tipo: 'Story', resumo: 'x', descricao: 'y' }, c.f)).tipo, 'História');
+});
+
+test('extensão: rótulos recusados pelo Jira: tenta de novo sem eles; outro erro vem com o nome do campo', async () => {
+  let tries = 0;
+  const a = fakeFetch([[/^POST \/rest\/api\/2\/issue$/, (init) => { tries++; return JSON.parse(init.body).fields.labels ? [400, { errors: { labels: "Field 'labels' cannot be set" } }] : [201, { key: 'PORT-32' }]; }]]);
+  const r = await jiraCreate(CFG, { projeto: 'PORT', tipo: 'Tarefa', resumo: 'x', descricao: 'y', rotulos: ['qa-md'] }, a.f);
+  assert.equal(tries, 2);
+  assert.equal(r.semRotulos, true);
+  const b = fakeFetch([
+    [/^GET \/rest\/api\/2\/issue\/createmeta\/PORT\/issuetypes\?/, () => [200, TYPES]],
+    [/^GET \/rest\/api\/2\/issue\/createmeta\/PORT\/issuetypes\/\d+\?/, () => [200, { fields: [field('summary', 'Resumo', true), field('customfield_1', 'Cliente')] }]],
+    [/^POST \/rest\/api\/2\/issue$/, () => [400, { errors: { customfield_1: 'valor inválido' } }]],
+  ]);
+  await assert.rejects(jiraCreate(CFG, { projeto: 'PORT', tipo: 'Tarefa', resumo: 'x', descricao: 'y' }, b.f), /Cliente: valor inválido/);
+});
+
+test('tipo sugerido: pelo tipo de documento, o último usado com ele, nomes do Jira da empresa', () => {
+  const tipos = TYPES.issueTypes.filter((t) => !t.subtask).map((t) => t.name);
+  assert.equal(suggestIssueType('bug', tipos), 'Bug');
+  assert.equal(suggestIssueType('historia', tipos), 'História');
+  assert.equal(suggestIssueType('epico', tipos), 'Epic');
+  assert.equal(suggestIssueType('nota', tipos), 'Tarefa');
+  assert.equal(suggestIssueType('', tipos), 'Tarefa');
+  assert.equal(suggestIssueType('nota', tipos, 'Spike'), 'Spike');
+  assert.equal(suggestIssueType('nota', tipos, 'Não existe'), 'Tarefa');
+  assert.equal(suggestIssueType('historia', ['Story', 'Task', 'Bug']), 'Story');
+  assert.equal(suggestIssueType('caso-de-teste', ['Bug', 'Ticket']), 'Bug');
+  assert.equal(suggestIssueType('bug', [], ''), 'Bug');
+});
+
+test('resumo sem título no cabeçalho: o título do documento (sem o ID repetido)', () => {
+  assert.equal(jiraDraft('---\ntipo: historia\nid: HU-3\n---\n\n# HU-3 — Pagar com Pix\n\ntexto\n').resumo, '[HU-3] Pagar com Pix');
+  assert.equal(jiraDraft('# Melhorar o log\n').resumo, 'Melhorar o log');
+  assert.equal(jiraDraft('só texto').resumo, 'Sem título');
 });

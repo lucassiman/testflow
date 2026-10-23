@@ -8,6 +8,14 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.71.0', date: '23/10/2026',
+    items: [
+      { icon: '🎫', text: '**Criar no Jira qualquer tipo de issue**: **Jira → 🎫 Criar a issue no Jira (API)…** funciona com bug, história, nota… e o **tipo de issue** vira uma lista com os tipos do seu Jira (Tarefa, História, Epic, Spike…). Ele já vem sugerido pelo documento (bug → Bug, história → História, o resto → Tarefa), e o último escolhido vale por tipo de documento — criar uma Tarefa não muda o padrão dos bugs.', manual: '12.7 Jira pela API' },
+      { icon: '🧩', text: '**História dava erro ao criar pela API**: a extensão agora manda o tipo pelo id (nomes traduzidos como *História* = *Story* funcionam), só os campos que existem na tela daquele tipo, e avisa quando o tipo exige um campo que o TestFlow não preenche. **Atualize a extensão para a 1.56.0** (git pull e ↻ em chrome://extensions).', manual: '12.7 Jira pela API' },
+      { icon: '🔄', text: '**Trazer o status do Jira** também atualiza histórias, épicos e as issues que você criou como outro tipo (ficam com `jira_tipo:` no cabeçalho).', manual: '12.7 Jira pela API' },
+    ],
+  },
+  {
     version: '1.70.0', date: '23/10/2026',
     items: [
       { icon: '🤝', text: '**Teste em dupla com mais de um ticket**: o dev vai mostrar vários tickets na mesma chamada? No **🤝 Teste em dupla do ticket…**, use **Mais um ticket…** — sai um documento só, com `jira:` de todos e os critérios, o roteiro (uma tabela por ticket) e o que fica para DEV/HML separados por ticket.', manual: '7.11 Teste em dupla' },

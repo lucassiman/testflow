@@ -280,8 +280,8 @@ Organizado pelos mesmos módulos dos menus do topo e da paleta. Um teste confere
 | Exportar PDF / HTML / .zip para o Notion | **Compartilhar ▾ → 📤 Exportar…** |
 | Levar uma pasta para o hub da empresa | **Compartilhar ▾ → 📤 Exportar…** (opção *Pacote do hub*) |
 | Dados sensíveis (mascarar, configurar) | **Compartilhar ▾ → 🛡 Dados sensíveis…** |
-| Criar a issue no Jira direto do bug (com os anexos) / trazer o status | **Compartilhar ▾ → Jira → 🎫 Criar a issue deste bug** / **Compartilhar ▾ → Jira → Trazer o status dos bugs** — com a extensão e o Jira configurado nela (ver 12.7) |
-| Abrir bugs no Jira | **Compartilhar ▾ → Copiar para o Jira** (colar) ou, pela API, **Compartilhar ▾ → Jira → 🎫 Criar a issue deste bug (API)…** (ver 12.5 e 12.7) |
+| Criar a issue no Jira direto do documento — bug, história, tarefa… (com os anexos) / trazer o status | **Compartilhar ▾ → Jira → 🎫 Criar a issue no Jira** / **Compartilhar ▾ → Jira → Trazer o status do Jira** — com a extensão e o Jira configurado nela (ver 12.7) |
+| Abrir bugs no Jira | **Compartilhar ▾ → Copiar para o Jira** (colar) ou, pela API, **Compartilhar ▾ → Jira → 🎫 Criar a issue no Jira (API)…** (ver 12.5 e 12.7) |
 | Deixar o Claude trabalhar direto na pasta | Instale `mcp-dist/testflow.mcpb` no Claude desktop (ver 12.6) |
 
 **📂 Pasta de trabalho** (paleta e barra lateral)
@@ -1287,7 +1287,7 @@ Antes de **qualquer** cópia (Markdown, Jira, Notion, Claude, revisão) ou expor
 O CSV do importador do Jira (**⬇ CSV para o Jira** no Painel, *Exportar bugs em CSV…* e *Trazer chaves do Jira (CSV)*) **saiu na 1.62.0**: não era usado e a API cobre o mesmo caminho. Para abrir vários bugs no Jira:
 
 - **Um a um, sem API:** **Compartilhar ▾ → Copiar para o Jira** em cada bug e cole no ticket (a tabela e os status chegam formatados).
-- **Pela API (12.7):** em cada bug, `Ctrl+Shift+P` → **Jira: criar a issue deste bug pela API…**; depois **Jira: trazer o status dos bugs da pasta** grava a chave e o status no cabeçalho.
+- **Pela API (12.7):** em cada bug, `Ctrl+Shift+P` → **Jira: criar a issue deste documento…**; depois **Jira: trazer o status dos bugs, histórias e issues da pasta** grava a chave e o status no cabeçalho.
 - **Com o Claude (12.6):** `qa_para_jira` junto com o conector da Atlassian.
 
 Se um dia o fluxo em lote voltar a ser necessário, ele entra pela API, não por CSV.
@@ -1373,15 +1373,15 @@ Opcional: com a **extensão do navegador** (8.3) e o Jira configurado nela, o Te
 
 | Ação | Como |
 | --- | --- |
-| **Criar a issue do bug** | Com o bug aberto: `Ctrl+Shift+P` → **Jira: criar a issue deste bug pela API…**. Escolha o **projeto** (lembrado por aplicação) e o **tipo** (padrão *Bug*). Vai: o resumo `[BUG-007] título`, a descrição em wiki markup (a mesma do *Copiar para o Jira*, sem o cabeçalho, com ambiente/versão/browser no rodapé), a **prioridade** (Crítica→Highest, Alta→High, Média→Medium, Baixa→Low; se o seu Jira usa outros nomes, vai sem prioridade e o aviso diz), os **rótulos** (`qa-md`, a aplicação e as tags) e os **anexos** — prints, vídeos, o `.log` e o `.har` citados no bug (até 10 MB cada; o que passar disso fica para anexar à mão). As imagens aparecem na descrição e os links para logs viram links para o anexo. A **chave** volta para o campo `jira:` e o documento é salvo. Antes de mandar, passa pela verificação de **dados sensíveis** (12.4). |
+| **Criar a issue** | Com o documento aberto (bug, história, nota…): `Ctrl+Shift+P` → **Jira: criar a issue deste documento…**. Escolha o **projeto** (lembrado por aplicação) e o **tipo de issue** na lista com os tipos do seu Jira (*Bug*, *História*, *Tarefa*, *Epic*…). O tipo já vem sugerido pelo documento — bug → Bug, história → História/Story, épico → Epic, o resto → Tarefa/Task — e o último que você escolheu vale **por tipo de documento** (criar uma Tarefa a partir de uma nota não muda o padrão dos bugs). Vai: o resumo `[BUG-007] título`, a descrição em wiki markup (a mesma do *Copiar para o Jira*, sem o cabeçalho, com ambiente/versão/browser no rodapé), a **prioridade** (Crítica→Highest, Alta→High, Média→Medium, Baixa→Low; se o seu Jira usa outros nomes, vai sem prioridade e o aviso diz), os **rótulos** (`qa-md`, a aplicação e as tags) e os **anexos** — prints, vídeos, o `.log` e o `.har` citados no bug (até 10 MB cada; o que passar disso fica para anexar à mão). As imagens aparecem na descrição e os links para logs viram links para o anexo. A **chave** volta para o campo `jira:` e o documento é salvo. Antes de mandar, passa pela verificação de **dados sensíveis** (12.4). O tipo vai para o Jira **pelo id**, então nomes traduzidos (*História* = *Story*) funcionam; só vão os campos que existem na tela de criação daquele tipo, e se o tipo **exige** um campo que o TestFlow não preenche (ex.: *Story Points*, *Épico*), o aviso diz qual — crie essa pelo **Copiar para o Jira**. Issue que não é bug grava também `jira_tipo:` no cabeçalho. |
 | **Já tem issue** | Se o campo `jira:` já tem uma chave, ele pergunta antes (abrir a issue ou criar outra). |
-| **Trazer o status** | `Ctrl+Shift+P` → **Jira: trazer o status dos bugs da pasta (pela API)**: para cada bug com `jira:`, grava no cabeçalho `jira_status: Em análise (em andamento)`. Os **concluídos no Jira que aqui continuam abertos** aparecem numa lista — é o reteste a fazer; o status do bug no TestFlow **não muda sozinho** (quem fecha é o QA, depois de retestar). Bugs abertos em outra aba ficam de fora (feche e rode de novo). |
+| **Trazer o status** | `Ctrl+Shift+P` → **Jira: trazer o status dos bugs, histórias e issues da pasta (pela API)**: para cada bug, história ou épico com `jira:` (e cada documento com `jira_tipo:`), grava no cabeçalho `jira_status: Em análise (em andamento)`. Os **concluídos no Jira que aqui continuam abertos** aparecem numa lista — é o reteste a fazer; o status do bug no TestFlow **não muda sozinho** (quem fecha é o QA, depois de retestar). Bugs abertos em outra aba ficam de fora (feche e rode de novo). |
 
 **Jira pela API em poucos passos:**
 
 1. Instale a extensão (8.3) e, no ícone dela, **Configurar Jira…** → endereço, e-mail e token → **Salvar e testar**.
-2. Abra o bug e rode **Compartilhar ▾ → Jira → 🎫 Criar a issue deste bug (API)…**: escolha o projeto e o tipo; a chave volta para o campo `jira:`.
-3. Quando o bug andar no Jira, **Compartilhar ▾ → Jira → Trazer o status dos bugs (API)** atualiza o `jira_status:` e lista os que o Jira já concluiu (o reteste é seu).
+2. Abra o bug (ou a história, a nota…) e rode **Compartilhar ▾ → Jira → 🎫 Criar a issue no Jira (API)…**: escolha o projeto e o tipo; a chave volta para o campo `jira:`.
+3. Quando a issue andar no Jira, **Compartilhar ▾ → Jira → Trazer o status do Jira (API)** atualiza o `jira_status:` e lista os que o Jira já concluiu (o reteste é seu).
 4. Se algo atrapalhar (campo obrigatório do projeto, anexo que não subiu), anote — é o que falta ajustar na API.
 
 > [!NOTE]

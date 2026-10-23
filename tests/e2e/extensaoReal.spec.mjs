@@ -127,6 +127,9 @@ test('extensão de verdade + Jira falso local: configurar nas opções, criar a 
       const u = req.url || '';
       if (req.method === 'GET' && u === '/rest/api/2/myself') return send(200, { displayName: 'QA Teste' });
       if (req.method === 'GET' && u === '/rest/api/2/project') return send(200, [{ key: 'PORT', name: 'Portal' }]);
+      // createmeta: o tipo vai pelo id e só os campos da tela
+      if (req.method === 'GET' && u.startsWith('/rest/api/2/issue/createmeta/PORT/issuetypes/10004')) return send(200, { fields: ['summary', 'issuetype', 'project', 'description', 'labels', 'priority'].map((fieldId) => ({ fieldId, name: fieldId, required: fieldId === 'summary' })) });
+      if (req.method === 'GET' && u.startsWith('/rest/api/2/issue/createmeta/PORT/issuetypes')) return send(200, { issueTypes: [{ id: '10001', name: 'Tarefa' }, { id: '10002', name: 'História' }, { id: '10004', name: 'Bug' }] });
       if (req.method === 'POST' && u === '/rest/api/2/issue') { got.issue = JSON.parse(Buffer.from(body, 'latin1').toString('utf8')); return send(201, { key: 'PORT-1' }); }
       if (req.method === 'POST' && u === '/rest/api/2/issue/PORT-1/attachments') { got.anexo = { headers: req.headers, body }; return send(200, [{ id: '10' }]); }
       if (req.method === 'GET' && u.startsWith('/rest/api/3/search/jql')) return send(200, { issues: [{ key: 'PORT-1', fields: { status: { name: 'Pronto para teste', statusCategory: { key: 'done' } } } }] });
@@ -166,13 +169,14 @@ test('extensão de verdade + Jira falso local: configurar nas opções, criar a 
     await page.locator('[data-side="wsList"] .side-file', { hasText: 'BUG-1' }).click();
     await expect(page.locator('#fileName')).toContainText('BUG-1');
     await page.keyboard.press('Control+Shift+P');
-    await page.keyboard.type('Jira: criar a issue deste bug');
+    await page.keyboard.type('Jira: criar a issue deste documento');
     await page.keyboard.press('Enter');
     const dlg = page.locator('.app-dialog');
-    await expect(dlg.locator('select')).toHaveValue('PORT');
+    await expect(dlg.locator('select[data-select]')).toHaveValue('PORT');
+    await expect(dlg.locator('[data-row="tipo"] select')).toHaveValue('Bug');
     await dlg.locator('button', { hasText: 'Criar no Jira' }).click();
-    await expect(page.locator('#toast')).toContainText('PORT-1 criada no Jira — 1 anexo(s)');
-    expect(got.issue.fields).toMatchObject({ project: { key: 'PORT' }, issuetype: { name: 'Bug' }, summary: '[BUG-1] Pagamento trava', priority: { name: 'High' } });
+    await expect(page.locator('#toast')).toContainText('PORT-1 (Bug) criada no Jira — 1 anexo(s)');
+    expect(got.issue.fields).toMatchObject({ project: { key: 'PORT' }, issuetype: { id: '10004' }, summary: '[BUG-1] Pagamento trava', priority: { name: 'High' } });
     expect(got.issue.fields.description).toContain('!erro.png|thumbnail!');
     expect(got.anexo.headers['x-atlassian-token']).toBe('no-check');
     expect(got.anexo.body).toMatch(/filename="erro\.png"[\s\S]*PNG-DE-TESTE/);

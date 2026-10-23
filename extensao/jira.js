@@ -61,10 +61,16 @@ export async function jiraProjects(cfg, f = fetch) {
   return (Array.isArray(list) ? list : []).map((p) => ({ chave: String(p.key), nome: String(p.name || p.key) })).sort((a, b) => a.chave.localeCompare(b.chave));
 }
 
-/** Tipos de issue do projeto (sem os de subtarefa). @param {JiraConfig} cfg @param {string} key @param {typeof fetch} [f] */
+/** Tipos de issue que dá para criar no projeto (sem os de subtarefa), na ordem do Jira. @param {JiraConfig} cfg @param {string} key @param {typeof fetch} [f] */
 export async function jiraIssueTypes(cfg, key, f = fetch) {
+  try {
+    const list = await jiraFetch(cfg, `/rest/api/2/issue/createmeta/${encodeURIComponent(key)}/issuetypes?maxResults=200`, {}, f);
+    /** @type {any[]} */
+    const types = (list?.issueTypes || list?.values || []).filter((t) => !t.subtask);
+    if (types.length) return types.map((t) => String(t.name));
+  } catch { /* Jira sem o createmeta novo: os tipos do projeto */ }
   const p = await jiraFetch(cfg, `/rest/api/2/project/${encodeURIComponent(key)}`, {}, f);
-  return (p?.issueTypes || []).filter((t) => !t.subtask).map((t) => String(t.name));
+  return (p?.issueTypes || []).filter((/** @type {any} */ t) => !t.subtask).map((/** @type {any} */ t) => String(t.name));
 }
 
 /** base64 → Blob. @param {string} data @param {string} type */
@@ -75,33 +81,84 @@ function blobOf(data, type) {
   return new Blob([bytes], { type: type || 'application/octet-stream' });
 }
 
+const plain = (/** @type {string} */ s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+/** Campos que o TestFlow manda ou que o Jira preenche sozinho (não contam como "obrigatório que falta"). */
+const OWN_FIELDS = new Set(['project', 'issuetype', 'summary', 'description', 'labels', 'priority', 'reporter', 'attachment']);
+
 /**
- * Cria a issue (wiki markup na descrição, API v2) e sobe os anexos. Se o Jira recusar a prioridade (nome diferente
- * no seu Jira), tenta de novo sem ela.
+ * Tipo de issue do projeto pelo nome (sem acento/maiúscula) e os campos da tela de criação dele (createmeta).
+ * O id evita o problema do nome traduzido ("História" no Jira em português é "Story" por baixo).
+ * null: o Jira não tem o createmeta novo (aí vai pelo nome, como antes).
+ * @param {JiraConfig} cfg @param {string} key @param {string} tipo @param {typeof fetch} [f]
+ * @returns {Promise<{ id: string, nome: string, campos: Map<string, { nome: string, obrigatorio: boolean, padrao: boolean }> | null } | null>}
+ */
+export async function jiraTypeMeta(cfg, key, tipo, f = fetch) {
+  /** @type {any} */
+  let list;
+  try { list = await jiraFetch(cfg, `/rest/api/2/issue/createmeta/${encodeURIComponent(key)}/issuetypes?maxResults=200`, {}, f); } catch (err) {
+    if ([400, 404, 405].includes(/** @type {any} */ (err).status)) return null;
+    throw err;
+  }
+  /** @type {any[]} */
+  const types = (list?.issueTypes || list?.values || []).filter((t) => !t.subtask);
+  const want = plain(tipo || 'Bug');
+  const hit = types.find((t) => plain(t.name) === want) || types.find((t) => plain(t.untranslatedName) === want);
+  if (!hit) throw new Error(`o projeto ${key} não tem o tipo "${tipo}" — tipos dele: ${types.map((t) => t.name).join(', ') || '(nenhum)'}`);
+  /** @type {Map<string, { nome: string, obrigatorio: boolean, padrao: boolean }> | null} */
+  let campos = null;
+  try {
+    const meta = await jiraFetch(cfg, `/rest/api/2/issue/createmeta/${encodeURIComponent(key)}/issuetypes/${encodeURIComponent(hit.id)}?maxResults=200`, {}, f);
+    /** @type {any[]} */
+    const fields = meta?.fields || meta?.values || [];
+    if (fields.length) campos = new Map(fields.map((c) => [String(c.fieldId || c.key), { nome: String(c.name || c.fieldId), obrigatorio: !!c.required, padrao: !!c.hasDefaultValue }]));
+  } catch { /* sem os campos: manda tudo e o Jira diz o que recusou */ }
+  return { id: String(hit.id), nome: String(hit.name), campos };
+}
+
+/**
+ * Cria a issue (wiki markup na descrição, API v2) e sobe os anexos. O tipo vai pelo id (createmeta); só vão os campos
+ * que existem na tela de criação daquele tipo; um obrigatório que o TestFlow não sabe preencher vira um aviso claro
+ * antes de criar. Se o Jira ainda recusar a prioridade ou os rótulos, tenta de novo sem eles.
  * @param {JiraConfig} cfg @param {JiraCreate} d @param {typeof fetch} [f]
  */
 export async function jiraCreate(cfg, d, f = fetch) {
-  /** @param {boolean} withPriority */
-  const body = (withPriority) => JSON.stringify({
+  const tipo = d.tipo || 'Bug';
+  const meta = await jiraTypeMeta(cfg, d.projeto, tipo, f);
+  const campos = meta?.campos || null;
+  const has = (/** @type {string} */ k) => !campos || campos.has(k);
+  if (campos) {
+    const falta = [...campos.entries()].filter(([k, c]) => c.obrigatorio && !c.padrao && !OWN_FIELDS.has(k)).map(([, c]) => c.nome);
+    if (falta.length) throw new Error(`no projeto ${d.projeto}, "${meta?.nome}" exige ${falta.join(', ')} — o TestFlow não sabe preencher; crie pelo Jira (🟦 Copiar para o Jira) ou escolha outro tipo`);
+  }
+  /** @param {{ priority: boolean, labels: boolean }} w */
+  const body = (w) => JSON.stringify({
     fields: {
       project: { key: d.projeto },
-      issuetype: { name: d.tipo || 'Bug' },
+      issuetype: meta ? { id: meta.id } : { name: tipo },
       summary: d.resumo,
-      description: d.descricao,
-      ...(d.rotulos?.length ? { labels: d.rotulos } : {}),
-      ...(withPriority && d.prioridade ? { priority: { name: d.prioridade } } : {}),
+      ...(has('description') ? { description: d.descricao } : {}),
+      ...(w.labels && d.rotulos?.length && has('labels') ? { labels: d.rotulos } : {}),
+      ...(w.priority && d.prioridade && has('priority') ? { priority: { name: d.prioridade } } : {}),
     },
   });
+  const post = (/** @type {{ priority: boolean, labels: boolean }} */ w) => jiraFetch(cfg, '/rest/api/2/issue', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body(w) }, f);
   /** @type {any} */
   let created;
   let semPrioridade = false;
+  let semRotulos = false;
   try {
-    created = await jiraFetch(cfg, '/rest/api/2/issue', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body(true) }, f);
+    created = await post({ priority: true, labels: true });
   } catch (err) {
     const e = /** @type {any} */ (err);
-    if (e.status !== 400 || !d.prioridade || !e.body?.errors?.priority) throw err;
-    semPrioridade = true;
-    created = await jiraFetch(cfg, '/rest/api/2/issue', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body(false) }, f);
+    const errs = Object.keys(e.body?.errors || {});
+    // só a prioridade e/ou os rótulos recusados (nome que não existe, campo fora da tela): tenta sem eles
+    if (e.status !== 400 || !errs.length || !errs.every((k) => k === 'priority' || k === 'labels')) {
+      if (campos && e.status === 400 && errs.length) e.message = jiraError(400, { ...e.body, errors: Object.fromEntries(Object.entries(e.body.errors).map(([k, v]) => [campos.get(k)?.nome || k, v])) });
+      throw err;
+    }
+    semPrioridade = errs.includes('priority') && !!d.prioridade;
+    semRotulos = errs.includes('labels');
+    created = await post({ priority: !semPrioridade, labels: !semRotulos });
   }
   const chave = String(created?.key || '');
   /** @type {string[]} */
@@ -115,7 +172,7 @@ export async function jiraCreate(cfg, d, f = fetch) {
       anexos++;
     } catch (err) { falhas.push(`${a.nome}: ${/** @type {Error} */ (err).message}`); }
   }
-  return { chave, url: `${cfg.site}/browse/${chave}`, anexos, falhas, semPrioridade };
+  return { chave, url: `${cfg.site}/browse/${chave}`, anexos, falhas, semPrioridade, ...(semRotulos ? { semRotulos } : {}), ...(meta ? { tipo: meta.nome } : {}) };
 }
 
 /**

@@ -136,7 +136,7 @@ A mesma Loja Demo do [LEIA-ME](LEIA-ME.md) (Sprint 42, versão 2.14.0) continua 
 **Roteiro:**
 
 - [ ] No `BUG-004`: **Compartilhar ▾ → 🟦 Copiar para o Jira** e cole num e-mail — os anexos (print, vídeo, log e HAR) aparecem no aviso
-- [ ] Veja como o `jira_status` chega: **Compartilhar ▾ → Trazer o status dos bugs (API)** (com a extensão e o Jira configurados — Manual, 12.7)
+- [ ] Veja como o `jira_status` chega: **Compartilhar ▾ → Trazer o status do Jira (API)** (com a extensão e o Jira configurados — Manual, 12.7)
 - [ ] Com o MCP ligado no Claude desktop, mande um pedido de `recursos/pedidos-ao-claude.md` — por exemplo, *"como está a execução #3 da Regressão do Pix?"*
 
 ## 📂 Pasta de trabalho

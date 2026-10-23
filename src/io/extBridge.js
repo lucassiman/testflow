@@ -7,6 +7,7 @@
  * Protocolo (v1): { testflow: 'ext', dir: 'pedido', id, tipo: 'ola' | 'abas' | 'captura' | 'jira…', abaId?, dados? }
  *              → { testflow: 'ext', dir: 'resposta', id, ok, dados?, erro? }
  * Jira (1.54.0): 'jira' (configurado?), 'jira-projetos', 'jira-tipos' { projeto }, 'jira-criar' { … }, 'jira-status' { chaves }.
+ *   Extensão 1.56.0: 'jira-criar' acha o tipo pelo id (createmeta) e devolve { tipo, semRotulos }.
  * Teams (1.55.0): 'teams-enviar' { url, payload }.
  * O token do Jira fica só na extensão; aqui chegam só os resultados.
  * A extensão também anuncia { testflow: 'ext', dir: 'presente', versao } quando a página carrega.
@@ -68,7 +69,7 @@ export function createExtBridge({ win = window, timeoutMs = 900 } = {}) {
     jiraProjects: () => request('jira-projetos', { timeoutMs: 30_000 }),
     /** @param {string} projeto @returns {Promise<{ tipos: string[] }>} */
     jiraTypes: (projeto) => request('jira-tipos', { dados: { projeto }, timeoutMs: 30_000 }),
-    /** @param {any} dados @returns {Promise<{ chave: string, url: string, anexos: number, falhas: string[], semPrioridade: boolean }>} */
+    /** @param {any} dados @returns {Promise<{ chave: string, url: string, anexos: number, falhas: string[], semPrioridade: boolean, semRotulos?: boolean, tipo?: string }>} */
     jiraCreate: (dados) => request('jira-criar', { dados, timeoutMs: 180_000 }),
     /** @param {string[]} chaves @returns {Promise<{ issues: import('../markdown/jiraApi.ts').JiraIssueStatus[] }>} */
     jiraStatus: (chaves) => request('jira-status', { dados: { chaves }, timeoutMs: 120_000 }),

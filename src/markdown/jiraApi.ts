@@ -40,7 +40,10 @@ export function jiraDraft(text: string, { path = '' }: { path?: string } = {}): 
   const m = meta(text);
   const id = String(m.id || '').trim();
   const titulo = String(m.titulo || '').trim();
-  const resumo = `${id ? `[${id}] ` : ''}${titulo || id || 'Bug'}`.replace(/\s+/g, ' ').slice(0, 250);
+  // sem título no cabeçalho: o título (# …) do documento, sem o ID que ele repete
+  const body0 = text.split('\n').slice(detectFrontMatter(text)?.end ?? 0).join('\n');
+  const heading = (/^#\s+(.+)$/m.exec(body0)?.[1] || '').replace(/^[A-Z][A-Z0-9_]*-\d+\s*[—–:-]\s*/, '').trim();
+  const resumo = `${id ? `[${id}] ` : ''}${titulo || heading || id || 'Sem título'}`.replace(/\s+/g, ' ').slice(0, 250);
   const { markdown, attachments } = prepareForJira(text, { withMeta: false });
   const body = localLinksToAttachments(toJiraWiki(markdown.replace(/^#\s+.*\n+/, '')));
   const extra = [m.ambiente && `Ambiente: ${m.ambiente}`, m.versao && `Versão: ${m.versao}`, m.browser && `Browser: ${m.browser}`, m.dispositivo && `Dispositivo: ${m.dispositivo}`, path && `Documento: ${path}`, 'Criado pelo TestFlow'].filter(Boolean).join(' · ');
@@ -52,6 +55,27 @@ export function jiraDraft(text: string, { path = '' }: { path?: string } = {}): 
     rotulos: [...new Set(['qa-md', m.app ? label(String(m.app)) : '', ...tags.map(label)].filter(Boolean))],
     anexos: attachments,
   };
+}
+
+/** Nomes que cada tipo de documento costuma ter no Jira (sem acento/maiúscula), na ordem de preferência. */
+const ISSUE_TYPE_FOR: Record<string, string[]> = {
+  bug: ['bug', 'defeito'],
+  historia: ['historia', 'story', 'user story'],
+  epico: ['epic', 'epico'],
+};
+const TASK_TYPES = ['tarefa', 'task'];
+
+/**
+ * Tipo de issue sugerido para o documento: o último usado com esse tipo de documento (se o projeto tem), senão o que
+ * combina com ele (bug → Bug, historia → História/Story, epico → Epic, o resto → Tarefa/Task), senão o primeiro do Jira.
+ */
+export function suggestIssueType(docTipo: string, types: string[], remembered = ''): string {
+  if (!types.length) return remembered || (docTipo === 'bug' ? 'Bug' : '');
+  const find = (name: string): string | undefined => types.find((t) => norm(t) === norm(name));
+  const rem = remembered && find(remembered);
+  if (rem) return rem;
+  for (const n of [...(ISSUE_TYPE_FOR[norm(docTipo)] || []), ...TASK_TYPES]) { const hit = find(n); if (hit) return hit; }
+  return types[0];
 }
 
 /** Status de uma issue como a extensão devolve. */

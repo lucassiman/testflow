@@ -305,8 +305,8 @@ export const MODULES = [
         title: 'Jira',
         items: [
           { cmd: 'openJira', label: 'Abrir o ticket no Jira', palette: 'Abrir o ticket no Jira (campo jira do cabeçalho)' },
-          { cmd: 'jiraCreate', label: '🎫 Criar a issue deste bug (API)…', hint: 'pela extensão do navegador, com os anexos', palette: 'Jira: criar a issue deste bug pela API (extensão do navegador)…' },
-          { cmd: 'jiraSync', label: 'Trazer o status dos bugs (API)', palette: 'Jira: trazer o status dos bugs da pasta (pela API)' },
+          { cmd: 'jiraCreate', label: '🎫 Criar a issue no Jira (API)…', hint: 'bug, história, tarefa… pela extensão do navegador, com os anexos', palette: 'Jira: criar a issue deste documento — bug, história, tarefa… (API, extensão do navegador)…' },
+          { cmd: 'jiraSync', label: 'Trazer o status do Jira (API)', palette: 'Jira: trazer o status dos bugs, histórias e issues da pasta (pela API)' },
         ],
       },
       {
