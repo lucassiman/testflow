@@ -9,15 +9,20 @@
  */
 /** @typedef {{ id: string, doc: TabSnapshot | null }} Tab */
 /** @typedef {{ name: string, dirty: boolean, path?: string }} TabInfo */
+/** Nome da aba igual ao da árvore (null = nome do arquivo). @typedef {{ id: string, titulo: string, status: string } | null} TabLabel */
+/** @typedef {{ name: string, path?: string }} LabelInfo */
+
+const STATUS_TIP = /** @type {Record<string, string>} */ ({ PASS: 'PASS', FAIL: 'FAIL', BLOCKED: 'BLOCKED', SKIP: 'SKIP', PENDING: 'não executado / pendente' });
 
 let seq = 0;
 const newId = () => `t${Date.now().toString(36)}${(seq++).toString(36)}`;
 
 /**
  * @param {{ bar: HTMLElement, onSwitch: (id: string) => void, onClose: (id: string) => void, onNew: () => void, getActiveInfo: () => TabInfo,
- *   onReorder?: () => void, marks?: (id: string, active: boolean) => Array<{ key: string, icon: string, title: string }> }} deps
+ *   onReorder?: () => void, marks?: (id: string, active: boolean) => Array<{ key: string, icon: string, title: string }>,
+ *   label?: (info: LabelInfo) => TabLabel, onRender?: () => void }} deps
  */
-export function createTabs({ bar, onSwitch, onClose, onNew, getActiveInfo, onReorder, marks }) {
+export function createTabs({ bar, onSwitch, onClose, onNew, getActiveInfo, onReorder, marks, label, onRender }) {
   /** @type {Tab[]} doc = retrato (null na aba ativa) */
   let tabs = [];
   /** @type {string | null} */
@@ -67,7 +72,7 @@ export function createTabs({ bar, onSwitch, onClose, onNew, getActiveInfo, onReo
     menu.setAttribute('role', 'menu');
     menu.innerHTML = tabs.map((t) => {
       const i = info(t);
-      return `<button type="button" role="menuitem" data-pick="${t.id}" class="${t.id === activeId ? 'on' : ''}" title="${esc(i.path || i.name)}"><span>${esc(i.name.replace(/\.(md|markdown)$/i, ''))}</span>${i.dirty ? '<span class="tab-dirty" title="Não salvo">●</span>' : ''}</button>`;
+      return `<button type="button" role="menuitem" data-pick="${t.id}" class="${t.id === activeId ? 'on' : ''}" title="${esc(tip(i))}">${nameHtml(i, true)}${i.dirty ? '<span class="tab-dirty" title="Não salvo">●</span>' : ''}</button>`;
     }).join('');
     document.body.appendChild(menu);
     const r = listBtn.getBoundingClientRect();
@@ -101,6 +106,28 @@ export function createTabs({ bar, onSwitch, onClose, onNew, getActiveInfo, onReo
     return { name: tab.doc?.name || 'sem título.md', dirty: !!tab.doc?.dirty, path: tab.doc?.path || '' };
   }
 
+  /**
+   * Nome da aba como na árvore: bolinha do status + "ID · título" (sem ID/título: o nome do arquivo).
+   * Na lista de todas as abas, o nome do arquivo vem embaixo, em cinza.
+   * @param {TabInfo} i @param {boolean} [withFile]
+   */
+  function nameHtml(i, withFile = false) {
+    const file = esc(i.name.replace(/\.(md|markdown)$/i, ''));
+    const l = label?.(i);
+    if (!l || (!l.id && !l.titulo)) return `<span class="tab-name">${file}</span>`;
+    const title = l.titulo && l.titulo !== l.id ? l.titulo : '';
+    const dot = l.status && STATUS_TIP[l.status]
+      ? `<span class="side-dot tab-dot side-dot-${l.status.toLowerCase()}" role="img" title="${esc(STATUS_TIP[l.status])}" aria-label="${esc(STATUS_TIP[l.status])}"></span>` : '';
+    return `${dot}<span class="tab-name">${l.id ? `<b class="side-id">${esc(l.id)}</b>` : ''}${l.id && title ? ' <span class="side-sep">·</span> ' : ''}${esc(title)}${withFile ? `<small class="tab-file">${file}</small>` : ''}</span>`;
+  }
+
+  /** Dica: "ID — título", o nome do arquivo e o caminho. @param {TabInfo} i */
+  function tip(i) {
+    const l = label?.(i);
+    const head = l && (l.id || l.titulo) ? `${[l.id, l.titulo].filter(Boolean).join(' — ')}${l.status ? ` (${l.status})` : ''}\n` : '';
+    return `${head}${i.path || i.name}`;
+  }
+
   function render() {
     bar.hidden = tabs.length < 2;
     document.documentElement.classList.toggle('has-tabs', tabs.length >= 2);
@@ -108,8 +135,8 @@ export function createTabs({ bar, onSwitch, onClose, onNew, getActiveInfo, onReo
     const keep = strip.scrollLeft;
     strip.innerHTML = tabs.map((t) => {
       const i = info(t);
-      return `<div class="tab${t.id === activeId ? ' active' : ''}" data-id="${t.id}" title="${esc(i.path || i.name)} — arraste para mudar a ordem"${t.id === activeId ? ' aria-current="page"' : ''}>
-        <span class="tab-name">${esc(i.name.replace(/\.(md|markdown)$/i, ''))}</span>${(marks?.(t.id, t.id === activeId) || []).map((m) => `<span class="tab-mark tab-mark-${esc(m.key)}" title="${esc(m.title)}">${esc(m.icon)}</span>`).join('')}${i.dirty ? '<span class="tab-dirty" title="Não salvo">●</span>' : ''}
+      return `<div class="tab${t.id === activeId ? ' active' : ''}" data-id="${t.id}" title="${esc(tip(i))} — arraste para mudar a ordem"${t.id === activeId ? ' aria-current="page"' : ''}>
+        ${nameHtml(i)}${(marks?.(t.id, t.id === activeId) || []).map((m) => `<span class="tab-mark tab-mark-${esc(m.key)}" title="${esc(m.title)}">${esc(m.icon)}</span>`).join('')}${i.dirty ? '<span class="tab-dirty" title="Não salvo">●</span>' : ''}
         <button type="button" class="tab-close" data-close="${t.id}" title="Fechar aba (Alt+W)" aria-label="Fechar ${esc(i.name)}">×</button></div>`;
     }).join('');
     strip.scrollLeft = keep;
@@ -122,6 +149,7 @@ export function createTabs({ bar, onSwitch, onClose, onNew, getActiveInfo, onReo
       }
     }
     updateOverflow();
+    onRender?.();
   }
 
   /** Move a aba `id` para a posição `to` (índice na lista). @param {string} id @param {number} to */

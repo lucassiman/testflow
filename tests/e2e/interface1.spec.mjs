@@ -42,7 +42,7 @@ test('árvore: ID · título e status; nome do arquivo na dica; alterna pela pal
   await page.keyboard.press('Escape');
   await page.keyboard.press('Control+Shift+P');
   await expect(page.locator('.cmd-item.active')).toBeVisible();
-  await page.keyboard.type('Árvore: mostrar');
+  await page.keyboard.type('Árvore e abas: mostrar');
   await page.keyboard.press('Enter');
   await expect(tc2.locator('.side-name')).toHaveText(/TC-002-login-usuario-bloqueado-com-nome-longo/);
 });

@@ -8,6 +8,14 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.69.0', date: '22/10/2026',
+    items: [
+      { icon: '🏷️', text: '**Abas com o mesmo nome da árvore**: a aba mostra **ID · título** com a bolinha do status, como na árvore — o nome do arquivo fica na dica e na lista **⌄ Todas as abas**, embaixo do título. A paleta (*Árvore e abas: …*) volta os dois para o nome do arquivo.', manual: '10.' },
+      { icon: '🔎', text: '**Filtro da árvore acha pelo nome do arquivo e pelo título**: digite o nome do `.md`, o ID ou o título; enquanto filtra, o nome do arquivo aparece embaixo de cada documento.', manual: '10.' },
+      { icon: '📑', text: '**Já está aberto?** Na árvore, os documentos abertos em alguma aba ganham um traço à esquerda; clicar neles vai para a aba que já existe.', manual: '10.' },
+    ],
+  },
+  {
     version: '1.68.1', date: '21/10/2026',
     items: [
       { icon: '🎯', text: '**Execução só de confirmação conta o bug**: o *Como foi essa rodada?*, os relatórios de fim de execução e o resumo copiado deixam de vir zerados — os números (PASS, FAIL, % de sucesso, executados) são os dos bugs confirmados. A barra Execução também aparece nela. Numa execução com casos, o *Como foi* ganha o bloco **🎯 Confirmação de bugs**.', manual: '7.8 Ciclo de regressão' },

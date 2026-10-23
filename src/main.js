@@ -564,6 +564,7 @@ async function readWorkspaceOnce() {
     sidebar.rerunSearch();
     dashboard.update({ entries: dashboardEntries() });
     sidebar.redraw(); // marcas de publicação na árvore
+    tabs.render(); // ID · título nas abas
     home.refresh(); // tela inicial: rodada, pendências e fixados com a pasta lida
     drawViews(document); // visões abertas (aqui e ao lado) com a pasta lida
     refreshCycleDoc(); // ciclo aberto: linhas pelo resultado dos casos
@@ -858,7 +859,15 @@ tabs = createTabs({
   getActiveInfo: () => ({ name: store.fileName, dirty: store.dirty, path: disk.path }),
   onReorder: () => persistTabs({ handles: true }),
   marks: (id, active) => [...tabMarks(id, active), ...placeTabMark(id, active)],
+  label: (i) => { const rel = wsRelPath(i.path); return rel ? treeLabel(rel) : null; }, // o mesmo nome da árvore
+  onRender: () => sidebar.setOpen(tabs.list.map((t) => wsRelPath(t.id === tabs.activeId ? disk.path : t.doc?.path)).filter(Boolean)),
 });
+
+/** Caminho do documento dentro da pasta de trabalho ("pasta/sub/arq.md" → "sub/arq.md"); '' se for de fora. @param {string | undefined} path */
+function wsRelPath(path) {
+  const prefix = workspaceDir?.name ? `${workspaceDir.name}/` : '';
+  return prefix && path?.startsWith(prefix) ? path.slice(prefix.length) : '';
+}
 
 /** Retrato do documento ativo (para guardar na aba). */
 function captureDoc({ light = false } = {}) {
@@ -1173,7 +1182,7 @@ async function doSave(asNew = false, { auto = false } = {}) {
       sidebar?.setCurrent({ name: result.name, path: disk.path });
       persistTabs({ handles: true });
       const wsPath = currentWorkspacePath();
-      if (wsPath) { docIndex.update(wsPath, store.source, { lastModified: disk.lastModified }); sidebar.redraw(); } // status/título na árvore
+      if (wsPath) { docIndex.update(wsPath, store.source, { lastModified: disk.lastModified }); sidebar.redraw(); tabs.render(); } // status/título na árvore e na aba
       drawViews(document);
       if (placedInWorkspace) { await loadWorkspaceFiles(); sidebar.expandFolder(dirOf(wsPath)); }
       // código trocado: links dos outros documentos e nome do arquivo acompanham
@@ -1663,7 +1672,7 @@ function run(cmd, value, event) {
     case 'home': home.show(); return true;
     case 'newCase': { const t = BUILTIN_TEMPLATES.find((x) => x.key === 'caso-de-teste'); if (t) newFromTemplate(t, null); return true; }
     case 'openMode': { const next = loadPrefs().openMode === 'ultimo' ? 'preview' : 'ultimo'; savePrefs({ openMode: next }); toast(next === 'ultimo' ? 'Documentos abrem no último modo usado (Raw, Dividido ou Preview).' : 'Documentos abrem no Preview — Alt+2 (ou Dividido no topo) quando precisar do Markdown.'); return true; }
-    case 'treeLabels': { const next = loadPrefs().treeLabels === 'arquivo' ? 'titulo' : 'arquivo'; savePrefs({ treeLabels: next }); sidebar.redraw(); toast(next === 'arquivo' ? 'Árvore: nome do arquivo' : 'Árvore: ID · título (do cabeçalho)'); return true; }
+    case 'treeLabels': { const next = loadPrefs().treeLabels === 'arquivo' ? 'titulo' : 'arquivo'; savePrefs({ treeLabels: next }); sidebar.redraw(); tabs.render(); toast(next === 'arquivo' ? 'Árvore e abas: nome do arquivo' : 'Árvore e abas: ID · título (do cabeçalho)'); return true; }
     case 'execReports': import('./app/reports.js').then((m) => m.generateReports()); return true;
     case 'listComments': listComments(); return true;
     case 'jiraCreate': import('./app/jiraApi.js').then((m) => m.createJiraIssue()); return true;

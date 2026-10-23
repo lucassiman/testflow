@@ -356,7 +356,7 @@ export const MODULES = [
         { cmd: 'openMode', label: 'Ao abrir', palette: 'Ao abrir documento: Preview ou o último modo usado' },
         { cmd: 'focusMode', label: 'Modo foco', keys: 'Ctrl+Shift+.', palette: 'Modo foco: só o documento (esconde topo, barras e barra lateral)' },
         { cmd: 'toolbarMode', label: 'Barra de formatação', palette: 'Barra de formatação no Preview: só ao editar / sempre' },
-        { cmd: 'treeLabels', label: 'Árvore', palette: 'Árvore: mostrar ID · título ou o nome do arquivo' },
+        { cmd: 'treeLabels', label: 'Árvore', palette: 'Árvore e abas: mostrar ID · título ou o nome do arquivo' },
         { cmd: 'toggleSidebar', label: 'Painel lateral', keys: 'Ctrl+Shift+E', palette: 'Painel lateral (arquivos, sumário, links)' },
         { cmd: 'sideOpen', label: 'Ver ao lado', palette: 'Ver outro documento ao lado (consulta)…' },
         { cmd: 'sideClose', label: 'Fechar ao lado', palette: 'Fechar o documento ao lado' },

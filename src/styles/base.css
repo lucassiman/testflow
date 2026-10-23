@@ -1594,6 +1594,16 @@ button.cp-chip { font: inherit; font-size: 11px; }
 .side-item.current .side-id { color: var(--accent); }
 .side-pin-row .side-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
 
+/* abas com o mesmo nome da árvore; filtro mostra o .md; abertos em aba marcados na árvore (1.69.0) */
+.tab-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; margin-right: -2px; }
+.tabbar .tab:not(.active) .side-id { font-weight: 600; }
+.tab-menu .tab-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab-file, .side-file-name { display: block; font-size: 11px; font-weight: 400; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.side-tree .side-file:has(.side-file-name) { align-items: flex-start; }
+.side-tree .side-file:has(.side-file-name) .side-dot { margin-top: 5px; }
+.side-file.is-open:not(.current) { box-shadow: inset 2px 0 0 var(--accent); }
+.side-file.is-open:not(.current) .side-name { color: var(--text); font-weight: 500; }
+
 /* ---------- menos barras (1.25.0) ---------- */
 #app { position: relative; }
 /* Preview: a barra de formatação flutua por cima do documento e só aparece num bloco */

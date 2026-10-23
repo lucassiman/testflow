@@ -284,7 +284,7 @@ export function createSidebar({ root, onOpenFile, onOpenRecent, onRemoveRecent, 
     const list = pins.map((p) => files.find((x) => x.path === p)).filter(/** @returns {x is WorkspaceFile} */ (x) => !!x);
     if (!list.length) return '';
     return `<li class="side-pins-head"><span>★ Fixados</span></li>`
-      + list.map((x) => `<li class="side-row side-pin-row"><button type="button" class="side-item side-file side-pinned${isCurrent(x.name, `${wsName}/${x.path}`) ? ' current' : ''}" data-ws-index="${files.indexOf(x)}" data-ws-path="${esc(x.path)}" style="--depth:0" title="${esc(x.path)}">
+      + list.map((x) => `<li class="side-row side-pin-row"><button type="button" class="side-item side-file side-pinned${isCurrent(x.name, `${wsName}/${x.path}`) ? ' current' : ''}${openMark(x.path)}" data-ws-index="${files.indexOf(x)}" data-ws-path="${esc(x.path)}" style="--depth:0" title="${esc(x.path)}">
           ${fileLabel(x)}</span><span class="side-path">${esc(x.path.split('/').slice(0, -1).join('/') || '/')}</span>${fileMark(x.path)}</button><button type="button" class="side-unpin" data-unpin="${esc(x.path)}" title="Desafixar" aria-label="Desafixar">★</button></li>`).join('')
       + '<li class="side-pins-sep" aria-hidden="true"></li>';
   }
@@ -326,16 +326,29 @@ export function createSidebar({ root, onOpenFile, onOpenRecent, onRemoveRecent, 
   /**
    * Nome na árvore: "ID · título" do cabeçalho (com a bolinha do status) — ou o nome do arquivo, se o documento não
    * tiver ID/título ou a preferência for "nome do arquivo". O nome do arquivo fica na dica.
-   * @param {{ name: string, path: string }} f
+   * @param {{ name: string, path: string }} f @param {boolean} [withFile] mostra o nome do arquivo embaixo do título
    */
-  function fileLabel(f) {
+  function fileLabel(f, withFile = false) {
     const plain = esc(f.name.replace(/\.(md|markdown)$/i, ''));
     const info = label?.(f.path);
     const dot = info?.status && STATUS_TIP[info.status] ? `<span class="side-dot side-dot-${info.status.toLowerCase()}" title="${esc(STATUS_TIP[info.status])}" aria-label="${esc(STATUS_TIP[info.status])}"></span>` : '<span class="side-dot side-dot-none" aria-hidden="true"></span>';
     if (!info || (!info.id && !info.titulo)) return `${dot}<span class="side-name">${plain}`;
     const title = info.titulo && info.titulo !== info.id ? info.titulo : '';
-    return `${dot}<span class="side-name">${info.id ? `<b class="side-id">${esc(info.id)}</b>` : ''}${info.id && title ? ' <span class="side-sep">·</span> ' : ''}${esc(title)}`;
+    // filtrando: o nome do arquivo vem embaixo (para conferir que é aquele .md)
+    return `${dot}<span class="side-name">${info.id ? `<b class="side-id">${esc(info.id)}</b>` : ''}${info.id && title ? ' <span class="side-sep">·</span> ' : ''}${esc(title)}${withFile ? `<small class="side-file-name">${plain}</small>` : ''}`;
   }
+
+  /** O filtro casa com o caminho (nome do arquivo) ou com o ID · título mostrado. @param {{ path: string }} f @param {string} term */
+  function fileMatches(f, term) {
+    if (norm(f.path).includes(term)) return true;
+    const info = label?.(f.path);
+    return !!info && norm(`${info.id} ${info.titulo}`).includes(term);
+  }
+
+  /** Documentos abertos em alguma aba (caminho dentro da pasta de trabalho). @type {Set<string>} */
+  let openPaths = new Set();
+  /** @param {string} path */
+  const openMark = (path) => (openPaths.has(path) ? ' is-open' : '');
 
   /** Dica do arquivo: "ID — título" e o caminho. @param {{ path: string }} f */
   function fileTip(f) {
@@ -350,7 +363,7 @@ export function createSidebar({ root, onOpenFile, onOpenRecent, onRemoveRecent, 
       return;
     }
     const term = norm(ui.filter.value.trim());
-    const shown = term ? files.filter((f) => norm(f.path).includes(term)) : files;
+    const shown = term ? files.filter((f) => fileMatches(f, term)) : files;
     const shownDirs = term ? dirs.filter((d) => norm(d).includes(term)) : dirs;
     if (!wsName) {
       ui.wsList.innerHTML = `<li class="side-empty side-empty-rich"><b>Abra a pasta onde ficam seus documentos de QA</b>
@@ -443,8 +456,8 @@ export function createSidebar({ root, onOpenFile, onOpenRecent, onRemoveRecent, 
       const files = node.files.slice().sort((a, b) => COLLATOR.compare(a.name, b.name));
       for (const f of files) {
         if (rows++ > 1500) return;
-        out.push(`<li class="side-row"><button type="button" class="side-item side-file${isCurrent(f.name, `${wsName}/${f.path}`) ? ' current' : ''}" data-ws-index="${indexOf.get(f) ?? -1}" data-ws-path="${esc(f.path)}" draggable="true" style="--depth:${depth}" title="${esc(fileTip(f))} — arraste para uma pasta para mover · F2 renomeia">
-          ${fileLabel(f)}${isPinned(f.path) ? ' <span class="side-star" title="Fixado no topo">★</span>' : ''}</span>${fileMark(f.path)}</button><button type="button" class="side-more" data-more tabindex="-1" title="Renomear, mover, lixeira" aria-label="Mais ações">⋯</button></li>`);
+        out.push(`<li class="side-row"><button type="button" class="side-item side-file${isCurrent(f.name, `${wsName}/${f.path}`) ? ' current' : ''}${openMark(f.path)}" data-ws-index="${indexOf.get(f) ?? -1}" data-ws-path="${esc(f.path)}" draggable="true" style="--depth:${depth}" title="${esc(fileTip(f))} — arraste para uma pasta para mover · F2 renomeia">
+          ${fileLabel(f, filtering)}${isPinned(f.path) ? ' <span class="side-star" title="Fixado no topo">★</span>' : ''}</span>${fileMark(f.path)}</button><button type="button" class="side-more" data-more tabindex="-1" title="Renomear, mover, lixeira" aria-label="Mais ações">⋯</button></li>`);
       }
     };
     /** posição de cada arquivo (evita indexOf por linha: árvore grande) */
@@ -821,6 +834,13 @@ export function createSidebar({ root, onOpenFile, onOpenRecent, onRemoveRecent, 
     setRecents(list) { recents = list; drawRecents(); },
     /** Redesenha a árvore (ex.: as marcas de estado mudaram). */
     redraw() { drawFiles(); },
+    /** Marca na árvore os documentos abertos em abas (sem redesenhar). @param {Iterable<string>} paths caminhos dentro da pasta de trabalho */
+    setOpen(paths) {
+      const next = new Set(paths);
+      if (next.size === openPaths.size && [...next].every((p) => openPaths.has(p))) return;
+      openPaths = next;
+      ui.wsList.querySelectorAll('.side-file[data-ws-path]').forEach((b) => b.classList.toggle('is-open', openPaths.has(/** @type {HTMLElement} */ (b).dataset.wsPath || '')));
+    },
     /** Arquivos movidos/renomeados: os fixados acompanham (null = saiu da pasta / foi para a lixeira). @param {(path: string) => string | null | undefined} map */
     relocatePins(map) {
       loadPins();
