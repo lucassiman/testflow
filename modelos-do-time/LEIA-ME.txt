@@ -1,0 +1,23 @@
+Modelos extras de testware do TestFlow
+======================================
+
+Cinco modelos para a pasta modelos/ da SUA pasta de trabalho (não da pasta do app):
+
+  registro-de-riscos.md     RSK-  um por aplicação; tag risco-alto/medio/baixo nos casos
+  revisao-de-requisito.md   REV-  revisão da história antes do dev (teste estático)
+  resumo-do-periodo.md      RES-  progresso do QA por período (time em Kanban, sem sprint)
+  retrospectiva.md          RET-  lições aprendidas e ações
+  estrategia-de-teste.md    EST-  como o QA trabalha no time; vai em processos/
+
+Como usar
+---------
+Copie só os .md para <pasta de trabalho>/modelos/ (crie a pasta se não existir).
+Este LEIA-ME é .txt de propósito: um .md copiado para modelos/ viraria modelo.
+
+  Mac/Linux:  cp modelos-do-time/*.md "<pasta de trabalho>/modelos/"
+  Windows:    copy modelos-do-time\*.md "<pasta de trabalho>\modelos\"
+
+No app: Novo ▾ → A partir de modelo → Meus modelos.
+Com o Claude (MCP): qa_criar { tipo: "registro-de-riscos", app, titulo } etc.
+A skill qa-markdown (seção 6.5, em scripts/skill-intro.md) usa estes nomes de arquivo:
+renomear um modelo exige ajustar a skill (npm run skill).

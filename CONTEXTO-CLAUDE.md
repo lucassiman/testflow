@@ -19,6 +19,7 @@ Usuário: QA em pt-BR, Windows (`C:\dev\markdown qa editor`) e um Mac. **Interfa
 | `ARQUITETURA.md` | sim | Mapa do código e princípios | Mudou pasta, conceito ou princípio |
 | `CONVENCOES-QA.md` | sim | Especificação do formato QA-MD (embutida no MCP) | Mudou o formato |
 | `exemplos/LEIA-ME.md`, `LEIA-ME-por-modulo.md` | sim | Tour da Loja Demo (conferido por testes) | Mudou menu ou fluxo citado; o por-módulo é conferido por `modules.test.mjs` |
+| `modelos-do-time/` | sim | Modelos extras (registro de riscos, revisão de requisito, resumo do período para Kanban, retrospectiva, estratégia) para o usuário copiar para `modelos/` da pasta de trabalho; `LEIA-ME.txt` explica | Mudou um desses modelos ou a seção 6.5 de `scripts/skill-intro.md` (que usa os nomes dos arquivos) |
 | `CONTEXTO-CLAUDE.md` | sim | Este arquivo | Veja abaixo |
 | `ROADMAP-INTERNO.md` | **não** (ignorado pelo git) | Roadmap **interno**: o que foi aprendido, decisões, pendências, análises a validar | A cada entrega; é a memória de trabalho |
 | `BRAINSTORM.md` | **não** (ignorado pelo git) | Ideias sobre o futuro, com selos (💡 ideia, ✅ aceita → roadmap interno, 🌐 também no público) | O usuário escreve; ao aceitar uma ideia, levar para o `ROADMAP-INTERNO.md` (e o `ROADMAP.md` se 🌐) e trocar o selo |
