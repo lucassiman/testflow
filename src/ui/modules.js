@@ -192,6 +192,7 @@ export const MODULES = [
         title: 'Capturar',
         items: [
           { cmd: 'capture', label: '📸 Capturar a tela', keys: 'Ctrl+Alt+P', hint: 'print da janela do sistema testado', palette: 'Capturar a tela (print da janela do sistema testado)' },
+          { cmd: 'captureOn', label: 'Ligar a captura (sem print)', keys: 'Ctrl+Alt+Shift+P', hint: 'escolhe a janela; os 📸 seguintes tiram o print', palette: 'Capturar a tela: ligar (escolher a janela, sem tirar print)' },
           { cmd: 'captureChoose', label: 'Escolher outra janela', palette: 'Capturar a tela: escolher outra janela' },
           { cmd: 'captureStop', label: 'Parar a captura', palette: 'Capturar a tela: parar' },
           { cmd: 'record', label: '⏺ Gravar vídeo / parar', keys: 'Ctrl+Alt+G', hint: 'bug intermitente — até 5 min', palette: 'Gravar vídeo da tela (bug intermitente) / parar' },
@@ -371,6 +372,7 @@ export const MODULES = [
         { cmd: 'zoomReset', label: '100%', keys: 'Ctrl+Alt+0', palette: false },
         { cmd: 'toggleTheme', label: 'Tema', palette: 'Tema claro / escuro' },
         { cmd: 'closeTab', label: 'Fechar aba', keys: 'Alt+W', palette: 'Fechar aba' },
+        { cmd: 'closeAllTabs', label: 'Fechar todas as abas', palette: 'Fechar todas as abas (volta para o Início)' },
         { cmd: 'nextTab', label: 'Próxima aba', keys: 'Alt+PageDown', palette: 'Próxima aba' },
         { cmd: 'prevTab', label: 'Aba anterior', keys: 'Alt+PageUp', palette: 'Aba anterior' },
         { cmd: 'moveTabLeft', label: 'Aba para a esquerda', keys: 'Alt+Shift+PageUp', palette: false },

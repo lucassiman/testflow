@@ -44,6 +44,15 @@
   padding: 14px 16px; overflow: auto; line-height: 1.5;
 }
 .markdown-body pre code { background: none; border: 0; padding: 0; font-size: 0.87em; }
+/* linha longa quebra (padrão); o botão ↩ do bloco liga a rolagem horizontal em todos (classe no <html>) */
+.markdown-body pre code { white-space: pre-wrap; overflow-wrap: anywhere; }
+.code-nowrap .markdown-body pre code { white-space: pre; overflow-wrap: normal; }
+/* Gherkin: uma linha por <span>; linha de separação antes de cada cenário (do 2º em diante) */
+.markdown-body pre.gherkin .gk-l { display: block; min-height: 1.5em; }
+.markdown-body pre.gherkin .gk-sep { margin-top: 0.6em; padding-top: 0.6em; border-top: 1px dashed var(--border); }
+.markdown-body pre.gherkin .gk-kw { font-weight: 700; }
+.markdown-body pre.gherkin .gk-title { font-weight: 600; }
+.markdown-body pre.gherkin .gk-pipe { color: var(--muted); }
 
 .markdown-body table { border-collapse: collapse; display: block; overflow: auto; max-width: 100%; }
 .markdown-body th, .markdown-body td { border: 1px solid var(--border); padding: 6px 12px; }

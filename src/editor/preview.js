@@ -3,6 +3,8 @@ import { statusSig } from '../markdown/qa.ts';
 import { parseBlocks, renderTokens } from '../markdown/parser.js';
 import { sanitizeHtml } from '../markdown/sanitize.js';
 import { htmlToMarkdown } from '../markdown/toMarkdown.js';
+import { joinTypedTables } from '../markdown/typedTables.ts';
+import { loadPrefs, savePrefs } from '../io/drafts.js';
 import { lintMarkdown } from '../markdown/lint.js';
 import { renderMermaid, getCachedMermaid, downloadSvg } from './mermaid.js';
 import { renderFrontMatterCard, parseFrontMatter } from '../markdown/frontmatter.ts';
@@ -69,6 +71,9 @@ function missingImage(src, problem = 'locked') {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="420" height="74"><rect x="1" y="1" width="418" height="72" rx="8" fill="#f6f8fa" stroke="#9aa4ae" stroke-dasharray="6 4"/><text x="20" y="31" font-family="Segoe UI,system-ui,sans-serif" font-size="14" fill="#57606a">🖼 ${text(name)}</text><text x="20" y="54" font-family="Segoe UI,system-ui,sans-serif" font-size="12.5" fill="${problem === 'notfound' ? '#b45309' : '#2563eb'}">${MISSING_HINT[problem]}</text></svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
+
+// blocos de código: quebra das linhas longas (preferência do botão ↩ do bloco)
+if (loadPrefs().codeWrap === false) document.documentElement.classList.add('code-nowrap');
 
 /**
  * @param {{
@@ -330,7 +335,7 @@ export function createPreview({
     } else if (type === 'view') {
       buttons.push(['viewRefresh', '↻', 'Ler de novo os documentos e atualizar a visão']);
     } else if (type === 'code') {
-      buttons.push(['copy', 'Copiar', 'Copiar código']);
+      buttons.push(['wrap', '↩', 'Quebrar linhas longas ou rolar para o lado (vale para todos os blocos de código)'], ['copy', 'Copiar', 'Copiar código']);
     } else if (type === 'table') {
       buttons.push(['xlsx', 'XLSX', 'Exportar esta tabela para Excel (.xlsx)'], ['csv', 'CSV', 'Exportar esta tabela para CSV']);
     }
@@ -609,7 +614,7 @@ export function createPreview({
       } else {
         const unchanged = snapshot(ed.content) === ed.originalSnap && checkState(ed.content) === ed.originalChecks;
         if (unchanged) { finishEditing(); return false; }
-        newText = htmlToMarkdown(ed.content, ed.text);
+        newText = joinTypedTables(htmlToMarkdown(ed.content, ed.text));
       }
     } catch (err) {
       console.error(err);
@@ -697,7 +702,7 @@ export function createPreview({
       ? htmlToMarkdown(content, '')
       // texto puro: vale como Markdown (digitar "## Título" ou "- item" já vira título/lista)
       : content.innerText.replace(/\u00a0/g, ' ').replace(/\n{3,}/g, '\n\n');
-    newText = newText.replace(/[ \t]+$/gm, '').replace(/^\n+|\n+$/g, '');
+    newText = joinTypedTables(newText.replace(/[ \t]+$/gm, '').replace(/^\n+|\n+$/g, ''));
     const el = ed.el;
     finishEditing();
     el.remove();
@@ -923,6 +928,12 @@ export function createPreview({
     const text = currentBlockText(start, end);
     if (act === 'raw') { startRawEdit(blockEl); return; }
     if (act === 'viewRefresh') { onDrawViews?.(root, true); return; }
+    if (act === 'wrap') {
+      const nowrap = document.documentElement.classList.toggle('code-nowrap');
+      savePrefs({ codeWrap: !nowrap });
+      toast?.(nowrap ? 'Blocos de código sem quebra de linha (rolam para o lado)' : 'Blocos de código quebram as linhas longas');
+      return;
+    }
     if (act === 'commentReply' || act === 'commentResolve' || act === 'commentReopen') {
       const head = blockEl.querySelector('.comment-head')?.textContent || '';
       commit(); // outro bloco em edição pode mudar as linhas: a posição é lida de novo depois

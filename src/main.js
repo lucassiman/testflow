@@ -81,7 +81,7 @@ import { updateToolbar, resetToolbar, toggleFocus, toggleToolbarMode } from './a
 import { createHome } from './app/home.js';
 import { BUILTIN_TEMPLATES } from './templates/index.js';
 import { hintAfterRender, hintRunner, hintTree } from './app/hints.js';
-import { captureFiles, captureToDocument, capturer, replaySeconds, replaySetting, saveReplay, toggleRecording } from './app/capture.js';
+import { captureFiles, captureOn, captureToDocument, capturer, replaySeconds, replaySetting, saveReplay, toggleRecording } from './app/capture.js';
 import { showWhatsNew, changesSince } from './ui/whatsNew.js';
 import { CHANGELOG } from './changelog.js';
 import { MODULES, paletteActions } from './ui/modules.js';
@@ -855,6 +855,7 @@ tabs = createTabs({
   bar: $('tabbar'),
   onSwitch: (id) => switchTab(id),
   onClose: (id) => closeTab(id),
+  onCloseAll: () => closeAllTabs(),
   onNew: () => doNew(),
   getActiveInfo: () => ({ name: store.fileName, dirty: store.dirty, path: disk.path }),
   onReorder: () => persistTabs({ handles: true }),
@@ -947,23 +948,23 @@ function switchTab(id) {
   persistTabs({ handles: true });
 }
 
-/** @param {string | null} [id] @param {{ force?: boolean }} [opts] @returns {Promise<void>} */
+/** @param {string | null} [id] @param {{ force?: boolean }} [opts] @returns {Promise<boolean>} fechou? */
 async function closeTab(id = tabs.activeId, { force = false } = {}) {
-  if (!id) return;
+  if (!id) return false;
   const isActive = id === tabs.activeId;
   const tab = tabs.find(id);
-  if (!tab) return;
+  if (!tab) return false;
   if (isActive) preview.commit();
   const name = isActive ? store.fileName : tab.doc?.name;
   const dirty = isActive ? store.dirty : tab.doc?.dirty;
   if (dirty && !force) {
     const choice = await unsavedDialog({ name: name || 'sem título.md', action: 'fechar a aba' });
-    if (!choice) return;
+    if (!choice) return false;
     if (choice === 'save') {
       // salva a aba (vai para ela, se for outra) e fecha só se gravou mesmo
       if (!isActive) switchTab(id);
       await doSave(false);
-      if (store.dirty) return;
+      if (store.dirty) return false;
     }
     return closeTab(id, { force: true });
   }
@@ -974,7 +975,8 @@ async function closeTab(id = tabs.activeId, { force = false } = {}) {
     saveSession(null);
     tabs.render();
     persistTabs({ handles: true });
-    return;
+    home.show(); // sem documento aberto: a tela Início (a do ícone do TestFlow)
+    return true;
   }
   if (isActive) {
     const idx = tabs.list.findIndex((t) => t.id === id);
@@ -986,6 +988,16 @@ async function closeTab(id = tabs.activeId, { force = false } = {}) {
     tabs.remove(id);
   }
   persistTabs({ handles: true });
+  return true;
+}
+
+/** Fecha todas as abas (as não salvas perguntam, uma a uma; Cancelar para no meio) e mostra o Início. */
+async function closeAllTabs() {
+  // as outras primeiro; a ativa por último (fechar a última aba abre o Início)
+  const ids = [...tabs.list.map((t) => t.id).filter((id) => id !== tabs.activeId), tabs.activeId];
+  for (const id of ids) {
+    if (id && tabs.find(id) && !(await closeTab(id))) return; // Cancelar numa aba não salva para tudo
+  }
 }
 
 /** Aba que já mostra este arquivo: 'active', o id da aba, ou null. */
@@ -1595,6 +1607,7 @@ function run(cmd, value, event) {
     case 'rename': startRename(); return true;
     case 'importAutomation': pickAutomationFile(false); return true;
     case 'closeTab': closeTab(); return true;
+    case 'closeAllTabs': closeAllTabs(); return true;
     case 'nextTab': switchTab(tabs.neighbor(1)); return true;
     case 'moveTabLeft': tabs.moveActive(-1); return true;
     case 'moveTabRight': tabs.moveActive(1); return true;
@@ -1688,6 +1701,7 @@ function run(cmd, value, event) {
     case 'sideClose': closeSide(); return true;
     case 'capture': preview.commit(); captureToDocument(); return true;
     case 'captureChoose': preview.commit(); captureToDocument({ choose: true }); return true;
+    case 'captureOn': captureOn(); return true;
     case 'record': toggleRecording(); return true;
     case 'replaySave': preview.commit(); saveReplay(); return true;
     case 'replayPref': replaySetting(); return true;
@@ -1761,32 +1775,88 @@ els.raw.addEventListener('scroll', () => syncScroll(els.raw, els.previewPane));
 els.previewPane.addEventListener('scroll', () => syncScroll(els.previewPane, els.raw));
 
 // ---------------------------------------------------------------- zoom do Mermaid
+// O diagrama ganha largura/altura de verdade (não transform): a rolagem acompanha o zoom e dá para arrastar.
 let zoom = 1;
-/** @param {number} z */
-function setZoom(z) {
-  zoom = Math.min(6, Math.max(0.25, z));
-  const svg = els.zoomBody.firstElementChild;
-  if (svg) /** @type {HTMLElement} */ (svg).style.transform = `scale(${zoom})`;
+/** tamanho natural do diagrama (viewBox) */
+let zoomSize = { w: 0, h: 0 };
+const zoomSvg = () => /** @type {SVGSVGElement | null} */ (els.zoomBody.querySelector('.zoom-content svg'));
+/** @param {number} z @param {{ x: number, y: number }} [at] ponto da tela que fica parado (roda do mouse) */
+function setZoom(z, at) {
+  const body = els.zoomBody;
+  const r = body.getBoundingClientRect();
+  const px = at ? at.x - r.left : body.clientWidth / 2;
+  const py = at ? at.y - r.top : body.clientHeight / 2;
+  const fx = (body.scrollLeft + px) / Math.max(1, zoomSize.w * zoom);
+  const fy = (body.scrollTop + py) / Math.max(1, zoomSize.h * zoom);
+  zoom = Math.min(8, Math.max(0.1, z));
+  const svg = zoomSvg();
+  if (svg && zoomSize.w) {
+    svg.style.width = `${Math.round(zoomSize.w * zoom)}px`;
+    svg.style.height = `${Math.round(zoomSize.h * zoom)}px`;
+    body.scrollLeft = fx * zoomSize.w * zoom - px;
+    body.scrollTop = fy * zoomSize.h * zoom - py;
+  }
   els.zoomLevel.textContent = `${Math.round(zoom * 100)}%`;
+}
+/** Cabe inteiro na tela (sem passar de 100% em diagrama pequeno… a não ser que fique minúsculo). */
+function fitZoom() {
+  if (!zoomSize.w) return;
+  const pad = 32;
+  const fit = Math.min((els.zoomBody.clientWidth - pad) / zoomSize.w, (els.zoomBody.clientHeight - pad) / zoomSize.h);
+  setZoom(Math.max(0.1, Math.min(fit, 2)));
+  els.zoomBody.scrollLeft = 0;
+  els.zoomBody.scrollTop = 0;
 }
 /** @param {string} svg */
 function openZoom(svg) {
   els.zoomBody.innerHTML = `<div class="zoom-content">${svg}</div>`;
   els.zoomModal.hidden = false;
-  setZoom(1.5);
+  const el = zoomSvg();
+  const vb = el?.viewBox?.baseVal;
+  const box = el?.getBoundingClientRect();
+  zoomSize = vb && vb.width ? { w: vb.width, h: vb.height } : { w: box?.width || 0, h: box?.height || 0 };
+  if (el) { el.removeAttribute('width'); el.removeAttribute('height'); el.style.maxWidth = 'none'; }
+  zoom = 1;
+  fitZoom();
 }
 els.zoomModal.addEventListener('click', (event) => {
-  const act = /** @type {HTMLElement} */ /** @type {HTMLElement} */ (/** @type {HTMLElement} */ ((event.target)).closest('[data-zoom]'))?.dataset.zoom;
+  const act = /** @type {HTMLElement} */ (/** @type {HTMLElement} */ ((event.target)).closest('[data-zoom]'))?.dataset.zoom;
   if (act === 'in') setZoom(zoom * 1.25);
   if (act === 'out') setZoom(zoom / 1.25);
   if (act === 'reset') setZoom(1);
+  if (act === 'fit') fitZoom();
   if (act === 'close' || event.target === els.zoomModal) els.zoomModal.hidden = true;
 });
+// roda: rola; Ctrl+roda (ou pinça no touchpad): zoom no ponto do mouse
 els.zoomBody.addEventListener('wheel', (event) => {
   if (!event.ctrlKey) return;
   event.preventDefault();
-  setZoom(zoom * (event.deltaY < 0 ? 1.1 : 1 / 1.1));
+  setZoom(zoom * (event.deltaY < 0 ? 1.15 : 1 / 1.15), { x: event.clientX, y: event.clientY });
 }, { passive: false });
+// arrastar com o mouse move o diagrama
+els.zoomBody.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0) return;
+  const body = els.zoomBody;
+  const start = { x: event.clientX, y: event.clientY, l: body.scrollLeft, t: body.scrollTop };
+  body.setPointerCapture(event.pointerId);
+  body.classList.add('dragging');
+  const move = (/** @type {PointerEvent} */ e) => { body.scrollLeft = start.l - (e.clientX - start.x); body.scrollTop = start.t - (e.clientY - start.y); };
+  const up = () => { body.classList.remove('dragging'); body.removeEventListener('pointermove', move); body.removeEventListener('pointerup', up); body.removeEventListener('pointercancel', up); };
+  body.addEventListener('pointermove', move);
+  body.addEventListener('pointerup', up);
+  body.addEventListener('pointercancel', up);
+});
+// teclado no diagrama ampliado: + − 0 (100%) F (ajustar)
+document.addEventListener('keydown', (event) => {
+  if (els.zoomModal.hidden || event.ctrlKey || event.metaKey || event.altKey) return;
+  const k = event.key.toLowerCase();
+  if (k === '+' || k === '=') setZoom(zoom * 1.25);
+  else if (k === '-') setZoom(zoom / 1.25);
+  else if (k === '0') setZoom(1);
+  else if (k === 'f') fitZoom();
+  else return;
+  event.preventDefault();
+});
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !els.zoomModal.hidden) els.zoomModal.hidden = true;
   // modo foco: Ctrl+Shift+. (⌘⇧. no Mac)

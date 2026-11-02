@@ -44,6 +44,7 @@ export const SHORTCUTS = [
   { keys: 'Ctrl+K', cmd: 'link' },
   { keys: 'Ctrl+Alt+K', cmd: 'codeblock' },
   { keys: 'Ctrl+Alt+P', cmd: 'capture' },
+  { keys: 'Ctrl+Alt+Shift+P', cmd: 'captureOn' },
   { keys: 'Ctrl+Alt+G', cmd: 'record' },
   { keys: 'Ctrl+Alt+R', cmd: 'replaySave' },
   { keys: 'Ctrl+E', cmd: 'cycleMode' },

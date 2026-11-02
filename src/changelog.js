@@ -8,6 +8,17 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.73.0', date: '02/11/2026',
+    items: [
+      { icon: '▦', text: '**Tabela digitada vira tabela**: no Preview, escrever as linhas `| A | B |`, `| --- | --- |`… num bloco e aplicar com `Ctrl+Enter` agora dá uma tabela (antes cada linha virava um parágrafo).', manual: '5.2 Editar no Preview' },
+      { icon: '␣', text: '**Espaço em branco entre blocos**: `/espaço` → **Espaço em branco** põe uma linha vazia (`&nbsp;`) para separar o conteúdo, sem criar bloco de texto.', manual: '5.2 Editar no Preview' },
+      { icon: '↩', text: '**Código quebra as linhas longas** no Preview; quem prefere rolar para o lado usa o **↩** no canto do bloco (vale para todos e fica guardado). **Gherkin** ganhou cores nas palavras-chave (português e inglês), tabelas de exemplo alinhadas e uma linha separando os cenários.', manual: '5.5 Código e logs' },
+      { icon: '🧠', text: '**Diagrama grande legível e mapa mental**: ampliado, o Mermaid abre ajustado à tela, dá para **arrastar**, `Ctrl`+roda amplia no ponto do mouse e **Ajustar** (`F`) volta a caber. `/mapa` insere um **mapa mental** com o esqueleto de um plano.', manual: '5.6 Diagramas' },
+      { icon: '📸', text: '**Ligar a captura sem tirar print**: `Ctrl+Alt+Shift+P` só escolhe a janela — para deixar pronta no começo da execução ou da sessão; os 📸 seguintes tiram o print.', manual: '8.1 Capturar a tela' },
+      { icon: '✕', text: '**Fechar todas as abas**: na lista **⌄** das abas ou na paleta. As não salvas perguntam; sem abas, aparece a tela Início.', manual: '10. Arquivos, pastas e abas' },
+    ],
+  },
+  {
     version: '1.72.0', date: '23/10/2026',
     items: [
       { icon: '🪪', text: '**Virou ticket no Jira? O código vira a chave**: num bug, história ou épico, pôr a chave no `jira:` — pela API, copiando e colando no Jira ou pelo Claude — troca o código no `Ctrl+S` (`BUG-7` → `PORT-55`), com o título, os `[[links]]` dos outros documentos e o **nome do arquivo**. No caso de teste nada muda (lá o `jira:` é o ticket testado).', manual: '6.6 Links' },

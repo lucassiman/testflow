@@ -70,6 +70,16 @@ export async function captureToDocument({ choose = false } = {}) {
 
 export { supportsCapture };
 
+/** Só liga a captura (escolhe a janela), sem tirar print: para deixar pronta no começo da execução ou da sessão. */
+export async function captureOn() {
+  if (!supportsCapture) { app.toast('Este navegador não captura a tela — use Chrome ou Edge.', 'error'); return; }
+  if (capturer.active) { app.toast('A captura já está ligada — 📸 Capturar (Ctrl+Alt+P) tira o print; "Escolher outra janela" troca.'); return; }
+  try {
+    if (await capturer.share()) app.toast('Captura ligada — cada 📸 Capturar (Ctrl+Alt+P) tira um print desta janela.');
+    else app.toast('Captura não ligada — nenhuma janela escolhida.');
+  } catch (err) { app.toast(`Não foi possível ligar a captura: ${errMsg(err)}`, 'error'); }
+}
+
 // ---------------------------------------------------------------- gravar vídeo (bug intermitente)
 /** parar pelo botão: quem parou insere o vídeo (senão o onStop insere: 5 min ou "Parar de compartilhar") */
 let stoppingByUser = false;

@@ -33,6 +33,7 @@ export function askUrl(kind) {
 export const TEMPLATES = {
   codeblock: '```\n\n```',
   table: '| Cenário | Resultado esperado | Status |\n| --- | --- | --- |\n| Login válido | Acessa o Dashboard | PASS |\n| Login inválido | Mensagem de erro | FAIL |',
+  mindmap: '```mermaid\nmindmap\n  root((Plano de teste))\n    Escopo\n      Funcionalidades\n      Fora do escopo\n    Riscos\n      Pagamento\n      Integrações\n    Técnicas\n      Valor-limite\n      Tabela de decisão\n    Ambientes\n      DEV\n      HML\n```',
   mermaid: '```mermaid\nflowchart TD\n    A[Executar teste] --> B{Passou?}\n    B -->|Sim| C[PASS]\n    B -->|Não| D[Registrar bug]\n```',
 };
 

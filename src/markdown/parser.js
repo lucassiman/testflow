@@ -1,6 +1,7 @@
 // @ts-check
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js/lib/core';
+import { gherkinHtml } from './gherkinView.ts';
 import javascript from 'highlight.js/lib/languages/javascript';
 import typescript from 'highlight.js/lib/languages/typescript';
 import json from 'highlight.js/lib/languages/json';
@@ -72,7 +73,11 @@ const renderFence = (tokens, idx, options, env, self) => {
   if (lang === 'qa-visao') {
     return `<div class="qa-view" data-view-src="${md.utils.escapeHtml(encodeURIComponent(token.content))}"><div class="qa-view-body">Visão: lendo os documentos…</div></div>`;
   }
-  const html = defaultFence(tokens, idx, options, env, self);
+  // Gherkin (português e inglês): palavras-chave, tabelas alinhadas e uma separação entre os cenários
+  const html = ['gherkin', 'feature', 'cucumber'].includes(lang)
+    ? `<pre class="gherkin"><code class="language-gherkin">${gherkinHtml(token.content)}</code></pre>
+`
+    : defaultFence(tokens, idx, options, env, self);
   // ```log collapsed → recolhido no editor (no GitHub aparece normal)
   if (words.slice(1).some((w) => w.toLowerCase() === 'collapsed')) {
     const lines = token.content.replace(/\n$/, '').split('\n').length;

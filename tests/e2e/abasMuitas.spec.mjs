@@ -33,7 +33,8 @@ test('muitas abas: sem barra por cima, ‹ › e lista ⌄ para chegar em qualqu
   // lista ⌄ mostra todas e troca de aba
   await bar.locator('.tab-list').click();
   const menu = page.locator('.tab-menu');
-  await expect(menu.locator('button')).toHaveCount(12);
+  await expect(menu.locator('button[data-pick]')).toHaveCount(12);
+  await expect(menu.locator('[data-close-all]')).toHaveCount(1); // ✕ Fechar todas no fim
   const firstId = await bar.locator('.tab').first().getAttribute('data-id');
   await menu.locator('button').first().click();
   await expect(menu).toHaveCount(0);

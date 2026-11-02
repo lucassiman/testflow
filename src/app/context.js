@@ -40,7 +40,7 @@
  * @property {(opts?: { handles?: boolean }) => void} persistTabs
  * @property {(handle: FileSystemFileHandle, opts?: { folder?: FileSystemDirectoryHandle | null, path?: string, readMode?: boolean }) => Promise<boolean>} openFromHandle
  * @property {(id: string | null) => void} switchTab
- * @property {(id?: string | null, opts?: { force?: boolean }) => Promise<void>} closeTab
+ * @property {(id?: string | null, opts?: { force?: boolean }) => Promise<boolean>} closeTab fechou? (false = cancelou)
  * @property {() => Promise<void>} loadWorkspaceFiles relê a pasta de trabalho (árvore, índice, modelos)
  * @property {() => Promise<void>} refreshRecents
  * @property {() => Promise<void>} pickAndLoadWorkspace

@@ -20,9 +20,9 @@ const newId = () => `t${Date.now().toString(36)}${(seq++).toString(36)}`;
 /**
  * @param {{ bar: HTMLElement, onSwitch: (id: string) => void, onClose: (id: string) => void, onNew: () => void, getActiveInfo: () => TabInfo,
  *   onReorder?: () => void, marks?: (id: string, active: boolean) => Array<{ key: string, icon: string, title: string }>,
- *   label?: (info: LabelInfo) => TabLabel, onRender?: () => void }} deps
+ *   label?: (info: LabelInfo) => TabLabel, onRender?: () => void, onCloseAll?: () => void }} deps
  */
-export function createTabs({ bar, onSwitch, onClose, onNew, getActiveInfo, onReorder, marks, label, onRender }) {
+export function createTabs({ bar, onSwitch, onClose, onNew, getActiveInfo, onReorder, marks, label, onRender, onCloseAll }) {
   /** @type {Tab[]} doc = retrato (null na aba ativa) */
   let tabs = [];
   /** @type {string | null} */
@@ -73,7 +73,7 @@ export function createTabs({ bar, onSwitch, onClose, onNew, getActiveInfo, onReo
     menu.innerHTML = tabs.map((t) => {
       const i = info(t);
       return `<button type="button" role="menuitem" data-pick="${t.id}" class="${t.id === activeId ? 'on' : ''}" title="${esc(tip(i))}">${nameHtml(i, true)}${i.dirty ? '<span class="tab-dirty" title="Não salvo">●</span>' : ''}</button>`;
-    }).join('');
+    }).join('') + (onCloseAll ? '<button type="button" role="menuitem" class="tab-close-all" data-close-all="1">✕ Fechar todas as abas</button>' : '');
     document.body.appendChild(menu);
     const r = listBtn.getBoundingClientRect();
     menu.style.top = `${Math.round(r.bottom + 4)}px`;
@@ -81,6 +81,7 @@ export function createTabs({ bar, onSwitch, onClose, onNew, getActiveInfo, onReo
     listBtn.setAttribute('aria-expanded', 'true');
     /** @type {HTMLElement | null} */ (menu.querySelector('.on') || menu.querySelector('button'))?.focus();
     menu.addEventListener('click', (e) => {
+      if (/** @type {HTMLElement} */ (e.target).closest('[data-close-all]')) { closeMenu(); onCloseAll?.(); return; }
       const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('[data-pick]'));
       if (!b) return;
       closeMenu();

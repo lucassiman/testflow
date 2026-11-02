@@ -244,6 +244,7 @@ Organizado pelos mesmos módulos dos menus do topo e da paleta. Um teste confere
 | --- | --- |
 | Abrir um bug a partir do caso de teste | **Evidências ▾ → 🐞 Novo bug ligado a este documento…**, ou no Preview `/` → `bug` (ver 6.4) |
 | Print da janela do sistema testado sem PrtSc | **Evidências ▾ → 📸 Capturar a tela** ou `Ctrl+Alt+P` — também **📸 Capturar** na toolbar, no painel de execução e na sessão (ver 8.1) |
+| Deixar a captura ligada sem tirar print (começo da execução) | `Ctrl+Alt+Shift+P` ou `Ctrl+Shift+P → Capturar a tela: ligar (escolher a janela, sem tirar print)` (ver 8.1) |
 | Gravar vídeo de um bug intermitente | `Ctrl+Alt+G`, **Evidências ▾ → ⏺ Gravar vídeo** ou **⏺ Gravar** no painel de execução (ver 8.1) |
 | Vídeo do que acabou de acontecer (sem ter apertado gravar) | **⏪** no rodapé, `Ctrl+Alt+R`, **Evidências ▾ → ⏪ Replay instantâneo** ou **⏪ Replay** no painel de execução — com a captura de tela ligada (ver 8.1) |
 | Usar num documento o print de outro | **Evidências ▾ → Reaproveitar print de outro documento…** ou `/print` (ver 8) |
@@ -337,6 +338,8 @@ Todo documento **abre no Preview** — o novo (já com um bloco em edição para
 - **Cor:** selecione o texto → **Aa ▾**. Use pouco: o significado deve estar no texto.
 - **Print:** clique **amplia** (veja 8); para editar a linha do print, clique na legenda ou use `</>` no canto do bloco.
 - **Tarefa:** clique na caixinha `- [ ]`.
+- **Tabela digitada:** escreva as linhas `| A | B |`, `| --- | --- |`, `| 1 | 2 |` (uma por linha) e `Ctrl+Enter` — vira tabela.
+- **Espaço em branco entre blocos:** `/espaço` → **Espaço em branco**. Grava `&nbsp;` sozinho numa linha: aqui e nos outros editores aparece como uma linha vazia, sem virar conteúdo.
 - `Alt+clique` num bloco leva à linha correspondente no Raw.
 
 ### 5.3 Selecionar vários blocos (como no Notion)
@@ -367,10 +370,14 @@ Todo documento **abre no Preview** — o novo (já com um bloco em edição para
 - **▾** ao lado escolhe a linguagem: log, **log recolhido**, JSON, JavaScript, TypeScript, Bash, SQL, Gherkin, HTTP, XML, YAML, Python, Java, C#. A última escolhida vira o padrão.
 - Com blocos selecionados no Preview (ex.: um log colado que virou texto) ou texto selecionado no Raw, **envolve a seleção**.
 - ```` ```log collapsed ```` deixa o log recolhido (clique no título para abrir). No PDF sai aberto.
+- **Linhas longas quebram** dentro do bloco. Prefere rolar para o lado? **↩** no canto do bloco alterna para todos os blocos de código (fica guardado).
+- **Gherkin** (```` ```gherkin ```` ou ```` ```feature ````): palavras-chave em destaque (português e inglês — *Funcionalidade*, *Cenário*, *Dado*, *Quando*, *Então*, *E*, *Mas*…), tags, comentários, `"textos"` e `<parâmetros>` coloridos, tabelas de *Exemplos* alinhadas e uma linha separando cada cenário. O arquivo não muda: é só a exibição.
 
 ### 5.6 Diagramas (Mermaid)
 
-Botão **Diagrama** ou `/mermaid`. Fluxogramas, sequência, pizza, Gantt… Duplo clique amplia; no canto: **⤢** ampliar, **SVG** exportar, **Copiar** código. Exemplos em `exemplos/planos/PT-001…` e `exemplos/recursos/tour-do-markdown.md`.
+Botão **Diagrama** ou `/mermaid`. Fluxogramas, sequência, pizza, Gantt, **mapa mental** (`/mapa` → **Mapa mental (Mermaid)**, com um esqueleto de plano: escopo, riscos, técnicas, ambientes)… Duplo clique amplia; no canto: **⤢** ampliar, **SVG** exportar, **Copiar** código.
+
+**Diagrama grande:** ampliado, ele abre **ajustado à tela**. **Arraste** para mover, `Ctrl`+roda amplia no ponto do mouse, **+**/**−** (ou as teclas `+` `-`), **1:1** (`0`) tamanho real e **Ajustar** (`F`) volta a caber inteiro. `Esc` fecha. Exemplos em `exemplos/planos/PT-001…` e `exemplos/recursos/tour-do-markdown.md`.
 
 ### 5.7 Raw (Markdown puro)
 
@@ -906,6 +913,7 @@ Print da janela do sistema testado **sem PrtSc + Ctrl+V**: clique em **📸 Capt
 | Passo | O que acontece |
 | --- | --- |
 | **1ª vez** | O navegador pergunta **qual janela** compartilhar (escolha o navegador de teste, o app…). O print é tirado na hora. |
+| **Só ligar, sem print** | No começo da execução ou da sessão: **`Ctrl+Alt+Shift+P`** (ou `Ctrl+Shift+P` → *Capturar a tela: ligar (escolher a janela, sem tirar print)*). Escolhe a janela e deixa a captura pronta — e o ⏪ replay começa a guardar. |
 | **Depois** | Cada 📸 (ou `Ctrl+Alt+P`) é **um clique**: pega a janela escolhida como ela está agora, mesmo que o editor esteja na frente. |
 | **Trocar de janela** | `Ctrl+Shift+P` → *Capturar a tela: escolher outra janela* |
 | **Parar** | Clique em **📸 … · parar** no rodapé, em *Parar de compartilhar* na barra do navegador, ou `Ctrl+Shift+P` → *Capturar a tela: parar* |
@@ -1033,7 +1041,7 @@ O Claude também exporta: `qa_exportar_feature` devolve os arquivos para ele gra
 | **★ Fixados** | Clique direito (ou **⋯**) num arquivo da árvore → **★ Fixar no topo**: ele aparece na seção **Fixados**, no topo da árvore, mesmo com as pastas recolhidas (ganha uma ★ na árvore também). O **★** da linha desafixa (ou *☆ Desafixar do topo* no menu). Fica guardado por pasta de trabalho e acompanha o arquivo ao mover ou renomear pelo editor. |
 | **Recentes** | Últimos arquivos (com a pasta de evidências de cada um) e, em **Pastas**, as últimas pastas de trabalho. Com uma pasta de trabalho aberta, a seção já vem **recolhida** (a árvore ganha a altura toda); clique em **› RECENTES** para abrir ou recolher — depois disso vale a sua escolha. |
 | **De onde é o documento (📍)** | No rodapé: **📍 main QA › aplicacoes/Portal/casos** para documentos da pasta de trabalho; **↗ avulso** (também na aba) para um arquivo aberto de fora dela — ex.: duplo clique no Explorer com o editor como padrão; **↗ OutraPasta › …** quando ele é de outra pasta de trabalho que você já abriu. Clique: *Mostrar na árvore*, *Copiar o caminho completo* (arquivo ou pasta), *Evidências deste documento*. O navegador não informa o caminho completo no disco: na primeira cópia, o editor pergunta onde fica a pasta de trabalho no computador (ex.: `C:\dev\main QA`) e guarda. Para um arquivo avulso, ele mostra o nome e a pasta conhecida (não dá para saber o caminho completo). |
-| **Abas** | Cada arquivo aberto vira uma aba (se já estiver aberto, só vai para ela). Cada aba guarda desfazer, cursor, rolagem e pasta de evidências. As abas voltam ao reabrir o app — as não salvas, com o texto — **no mesmo ponto onde você estava**. Fechou a aba e abriu o arquivo de novo depois? Ele também volta onde você parou (o aviso diz *de volta onde você parou*; vale para os últimos 200 arquivos). `Alt+W` fecha, `Alt+PageDown/PageUp` troca. **Arraste** uma aba (clique e arraste para os lados) para mudar a ordem, ou use `Alt+Shift+PageDown/PageUp` para mover a aba atual; a ordem fica guardada. |
+| **Abas** | Cada arquivo aberto vira uma aba (se já estiver aberto, só vai para ela). Cada aba guarda desfazer, cursor, rolagem e pasta de evidências. As abas voltam ao reabrir o app — as não salvas, com o texto — **no mesmo ponto onde você estava**. Fechou a aba e abriu o arquivo de novo depois? Ele também volta onde você parou (o aviso diz *de volta onde você parou*; vale para os últimos 200 arquivos). `Alt+W` fecha, `Alt+PageDown/PageUp` troca. **Fechar todas:** **⌄** (lista das abas) → **✕ Fechar todas as abas**, ou `Ctrl+Shift+P` → *Fechar todas as abas* — as não salvas perguntam uma a uma (*Cancelar* para no meio); sem abas, aparece a tela **Início**. **Arraste** uma aba (clique e arraste para os lados) para mudar a ordem, ou use `Alt+Shift+PageDown/PageUp` para mover a aba atual; a ordem fica guardada. |
 | **Salvar** | `Ctrl+S` grava no próprio arquivo (Chrome/Edge). **Salvar ▾ → Salvar como** (`Ctrl+Shift+S`) ou **Renomear**. Ao reabrir, o arquivo continua ligado ao disco (o navegador pode pedir um clique de permissão por sessão). |
 | **Salvar automaticamente** | **Salvar ▾ → ☐ Salvar automaticamente** liga/desliga (fica lembrado). Ligado, o arquivo é gravado ~2 s depois de cada alteração e ao sair da janela — o rodapé mostra "Salvo automaticamente às 14:32". Vale para documentos que já existem no disco (um documento novo precisa do primeiro `Ctrl+S`). Enquanto você edita um bloco no Preview ele espera você terminar; se o arquivo mudou fora do editor, ele não grava por cima (aparece a escolha *Recarregar / Manter as minhas*). |
 | **Fechar com alterações** | Fechar uma aba (ou trocar de documento) com alterações não salvas abre o diálogo **Salvar · Não salvar · Cancelar** (`Enter` = Salvar, `Esc` = Cancelar). Ao fechar a **janela** do app com algo não salvo, quem pergunta é o próprio navegador ("Sair do site?") — essa mensagem não pode ser trocada por segurança; com o *Salvar automaticamente* ligado ela quase não aparece. |
@@ -1441,6 +1449,7 @@ Dados sensíveis (e-mail, senha, CPF, cartão, token) saem **mascarados** na pá
 | Negrito / itálico / link | `Ctrl+B` / `Ctrl+I` / `Ctrl+K` | `⌘B` / `⌘I` / `⌘K` |
 | Bloco de código | `Ctrl+Alt+K` | `⌘⌥K` |
 | Capturar a tela (print da janela escolhida) | `Ctrl+Alt+P` | `⌘⌥P` |
+| Ligar a captura sem tirar print | `Ctrl+Alt+Shift+P` | `⌘⌥⇧P` |
 | Gravar vídeo da tela / parar | `Ctrl+Alt+G` | `⌘⌥G` |
 | Replay instantâneo: salvar os últimos segundos (ou ligar) | `Ctrl+Alt+R` | `⌘⌥R` |
 | Comentário de revisão | `Alt+M` | `⌥M` |
