@@ -846,7 +846,19 @@ function runDir(tipo, appName, same) {
   const ofApp = (/** @type {DocEntry} */ e) => !appName || (e.app || '').toLowerCase() === appName.toLowerCase();
   let sibs = all.filter((e) => same(e) && ofApp(e));
   if (!sibs.length && tipo === CYCLE_TYPE) sibs = all.filter((e) => (e.tipo === EXEC_TYPE || e.tipo === 'relatorio-execucao') && ofApp(e));
+  offerExecFolder();
   return runDestination({ tipo, app: appName }, app.workspaceDirs, sibs.map((e) => e.path)).dir;
+}
+
+let execFolderOffered = false;
+/** E3: ainda há execuções no lugar antigo (relatorios/, planos/)? Oferece mover, uma vez por sessão. */
+function offerExecFolder() {
+  if (execFolderOffered) return;
+  execFolderOffered = true;
+  import('./organize.js').then((m) => {
+    const n = m.pendingExecMoves().length;
+    if (n) app.toast(`🗂 A execução nova vai para execucoes/. Há ${n} documento(s) de execuções antigas fora dela (em relatorios/ ou planos/) — dá para levar tudo, com Desfazer.`, 'info', { duration: 12000, action: { label: 'Mover agora…', run: () => m.organizeExecutions() } });
+  });
 }
 
 /** Execução ▾ → 🔁 Ciclo de regressão…: escolhe os casos e SALVA o ciclo (definição), sem executar; dá para executar depois, várias vezes.

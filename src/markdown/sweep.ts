@@ -10,7 +10,7 @@
  */
 import { detectFrontMatter, parseFrontMatter } from './frontmatter.ts';
 import { jiraValues, jiraLabel } from './jiraLink.ts';
-import { APPS_DIR, CASE_TYPES, segmentOfDir, epicKey, ticketKey, ticketMoves } from './structure.ts';
+import { APPS_DIR, CASE_TYPES, segmentOfDir, epicKey, ticketKey, ticketMoves, execMoves } from './structure.ts';
 import { inheritHeader, commonHeader } from './segment.ts';
 import { cycleTable, isCycle } from './cycle.ts';
 import { REPORT_TYPES } from './reports.ts';
@@ -71,6 +71,8 @@ export function sweepLinks(input: Array<{ path: string; text: string }>, dirs: s
   }
   const inScope = (p: string) => (scope ? p.toLowerCase().startsWith(`${scope.replace(/\/$/, '').toLowerCase()}/`) : p.startsWith(`${APPS_DIR}/`));
   const moves = new Map(ticketMoves(docs.map((d) => ({ path: d.path, tipo: d.tipo, jira: d.data.jira, epico: d.data.epico, id: d.id })), dirs).map((m) => [m.path, m.dir]));
+  // E3: execuções/ciclos fora de execucoes/ (e os relatórios delas)
+  const runMoves = new Map(execMoves(docs.map((d) => ({ path: d.path, tipo: d.tipo, id: d.id, app: str(d.data.app) })), dirs).map((m) => [m.path, m.dir]));
   const out: SweepFinding[] = [];
 
   for (const d of docs) {
@@ -146,6 +148,8 @@ export function sweepLinks(input: Array<{ path: string; text: string }>, dirs: s
 
     const mv = moves.get(d.path);
     if (mv) fixes.push({ move: mv, confidence: 'certo', why: `pela regra de pastas (épico/ticket) o lugar é ${mv}/ — mova pelo app (🎫 Organizar por épico e ticket), que leva links e prints` });
+    const rm = !mv && runMoves.get(d.path);
+    if (rm) fixes.push({ move: rm, confidence: 'certo', why: `execuções e ciclos moram em execucoes/ (e os relatórios delas em relatorios/<ID>/); o lugar é ${rm}/ — mova pelo app (🗂 Mover execuções para execucoes/), que leva links e prints` });
 
     if (fixes.length) out.push({ path: d.path, id: d.id || base(d.path), tipo: d.tipo, fixes });
   }

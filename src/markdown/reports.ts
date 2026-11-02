@@ -16,6 +16,7 @@ import { findSection } from './runs.ts';
 import { cycleTable, cycleSummary, parseStart, isCycle, EXEC_TYPE, type CycleSummary } from './cycle.ts';
 import { readLinks } from './linkTypes.ts';
 import { jiraValues, jiraLabel } from './jiraLink.ts';
+import { reportsHome } from './structure.ts';
 import type { StatusWord } from '../types';
 
 export interface RDoc { path: string; text: string }
@@ -328,8 +329,8 @@ export function reportData(execPath: string, input: RDoc[], now = new Date()): R
 // ---------------------------------------------------------------- os documentos
 export interface ReportFile { kind: ReportKind; path: string; id: string; titulo: string; tipo: string; text: string }
 
-/** Pasta dos relatórios de uma execução: relatorios/<EXEC-ID>/ ao lado dela. */
-export const reportsDir = (execPath: string, execId: string): string => [dirOf(execPath), REPORTS_DIR, execId.replace(/[\\/:*?"<>|]+/g, '-')].filter(Boolean).join('/');
+/** Pasta dos relatórios de uma execução: relatorios/<EXEC-ID>/ (na aplicação, vizinha de execucoes/; no formato antigo, ao lado dela). */
+export const reportsDir = (execPath: string, execId: string): string => reportsHome(execPath, execId);
 
 function header(d: ReportData, r: (typeof REPORTS)[number], extra: Record<string, string> = {}): string[] {
   // herança da execução (que herdou do ciclo e dos casos): tags, ticket, épico, sprint, ciclo e plano

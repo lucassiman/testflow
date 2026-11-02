@@ -50,3 +50,26 @@ test('E2: duas execuções abertas — o painel e a barra dizem qual é; a aba d
   await caseTab.click();
   await expect(page.locator('#cyclePanel .cp-ident')).toHaveText(a);
 });
+
+test('E3: execução nova nasce em execucoes/; as antigas (relatorios/) e os relatórios delas vão pelo 🗂 Mover', async ({ page }) => {
+  const old = `---\ntipo: execucao\nid: EXEC-20261001-083000\ntitulo: Rodada antiga\napp: Portal\ninicio: 2026-10-01T08:30\nstatus: PASS\ntags: []\n---\n\n# Rodada antiga\n\n## Casos do ciclo\n\n| # | Caso | Título | Status | Quando | Bugs |\n| --- | --- | --- | --- | --- | --- |\n| 1 | [[TC-1]] | Caso TC-1 | PASS | 01/10 | |\n\n## Relatórios\n\n- 🏁 [[EXEC-20261001-083000-ENC]] — Encerramento\n`;
+  const enc = '---\ntipo: relatorio-encerramento\nid: EXEC-20261001-083000-ENC\nexecucao: EXEC-20261001-083000\napp: Portal\n---\n\n# Encerramento\n\nDa [[EXEC-20261001-083000]].\n';
+  await workspace(page, 'ws-e3', [
+    ['aplicacoes/Portal/casos/TC-1.md', tc('TC-1')],
+    ['aplicacoes/Portal/relatorios/rodada-antiga.md', old],
+    ['aplicacoes/Portal/relatorios/relatorios/EXEC-20261001-083000/01-encerramento.md', enc],
+  ]);
+  // rodada nova: em execucoes/ (a antiga em relatorios/ não puxa) e o aviso oferece mover as antigas
+  await newRun(page, 'Rodada nova');
+  await expect.poll(() => page.evaluate(() => window.__ls('aplicacoes/Portal/execucoes'))).toEqual(['rodada-nova.md']);
+  await page.keyboard.press('Control+Shift+P');
+  await page.keyboard.type('Mover execuções para execucoes');
+  await page.keyboard.press('Enter');
+  const dlg = page.locator('.app-dialog', { hasText: 'Mover execuções para execucoes/' });
+  await expect(dlg).toContainText('aplicacoes/Portal/execucoes/ — 1 documento(s)');
+  await expect(dlg).toContainText('aplicacoes/Portal/relatorios/EXEC-20261001-083000/ — 1 documento(s)');
+  await dlg.locator('button', { hasText: 'Mover' }).click();
+  await expect.poll(() => page.evaluate(() => window.__ls('aplicacoes/Portal/execucoes'))).toEqual(['rodada-antiga.md', 'rodada-nova.md']);
+  await expect.poll(() => page.evaluate(() => window.__ls('aplicacoes/Portal/relatorios/EXEC-20261001-083000'))).toEqual(['01-encerramento.md']);
+  expect(await page.evaluate(() => window.__read('aplicacoes/Portal/relatorios/rodada-antiga.md'))).toBeNull();
+});

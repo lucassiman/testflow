@@ -73,7 +73,7 @@ test('ciclo de regressão: escolher os casos, próximo caso já executando, resu
   await expect(dlg.locator('label', { hasText: 'BUG-3 — Envio falha' }).locator('input')).toBeChecked();
   await dlg.locator('button', { hasText: 'Sem confirmações' }).click();
   await expect(page.locator('#fileName')).toContainText('regressao-portal');
-  expect(await page.evaluate(() => window.__ls('aplicacoes/Portal/planos'))).toHaveLength(1);
+  expect(await page.evaluate(() => window.__ls('aplicacoes/Portal/execucoes'))).toHaveLength(1); // E3: na pasta das execuções
   await expect(page.locator('.exec-bar [data-act="cycleNext"]')).toBeVisible();
   await expect(page.locator('#docState [data-state="cycle"]')).toContainText('0/2');
 
@@ -213,7 +213,7 @@ test('pasta organizada numa versão anterior: avisa da subpasta nova (requisitos
   await page.click('#sidebarBtn');
   await page.locator('.sidebar button', { hasText: 'Abrir…' }).first().click();
   const hint = page.locator('.side-hint');
-  await expect(hint).toContainText('falta requisitos/ em 1 aplicação(ões) — para épicos e histórias');
+  await expect(hint).toContainText('falta execucoes/, requisitos/ em 1 aplicação(ões) — requisitos/ para épicos e histórias; execucoes/ para ciclos e execuções');
   // dispensar esconde; abrir de novo não volta
   await hint.locator('[data-side-act="dismissStructure"]').click();
   await expect(hint).toHaveCount(0);

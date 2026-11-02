@@ -14,7 +14,7 @@ A mesma Loja Demo do [LEIA-ME](LEIA-ME.md) (Sprint 42, versão 2.14.0) continua 
 | --- | --- | --- |
 | 22 e 23/09 | Os casos do Pix escritos; o [[TC-006]] em revisão; o ciclo *Regressão do Pix* salvo | `casos/QA-400 Pagamento com Pix/`, [[CICLO-20260923-1030]] |
 | 24/09 | Execução #1 (Sprint 42): o estorno ainda não estava no HML — [[TC-008]] bloqueado | [[EXEC-20260924-140000]] |
-| 01/10 | Execução #2: o [[TC-006]] e o [[TC-008]] falham → [[BUG-002]] e [[BUG-003]]; relatórios com a decisão *Não liberar* | [[EXEC-20261001-083000]], `execucoes/relatorios/`, `acompanhamento/` |
+| 01/10 | Execução #2: o [[TC-006]] e o [[TC-008]] falham → [[BUG-002]] e [[BUG-003]]; relatórios com a decisão *Não liberar* | [[EXEC-20261001-083000]], `relatorios/`, `acompanhamento/` |
 | 07 a 09/10 | Automação toda noite: o teste do TC-005 alterna PASS e FAIL — **instável** | `execucoes/execucao-automatizada-…`, `automacao/noturno/` |
 | 08/10 | Execução #3 em andamento, dividida entre Ana, Bruno e Lucas | [[EXEC-20261008-084500]] |
 | 09/10 | Smoke com matriz, pronto para executar; o [[TC-010]] (copia e cola) aprovado | [[CICLO-20261009-1400]] |
@@ -60,7 +60,7 @@ A mesma Loja Demo do [LEIA-ME](LEIA-ME.md) (Sprint 42, versão 2.14.0) continua 
 | --- | --- |
 | [[CICLO-20260923-1030]] | Ciclo salvo *Regressão do Pix* com as 3 execuções |
 | [[EXEC-20261008-084500]] | Rodada em andamento: testadores, **⏱ previsão**, ⏮ *Antes da rodada*, caso com 1/3 iterações e os status `FALHA CONHECIDA` e `RETESTE` (de `configuracao/status.md`) |
-| `execucoes/relatorios/EXEC-20261001-083000/` | Os 4 relatórios da execução #2 — *Não liberar*, com a decisão do time no aceite |
+| `relatorios/EXEC-20261001-083000/` | Os 4 relatórios da execução #2 — *Não liberar*, com a decisão do time no aceite |
 | [[CICLO-20261009-1400]] | Ciclo com **matriz** (3 configurações), sem execução — para você executar |
 | [[REL-001]] · `visoes/` | A release 2.15.0 e as visões (não executados, cobertura, rastreabilidade, tendência) |
 | `acompanhamento/index.html` | **Página da rodada para o time** — o que o PO abre na pasta oficial: a #2 encerrada (com a recomendação) e a #3 em andamento (se recarrega sozinha) |

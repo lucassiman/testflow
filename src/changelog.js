@@ -8,6 +8,12 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.75.0', date: '02/11/2026',
+    items: [
+      { icon: '🗂', text: '**Execuções na pasta delas**: ciclos e execuções novos nascem em `aplicacoes/<App>/execucoes/`, e os 4 relatórios de cada execução em `relatorios/<ID>/` — `relatorios/` fica só com relatórios. As antigas vão de uma vez em **Casos ▾ → 🗂 Mover execuções para execucoes/**, com links, prints e Desfazer.', manual: '7.8 Ciclo de regressão e execuções' },
+    ],
+  },
+  {
     version: '1.74.0', date: '02/11/2026',
     items: [
       { icon: '🪪', text: '**Qual execução é esta**: o painel da rodada e a barra ▶ Execução mostram o ID da execução, o ciclo com o número e o ambiente; a aba do caso aberto pelo painel ganha um ▶. Com várias abertas, o resultado e o bug vão para a execução de onde o caso veio, não para a última criada.', manual: '7.8 Ciclo de regressão e execuções' },

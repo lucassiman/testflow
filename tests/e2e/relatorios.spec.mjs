@@ -34,9 +34,9 @@ test('finalizar a rodada gera os 4 relatórios; regerar mantém o aceite escrito
   await panel.locator('[data-cp="finish"]').click();
   await page.locator('.app-dialog button', { hasText: 'Finalizar e marcar SKIP' }).click();
   await expect(page.locator('.rs-dialog')).toBeVisible();
-  await expect(page.locator('#toast')).toContainText('📑 4 relatório(s) em aplicacoes/Portal/planos/relatorios/EXEC-');
+  await expect(page.locator('#toast')).toContainText('📑 4 relatório(s) em aplicacoes/Portal/relatorios/EXEC-');
 
-  const dir = await page.evaluate(async () => `aplicacoes/Portal/planos/relatorios/${(await window.__ls('aplicacoes/Portal/planos/relatorios'))[0]}`);
+  const dir = await page.evaluate(async () => `aplicacoes/Portal/relatorios/${(await window.__ls('aplicacoes/Portal/relatorios'))[0]}`);
   expect(await page.evaluate((d) => window.__ls(d), dir)).toEqual(['01-encerramento.md', '02-defeitos.md', '03-rastreabilidade.md', '04-log-comparativo.md']);
   const enc = await page.evaluate((d) => window.__read(`${d}/01-encerramento.md`), dir);
   expect(enc).toContain('Do plano [[PT-1]]');

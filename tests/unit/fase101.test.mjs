@@ -53,5 +53,7 @@ test('rodada nasce junto das outras execuções, numa execucoes/ existente, e s�
   assert.equal(runDestination({ tipo: 'execucao' }, dirs, ['qa/rodadas/a.md', 'qa/rodadas/b.md', 'execucoes/c.md', '_entrada/d.md', '_entrada/e.md', '_entrada/f.md']).dir, 'qa/rodadas');
   // nada disso: o lugar padrão
   assert.equal(runDestination({ tipo: 'execucao' }, ['_entrada'], []).dir, '_entrada');
-  assert.equal(runDestination({ tipo: 'execucao', app: 'Portal' }, ['aplicacoes/Portal'], []).dir, 'aplicacoes/Portal/planos');
+  assert.equal(runDestination({ tipo: 'execucao', app: 'Portal' }, ['aplicacoes/Portal'], []).dir, 'aplicacoes/Portal/execucoes');
+  // execuções antigas em relatorios/ ou planos/ não puxam as novas para lá (E3)
+  assert.equal(runDestination({ tipo: 'execucao', app: 'Portal' }, ['aplicacoes/Portal'], ['aplicacoes/Portal/relatorios/a.md', 'aplicacoes/Portal/planos/b.md']).dir, 'aplicacoes/Portal/execucoes');
 });

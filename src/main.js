@@ -1676,6 +1676,7 @@ function run(cmd, value, event) {
       if (event && /Mac|iPhone|iPad/.test(navigator.platform) && /** @type {HTMLElement | null} */ (event.target)?.closest?.('input, textarea, [contenteditable="true"]')) return false;
       preview.commit(); goNextCase({ run: value === 'run' }); return true;
     case 'byTicket': organizeCasesByTicket(); return true;
+    case 'execFolder': import('./app/organize.js').then((m) => m.organizeExecutions()); return true;
     case 'bulkEdit': import('./app/bulkEdit.js').then((m) => m.bulkEdit()); return true;
     case 'importCases': import('./app/caseImport.js').then((m) => m.importCases()); return true;
     case 'evidencePanel': import('./app/evidencePanel.js').then((m) => m.openEvidencePanel()); return true;

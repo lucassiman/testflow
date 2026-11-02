@@ -125,7 +125,7 @@ test('ciclo salvo com 3 execuções (#3 em andamento, com testadores) e ciclo co
 });
 
 test('os 4 relatórios da execução #2, com a decisão do time escrita à mão', () => {
-  const dir = 'execucoes/relatorios/EXEC-20261001-083000';
+  const dir = 'relatorios/EXEC-20261001-083000';
   assert.deepEqual(docs.filter((d) => d.path.startsWith(`${dir}/`)).map((d) => d.path.slice(dir.length + 1)).sort(), ['01-encerramento.md', '02-defeitos.md', '03-rastreabilidade.md', '04-log-comparativo.md']);
   const enc = doc('EXEC-20261001-083000-ENC').text;
   assert.match(enc, /^recomendacao: NÃO LIBERAR$/m);

@@ -126,6 +126,7 @@ export const MODULES = [
         items: [
           { cmd: 'bulkEdit', label: '✏️ Edição em massa…', hint: 'prioridade, tags, épico, responsável de vários casos de uma vez', palette: 'Edição em massa: prioridade, tags, épico, responsável… de vários casos' },
           { cmd: 'importCases', label: '📥 Importar casos de uma planilha…', hint: 'TestRail, Zephyr, Xray, Excel — um documento por caso', palette: 'Importar casos de uma planilha (TestRail, Zephyr, Xray, Excel) — um documento por caso…' },
+          { cmd: 'execFolder', label: '🗂 Mover execuções para execucoes/…', hint: 'as antigas em relatorios/ ou planos/ e os relatórios delas', palette: 'Mover execuções para execucoes/ (as antigas em relatorios/ ou planos/, com os relatórios delas)…' },
           { cmd: 'byTicket', label: '🗂 Organizar por épico e ticket…', hint: 'casos/<ÉPICO>/<TICKET>/, pelos campos epico: e jira:', palette: 'Organizar por épico e ticket (casos/<ÉPICO>/<TICKET>/, pelos campos epico: e jira:)…' },
           { cmd: 'newView', label: '📊 Nova visão…', hint: 'consulta salva: não executados, tickets em teste, cobertura, rastreabilidade', palette: 'Nova visão (consulta salva: não executados, tickets, cobertura…)' },
         ],

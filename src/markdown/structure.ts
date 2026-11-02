@@ -20,7 +20,7 @@ export const APPS_DIR = 'aplicacoes';
 /** Visões (consultas salvas): todas juntas, fora das aplicações — valem para a pasta inteira. */
 export const VIEWS_DIR = 'visoes';
 export const ROOT_DIRS = [INBOX_DIR, APPS_DIR, 'processos', 'modelos', VIEWS_DIR] as const;
-export const APP_SUBDIRS = ['casos', 'bugs', 'planos', 'sessoes', 'relatorios', 'requisitos', 'docs'] as const;
+export const APP_SUBDIRS = ['casos', 'bugs', 'planos', 'execucoes', 'sessoes', 'relatorios', 'requisitos', 'docs'] as const;
 
 /** tipo: do cabeçalho → subpasta da aplicação */
 export const TYPE_FOLDER: Record<string, string> = {
@@ -32,8 +32,9 @@ export const TYPE_FOLDER: Record<string, string> = {
   release: 'releases',
   epico: 'requisitos',
   historia: 'requisitos',
-  'ciclo-regressao': 'planos',
-  execucao: 'planos',
+  // E3 (1.75.0): execuções e ciclos na pasta deles, fora dos relatórios (os relatórios de cada uma ficam em relatorios/<ID>/)
+  'ciclo-regressao': 'execucoes',
+  execucao: 'execucoes',
   'charter-exploratorio': 'sessoes',
   'teste-em-dupla': 'sessoes',
   'relatorio-execucao': 'relatorios',
@@ -208,6 +209,22 @@ export function suggestDestination(info: { tipo?: string; app?: string; jira?: u
 }
 
 const EXEC_FOLDERS = ['execucoes', 'execuções', 'execucao', 'rodadas'];
+/** Tipos que moram na pasta de execuções. */
+export const RUN_HOME_TYPES = ['execucao', 'ciclo-regressao'];
+/** A pasta é uma pasta de execuções (execucoes/, rodadas/…)? */
+export const isExecDir = (dir: string): boolean => EXEC_FOLDERS.some((n) => norm(n) === norm(dir.split('/').pop() || ''));
+const parentOf = (p: string): string => (p.includes('/') ? p.slice(0, p.lastIndexOf('/')) : '');
+
+/**
+ * Pasta dos relatórios de uma execução: na pasta de relatórios vizinha da de execuções
+ * (aplicacoes/Portal/execucoes/x.md → aplicacoes/Portal/relatorios/<ID>/); execução fora de uma pasta de execuções
+ * (formato antigo): relatorios/<ID>/ ao lado dela.
+ */
+export function reportsHome(execPath: string, execId: string): string {
+  const dir = parentOf(execPath);
+  const base = isExecDir(dir) ? parentOf(dir) : dir;
+  return [base, 'relatorios', execId.replace(/[\\/:*?"<>|]+/g, '-')].filter(Boolean).join('/');
+}
 
 /**
  * Onde criar uma execução/rodada ou um ciclo: junto dos documentos do mesmo tipo que já existem (a pasta mais usada
@@ -219,7 +236,8 @@ export function runDestination(info: { tipo?: string; app?: string }, dirs: stri
   const count = new Map<string, number>();
   for (const p of siblings) {
     const d = p.includes('/') ? p.slice(0, p.lastIndexOf('/')) : '';
-    if (d.split('/').includes(TRASH_DIR) || d === INBOX_DIR || d.startsWith(`${INBOX_DIR}/`)) continue;
+    // só contam as que já moram numa pasta de execuções (as antigas em relatorios/ ou planos/ não puxam as novas para lá)
+    if (!isExecDir(d) || d.split('/').includes(TRASH_DIR) || d === INBOX_DIR || d.startsWith(`${INBOX_DIR}/`)) continue;
     count.set(d, (count.get(d) || 0) + 1);
   }
   const best = [...count.entries()].sort((a, b) => b[1] - a[1] || a[0].length - b[0].length)[0];
@@ -235,6 +253,53 @@ export function runDestination(info: { tipo?: string; app?: string }, dirs: stri
     }
   }
   return base;
+}
+
+/**
+ * E3: execuções e ciclos fora de uma pasta de execuções (o formato antigo: em relatorios/, planos/…) vão para
+ * aplicacoes/<App>/execucoes/ (a pasta de execuções da aplicação que já existe, ou nova; sem aplicação, a da raiz), e os
+ * relatórios de cada uma (relatorios/<ID>/ ao lado dela) vão junto para o novo relatorios/<ID>/.
+ * @returns movimentos { path, dir } (dir = pasta de destino); a _entrada/, a lixeira e as pastas ocultas ficam de fora
+ */
+export function execMoves(entries: Array<{ path: string; tipo?: string; id?: string; app?: string }>, dirs: string[]): Array<{ path: string; dir: string }> {
+  const out: Array<{ path: string; dir: string }> = [];
+  const skip = (p: string) => p.split('/').some((x) => x === TRASH_DIR || x.startsWith('.')) || p === INBOX_DIR || p.startsWith(`${INBOX_DIR}/`);
+  const apps = listApps(dirs);
+  const home = (appFolder: string): string => {
+    const parent = appFolder ? `${APPS_DIR}/${appFolder}` : '';
+    for (const name of EXEC_FOLDERS) {
+      const want = parent ? `${parent}/${name}` : name;
+      const found = dirs.find((d) => norm(d) === norm(want));
+      if (found) return found;
+    }
+    return parent ? `${parent}/execucoes` : 'execucoes';
+  };
+  const taken = new Set<string>();
+  for (const e of entries) {
+    if (!RUN_HOME_TYPES.includes((e.tipo || '').trim()) || skip(e.path)) continue;
+    const dir = parentOf(e.path);
+    let dest = dir;
+    if (!isExecDir(dir)) {
+      const parts = e.path.split('/');
+      const appFolder = parts[0] === APPS_DIR && parts.length > 2 ? parts[1] : e.app ? matchApp(e.app, apps) : '';
+      dest = home(appFolder);
+      out.push({ path: e.path, dir: dest });
+      taken.add(e.path);
+    }
+    // os relatórios dela, no lugar antigo (relatorios/<ID>/ ao lado dela — também quando ela já estava em execucoes/),
+    // vão para o relatorios/<ID>/ novo
+    const id = String(e.id || '').trim();
+    if (!id) continue;
+    const from = [dir, 'relatorios', id.replace(/[\\/:*?"<>|]+/g, '-')].filter(Boolean).join('/');
+    const to = reportsHome(`${dest}/x.md`, id);
+    if (norm(from) === norm(to)) continue;
+    for (const r of entries) {
+      if (taken.has(r.path) || !norm(r.path).startsWith(`${norm(from)}/`)) continue;
+      out.push({ path: r.path, dir: [to, parentOf(r.path.slice(from.length + 1))].filter(Boolean).join('/') });
+      taken.add(r.path);
+    }
+  }
+  return out;
 }
 
 /**

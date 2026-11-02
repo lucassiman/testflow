@@ -8,7 +8,7 @@ import { getDir as wsGetDir, getFile as wsGetFile } from '../io/fsOps.js';
 import { createOrganizer } from '../io/organizer.js';
 import { ensurePermission, relocateRecents, saveSession } from '../io/recents.js';
 import { baseOf, dirOf, isInside, rebase } from '../markdown/relink.ts';
-import { ticketMoves, triageSuggestion } from '../markdown/structure.ts';
+import { ticketMoves, execMoves, triageSuggestion } from '../markdown/structure.ts';
 import { segmentKeyOfFolder } from '../markdown/segment.ts';
 import { showDialog } from '../ui/dialog.js';
 import { currentWorkspacePath, wsRelative } from './links.js';
@@ -209,6 +209,37 @@ export async function organizeCasesByTicket(scope = '') {
   });
   if (res?.id !== 'go') return;
   await organizer.moveEach(plan.map((m) => ({ entry: { kind: /** @type {const} */ ('file'), path: m.path }, dir: m.dir })), `${plan.length} documento(s) organizados em ${byDir.size} pasta(s) de épico/ticket`);
+}
+
+/** Execuções e ciclos fora de execucoes/ (formato antigo) e os relatórios delas: o que mover. */
+export function pendingExecMoves() {
+  return execMoves(docIndex.all().map((e) => ({ path: e.path, tipo: e.tipo, id: e.id, app: e.app })), app.workspaceDirs);
+}
+
+/**
+ * E3 — "Mover execuções para execucoes/": execuções e ciclos que estão em relatorios/, planos/… vão para
+ * aplicacoes/<App>/execucoes/, e os relatórios de cada uma para relatorios/<ID>/. Links, prints e anexos acompanham;
+ * um "Desfazer" para tudo.
+ */
+export async function organizeExecutions() {
+  if (!app.workspaceDir) { app.toast('Abra uma pasta de trabalho primeiro (☰ → Arquivos → Abrir…).', 'error'); return; }
+  await docIndex.settled();
+  const plan = pendingExecMoves();
+  if (!plan.length) { app.toast('Nada a mover: as execuções e os ciclos já estão em execucoes/ (os da _entrada/ ficam lá até a triagem).', 'info', { duration: 6000 }); return; }
+  /** @type {Map<string, number>} */
+  const byDir = new Map();
+  for (const m of plan) byDir.set(m.dir, (byDir.get(m.dir) || 0) + 1);
+  const isNew = (/** @type {string} */ d) => !app.workspaceDirs.some((x) => x.toLowerCase() === d.toLowerCase());
+  const lines = [...byDir].map(([d, n]) => `• ${d}/ — ${n} documento(s)${isNew(d) ? ' (pasta nova)' : ''}`);
+  const res = await showDialog({
+    title: 'Mover execuções para execucoes/', icon: '🗂',
+    message: `${plan.length} documento(s) vão para o lugar novo: execuções e ciclos em execucoes/ da aplicação, e os relatórios de cada execução em relatorios/<ID>/ — assim relatorios/ fica só com relatórios.`,
+    detail: [...lines.slice(0, 12), ...(lines.length > 12 ? [`… e mais ${lines.length - 12} pasta(s)`] : []), '', 'Links, prints e anexos acompanham. Dá para desfazer.'].join('\n'),
+    buttons: [{ id: 'cancel', label: 'Cancelar' }, { id: 'go', label: 'Mover', kind: 'primary' }],
+    defaultId: 'go', cancelId: 'cancel',
+  });
+  if (res?.id !== 'go') return;
+  await organizer.moveEach(plan.map((m) => ({ entry: { kind: /** @type {const} */ ('file'), path: m.path }, dir: m.dir })), `${plan.length} documento(s) de execução movidos para ${byDir.size} pasta(s)`);
 }
 
 /**

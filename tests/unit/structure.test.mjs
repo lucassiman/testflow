@@ -26,9 +26,9 @@ test('triagem: sugere só com app:, e não sugere a pasta onde já está', () =>
 
 test('estrutura: cria só o que falta; aplicações com subpastas; soltos na raiz', async () => {
   // aplicação que já existe ganha as subpastas que faltam (ex.: requisitos/, que veio depois)
-  assert.deepEqual(structurePlan(dirs), ['modelos', 'visoes', 'aplicacoes/Portal Web/bugs', 'aplicacoes/Portal Web/planos', 'aplicacoes/Portal Web/sessoes', 'aplicacoes/Portal Web/relatorios', 'aplicacoes/Portal Web/requisitos', 'aplicacoes/Portal Web/docs']);
+  assert.deepEqual(structurePlan(dirs), ['modelos', 'visoes', 'aplicacoes/Portal Web/bugs', 'aplicacoes/Portal Web/planos', 'aplicacoes/Portal Web/execucoes', 'aplicacoes/Portal Web/sessoes', 'aplicacoes/Portal Web/relatorios', 'aplicacoes/Portal Web/requisitos', 'aplicacoes/Portal Web/docs']);
   const { missingAppFolders } = await import('../../src/markdown/structure.ts');
-  assert.deepEqual(missingAppFolders(['aplicacoes', 'aplicacoes/A', ...['casos', 'bugs', 'planos', 'sessoes', 'relatorios', 'docs'].map((x) => `aplicacoes/A/${x}`)]), ['aplicacoes/A/requisitos']);
+  assert.deepEqual(missingAppFolders(['aplicacoes', 'aplicacoes/A', ...['casos', 'bugs', 'planos', 'sessoes', 'relatorios', 'docs'].map((x) => `aplicacoes/A/${x}`)]), ['aplicacoes/A/execucoes', 'aplicacoes/A/requisitos']);
   assert.deepEqual(structurePlan([], ['Portal']).slice(0, 6), ['_entrada', 'aplicacoes', 'processos', 'modelos', 'visoes', 'aplicacoes/Portal']);
   assert.deepEqual(listApps(dirs), ['Portal Web']);
   assert.equal(matchApp('PORTAL WEB', ['Portal Web']), 'Portal Web');

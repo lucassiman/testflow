@@ -67,14 +67,14 @@ test('rodada pelo MCP: criar pelo épico, registrar, status, bug com reincidênc
 
   const fin = await ws.roundFinish({});
   assert.match(fin, /finalizada: 1 PASS · 1 FAIL · 1 BLOCKED · 0 SKIP · sucesso 33%/);
-  assert.match(fin, /Relatórios em aplicacoes\/Portal\/execucoes\/relatorios\/EXEC-\d{8}-\d{6}\/: 01-encerramento\.md, 02-defeitos\.md, 03-rastreabilidade\.md, 04-log-comparativo\.md/);
+  assert.match(fin, /Relatórios em aplicacoes\/Portal\/relatorios\/EXEC-\d{8}-\d{6}\/: 01-encerramento\.md, 02-defeitos\.md, 03-rastreabilidade\.md, 04-log-comparativo\.md/);
   assert.match(fin, /Sugestão Go\/No-Go: LIBERAR COM RESSALVAS \(critérios do plano PT-1\)/);
   assert.match(fin, /Bugs: 1 novo\(s\), 0 reaberto\(s\), 1 aberto\(s\)/);
   const exec = readFileSync(execPath, 'utf8');
   assert.match(exec, /^fim: /m);
   assert.match(exec, /## Relatórios\n\nGerados em/);
-  const rel = readdirSync(join(dir, 'aplicacoes/Portal/execucoes/relatorios'))[0];
-  const encPath = join(dir, 'aplicacoes/Portal/execucoes/relatorios', rel, '01-encerramento.md');
+  const rel = readdirSync(join(dir, 'aplicacoes/Portal/relatorios'))[0];
+  const encPath = join(dir, 'aplicacoes/Portal/relatorios', rel, '01-encerramento.md');
   const enc = readFileSync(encPath, 'utf8');
   assert.match(enc, /^tags: \[relatorio, regressao, pix\]$/m);
   assert.match(enc, /^plano: PT-1$/m);

@@ -391,7 +391,7 @@ export function createSidebar({ root, onOpenFile, onOpenRecent, onRemoveRecent, 
     const hint = !term && !organized && files.length
       ? '<li class="side-hint"><button type="button" class="side-mini" data-side-act="structure">🗂 Organizar esta pasta…</button><span>cria _entrada/, aplicacoes/, processos/ e leva o que está solto na raiz para a entrada</span></li>'
       : missing.length && dismissedStructure() !== sig
-        ? `<li class="side-hint"><button type="button" class="side-mini" data-side-act="structure">🗂 Completar a estrutura…</button><span>falta ${esc(subs.join(', '))} em ${nApps} aplicação(ões)${subs.includes('requisitos/') ? ' — para épicos e histórias' : ''}</span><button type="button" class="side-hint-x" data-side-act="dismissStructure" data-sig="${esc(sig)}" title="Não mostrar (volta se faltar outra pasta)">×</button></li>`
+        ? `<li class="side-hint"><button type="button" class="side-mini" data-side-act="structure">🗂 Completar a estrutura…</button><span>falta ${esc(subs.join(', '))} em ${nApps} aplicação(ões)${[['requisitos/', 'requisitos/ para épicos e histórias'], ['execucoes/', 'execucoes/ para ciclos e execuções']].filter(([d]) => subs.includes(d)).map(([, why], i) => `${i ? '; ' : ' — '}${why}`).join('')}</span><button type="button" class="side-hint-x" data-side-act="dismissStructure" data-sig="${esc(sig)}" title="Não mostrar (volta se faltar outra pasta)">×</button></li>`
         : '';
     ui.wsList.innerHTML = (term ? '' : renderPins()) + hint + renderTree(shown, shownDirs, !!term) + (term ? '' : renderTrash());
   }

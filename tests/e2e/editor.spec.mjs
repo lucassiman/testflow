@@ -610,7 +610,7 @@ test('estrutura e captura: organizar a raiz, triagem no painel, nota rápida, sa
   await dlg.locator('button', { hasText: 'Criar' }).click();
   await expect(page.locator('#toast')).toContainText('2 documento(s) levados para _entrada/');
   expect(await page.evaluate(() => window.__ls(''))).toEqual(['_entrada', 'aplicacoes', 'modelos', 'processos', 'visoes']);
-  expect(await page.evaluate(() => window.__ls('aplicacoes/Portal'))).toEqual(['bugs', 'casos', 'docs', 'planos', 'relatorios', 'requisitos', 'sessoes']);
+  expect(await page.evaluate(() => window.__ls('aplicacoes/Portal'))).toEqual(['bugs', 'casos', 'docs', 'execucoes', 'planos', 'relatorios', 'requisitos', 'sessoes']);
   expect(await page.evaluate(() => window.__read('_entrada/solto2.md'))).toContain('[o caso](solto1.md)');
   await expect(tree.locator('.side-inbox .side-count')).toHaveText('2');
 

@@ -39,10 +39,10 @@ function scenario() {
   return docs;
 }
 
-test('relatórios: 4 documentos em relatorios/<EXEC-ID>/ ao lado da execução, com cabeçalho QA-MD próprio', () => {
+test('relatórios: 4 documentos em relatorios/<EXEC-ID>/ (vizinha de execucoes/), com cabeçalho QA-MD próprio', () => {
   const r = buildReports('execucoes/regressao-2.md', scenario(), { now: new Date(2026, 9, 8, 10, 6) });
   assert.ok(r);
-  assert.equal(r.dir, 'execucoes/relatorios/EXEC-20261008-090000');
+  assert.equal(r.dir, 'relatorios/EXEC-20261008-090000');
   assert.deepEqual(r.files.map((f) => f.path.split('/').pop()), ['01-encerramento.md', '02-defeitos.md', '03-rastreabilidade.md', '04-log-comparativo.md']);
   assert.deepEqual(r.files.map((f) => f.id), ['ENC', 'DEF', 'RAS', 'LOG'].map((s) => `EXEC-20261008-090000-${s}`));
   for (const f of r.files) {

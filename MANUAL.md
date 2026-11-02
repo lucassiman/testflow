@@ -738,7 +738,9 @@ Em documentos *Sessão exploratória* (e no *Teste em dupla*, ver 7.11) aparece 
 
 **Uma porta só para começar:** **Execução ▾ → ▶ Nova execução…** pergunta o tipo — *Avulsa* (você escolhe os casos), *De um ciclo salvo* (nova execução #N) ou *Só automatizada* (a partir de um relatório Playwright, JUnit ou Newman). **🔂 Reteste das falhas** e **🔁 Executar de novo** continuam no painel da própria execução.
 
-Dois conceitos, dois tipos de documento. Onde nascem: **junto das execuções que já existem** (a pasta mais usada por elas); sem nenhuma, numa pasta `execucoes/` que já exista (na aplicação ou na raiz); senão em `aplicacoes/<App>/planos/` (ou na `_entrada/`, sem aplicação):
+Dois conceitos, dois tipos de documento. Onde nascem (desde a 1.75.0): na pasta **`execucoes/`** da aplicação — `aplicacoes/<App>/execucoes/` —, separada dos relatórios; se você já usa outra pasta de execuções (`execuções/`, `rodadas/`), ela vale. Sem aplicação, numa `execucoes/` da raiz que já exista, senão na `_entrada/`. Os 4 relatórios de cada execução ficam em `relatorios/<ID-da-execução>/`, vizinha de `execucoes/`.
+
+**Execuções antigas** (das versões anteriores, que nasciam em `relatorios/` ou `planos/`): **Casos ▾ → 🗂 Mover execuções para execucoes/…** (ou `Ctrl+Shift+P` → *Mover execuções*) leva as execuções e os ciclos para `execucoes/` e os relatórios de cada uma para `relatorios/<ID>/` (inclusive os que ficaram em `execucoes/relatorios/`), com links, prints e anexos, e **Desfazer** no aviso. A primeira rodada criada na sessão avisa quando ainda há execuções no lugar antigo, e a varredura (`qa_varredura`) aponta cada uma.
 
 | Conceito | O que é | Como criar |
 | --- | --- | --- |
@@ -815,7 +817,7 @@ Dá para tirar ou pôr casos editando a tabela (uma linha por `[[caso]]`). A pí
 
 #### Relatórios de fim de execução
 
-Ao **🏁 Finalizar execução**, o TestFlow grava **4 documentos separados** em `relatorios/<ID-da-execução>/`, ao lado da execução, e põe a seção **Relatórios** com os links nela. Cada um tem cabeçalho QA-MD próprio: dá para publicar, exportar PDF e copiar para o Jira um por um. Os nomes seguem a norma de documentação de teste ISO/IEC/IEEE 29119-3.
+Ao **🏁 Finalizar execução**, o TestFlow grava **4 documentos separados** em `relatorios/<ID-da-execução>/` (na aplicação, ao lado de `execucoes/`), e põe a seção **Relatórios** com os links nela. Cada um tem cabeçalho QA-MD próprio: dá para publicar, exportar PDF e copiar para o Jira um por um. Os nomes seguem a norma de documentação de teste ISO/IEC/IEEE 29119-3.
 
 | Relatório | O que traz |
 | --- | --- |
@@ -1097,7 +1099,9 @@ aplicacoes/<App>/
         PORTAL-120.md      ← a história do ticket (se houver)
         TC-001.md
     PORTAL-200/            ← ticket sem épico: direto em casos/
-  bugs/ planos/ sessoes/ relatorios/ docs/
+  bugs/ planos/ sessoes/ docs/
+  execucoes/               ← ciclos e execuções (uma por rodada)
+  relatorios/              ← relatórios: os 4 de cada execução em relatorios/<ID>/, resumos e os automatizados
   requisitos/              ← épicos e histórias que ainda não têm pasta (sem chave/épico)
 processos/                 ← como o time trabalha
 modelos/                   ← seus modelos (Salvar como modelo)
@@ -1108,7 +1112,7 @@ visoes/                    ← visões: consultas salvas (ver 11.1)
 | --- | --- |
 | **Criar a estrutura** | Numa pasta ainda sem estrutura, a aba Arquivos mostra **🗂 Organizar esta pasta…** (também no clique direito no espaço vazio da árvore ou em `Ctrl+Shift+P` → *Criar estrutura…*). Cria só as pastas que faltam — pode já criar as aplicações (`Portal, Backoffice`) — e oferece levar os `.md` soltos na raiz para `_entrada/` (links e prints acompanham; **Desfazer** no aviso). Nada que você já tem é renomeado ou apagado. |
 | **Completar a estrutura** | Pasta organizada à qual falta alguma subpasta (ex.: `requisitos/`): o topo da árvore mostra **🗂 Completar a estrutura…** com o que falta — cria só as pastas que faltam, nada é mexido. O **×** dispensa o aviso (ele volta se faltar outra pasta). Também: `Ctrl+Shift+P` → *Criar estrutura…*. Sem isso, a pasta nasce sozinha na primeira vez que você salva um épico ou história. |
-| **Nova aplicação** | Clique direito em `aplicacoes/` (ou no espaço vazio) → *🧩 Nova aplicação…*: cria `aplicacoes/<App>/` com as sete subpastas. |
+| **Nova aplicação** | Clique direito em `aplicacoes/` (ou no espaço vazio) → *🧩 Nova aplicação…*: cria `aplicacoes/<App>/` com as oito subpastas. |
 | **Nota rápida** | `Alt+Q` (ou **Novo ▾ → 📝 Nota rápida**): cria `_entrada/2026-09-28-1330-nota.md` já salvo, abre e deixa o cursor pronto para escrever. Sem pasta de trabalho aberta, cria um documento novo comum. |
 | **Salvar um documento novo** | Com a pasta de trabalho aberta, o primeiro `Ctrl+S` abre **Salvar na pasta de trabalho**: nome sugerido (`<id>-<titulo>.md`) e a pasta sugerida pelo cabeçalho — com `app:` e `tipo:`, vai para `aplicacoes/<App>/<casos, bugs…>/` (a pasta é criada se faltar); sem `app:`, para `_entrada/`. Dá para escolher outra pasta na lista, ou **Outro lugar…** (janela do sistema, fora da pasta de trabalho). *Salvar como* (`Ctrl+Shift+S`) continua abrindo a janela do sistema. |
 | **Novo documento aqui** | Clique direito numa pasta → *📄 Novo documento aqui…* → escolha o modelo (ou *em branco*). O arquivo já nasce salvo nessa pasta e, dentro de `aplicacoes/<App>/`, com o `app:` preenchido. |
