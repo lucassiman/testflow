@@ -1418,6 +1418,8 @@ button { font: inherit; color: inherit; }
 .cp-mini { font-size: 10.5px; color: var(--muted); }
 .cp-head { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--border); background: var(--bg-soft); }
 .cp-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cp-ident { padding: 4px 10px; font-size: 11.5px; font-family: var(--mono, monospace); color: var(--muted); border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+.run-exec { font-size: 11px; font-family: var(--mono, monospace); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 32ch; }
 .cp-x { border: 0; background: none; cursor: pointer; color: var(--muted); font-size: 15px; padding: 0 4px; }
 .cp-x:hover { color: var(--text); }
 .badge.badge-custom { background: var(--badge) !important; color: #fff !important; border-color: var(--badge) !important; }

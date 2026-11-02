@@ -59,12 +59,13 @@ import { runsOf } from '../markdown/cycle.ts';
  *   onFinish?: (res: { overall: string, round: number, revised?: boolean }) => boolean | void,
  *   onCancel?: (res: { reverted: boolean }) => void,
  *   roundConfig?: () => string,
+ *   roundLabel?: () => string,
  *   shared?: SharedDeps,
  *   docKey?: () => string,
  *   prefs: import('../types').PrefsApi,
  * }} deps
  */
-export function createRunner({ store, preview, toast: appToast, root, onPastePrint, onPasteFiles, onSavePrints, onReadClipboardImages, onNewBug, onCapture, onRecord, isRecording, onReplay, canReplay, onStateChange, onFinish, onCancel, docKey: docKeyDep, prefs, shared, roundConfig }) {
+export function createRunner({ store, preview, toast: appToast, root, onPastePrint, onPasteFiles, onSavePrints, onReadClipboardImages, onNewBug, onCapture, onRecord, isRecording, onReplay, canReplay, onStateChange, onFinish, onCancel, docKey: docKeyDep, prefs, shared, roundConfig, roundLabel }) {
   const el = document.createElement('div');
   el.className = 'runner';
   el.setAttribute('role', 'region');
@@ -286,6 +287,11 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
   }
   /** A célula de status tem um status personalizado? @param {string} st */
   const customOfCell = (st) => customStatuses().some((c) => c.word === st.replace(/`/g, '').trim().toUpperCase());
+  /** A execução da rodada (EXEC-… · CICLO #N · 🌐 HML), para não confundir com outra aberta. */
+  function runChip() {
+    const r = roundLabel?.() || '';
+    return r ? `<span class="run-exec" title="Execução da rodada: o resultado deste caso vai para ela">${esc(r)}</span>` : '';
+  }
   /** Ambiente ativo (🌐 HML) — clique troca (os dados do passo mudam junto). */
   function envChip() {
     const e = shared?.env?.() || '';
@@ -530,7 +536,7 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     }
     el.innerHTML = `
       <div class="run-head">
-        <strong>▶ Execução</strong>
+        <strong>▶ Execução</strong>${runChip()}
         <span class="run-step">Antes de começar</span>${iterChip()}${envChip()}
         <span class="run-grow"></span>
         ${keysBtn()}${floatBtn()}
@@ -609,7 +615,7 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     const action = t.action >= 0 ? cell(t.action) : row.cells.filter((_, i) => ![t.status, t.expected, t.actual, t.id].includes(i)).join(' · ');
     el.innerHTML = `
       <div class="run-head">
-        <strong>▶ Execução</strong>
+        <strong>▶ Execução</strong>${runChip()}
         <span class="run-step">Passo ${esc(label)} <small>(${run.index + 1} de ${rows.length})</small></span>${iterChip()}${envChip()}
         <span class="run-progress" title="${done} de ${rows.length} com status"><span style="width:${Math.round((done / rows.length) * 100)}%"></span></span>
         ${keysBtn()}${floatBtn()}

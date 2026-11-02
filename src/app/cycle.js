@@ -57,6 +57,53 @@ function textAt(path) {
   return open.get(path) ?? docIndex.get(path)?.text ?? null;
 }
 
+// ---------------------------------------------------------------- a execução de cada aba (E2)
+/** Caso (caminho) → execução de onde ele foi aberto: voltando à aba do caso, vale essa execução, não a última ativa. @type {Map<string, string>} */
+const caseRun = new Map();
+
+/** Execução em andamento (existe e não foi encerrada)? @param {string} path @returns {string | null} o texto dela */
+function liveRun(path) {
+  const text = path ? textAt(path) : null;
+  return text && isCycle(text) && !cycleClosed(text) ? text : null;
+}
+
+/** O ambiente da execução (`ambiente:` no cabeçalho). @param {string} text */
+const ambienteOf = (text) => String(/^ambiente:\s*(.*)$/m.exec(text.split(/\n---/)[0] || '')?.[1] || '').replace(/^["']|["']$/g, '').trim();
+
+/**
+ * Como mostrar uma execução para não confundir com outra aberta: ID · ciclo #N · 🌐 ambiente.
+ * @param {string} path @param {string} text @returns {{ id: string, text: string }}
+ */
+export function runIdent(path, text) {
+  const h = headerOf(text);
+  const id = h.id || docIndex.get(path)?.id || path.split('/').pop()?.replace(/\.(md|markdown)$/i, '') || '';
+  const n = execNumber(text);
+  const amb = ambienteOf(text) || configOf(text);
+  return { id, text: [id, h.ciclo ? `${h.ciclo}${n ? ` #${n}` : ''}` : '', amb ? `🌐 ${amb}` : ''].filter(Boolean).join(' · ') };
+}
+
+/** Trocou de aba: a execução aberta (em andamento) ou a de onde veio o caso aberto passa a ser a ativa. */
+export function followTabRun() {
+  const rel = currentWorkspacePath();
+  if (!rel) return;
+  const run = isCycle(app.store.source) ? rel : caseRun.get(rel) || '';
+  if (run && run !== activePath() && (run === rel ? !cycleClosed(app.store.source) : liveRun(run))) setActive(run);
+}
+
+/** Marca ▶ na aba de um caso aberto por uma execução em andamento: qual é ela. @param {string} rel @returns {Array<{ key: string, icon: string, title: string }>} */
+export function runTabMark(rel) {
+  const run = rel ? caseRun.get(rel) || '' : '';
+  const text = liveRun(run);
+  return text ? [{ key: 'run', icon: '▶', title: `Aberto pela execução ${runIdent(run, text).text} — o resultado e os bugs deste caso vão para ela` }] : [];
+}
+
+/** A execução do caso aberto, para a barra ▶ Execução ("" fora de rodada). */
+export function openCaseRunLabel() {
+  if (!inCycleCase()) return '';
+  const c = /** @type {{ path: string, text: string }} */ (currentCycle());
+  return runIdent(c.path, c.text).text;
+}
+
 /** O ciclo que vale agora: o documento aberto (se for um ciclo) ou o ciclo ativo. @returns {{ path: string, text: string } | null} */
 export function currentCycle() {
   const rel = currentWorkspacePath();
@@ -245,7 +292,7 @@ export async function skipCycleCase(key) {
 /**
  * Dados do painel da rodada: um item por caso, na ordem do ciclo (null = não há ciclo a mostrar).
  * Leve de propósito (roda a cada mudança no documento): usa o texto do ciclo e o dos casos, sem recalcular bugs.
- * @returns {{ path: string, title: string, closed: boolean, onCycle: boolean, counts: { PASS: number, FAIL: number, BLOCKED: number, SKIP: number }, done: number, total: number, failed: number, next: string | null, items: ChecklistItem[], ciclo: { path: string, titulo: string } | null, numero: number, links: import('../markdown/linkTypes.ts').LinkChip[], auto: import('../markdown/cycleAuto.ts').AutoSummary | null, whole: { key: string, done: number, total: number } | null, before: Array<{ acao: string, esperado: string, source: string }>, beforeDone: number[], forecast: import('../markdown/forecast.ts').Forecast | null, me: string, workload: import('../markdown/assign.ts').Workload[], config: string, matrix: Array<{ path: string, label: string, done: number, total: number, current: boolean }> } | null}
+ * @returns {{ path: string, title: string, closed: boolean, onCycle: boolean, counts: { PASS: number, FAIL: number, BLOCKED: number, SKIP: number }, done: number, total: number, failed: number, next: string | null, items: ChecklistItem[], ciclo: { path: string, titulo: string } | null, numero: number, links: import('../markdown/linkTypes.ts').LinkChip[], auto: import('../markdown/cycleAuto.ts').AutoSummary | null, whole: { key: string, done: number, total: number } | null, before: Array<{ acao: string, esperado: string, source: string }>, beforeDone: number[], forecast: import('../markdown/forecast.ts').Forecast | null, me: string, ident: string, workload: import('../markdown/assign.ts').Workload[], config: string, matrix: Array<{ path: string, label: string, done: number, total: number, current: boolean }> } | null}
  */
 export function cycleChecklist() {
   const c = currentCycle();
@@ -311,6 +358,7 @@ export function cycleChecklist() {
     // previsão: a duração média de cada caso pendente (histórico dele)
     forecast: cycleClosed(c.text) ? null : forecast(items.map((i) => ({ done: i.state === 'feito', avgMs: avgOf(i.key, open) }))),
     me: me(),
+    ident: runIdent(c.path, c.text).text,
     config: configOf(c.text),
     matrix: matrixOf(c),
     workload: workload(applyMarks(c.text, c.path), (k) => avgOf(k, open)),
@@ -435,6 +483,7 @@ export async function goToCycleCase(key) {
   if (e.path !== currentWorkspacePath()) {
     await openWikiTarget(key);
     if (currentWorkspacePath() !== e.path) return;
+    caseRun.set(e.path, c.path);
     if (previousWasCase && previous && previous !== app.tabs.activeId && app.tabs.find(previous) && !app.tabs.find(previous)?.doc?.dirty) await app.closeTab(previous);
   }
   // bug (teste de confirmação): sem a tabela de passos ainda, monta pelos "Passos para reproduzir"
@@ -657,7 +706,7 @@ export function roundOfOpenCase() {
   const c = /** @type {{ path: string, text: string }} */ (currentCycle());
   const e = docIndex.get(c.path);
   const h = headerOf(c.text);
-  return { execucao: h.id || e?.id || '', ciclo: h.ciclo, plano: h.plano, config: configOf(c.text), ambiente: String(/^ambiente:\s*(.*)$/m.exec(c.text.split(/\n---/)[0] || '')?.[1] || '').replace(/^["']|["']$/g, '').trim() };
+  return { execucao: h.id || e?.id || '', ciclo: h.ciclo, plano: h.plano, config: configOf(c.text), ambiente: ambienteOf(c.text) };
 }
 
 /** O documento aberto é um caso do ciclo ativo? */
@@ -800,13 +849,13 @@ function runDir(tipo, appName, same) {
   return runDestination({ tipo, app: appName }, app.workspaceDirs, sibs.map((e) => e.path)).dir;
 }
 
-/** Execução ▾ → 🔁 Ciclo de regressão…: escolhe os casos e SALVA o ciclo (definição), sem executar; dá para executar depois, várias vezes. */
+/** Execução ▾ → 🔁 Ciclo de regressão…: escolhe os casos e SALVA o ciclo (definição), sem executar; dá para executar depois, várias vezes.
+ * Sem a matriz na janela (E1, 1.74.0): cria-se uma execução por ambiente; ciclos antigos com `configuracoes:` seguem valendo. */
 export function newCycle() {
   pickCases({
     title: 'Novo ciclo de regressão — quais casos?', confirmLabel: 'Salvar ciclo',
     defaultName: `Regressão${onlyAppName() ? ` ${onlyAppName()}` : ''} — ${new Date().toLocaleDateString('pt-BR')}`,
     onPick: (picked, name, origem, appName, links, configs) => { const h = inherited(picked, links); return createDefinition(picked, appName, origem, name, h.links, h.tags, configs.map((c) => c.label)); },
-    matrix: true,
   });
 }
 
@@ -818,11 +867,10 @@ export function newRun() {
     onPick: async (picked, name, origem, appName, links, configs) => {
       const h = inherited(picked, links);
       if (configs.length) return createMatrix(picked.map(caseRef), appName, origem, name, null, h.links, h.tags, configs);
-      const bugs = await askConfirmBugs(picked, { appName });
+      const bugs = await askConfirmBugs(picked, { appName, intro: `Rodada nova "${name}" com ${picked.length} caso(s): os bugs marcados entram nela, antes dos casos.` });
       if (!bugs) return;
       return createExecution(picked.map(caseRef), appName, origem, name, null, h.links, undefined, h.tags, { bugs });
     },
-    matrix: true,
   });
 }
 
@@ -875,7 +923,7 @@ async function createExecution(cases, appName, origem, titulo, link, links = {},
   if (extra.quiet) return path;
   setActive(path);
   if (!cases.length && !bugs.length) { app.toast(`🤖 Execução automatizada criada em ${path}. Para somar casos manuais, edite a tabela "Casos do ciclo".`, 'info', { duration: 8000 }); return; }
-  app.toast(`▶ ${link ? `Execução #${link.numero}` : 'Rodada'} criada em ${path}${bugs.length ? ` (${bugs.length} confirmação(ões) de bug primeiro)` : ''} — ▶ Próximo caso abre o primeiro e já começa a execução.`, 'info', { duration: 8000, action: { label: '▶ Começar', run: () => nextCycleCase() } });
+  app.toast(`▶ ${link ? `Execução #${link.numero}` : 'Rodada'} ${headerOf(text).id} criada em ${path}${bugs.length ? ` (${bugs.length} confirmação(ões) de bug primeiro)` : ''} — ▶ Próximo caso abre o primeiro e já começa a execução.`, 'info', { duration: 8000, action: { label: '▶ Começar', run: () => nextCycleCase() } });
   return path;
 }
 

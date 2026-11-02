@@ -67,7 +67,7 @@ import { addComment, commentAction, listComments } from './app/comments.js';
 import { startCollab, collabDocChanged, officialMenu, updateAllFromOfficial, paintOfficialButton } from './app/collab.js';
 import { syncReleaseBlock } from './markdown/release.ts';
 import { refreshStatuses, editStatuses } from './app/statuses.js';
-import { newCycle, newRun, newAutoRun, attachAutomation, editDevice, runCycle, editLinks, nextCycleCase, finishCycle, showRoundSummary, openCycle, onCaseFinished, refreshCycleDoc, syncCycleForSave, rerunFailed, roundOfOpenCase, openCycleDef } from './app/cycle.js';
+import { newCycle, newRun, newAutoRun, attachAutomation, editDevice, runCycle, editLinks, nextCycleCase, finishCycle, showRoundSummary, openCycle, onCaseFinished, refreshCycleDoc, syncCycleForSave, rerunFailed, roundOfOpenCase, openCycleDef, openCaseRunLabel, followTabRun, runTabMark } from './app/cycle.js';
 import { assignRound } from './app/assign.js';
 import { goNextCase, offerNextCase } from './app/nextCase.js';
 import { isBugText } from './markdown/confirm.ts';
@@ -253,6 +253,7 @@ runner = createRunner({
   // ✕ Cancelar execução: na rodada, o caso volta a "não começado"
   onCancel: () => { import('./app/cycle.js').then((m) => m.cancelCaseStart()); },
   roundConfig: () => roundOfOpenCase()?.config || '',
+  roundLabel: () => openCaseRunLabel(),
   onNewBug: (nearLine) => {
     const bug = findBugTemplate();
     if (bug) createLinkedDoc(bug, { where: 'preview', nearLine });
@@ -859,7 +860,7 @@ tabs = createTabs({
   onNew: () => doNew(),
   getActiveInfo: () => ({ name: store.fileName, dirty: store.dirty, path: disk.path }),
   onReorder: () => persistTabs({ handles: true }),
-  marks: (id, active) => [...tabMarks(id, active), ...placeTabMark(id, active)],
+  marks: (id, active) => [...tabMarks(id, active), ...placeTabMark(id, active), ...runTabMark(wsRelPath(active ? disk.path : tabs.find(id)?.doc?.path))],
   label: (i) => { const rel = wsRelPath(i.path); return rel ? treeLabel(rel) : null; }, // o mesmo nome da árvore
   onRender: () => sidebar.setOpen(tabs.list.map((t) => wsRelPath(t.id === tabs.activeId ? disk.path : t.doc?.path)).filter(Boolean)),
 });
@@ -945,6 +946,7 @@ function switchTab(id) {
   preview.commit();
   const doc = tabs.activate(id, captureDoc());
   if (doc) restoreDoc(doc);
+  followTabRun(); // E2: a execução da aba (ou de onde veio o caso dela) passa a ser a ativa
   persistTabs({ handles: true });
 }
 

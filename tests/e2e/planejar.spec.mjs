@@ -64,20 +64,46 @@ test('atribuir: 👥 distribui os pendentes, chip do testador, filtro Minhas, ca
   await expect(page.locator('#preview h1')).toHaveText('TC-1');
 });
 
-test('matriz: nova rodada em HML e PROD cria uma execução por configuração; o caso feito em HML segue pendente em PROD', async ({ page }) => {
+test('matriz (E1): fora da Nova rodada; o ciclo antigo com configuracoes: ainda cria uma execução por configuração', async ({ page }) => {
+  const def = `---
+tipo: ciclo-regressao
+id: CICLO-20261101-1000
+titulo: Smoke
+app: Portal
+versao:
+configuracoes: [HML · Chrome, PROD · Chrome]
+tags: []
+qa-md: 1
+---
+
+# Smoke
+
+## Casos do ciclo
+
+| # | Caso | Título |
+| --- | --- | --- |
+| 1 | [[TC-1]] | Caso TC-1 |
+
+## Execuções
+
+| # | Execução | Início | Fim | Resultado | % sucesso |
+| --- | --- | --- | --- | --- | --- |
+`;
   await workspace(page, 'ws-matriz', [
     ['aplicacoes/Portal/casos/TC-1.md', tc('TC-1')],
+    ['aplicacoes/Portal/ciclos/smoke.md', def],
   ]);
+  // a Nova rodada não oferece mais a matriz
   await page.click('button[data-menu="mod-execucao"]');
   await page.click('#mod-execucao [data-cmd="startRun"]');
   await page.click('.app-dialog button:has-text("Continuar")');
   const picker = page.locator('.cpk-dialog');
-  await picker.locator('button', { hasText: 'Selecionar visíveis' }).click();
-  await picker.locator('[data-cpk="matrix"] summary').click();
-  await picker.locator('[data-mx="ambientes"]').fill('HML, PROD');
-  await picker.locator('[data-mx="navegadores"]').fill('Chrome');
-  await expect(picker.locator('[data-cpk="mxnote"]')).toContainText('2 execução(ões): HML · Chrome · PROD · Chrome');
-  await picker.locator('button', { hasText: 'Criar e começar' }).click();
+  await expect(picker).toBeVisible();
+  await expect(picker.locator('[data-cpk="matrix"]')).toHaveCount(0);
+  await picker.locator('button', { hasText: 'Cancelar' }).click();
+  // o ciclo salvo antes, com configurações, continua criando a matriz
+  await page.locator('[data-side="wsList"] .side-file', { hasText: 'smoke' }).first().click();
+  await page.locator('#docState [data-state="cycledef"]').click();
   await expect(page.locator('#toast')).toContainText('2 execução(ões) — uma por configuração');
   const cfg = page.locator('.cp-cfg');
   await expect(cfg).toHaveCount(2);

@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.74.0', date: '02/11/2026',
+    items: [
+      { icon: '🪪', text: '**Qual execução é esta**: o painel da rodada e a barra ▶ Execução mostram o ID da execução, o ciclo com o número e o ambiente; a aba do caso aberto pelo painel ganha um ▶. Com várias abertas, o resultado e o bug vão para a execução de onde o caso veio, não para a última criada.', manual: '7.8 Ciclo de regressão e execuções' },
+      { icon: '🧮', text: '**Nova rodada sem a matriz**: a janela de *Nova rodada* e de *Novo ciclo* ficou mais simples — crie uma execução por ambiente. Os ciclos antigos com configurações continuam funcionando.', manual: '7.8 Ciclo de regressão e execuções' },
+    ],
+  },
+  {
     version: '1.73.0', date: '02/11/2026',
     items: [
       { icon: '▦', text: '**Tabela digitada vira tabela**: no Preview, escrever as linhas `| A | B |`, `| --- | --- |`… num bloco e aplicar com `Ctrl+Enter` agora dá uma tabela (antes cada linha virava um parágrafo).', manual: '5.2 Editar no Preview' },
