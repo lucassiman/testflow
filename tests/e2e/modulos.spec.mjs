@@ -143,7 +143,7 @@ test('tela inicial: atalhos agrupados pelos módulos do topo; sem pasta, só os 
   await page.locator('.sidebar button', { hasText: 'Abrir…' }).first().click();
   await expect(home).toContainText('1 documentos');
   await expect(start.locator('.home-mod h3')).toHaveText(['📋 Casos', '▶ Execução', '🤖 Automação', '🏛 Publicar', '📄 Arquivo', '📂 Pasta de trabalho']);
-  await expect(start.locator('.home-mod[aria-label="Execução"]').locator('[data-home-cmd]')).toHaveText(['▶ Nova execução…', '📈 Tendência entre rodadas', '🌐 Página da rodada para o time…']);
+  await expect(start.locator('.home-mod[aria-label="Execução"]').locator('[data-home-cmd]')).toHaveText(['▶ Nova execução…', '🗃 Central de execuções', '📈 Tendência entre rodadas', '🌐 Página da rodada para o time…']);
   await start.locator('[data-home-cmd="newCase"]').click();
   await expect(home).toBeHidden();
   await expect.poll(() => raw(page)).toMatch(/^tipo: caso-de-teste$/m);

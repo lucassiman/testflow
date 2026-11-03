@@ -8,6 +8,12 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.76.0', date: '02/11/2026',
+    items: [
+      { icon: '🗃', text: '**Central de execuções**: em andamento, ciclos salvos e finalizadas numa janela só, com o ID, o ciclo e o ambiente de cada uma. Dá para retomar, finalizar com pendentes (SKIP), retestar as falhas e **descartar** (vai para a lixeira com os relatórios, com confirmação, e some dos relatórios e da tendência).', manual: '7.8 Ciclo de regressão e execuções' },
+    ],
+  },
+  {
     version: '1.75.0', date: '02/11/2026',
     items: [
       { icon: '🗂', text: '**Execuções na pasta delas**: ciclos e execuções novos nascem em `aplicacoes/<App>/execucoes/`, e os 4 relatórios de cada execução em `relatorios/<ID>/` — `relatorios/` fica só com relatórios. As antigas vão de uma vez em **Casos ▾ → 🗂 Mover execuções para execucoes/**, com links, prints e Desfazer.', manual: '7.8 Ciclo de regressão e execuções' },

@@ -73,3 +73,57 @@ test('E3: execução nova nasce em execucoes/; as antigas (relatorios/) e os rel
   await expect.poll(() => page.evaluate(() => window.__ls('aplicacoes/Portal/relatorios/EXEC-20261001-083000'))).toEqual(['01-encerramento.md']);
   expect(await page.evaluate(() => window.__read('aplicacoes/Portal/relatorios/rodada-antiga.md'))).toBeNull();
 });
+
+const execDoc = (id, { ciclo = '', numero = 0, fim = '', status = 'PENDING', rows } = {}) => [
+  '---', 'tipo: execucao', `id: ${id}`, `titulo: Rodada ${id}`, 'app: Portal', ...(ciclo ? [`ciclo: ${ciclo}`, `numero: ${numero}`] : []),
+  `inicio: 2026-10-0${numero || 1}T09:00`, ...(fim ? [`fim: ${fim}`] : []), `status: ${status}`, 'tags: []', '---', '', `# Rodada ${id}`, '',
+  '## Casos do ciclo', '', '| # | Caso | Título | Status | Executado em | Bugs |', '| --- | --- | --- | --- | --- | --- |', ...rows, '',
+].join('\n');
+
+test('E4: central de execuções — retomar, finalizar com pendentes e descartar (lixeira, com confirmação)', async ({ page }) => {
+  const def = '---\ntipo: ciclo-regressao\nid: CICLO-1\ntitulo: Regressão Portal\napp: Portal\ntags: []\n---\n\n# Regressão Portal\n\n## Casos do ciclo\n\n| # | Caso | Título |\n| --- | --- | --- |\n| 1 | [[TC-1]] | Caso TC-1 |\n| 2 | [[TC-2]] | Caso TC-2 |\n';
+  await workspace(page, 'ws-e4', [
+    ['aplicacoes/Portal/casos/TC-1.md', tc('TC-1')],
+    ['aplicacoes/Portal/casos/TC-2.md', tc('TC-2')],
+    ['aplicacoes/Portal/execucoes/regressao-portal.md', def],
+    ['aplicacoes/Portal/execucoes/exec-1.md', execDoc('EXEC-1', { ciclo: 'CICLO-1', numero: 1, fim: '2026-10-01T18:00', status: 'FAIL', rows: ['| 1 | [[TC-1]] | Caso TC-1 | `PASS` | 01/10 | |', '| 2 | [[TC-2]] | Caso TC-2 | `FAIL` | 01/10 | |'] })],
+    ['aplicacoes/Portal/execucoes/exec-2.md', execDoc('EXEC-2', { ciclo: 'CICLO-1', numero: 2, rows: ['| 1 | [[TC-1]] | Caso TC-1 | | | |', '| 2 | [[TC-2]] | Caso TC-2 | | | |'] })],
+  ]);
+  const openHub = async () => {
+    await page.keyboard.press('Control+Shift+P');
+    await page.keyboard.type('Central de execuções');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.rh-dialog')).toBeVisible();
+  };
+  await openHub();
+  const hub = page.locator('.rh-dialog');
+  await expect(hub.locator('[data-rh-tab="andamento"]')).toContainText('1');
+  await expect(hub.locator('.rh-item')).toHaveCount(1);
+  await expect(hub.locator('.rh-item')).toContainText('EXEC-2');
+  await expect(hub.locator('.rh-item')).toContainText('CICLO-1 #2');
+  // ciclo salvo: a #2 em andamento e a última finalizada
+  await hub.locator('[data-rh-tab="planejados"]').click();
+  await expect(hub.locator('.rh-item')).toContainText('#2 em andamento');
+  await expect(hub.locator('.rh-item')).toContainText('última: FAIL 50%');
+  // finalizadas: descartar a EXEC-1 pede confirmação e vai para a _lixeira
+  await hub.locator('[data-rh-tab="finalizadas"]').click();
+  await expect(hub.locator('.rh-item [data-rh="retest"]')).toBeVisible();
+  await hub.locator('.rh-item [data-rh="discard"]').click();
+  const confirm = page.locator('.app-dialog', { hasText: 'Descartar esta execução?' });
+  await expect(confirm).toContainText('vai para a _lixeira');
+  await confirm.locator('button', { hasText: 'Descartar' }).click();
+  await expect(hub.locator('[data-rh-tab="finalizadas"]')).toContainText('0');
+  expect(await page.evaluate(() => window.__read('aplicacoes/Portal/execucoes/exec-1.md'))).toBeNull();
+  expect((await page.evaluate(() => window.__ls('_lixeira'))) || []).not.toHaveLength(0);
+  // em andamento: ▶ Retomar torna a EXEC-2 a da vez e abre
+  await hub.locator('[data-rh-tab="andamento"]').click();
+  await hub.locator('.rh-item [data-rh="resume"]').click();
+  await expect(page.locator('#cyclePanel .cp-ident')).toContainText('EXEC-2');
+  // 🏁 Finalizar com pendentes: confirma o SKIP
+  await openHub();
+  await hub.locator('.rh-item [data-rh="finish"]').click();
+  const fin = page.locator('.app-dialog', { hasText: 'Finalizar a execução da rodada?' });
+  await expect(fin).toContainText('2 de 2 caso(s) não foram executados');
+  await fin.locator('button', { hasText: 'Finalizar e marcar SKIP' }).click();
+  await expect.poll(() => page.evaluate(() => window.__read('aplicacoes/Portal/execucoes/exec-2.md'))).toMatch(/^fim: /m);
+});

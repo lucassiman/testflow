@@ -1650,6 +1650,7 @@ function run(cmd, value, event) {
     case 'includeShared': includeMenu(); return true;
     case 'newCycle': newCycle(); return true;
     case 'startRun': import('./app/startRun.js').then((m) => m.startRun()); return true;
+    case 'runHub': import('./app/runHub.js').then((m) => m.openRunHub()); return true;
     case 'pairTest': import('./app/pairTest.js').then((m) => m.newPairTest()); return true;
     case 'diaryPref': import('./app/diaryReminder.js').then((m) => m.diarySetting()).then(() => home.refresh()); return true;
     case 'startDay': import('./app/diary.js').then((m) => m.startDay()); return true;

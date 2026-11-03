@@ -738,6 +738,16 @@ Em documentos *Sessão exploratória* (e no *Teste em dupla*, ver 7.11) aparece 
 
 **Uma porta só para começar:** **Execução ▾ → ▶ Nova execução…** pergunta o tipo — *Avulsa* (você escolhe os casos), *De um ciclo salvo* (nova execução #N) ou *Só automatizada* (a partir de um relatório Playwright, JUnit ou Newman). **🔂 Reteste das falhas** e **🔁 Executar de novo** continuam no painel da própria execução.
 
+**🗃 Central de execuções** (**Execução ▾ → 🗃 Central de execuções**, a tela Início ou `Ctrl+Shift+P` → *Central de execuções*): tudo o que é execução num lugar só, em três abas — **▶ Em andamento**, **🔁 Planejadas (ciclos)** e **✔ Finalizadas**. Cada linha mostra o ID, o ciclo com o número (ou *avulsa*), o 🌐 ambiente, o início ou o fim, o progresso (`3/5`), as falhas e a % de sucesso. As ações:
+
+| Aba | Ações |
+| --- | --- |
+| Em andamento | **▶ Retomar** (vira a execução da vez e abre) · **🏁 Finalizar com pendentes** (o SKIP nos casos sem resultado, com a mesma confirmação do painel, e os relatórios) · **🗑 Descartar** |
+| Planejadas | **▶ Executar** (nova execução #N do ciclo) ou **▶ Retomar a aberta** · **Abrir** o ciclo — mostra também quantas vezes rodou e o resultado da última |
+| Finalizadas | **Abrir** · **🔂 Reteste** (quando houve falha) · **🗑 Descartar** |
+
+**🗑 Descartar** é para a execução criada por engano ou abandonada: depois de confirmar, ela vai para a `_lixeira` com os relatórios dela (`relatorios/<ID>/`) e some dos relatórios, da tendência, das visões e dos painéis. O resultado já gravado no histórico de cada caso fica. **Desfazer** no aviso, ou restaure da `_lixeira`.
+
 Dois conceitos, dois tipos de documento. Onde nascem (desde a 1.75.0): na pasta **`execucoes/`** da aplicação — `aplicacoes/<App>/execucoes/` —, separada dos relatórios; se você já usa outra pasta de execuções (`execuções/`, `rodadas/`), ela vale. Sem aplicação, numa `execucoes/` da raiz que já exista, senão na `_entrada/`. Os 4 relatórios de cada execução ficam em `relatorios/<ID-da-execução>/`, vizinha de `execucoes/`.
 
 **Execuções antigas** (das versões anteriores, que nasciam em `relatorios/` ou `planos/`): **Casos ▾ → 🗂 Mover execuções para execucoes/…** (ou `Ctrl+Shift+P` → *Mover execuções*) leva as execuções e os ciclos para `execucoes/` e os relatórios de cada uma para `relatorios/<ID>/` (inclusive os que ficaram em `execucoes/relatorios/`), com links, prints e anexos, e **Desfazer** no aviso. A primeira rodada criada na sessão avisa quando ainda há execuções no lugar antigo, e a varredura (`qa_varredura`) aponta cada uma.

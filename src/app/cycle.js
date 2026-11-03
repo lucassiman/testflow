@@ -546,6 +546,20 @@ export async function openCycle() {
   await openWikiTarget(e.path, { entry: e });
 }
 
+/** Central de execuções (E4): retomar uma execução em andamento — vira a da vez e abre. @param {string} path */
+export async function resumeRun(path) {
+  const e = docIndex.get(path);
+  if (!e) { app.toast('A execução não foi encontrada na pasta.', 'error'); return; }
+  if (!cycleClosed(textAt(path) || '')) setActive(path);
+  await openWikiTarget(e.path, { entry: e });
+}
+
+/** A execução saiu da pasta (descartada): deixa de ser a da vez. @param {string} path */
+export function forgetRun(path) {
+  if (activePath() === path) setActive('');
+  for (const [k, v] of caseRun) if (v === path) caseRun.delete(k);
+}
+
 /** Passos que falharam/bloquearam e prints de um caso (para o "Como foi essa rodada?"). @param {string} text */
 function caseDetails(text) {
   const t = stepTable(text);

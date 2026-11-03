@@ -142,6 +142,7 @@ export const MODULES = [
         title: 'Começar',
         items: [
           { cmd: 'startRun', label: '▶ Nova execução…', hint: 'avulsa (escolher os casos), de um ciclo salvo ou só automatizada (relatório)', palette: 'Nova execução (avulsa, de um ciclo salvo ou só automatizada)…' },
+          { cmd: 'runHub', label: '🗃 Central de execuções', hint: 'em andamento, ciclos salvos e finalizadas: retomar, reteste, finalizar, descartar', palette: 'Central de execuções: em andamento, ciclos salvos e finalizadas (retomar, reteste, finalizar com pendentes, descartar)' },
           { cmd: 'newRun', label: 'Rodada avulsa', menu: false, palette: false },
           { cmd: 'newCycle', label: '🔁 Ciclo de regressão…', hint: 'salvar os casos da regressão e executá-la quantas vezes quiser (#1, #2…)', palette: 'Ciclo de regressão: novo (salvar os casos)…' },
           { cmd: 'runCycle', label: 'Executar um ciclo salvo', menu: false, palette: false },
@@ -543,7 +544,7 @@ export const EXEC_BAR_MORE = {
  */
 export const HOME_SHORTCUTS = [
   { cmd: 'newCase', ws: false }, { cmd: 'importCases' }, { cmd: 'bulkEdit' }, { cmd: 'newView' },
-  { cmd: 'startRun', ws: false }, { cmd: 'trend' }, { cmd: 'roundPage' },
+  { cmd: 'startRun', ws: false }, { cmd: 'runHub' }, { cmd: 'trend' }, { cmd: 'roundPage' },
   { cmd: 'reporterSetup' },
   { cmd: 'officialUpdate' },
   { cmd: 'newFromTemplate', ws: false }, { cmd: 'quickNote', ws: false },
