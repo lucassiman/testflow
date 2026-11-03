@@ -51,6 +51,7 @@ import { ensureConfirmSteps, logConfirmation } from '../src/markdown/confirm.ts'
 import { readLinks } from '../src/markdown/linkTypes.ts';
 import { findBrokenLinks } from '../src/markdown/brokenLinks.ts';
 import { sweepLinks, applySweep, sweepReport } from '../src/markdown/sweep.ts';
+import { reviewDoc, readReview, reviewSummary, parseRules, addRule, removeRule, rulesText, REVIEW_TYPE, RULES_TYPE, RULES_PATH, REVIEWS_DIR, type ReviewCase } from '../src/markdown/genReview.ts';
 import { setFrontMatterFields, readPublishMeta, PUBLISH_KEYS } from '../src/markdown/publish.ts';
 import { addJiraKey, jiraIdSwap } from '../src/markdown/jiraApi.ts';
 import { buildJiraCopy } from '../src/markdown/jira.ts';
@@ -738,6 +739,71 @@ export class QaWorkspace {
     const doc = await this.readDoc(e.path);
     await this.writeDoc(e.path, addEvidenceToSection(doc.text, md), doc);
     return `Evidência gravada em ${evDir}/${name} e ligada em "Evidências" de ${e.path}: ${md}`;
+  }
+
+  // ---------------------------------------------------------------- C2/C3: revisão dos casos gerados e regras de geração
+  /** As regras de geração da pasta (configuracao/regras-de-geracao.md), como texto para o Claude ('' sem regras). */
+  async generationRules(): Promise<string> {
+    await this.refresh();
+    const e = this.index.get(RULES_PATH) || this.index.all().find((x) => x.tipo === RULES_TYPE);
+    return e ? rulesText(parseRules(e.text || '')) : '';
+  }
+
+  /**
+   * Revisão dos casos que o Claude acabou de gerar: um documento (configuracao/revisoes/REV-…) com um caso por linha
+   * para o QA marcar ✓ / ✗ / ~ e a observação no TestFlow.
+   */
+  reviewCreate(o: { casos: string[]; origem?: string; app?: string; pedido?: string; tecnicas?: Record<string, string> }): Promise<string> {
+    return this.exclusive(async () => {
+      if (!o.casos?.length) throw new Error('informe os casos gerados (IDs)');
+      const cases: ReviewCase[] = [];
+      for (const k of o.casos) {
+        const e = await this.find(k);
+        const key = e.id || e.name.replace(/\.(md|markdown)$/i, '');
+        cases.push({ key, titulo: e.titulo || e.heading || e.name, tecnica: o.tecnicas?.[k] || o.tecnicas?.[key] || '' });
+      }
+      const apps = [...new Set(o.casos.map((k) => this.index.resolve(k)?.app).filter(Boolean))];
+      const text = reviewDoc({ cases, origem: o.origem, app: o.app || (apps.length === 1 ? apps[0] : ''), pedido: o.pedido });
+      const id = /^id: (.*)$/m.exec(text)?.[1] || 'REV';
+      const path = await this.createDoc(REVIEWS_DIR, `${id}${o.origem ? `-${o.origem}` : ''}.md`, text);
+      return `Revisão criada: ${path} (${id}) com ${cases.length} caso(s). Peça ao usuário para abrir no TestFlow, marcar "Faz sentido?" (✓ / ✗ / ~) com o porquê e contar o que faltou; depois leia com qa_revisao_ler { doc: "${id}" }.`;
+    });
+  }
+
+  /** Lê a revisão preenchida: o resumo do que o QA disse e as regras de hoje (para propor regras novas, sem gravar). */
+  async reviewRead(ref: string): Promise<string> {
+    const e = await this.find(ref);
+    const doc = await this.readDoc(e.path);
+    if (!new RegExp(`^tipo:\\s*${REVIEW_TYPE}\\s*$`, 'm').test(doc.text)) throw new Error(`${e.path} não é uma revisão de casos gerados (tipo: ${REVIEW_TYPE})`);
+    const rules = await this.generationRules();
+    return [
+      reviewSummary(readReview(doc.text)), '',
+      rules || `Ainda não há regras de geração (${RULES_PATH}).`, '',
+      'Próximo passo: proponha ao usuário regras curtas e gerais (o que fazer diferente nas próximas gerações), escreva-as em "## Regras propostas" da revisão se quiser, e só grave com o OK explícito dele: qa_regras { adicionar, origem: "<ID da revisão>" }.',
+    ].join('\n');
+  }
+
+  /** Regras de geração: lista; com o OK do usuário, soma (adicionar + origem) ou tira (remover: nº). */
+  rules(o: { adicionar?: string; origem?: string; remover?: number }): Promise<string> {
+    return this.exclusive(async () => {
+      await this.refresh();
+      const e = this.index.get(RULES_PATH) || this.index.all().find((x) => x.tipo === RULES_TYPE);
+      if (!o.adicionar && !o.remover) {
+        const list = e ? parseRules(e.text || '') : [];
+        return list.length ? `${e?.path}:\n${list.map((r) => `${r.n}. ${r.regra} (desde ${r.desde || '?'}${r.origem ? `, ${r.origem}` : ''})`).join('\n')}` : `Nenhuma regra de geração ainda (${RULES_PATH}).`;
+      }
+      if (!e) {
+        if (o.remover) throw new Error('não há regras para remover');
+        const text = addRule('', String(o.adicionar), { origem: o.origem });
+        const path = await this.createDoc('configuracao', 'regras-de-geracao.md', text);
+        return `Regra 1 gravada em ${path}.`;
+      }
+      const doc = await this.readDoc(e.path);
+      const next = o.remover ? removeRule(doc.text, Number(o.remover)) : addRule(doc.text, String(o.adicionar), { origem: o.origem });
+      await this.writeDoc(e.path, next, doc);
+      const n = parseRules(next).length;
+      return o.remover ? `Regra ${o.remover} removida de ${e.path} (ficaram ${n}).` : `Regra ${n} gravada em ${e.path}.`;
+    });
   }
 
   // ---------------------------------------------------------------- cabeçalho, comentários, Jira

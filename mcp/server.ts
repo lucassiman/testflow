@@ -67,6 +67,7 @@ Como trabalhar:
 - Login, URLs e preparação repetidos em vários casos: veja qa_compartilhados (pasta ou documento) antes de escrever casos — use "↪ Bloco (param)" como um passo e {{dado}} / {{dado.senha}} em vez de repetir passos ou escrever senhas; se não houver, sugira criar um compartilhado (qa_criar tipo compartilhado, escopo pasta | app | global). Casos antigos com login repetido ou senha escrita: qa_varredura { modo: "compartilhados" } relata e, com o OK, converte.
 - Segmento = tudo o que nasceu de um épico/ticket/execução/ciclo/#tag (filtro segmento em qa_listar/qa_consultar/qa_validar/qa_rastreabilidade).
 - Qualidade: qa_validar (avisos de QA, links quebrados, evidências faltando) antes de entregar ou publicar; qa_varredura acha documentos antigos sem os vínculos (relate primeiro, aplique só com o OK do usuário).
+- Casos gerados: ao terminar um lote, ofereça a revisão (qa_revisao_criar); quando o QA preencher, qa_revisao_ler e proponha regras — grave com qa_regras só com o OK dele. As regras da pasta vêm no fim de qa_convencoes e valem mais que o padrão.
 - Escopo dos casos: siga a seção "Nível, tipo e profundidade" de qa_convencoes — gere só o nível pedido (ex.: e2e/UI sem casos de backend/unitários) e diga a premissa quando o pedido não especificar.`;
 
 const text = (t: string) => ({ content: [{ type: 'text' as const, text: t }] });
@@ -86,9 +87,39 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
   }, async () => run(() => ws.overview(), text));
 
   server.registerTool('qa_convencoes', {
-    title: 'Convenções QA-MD', description: 'As regras do formato QA-MD (cabeçalho, status, passos, evidências, estrutura por tipo, onde salvar). Leia antes de escrever testware do zero.',
-    inputSchema: {}, annotations: RO,
-  }, async () => text(convencoes || 'Convenções não disponíveis neste pacote.'));
+    title: 'Convenções QA-MD', description: 'As regras do formato QA-MD (cabeçalho, status, passos, evidências, estrutura por tipo, onde salvar) e, no fim, as regras de geração que o QA ensinou nesta pasta (valem mais que o padrão). Leia antes de escrever testware do zero. parte: "regras" = só as regras de geração.',
+    inputSchema: { parte: z.string().optional().describe('"regras" = só as regras de geração da pasta') }, annotations: RO,
+  }, async (a) => run(async () => {
+    const rules = await ws.generationRules();
+    if (a.parte === 'regras') return rules || 'Nenhuma regra de geração nesta pasta ainda (configuracao/regras-de-geracao.md).';
+    return [convencoes || 'Convenções não disponíveis neste pacote.', rules].filter(Boolean).join('\n\n');
+  }, text));
+
+  server.registerTool('qa_revisao_criar', {
+    title: 'Revisão dos casos gerados', description: 'Depois de gerar casos, cria a revisão para o QA (configuracao/revisoes/REV-…): um caso por linha para marcar "Faz sentido?" (✓ / ✗ / ~ ajustar) com a observação, e "O que faltou". Ofereça sempre ao terminar um lote de casos gerados.',
+    inputSchema: {
+      casos: z.array(z.string()).describe('IDs dos casos gerados (TC-…)'),
+      origem: z.string().optional().describe('de onde vieram: ticket/história (PORTAL-120), épico ou o pedido resumido'),
+      app: z.string().optional(),
+      pedido: z.string().optional().describe('o pedido do usuário, resumido (ex.: "casos e2e de UI da PORTAL-120")'),
+      tecnicas: z.record(z.string(), z.string()).optional().describe('caso → técnica/critério que o originou (ex.: { "TC-12": "valor-limite · CA2" })'),
+    }, annotations: RW,
+  }, async (a) => run(() => ws.reviewCreate(a), text));
+
+  server.registerTool('qa_revisao_ler', {
+    title: 'Ler a revisão', description: 'Lê a revisão preenchida pelo QA: ✓/✗/~ por caso com as observações, o que faltou e as regras de geração de hoje. Use para PROPOR regras novas — grave só com o OK explícito do usuário (qa_regras).',
+    inputSchema: { doc: docArg }, annotations: RO,
+  }, async (a) => run(() => ws.reviewRead(a.doc), text));
+
+  server.registerTool('qa_regras', {
+    title: 'Regras de geração', description: 'As regras que o QA ensinou (configuracao/regras-de-geracao.md), que valem mais que o padrão da skill. Sem argumentos: lista. adicionar (com origem: a revisão) ou remover (nº): SÓ com o OK explícito do usuário para aquela regra.',
+    inputSchema: {
+      adicionar: z.string().optional().describe('a regra, curta e geral (ex.: "Pedido de e2e de UI: não gerar casos de backend")'),
+      origem: z.string().optional().describe('ID da revisão de onde veio (REV-…)'),
+      remover: z.number().int().optional().describe('número da regra a tirar'),
+    }, annotations: RW,
+  }, async (a) => run(() => ws.rules(a), text));
+
 
   server.registerTool('qa_listar', {
     title: 'Listar documentos', description: 'Lista documentos com filtros (listas separadas por vírgula; "!" na frente exclui). Devolve tabela com ID, título, tipo, status, app, progresso e pasta.',

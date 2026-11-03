@@ -56,6 +56,8 @@ export const TYPE_LABELS: Record<string, string> = {
   'relatorio-defeitos': 'Relatório de defeitos',
   'relatorio-rastreabilidade': 'Relatório de rastreabilidade',
   'relatorio-log': 'Log da execução',
+  'revisao-geracao': 'Revisão dos casos gerados',
+  'regras-geracao': 'Regras de geração',
 };
 
 export const FIELDS: FieldDef[] = [

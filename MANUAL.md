@@ -1362,6 +1362,7 @@ São **39 ferramentas** `qa_*`, em grupos:
 | **Execução** | `qa_marcar_passos` · `qa_nova_rodada` · `qa_rodada_criar` · `qa_rodada_registrar` · `qa_rodada_status` · `qa_rodada_atribuir` · `qa_pendencias` · `qa_rodada_finalizar` · `qa_relatorios` | Status/obtido por passo; a rodada inteira pelo Claude — criar pelos casos de um **segmento**, de uma consulta, de uma lista ou de um **ciclo salvo** (com `bugs:`, o **teste de confirmação** dos bugs; só eles, uma execução de confirmação), registrar cada caso (ou o bug), atribuir, ver como está e o que falta para você, finalizar (SKIP nos pendentes + os 4 relatórios); gerar de novo os relatórios (7.8) mantendo o que você escreveu |
 | **Automação** | `qa_anexar_automacao` · `qa_exportar_feature` | Resultado de automação (JUnit XML, Playwright JSON, Newman JSON) direto na execução em andamento, numa nova ou numa específica; cenários BDD como arquivos `.feature` (9) |
 | **Qualidade e acompanhamento** | `qa_validar` · `qa_rastreabilidade` · `qa_varredura` · `qa_tendencia` · `qa_release` · `qa_compartilhados` · `qa_preparar_ambientes` | Avisos de QA, links quebrados e evidências faltando; matriz ticket/épico → casos → resultado → bugs; documentos sem vínculos (cada achado com ✅ certo / 🟡 provável / ❓ confirmar; `aplicar` preenche só campos vazios); tendência entre rodadas; progresso de uma release; dados e passos compartilhados (sem senhas) e a massa por ambiente |
+| **Ensinar o Claude** | `qa_revisao_criar` · `qa_revisao_ler` · `qa_regras` | Revisão dos casos que ele gerou (você marca ✓ / ✗ / ~ no TestFlow) e as **regras de geração** da pasta, gravadas só com o seu OK (ver abaixo) |
 
 **Escopo dos casos — diga o nível, o tipo e a profundidade.** A skill lê três coisas no pedido:
 - **nível**: E2E/UI, API/integração, unitário ou negócio/aceite;
@@ -1381,6 +1382,13 @@ São **39 ferramentas** `qa_*`, em grupos:
 - *"revise os casos do PORTAL-120"*. Ele usa o checklist de qualidade (passo atômico, esperado verificável, massa de dados…) e deixa as sugestões como comentário.
 - *"monte a regressão do épico PORTAL-10"* → *"TC-3 passou, TC-4 falhou no passo 2 com erro 500"* → *"finalize"*.
 - *"analise a rodada"*. Vem um resumo executivo, as falhas agrupadas por causa provável, os bugs a abrir ou reincidências e o comparativo com a anterior.
+
+**Ensinar o Claude a gerar casos melhores (revisão e regras).** Depois de gerar um lote de casos, o Claude oferece a **revisão**: um documento em `configuracao/revisoes/REV-…` com um caso por linha.
+1. Abra a revisão no TestFlow e, em cada linha, preencha **Faz sentido?** com **✓** (sim), **✗** (não devia existir) ou **~** (ajustar) — também valem *sim*, *não*, *ajustar* — e o porquê em **Observação**. Em **O que faltou**, escreva os casos que você esperava e não vieram.
+2. Diga ao Claude *"revisei a REV-…"*. Ele lê (`qa_revisao_ler`), resume o que você disse e **propõe regras** curtas para as próximas gerações (ex.: *"pedido de e2e de UI: não gerar casos de API"*).
+3. Só as regras que você aprovar, uma a uma, vão para **`configuracao/regras-de-geracao.md`**, com a data e a revisão de onde vieram. Nada muda sozinho: o Claude não grava, não junta e não apaga regra sem o seu OK — e você pode editar o arquivo à mão.
+
+As regras valem para a pasta inteira e **mais que o padrão da skill**: o Claude as recebe no fim de `qa_convencoes`, antes de gerar, e diz quando uma delas mudou o que ele gerou. Para ver: *"quais são as regras de geração?"* (`qa_regras`).
 
 **Skill `qa-varredura` — arrumar documentos antigos.** Instale também o `claude-skill/qa-varredura.zip` (gerado por `npm run skill`). Peça *"varra a pasta do Portal e arrume os vínculos"*. Com o MCP, o Claude roda `qa_varredura` por aplicação e mostra o resumo, com os achados classificados assim:
 - ✅ **certo**: sai da pasta do épico/ticket ou do pai;

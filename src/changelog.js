@@ -8,6 +8,12 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.79.0', date: '03/11/2026',
+    items: [
+      { icon: '🎓', text: '**Ensinar o Claude a gerar casos melhores**: depois de gerar, ele oferece uma revisão (um caso por linha) para você marcar ✓ / ✗ / ~ com o porquê, no TestFlow. Ele lê, propõe regras e grava em `configuracao/regras-de-geracao.md` só as que você aprovar; nas próximas gerações, as regras valem mais que o padrão.', manual: '12.6 Claude direto na pasta' },
+    ],
+  },
+  {
     version: '1.78.0', date: '03/11/2026',
     items: [
       { icon: '🧹', text: '**A aprovação do caso saiu**: sem pílula de rascunho/em revisão/aprovado, sem *só aprovados* nas rodadas, sem o filtro e sem `qa_aprovacao` — o time não usava. Os campos antigos (`aprovacao:`, `aprovado_por:`…) são ignorados; a varredura do Claude tira dos documentos.', manual: '6.10 Aprovação do caso' },
