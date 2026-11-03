@@ -34,6 +34,10 @@ export const TEMPLATES = {
   codeblock: '```\n\n```',
   table: '| Cenário | Resultado esperado | Status |\n| --- | --- | --- |\n| Login válido | Acessa o Dashboard | PASS |\n| Login inválido | Mensagem de erro | FAIL |',
   mindmap: '```mermaid\nmindmap\n  root((Plano de teste))\n    Escopo\n      Funcionalidades\n      Fora do escopo\n    Riscos\n      Pagamento\n      Integrações\n    Técnicas\n      Valor-limite\n      Tabela de decisão\n    Ambientes\n      DEV\n      HML\n```',
+  // seções opcionais do caso (técnicas — GUIA-DE-TESTE.md): a ## Iterações sai delas
+  particoes: '## Partições e limites\n\n| Campo | Grupo | Válido? | Representante | Limites (vizinho) |\n| --- | --- | --- | --- | --- |\n| Valor | 0,01 a 5.000,00 | sim | 150,00 | 0,01 (0,00) · 5.000,00 (5.000,01) |\n| Valor | ≤ 0 | não | -10,00 | — |\n| Valor | texto ou vazio | não | (vazio) | — |',
+  decisao: '## Tabela de decisão\n\n| | R1 | R2 | R3 | R4 |\n| --- | --- | --- | --- | --- |\n| Condição 1 | S | S | S | N |\n| Condição 2 | N | S | S | — |\n| Condição 3 | — | S | N | — |\n| **Ação A** | X | X | | |\n| **Ação B** | | X | | |\n| **Ação C** | | | X | X |',
+  estados: '## Modelo de estados\n\n```mermaid\nstateDiagram-v2\n  [*] --> Aberto\n  Aberto --> EmAnalise: analisar\n  EmAnalise --> Aprovado: aprovar\n  EmAnalise --> Recusado: recusar\n  Aprovado --> Pago: pagar\n  Aberto --> Cancelado: cancelar\n```\n\n| Estado \\\\ evento | analisar | aprovar | recusar | pagar | cancelar |\n| --- | --- | --- | --- | --- | --- |\n| Aberto | EmAnalise | | | | Cancelado |\n| EmAnalise | | Aprovado | Recusado | | |\n| Aprovado | | | | Pago | |',
   mermaid: '```mermaid\nflowchart TD\n    A[Executar teste] --> B{Passou?}\n    B -->|Sim| C[PASS]\n    B -->|Não| D[Registrar bug]\n```',
 };
 

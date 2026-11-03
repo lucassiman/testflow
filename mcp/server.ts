@@ -15,6 +15,7 @@ import { QaWorkspace } from './qa.ts';
 
 declare const __QA_TEMPLATES__: Record<string, string> | undefined;
 declare const __QA_CONVENCOES__: string | undefined;
+declare const __QA_GUIA__: string | undefined;
 declare const __QA_VERSION__: string | undefined;
 
 /** Argumentos: pasta (posicional ou --pasta), --nome, --jira. */
@@ -36,16 +37,17 @@ export function parseArgs(argv: string[], env: Record<string, string | undefined
 }
 
 /** Modelos e convenções: embutidos no pacote (build) ou lidos do projeto (npm run mcp). */
-async function assets(): Promise<{ templates: Record<string, string>; convencoes: string; version: string }> {
-  if (typeof __QA_TEMPLATES__ !== 'undefined') return { templates: __QA_TEMPLATES__, convencoes: __QA_CONVENCOES__ || '', version: __QA_VERSION__ || '' };
+async function assets(): Promise<{ templates: Record<string, string>; convencoes: string; guia: string; version: string }> {
+  if (typeof __QA_TEMPLATES__ !== 'undefined') return { templates: __QA_TEMPLATES__, convencoes: __QA_CONVENCOES__ || '', guia: typeof __QA_GUIA__ !== 'undefined' ? __QA_GUIA__ : '', version: __QA_VERSION__ || '' };
   const here = nodePath.dirname(fileURLToPath(import.meta.url));
   const project = nodePath.resolve(here, '..');
   const dir = nodePath.join(project, 'src', 'templates');
   const templates: Record<string, string> = {};
   for (const f of await fs.readdir(dir)) if (f.endsWith('.md')) templates[f.replace(/\.md$/, '')] = (await fs.readFile(nodePath.join(dir, f), 'utf8')).replace(/\r\n?/g, '\n');
   const convencoes = await fs.readFile(nodePath.join(project, 'CONVENCOES-QA.md'), 'utf8').catch(() => '');
+  const guia = await fs.readFile(nodePath.join(project, 'GUIA-DE-TESTE.md'), 'utf8').catch(() => '');
   const version = JSON.parse(await fs.readFile(nodePath.join(project, 'package.json'), 'utf8')).version;
-  return { templates, convencoes, version };
+  return { templates, convencoes, guia, version };
 }
 
 const INSTRUCTIONS = `Pasta de trabalho de QA no formato QA-MD (TestFlow): casos de teste, bugs, planos, sessões e relatórios em .md com cabeçalho YAML.
@@ -68,14 +70,15 @@ Como trabalhar:
 - Segmento = tudo o que nasceu de um épico/ticket/execução/ciclo/#tag (filtro segmento em qa_listar/qa_consultar/qa_validar/qa_rastreabilidade).
 - Qualidade: qa_validar (avisos de QA, links quebrados, evidências faltando) antes de entregar ou publicar; qa_varredura acha documentos antigos sem os vínculos (relate primeiro, aplique só com o OK do usuário).
 - Casos gerados: ao terminar um lote, ofereça a revisão (qa_revisao_criar); quando o QA preencher, qa_revisao_ler e proponha regras — grave com qa_regras só com o OK dele. As regras da pasta vêm no fim de qa_convencoes e valem mais que o padrão.
-- Escopo dos casos: siga a seção "Nível, tipo e profundidade" de qa_convencoes — gere só o nível pedido (ex.: e2e/UI sem casos de backend/unitários) e diga a premissa quando o pedido não especificar.`;
+- Escopo dos casos: siga a seção "Nível, tipo e profundidade" de qa_convencoes — gere só o nível pedido (ex.: e2e/UI sem casos de backend/unitários) e diga a premissa quando o pedido não especificar.
+- Técnicas: escolha pela forma da regra (faixas → partição/limites; combinações → tabela de decisão; status → transição de estados), marque com tag tec-* e termine com o resumo da geração (condição → casos → técnica, cobertura de cada técnica, técnicas não usadas e por quê, premissas). Passo a passo: qa_convencoes { parte: "guia" }.`;
 
 const text = (t: string) => ({ content: [{ type: 'text' as const, text: t }] });
 const fail = (err: unknown) => ({ content: [{ type: 'text' as const, text: `Erro: ${(err as Error)?.message || String(err)}` }], isError: true });
 /** Roda a ferramenta devolvendo o erro como texto (o Claude lê e corrige). */
 const run = async <T>(fn: () => Promise<T>, ok: (v: T) => ReturnType<typeof text>) => { try { return ok(await fn()); } catch (err) { return fail(err); } };
 
-export async function createServer(ws: QaWorkspace, convencoes: string, version: string): Promise<McpServer> {
+export async function createServer(ws: QaWorkspace, convencoes: string, version: string, guia = ''): Promise<McpServer> {
   const server = new McpServer({ name: 'markdown-qa', version: version || '1.0.0' }, { instructions: INSTRUCTIONS });
   const RO = { readOnlyHint: true, openWorldHint: false } as const;
   const RW = { readOnlyHint: false, destructiveHint: false, openWorldHint: false } as const;
@@ -87,11 +90,12 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
   }, async () => run(() => ws.overview(), text));
 
   server.registerTool('qa_convencoes', {
-    title: 'Convenções QA-MD', description: 'As regras do formato QA-MD (cabeçalho, status, passos, evidências, estrutura por tipo, onde salvar) e, no fim, as regras de geração que o QA ensinou nesta pasta (valem mais que o padrão). Leia antes de escrever testware do zero. parte: "regras" = só as regras de geração.',
-    inputSchema: { parte: z.string().optional().describe('"regras" = só as regras de geração da pasta') }, annotations: RO,
+    title: 'Convenções QA-MD', description: 'As regras do formato QA-MD (cabeçalho, status, passos, evidências, estrutura por tipo, onde salvar) e, no fim, as regras de geração que o QA ensinou nesta pasta (valem mais que o padrão). Leia antes de escrever testware do zero. parte: "guia" = o guia de técnicas (partição, limite, tabela de decisão, transição de estados, exploratório, riscos, estimativa, pirâmide/quadrantes) e o testware que sai de cada uma — leia quando o pedido for completo, citar uma técnica ou pedir plano/estratégia; parte: "regras" = só as regras de geração.',
+    inputSchema: { parte: z.string().optional().describe('"guia" = guia de técnicas; "regras" = só as regras de geração da pasta') }, annotations: RO,
   }, async (a) => run(async () => {
     const rules = await ws.generationRules();
     if (a.parte === 'regras') return rules || 'Nenhuma regra de geração nesta pasta ainda (configuracao/regras-de-geracao.md).';
+    if (a.parte === 'guia') return guia || 'Guia de teste não disponível neste pacote.';
     return [convencoes || 'Convenções não disponíveis neste pacote.', rules].filter(Boolean).join('\n\n');
   }, text));
 
@@ -393,10 +397,10 @@ export async function main(): Promise<void> {
     process.stderr.write('Informe a pasta de trabalho: node qa-mcp.mjs "C:\\caminho\\da\\pasta" (ou a variável QA_PASTA).\n');
     process.exit(2);
   }
-  const { templates, convencoes, version } = await assets();
+  const { templates, convencoes, guia, version } = await assets();
   const ws = new QaWorkspace({ root: args.pasta, templates, who: args.nome, jiraBase: args.jira });
   await ws.refresh(true);
-  const server = await createServer(ws, convencoes, version);
+  const server = await createServer(ws, convencoes, version, guia);
   await server.connect(new StdioServerTransport());
   process.stderr.write(`markdown-qa MCP ${version}: pasta ${ws.rootPath}\n`);
 }

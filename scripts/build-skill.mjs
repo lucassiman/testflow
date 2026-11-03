@@ -1,5 +1,6 @@
-// Gera a skill do Claude "qa-markdown" a partir da introdução (scripts/skill-intro.md)
-// e dos MESMOS modelos usados pelo editor (src/templates/*.md).
+// Gera a skill do Claude "qa-markdown" a partir da introdução (scripts/skill-intro.md), da seção 8 das convenções
+// (CONVENCOES-QA.md — uma fonte só para o qa_convencoes e a skill), dos MESMOS modelos usados pelo editor
+// (src/templates/*.md) e do guia de teste (GUIA-DE-TESTE.md, arquivo de referência lido sob demanda).
 // Uso: npm run skill   →  claude-skill/qa-markdown/SKILL.md  +  claude-skill/qa-markdown.zip
 //                       claude-skill/qa-varredura/SKILL.md +  claude-skill/qa-varredura.zip
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -27,7 +28,13 @@ const ORDER = [
   ['estrategia-de-teste', 'Estratégia de teste (EST-, em `processos/`)'],
 ];
 
-let skill = read('scripts/skill-intro.md').trimEnd();
+/** O corpo da seção 8 das convenções (nível, tipo, profundidade e técnicas), no lugar da marca <!-- convencoes:8 -->. */
+const conv = read('CONVENCOES-QA.md');
+const sec8 = /^## 8\. .*\n([\s\S]*?)(?=^## \d|(?![\s\S]))/m.exec(conv)?.[1]?.trim();
+if (!sec8) throw new Error('CONVENCOES-QA.md sem a seção 8');
+const intro = read('scripts/skill-intro.md');
+if (!intro.includes('<!-- convencoes:8 -->')) throw new Error('skill-intro.md sem a marca <!-- convencoes:8 -->');
+let skill = intro.replace('<!-- convencoes:8 -->', () => sec8).trimEnd();
 for (const [key, label] of ORDER) {
   const tpl = read(`src/templates/${key}.md`).trimEnd(); // resumo automático fica vazio: o editor calcula
   const fence = tpl.includes('```') ? '````' : '```';
@@ -39,7 +46,9 @@ skill += '\n';
 mkdirSync(new URL('claude-skill/qa-markdown/', root), { recursive: true });
 writeFileSync(new URL('claude-skill/qa-markdown/SKILL.md', root), skill);
 
-writeFileSync(new URL('claude-skill/qa-markdown.zip', root), zip([['qa-markdown/SKILL.md', skill]]));
+const guia = read('GUIA-DE-TESTE.md');
+writeFileSync(new URL('claude-skill/qa-markdown/guia-de-teste.md', root), guia);
+writeFileSync(new URL('claude-skill/qa-markdown.zip', root), zip([['qa-markdown/SKILL.md', skill], ['qa-markdown/guia-de-teste.md', guia]]));
 console.log(`Skill gerada: claude-skill/qa-markdown/SKILL.md (${skill.length} caracteres) + claude-skill/qa-markdown.zip`);
 
 // skill de varredura dos vínculos (documentos antigos)

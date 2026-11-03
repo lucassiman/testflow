@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.81.0', date: '03/11/2026',
+    items: [
+      { icon: '🎯', text: '**Técnicas de teste no Claude (CTFL 4.0)**: ele escolhe a técnica pela regra (limites, tabela de decisão, estados…), marca o caso com a tag `tec-*` e fecha com o **resumo da geração** — de qual critério veio cada caso, a cobertura de cada técnica e o que ficou de fora e por quê. O passo a passo fica no novo guia de teste.', manual: '12.6 Claude direto na pasta' },
+      { icon: '📏', text: '**Seções de técnica no caso pelo /**: *Partições e limites*, *Tabela de decisão* e *Modelo de estados* (diagrama + tabela de estados) — cada linha vira uma iteração do caso.', manual: '5.6 Diagramas' },
+    ],
+  },
+  {
     version: '1.80.0', date: '03/11/2026',
     items: [
       { icon: '🗂', text: '**Modelos do time no app**: *Revisão de requisito*, *Registro de riscos*, *Resumo do período*, *Retrospectiva* e *Estratégia de teste* agora estão em **Novo ▾ → A partir de modelo…** e o Claude cria todos (`qa_criar`).', manual: '6.1 Modelos' },

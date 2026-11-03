@@ -181,7 +181,7 @@ Uma nota por item, com horário e etiqueta opcional: `- 14:32 — **BUG:** botã
 
 | `tipo` | Seções (títulos `##`, nesta ordem) |
 |---|---|
-| `caso-de-teste` | Objetivo · Pré-condições · Massa de dados · Passos · Evidências · Observações |
+| `caso-de-teste` | Objetivo · Pré-condições · Massa de dados · Passos · Evidências · Observações — **seções opcionais**, entre *Massa de dados* e *Passos*, quando a técnica se aplica: `## Partições e limites` (tabela Campo · Grupo · Válido? · Representante · Limites (vizinho)), `## Tabela de decisão` (condições e ações nas linhas, regras R1, R2… nas colunas; `S`/`N`/`—`, ação `X`), `## Modelo de estados` (```` ```mermaid ```` `stateDiagram-v2` + tabela Estado \ evento, célula vazia = transição inválida). Quando existem, a `## Iterações` sai delas: uma linha por partição/regra |
 | `cenario-bdd` | Contexto · Cenários (bloco ```` ```gherkin ````) · Massa de dados · Observações |
 | `plano-de-teste` | Objetivo · Escopo · Fora de escopo · Mapa de cobertura (```` ```mermaid ```` com `mindmap`) · Estratégia (com a coluna Técnicas) · Ambientes · Critérios de entrada · Critérios de saída · Riscos (com a Resposta: mitigar · aceitar · transferir · contingência) · Cronograma · Estimativa (três pontos) · Responsáveis |
 | `bug` | Resumo · Ambiente · Passos para reproduzir · Resultado esperado · Resultado obtido · Teste de confirmação (opcional) · Evidências · Impacto · Observações · Andamento (opcional) — *Teste de confirmação*: tabela de passos `\| # \| Ação \| Resultado esperado \| Resultado obtido \| Status \|` tirada dos passos para reproduzir (o último leva o resultado esperado), executada como num caso (`PASS` = corrigido; rodadas no *Histórico de execuções*). *Andamento*: uma linha por confirmação (`- DD/MM/AAAA HH:MM — ✅ Teste de confirmação \`PASS\` em [[EXEC-…]] …`). Os passos não mudam o `status:` do bug |
@@ -223,6 +223,7 @@ Todo pedido de casos tem três eixos. Leia o pedido procurando cada um; o que n�
 | --- | --- | --- | --- |
 | **E2E / UI (sistema)** | O usuário na tela, do começo ao fim de uma jornada | "e2e", "ponta a ponta", "fluxo", "tela", "jornada", "como o usuário" | **QA** |
 | **API / integração** | Contrato e regras expostas pelo serviço (status HTTP, payload, erros), integração entre sistemas | "API", "endpoint", "contrato", "Postman", "integração", "serviço" | QA (quando pedido) |
+| **Integração de sistemas** | Contrato e troca de dados com um sistema de fora (gateway, ERP, Jira, banco central) | "integração com", "retorno do parceiro", "webhook", "arquivo de remessa" | QA (com a massa/ambiente do parceiro) |
 | **Unitário / componente** | Função, classe, regra interna, validação de campo no código | "unitário", "função", "método", "cobertura de código" | **Dev** — só gere se pedirem explicitamente |
 | **Aceite / negócio (UAT)** | Critérios de aceite e regra de negócio do ponto de vista do PO/usuário, linguagem do negócio | "negócio", "aceite", "PO", "homologação", "UAT", "critério de aceite" | QA + PO |
 
@@ -239,13 +240,28 @@ Todo pedido de casos tem três eixos. Leia o pedido procurando cada um; o que n�
 | **Exploratório** | Achar o que os roteiros não pegam | Charter (`charter-exploratorio`), não casos com passos |
 | **Não funcional** | Performance, carga, segurança, usabilidade, acessibilidade, compatibilidade (browsers/dispositivos) | Só quando pedido; diga a ferramenta/critério (ex.: "carrega em < 3 s", WCAG AA) |
 
+**Não funcional** = uma das características de qualidade — desempenho, compatibilidade, usabilidade/acessibilidade, confiabilidade, segurança, manutenibilidade, portabilidade. Critério de aceite com número (tempo, carga, nível WCAG) → o caso nasce junto da história, não no fim. **Sanity** = confirmação da correção + regressão da vizinhança (faça a análise de impacto antes).
+
 **3. Profundidade**
 
 - **Enxuto / focado** ("só o principal", "rápido", "smoke"): caminho feliz + o erro mais provável por critério.
 - **Padrão** (sem indicação): todo critério com positivo; negativos e limites onde há regra; sem combinatória exaustiva.
-- **Completo** ("completo", "exaustivo", "cobertura total"): aplique as técnicas abaixo de forma sistemática e mostre a matriz.
+- **Completo** ("completo", "exaustivo", "cobertura total"): aplique as técnicas abaixo de forma sistemática e mostre a cobertura de cada uma no resumo da geração.
 
-**Técnicas (ISTQB) — use e cite qual gerou o caso quando for completo:** partição de equivalência · análise de valor limite · tabela de decisão (regras combinadas) · transição de estados (status de pedido, login bloqueado) · pairwise (combinação de browsers/perfis/opções) · caso de uso/jornada · error guessing (erros comuns: duplo clique, voltar, sessão expirada, campo com espaço).
+**Técnicas — escolha pelo formato da regra, não por costume** (passo a passo e exemplos no guia de teste: `qa_convencoes { parte: "guia" }`, ou o `guia-de-teste.md` da skill — leia quando o pedido for completo ou citar uma técnica):
+
+| A regra tem… | Técnica | O que sai no caso | Cobertura a declarar |
+| --- | --- | --- | --- |
+| Faixas, formatos, listas de valores aceitos | Partição de equivalência | `## Partições e limites` + `## Iterações` (uma linha por partição) | partições exercitadas ÷ partições |
+| Mínimo/máximo, prazos, quantidades, datas | Valor-limite (2 valores; 3 valores se `risco-alto`) | as mesmas tabelas, com o limite e o vizinho | limites exercitados ÷ limites |
+| Combinação de condições → resultados diferentes | Tabela de decisão | `## Tabela de decisão` (regras = colunas) → uma iteração ou um caso por regra | regras viáveis exercitadas ÷ regras viáveis |
+| Status/ciclo de vida (pedido, conta, ticket, sessão) | Transição de estados | `## Modelo de estados` (`stateDiagram-v2` + tabela de estados) | transições válidas (padrão) ou todas (`risco-alto`) |
+| Fluxo com decisões (fluxograma da regra) | Cobertura dos ramos do fluxo | `flowchart` com cada saída de decisão ligada a um caso | ramos exercitados ÷ ramos |
+| Muitas opções independentes (browser × perfil × plano) | Pairwise | `## Iterações` com as combinações escolhidas | pares cobertos |
+| Pouca especificação, pouco tempo, área nova | Exploratório por sessão | `charter-exploratorio` | áreas da missão visitadas |
+| Erros que a aplicação já teve / costumam acontecer | Suposição de erro (lista de ataques) | casos negativos ou itens de checklist | ataques da lista usados |
+
+Marque a técnica com tag no caso: `tec-particao`, `tec-limite`, `tec-decisao`, `tec-estados`, `tec-fluxo`, `tec-pairwise`, `tec-erro`, `tec-jornada` (caso de uso/jornada). No **padrão**, aplique a técnica onde a regra pede e diga qual; no **completo**, aplique todas as que cabem e mostre a cobertura de cada uma.
 
 **Como o usuário pode pedir** (e você deve entender): *"casos e2e, sem backend"* · *"só smoke do checkout"* · *"regressão do épico PORTAL-10"* · *"casos de API do endpoint /pedidos"* · *"completo, com valor limite e tabela de decisão"* · *"foco em negócio, para o PO validar"* · *"acessibilidade da tela de login"*.
 

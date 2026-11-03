@@ -129,52 +129,18 @@ Sempre em tabela, com estas colunas nesta ordem:
 
 ## 6.0 Nível, tipo e profundidade — decida ANTES de escrever casos
 
-Todo pedido de casos tem três eixos. Leia o pedido procurando cada um; o que não estiver dito vira **premissa declarada** no topo da resposta (uma linha) — não escreva casos fora do escopo "para garantir".
-
-**1. Nível (onde o teste olha)**
-
-| Nível | O que cobre | Pistas no pedido | Quem costuma fazer |
-| --- | --- | --- | --- |
-| **E2E / UI (sistema)** | O usuário na tela, do começo ao fim de uma jornada | "e2e", "ponta a ponta", "fluxo", "tela", "jornada", "como o usuário" | **QA** |
-| **API / integração** | Contrato e regras expostas pelo serviço (status HTTP, payload, erros), integração entre sistemas | "API", "endpoint", "contrato", "Postman", "integração", "serviço" | QA (quando pedido) |
-| **Unitário / componente** | Função, classe, regra interna, validação de campo no código | "unitário", "função", "método", "cobertura de código" | **Dev** — só gere se pedirem explicitamente |
-| **Aceite / negócio (UAT)** | Critérios de aceite e regra de negócio do ponto de vista do PO/usuário, linguagem do negócio | "negócio", "aceite", "PO", "homologação", "UAT", "critério de aceite" | QA + PO |
-
-**Regra padrão (pedido sem nível):** o QA testa **caixa-preta, pelo que o usuário ou o sistema vizinho enxerga** — E2E/UI e regras de negócio. **Não** gere casos de validação interna, banco, log, fila ou lógica que só o código vê (isso é unitário/integração do dev), nem repita o que já tem teste automatizado (`automacao:` no caso, ou o usuário disse que existe). Se achar um risco que só se testa por baixo, cite em **Observações** como sugestão para o dev — não vire caso.
-
-**2. Tipo (o objetivo do teste)**
-
-| Tipo | Objetivo | Quantidade/forma |
-| --- | --- | --- |
-| **Smoke** | O sistema sobe e as funções críticas respondem (vale seguir testando?) | 1 caminho feliz por funcionalidade crítica; poucos passos; 5–15 casos no total; tag `smoke` |
-| **Sanity** | A correção/mudança pontual funciona (depois de um fix) | Só o que mudou + vizinhança imediata |
-| **Regressão** | O que já funcionava continua funcionando | Casos estáveis e reaproveitáveis; priorize por risco/uso; tag `regressao` |
-| **Funcional** | Cada regra e critério da funcionalidade | Positivos, negativos, limites (ver técnicas) |
-| **Exploratório** | Achar o que os roteiros não pegam | Charter (`charter-exploratorio`), não casos com passos |
-| **Não funcional** | Performance, carga, segurança, usabilidade, acessibilidade, compatibilidade (browsers/dispositivos) | Só quando pedido; diga a ferramenta/critério (ex.: "carrega em < 3 s", WCAG AA) |
-
-**3. Profundidade**
-
-- **Enxuto / focado** ("só o principal", "rápido", "smoke"): caminho feliz + o erro mais provável por critério.
-- **Padrão** (sem indicação): todo critério com positivo; negativos e limites onde há regra; sem combinatória exaustiva.
-- **Completo** ("completo", "exaustivo", "cobertura total"): aplique as técnicas abaixo de forma sistemática e mostre a matriz.
-
-**Técnicas (ISTQB) — use e cite qual gerou o caso quando for completo:** partição de equivalência · análise de valor limite · tabela de decisão (regras combinadas) · transição de estados (status de pedido, login bloqueado) · pairwise (combinação de browsers/perfis/opções) · caso de uso/jornada · error guessing (erros comuns: duplo clique, voltar, sessão expirada, campo com espaço).
-
-**Como o usuário pode pedir** (e você deve entender): *"casos e2e, sem backend"* · *"só smoke do checkout"* · *"regressão do épico PORTAL-10"* · *"casos de API do endpoint /pedidos"* · *"completo, com valor limite e tabela de decisão"* · *"foco em negócio, para o PO validar"* · *"acessibilidade da tela de login"*.
-
-**Registre no cabeçalho** para dar para filtrar e montar rodadas: tags com o nível e o tipo — `e2e`, `api`, `negocio`, `smoke`, `regressao`, `acessibilidade`… (ex.: `tags: [pix, e2e, smoke]`). Na resposta, comece com uma linha: **Escopo: E2E/UI · funcional · padrão — sem casos de backend/unitário (já cobertos pelo time de dev).** Pedido ambíguo e caro (muitos casos)? Pergunte uma coisa só antes ("e2e de tela ou também API?").
+<!-- convencoes:8 -->
 
 ## 6.1 Do requisito ao caso
 
 Quando o usuário trouxer uma história, critérios de aceite, um ticket do Jira ou um épico:
 
 0. **Escopo primeiro** (6.0): nível, tipo e profundidade pedidos — ou a premissa declarada.
-1. **Entenda antes de escrever.** Liste os critérios de aceite numerados (se vierem em texto corrido, extraia-os) e as regras de negócio implícitas. Pergunte o que faltar e for decisivo (perfis de usuário, limites, mensagens exatas); o resto vira **Observações**/premissas no caso, não invenção.
-2. **Cubra cada critério** com pelo menos um caso **positivo**; acrescente **negativos** (dado inválido, permissão, estado errado), **limites** (mínimo, máximo, vazio, um a mais/menos), e quando couber **alternativos** (outro caminho que leva ao mesmo resultado) e **regressão** do que o ticket pode quebrar. Um comportamento verificável por caso; prefira vários casos curtos a um longo.
+1. **Entenda antes de escrever.** Liste os critérios de aceite numerados — eles vêm como cenário (Dado/Quando/Então) **ou** como regra (lista, tabela de entrada → saída); aceite os dois. Daí tire as **condições de teste** (o que precisa ser verificado, uma por linha, com o critério de origem) — é a lista que liga critério, cenário BDD e caso. Pergunte o que faltar e for decisivo; ambiguidade, lacuna ou contradição que muda os casos → revisão de requisito (6.5, modelo `revisao-de-requisito`).
+2. **Escolha a técnica por condição** (tabela da 6.0) e escreva na ordem: **positivos** (o fluxo que dá certo), depois **negativos** (dado inválido — um inválido por caso, para uma falha não esconder a outra —, permissão, estado errado), depois **limites**, depois **não funcionais** que a história pedir. Nada além do que a história pede; duas condições iguais em casos diferentes = junte. Um comportamento verificável por caso.
 3. **Rastreabilidade no cabeçalho:** `jira:` com a chave do ticket da história, `epico:` com o épico, `app:`, tags do domínio (as do ticket/épico se houver), `prioridade` e a tag de risco (`risco-alto`, `risco-medio`, `risco-baixo`) pelo **registro de riscos** da aplicação (6.5); sem registro, classifique probabilidade × impacto e diga a premissa na resposta. Cite a história no corpo: `Origem: [[PORTAL-120]] — critério 2`.
 4. **Massa de dados** concreta na seção dela (usuários, valores, cupons), sem dados reais de clientes — e o que já existir no compartilhado do escopo entra como `{{dado}}` / `↪ Bloco (dado)` (`qa_compartilhados { pasta }`).
-5. **Entregue uma matriz** no fim da resposta: critério → casos que o cobrem → tipo (positivo/negativo/limite). Critério sem caso = lacuna declarada.
+5. **Resumo da geração** no fim da resposta: (a) condição → casos → técnica → tipo (positivo/negativo/limite); (b) cobertura de cada técnica usada (ex.: "limites: 6 de 6; transições válidas: 7 de 8 — falta Cancelado → Reaberto, não previsto na história"); (c) técnicas **não** usadas e por quê ("tabela de decisão: a regra tem uma condição só"); (d) premissas e o que o pedido restringiu. Condição sem caso = lacuna declarada. Com cenários BDD: **critério → condição → cenário → caso**, e cada caso cita de onde veio (`Origem: [[HU-…]] — critério 2 · condição C3 · cenário "…"` e o risco, se houver). Antes de entregar, confira as lacunas: critério sem condição, condição sem caso, risco alto sem caso (`qa_rastreabilidade { segmento }`).
 6. Com o MCP: `qa_criar` um caso por arquivo (com `campos: { jira, epico, tags }`), depois `qa_rastreabilidade { segmento: "<ticket ou épico>" }` para conferir.
 7. **Ofereça a revisão** dos casos gerados: `qa_revisao_criar { casos, origem, pedido, tecnicas }` grava `configuracao/revisoes/RG-…` com um caso por linha para o QA marcar **Faz sentido?** (✓ / ✗ / ~) com o porquê e contar o que faltou — no TestFlow.
 8. Quando ele disser que revisou: `qa_revisao_ler { doc: "RG-…" }`, resuma o que ele disse e **proponha regras** curtas e gerais (o que fazer diferente da próxima vez, não um conserto daquele caso). **Grave só com o OK explícito dele para cada regra**: `qa_regras { adicionar, origem: "RG-…" }`. Nunca mude, junte ou apague uma regra sem pedir (`qa_regras { remover: n }` também só com o OK).
@@ -194,6 +160,8 @@ Para "revise estes casos", "estão bons?" ou antes de uma regressão, avalie cad
 - [ ] **Sem duplicidade** com outro caso do mesmo ticket (sugira juntar ou diferenciar)
 - [ ] **Sem repetir o compartilhado**: login/preparação copiados passo a passo → sugira `↪ Bloco (dado)`; senha/e-mail escritos no caso → `{{dado}}` / `{{dado.senha}}`; o mesmo setup em 3+ casos sem compartilhado → sugira criar um com escopo
 - [ ] **No nível certo** (6.0): caso de regra interna/backend que já tem teste unitário ou de API → sugira remover ou mover para o dev; tags de nível/tipo presentes
+- [ ] **Técnica adequada à regra** (6.0): faixa sem teste de limite, combinação sem tabela de decisão, status sem transição inválida → sugira o caso que falta
+- [ ] **Um inválido por caso**: dois dados inválidos no mesmo caso escondem um ao outro
 - [ ] Formato QA-MD (seção 6)
 
 ## 6.3 Analisar a rodada
@@ -201,8 +169,8 @@ Para "revise estes casos", "estão bons?" ou antes de uma regressão, avalie cad
 Para "como foi a regressão?", "o que falhou?" ou "posso liberar?":
 
 1. **Números**: com o MCP, `qa_rodada_status` (e `qa_relatorios` se a execução já foi finalizada — leia o `01-encerramento` e o `02-defeitos`). Sem MCP, use o documento da execução e os relatórios que o usuário passar.
-2. **Resumo executivo** (5 linhas no máximo): resultado, % de sucesso, o que bloqueia a liberação, recomendação (liberar / com ressalvas / não liberar) **com o critério de saída que a sustenta**. A decisão é do time: apresente como sugestão.
-3. **Falhas agrupadas por causa provável** (mesma tela/serviço/mensagem de erro, mesmo dado, ambiente instável): para cada grupo, os casos, o passo e o obtido, e a evidência que sustenta a hipótese. Diga quando for só hipótese.
+2. **Resumo executivo** (5 linhas no máximo): resultado, % de sucesso, o que bloqueia a liberação, recomendação (liberar / com ressalvas / não liberar) **com o critério de saída que a sustenta**. A decisão é do time: apresente como sugestão. Na recomendação, cite o **risco residual**: riscos altos cujos casos falharam ou não rodaram.
+3. **Falhas agrupadas por causa provável** (mesma tela/serviço/mensagem de erro, mesmo dado, ambiente instável): para cada grupo, os casos, o passo e o obtido, e a evidência que sustenta a hipótese. Diga quando for só hipótese. Use os termos certos: a **falha** é o que se viu, o **defeito** é o que está errado no produto, a **causa** é por que ele entrou — diga em qual nível você está.
 4. **Bugs**: falha sem bug ligado → sugira o bug (`qa_bug_do_caso`, informando `execucao`); se o caso já tinha bug, verifique se é **reincidência** antes de criar outro. Destaque bugs reabertos e os Críticos/Altos ainda abertos.
 5. **Comparativo** com a execução anterior (log/comparativo): regressões (passou a falhar) primeiro, depois os corrigidos e os que continuam falhando. Para a tendência de várias rodadas (sprint a sprint, casos que falham sempre), `qa_tendencia`.
 6. **Próximos passos**: o que retestar (casos dos bugs corrigidos — ofereça `qa_rodada_criar { reteste: "<EXEC>" }`), o que ficou sem executar (SKIP/BLOCKED com o motivo) e, se houver os tickets da sprint (ou da entrega, no Kanban), sugestões de casos de regressão para eles (`qa_rodada_criar { segmento: "<épico ou #tag>" }`). Bug que escapou para HML/PROD ou falha sem caso que a cobrisse → ofereça levar para a **retrospectiva** (6.5).
@@ -225,6 +193,7 @@ Modelos padrão do TestFlow (desde a 1.80.0; o tipo é `documentacao`, e o resum
 
 **Registro de riscos** (`registro-de-riscos`, RSK-) — um por aplicação, vivo (não por sprint).
 - "Monta o registro de riscos do <app>": leia épicos, histórias e bugs (`qa_listar { app, tipo: "bug" }`; `qa_tendencia { app }` mostra os casos que mais falham) e proponha riscos de **produto** (o que dá errado para o usuário/negócio) com probabilidade e impacto **justificados** pelo que leu; riscos de **projeto** (do trabalho de teste) com o usuário.
+- Para cada risco, a **resposta**: mitigar com teste (qual técnica e cobertura), aceitar (vai para *Riscos aceitos*), transferir (ex.: o parceiro testa) ou contingência. O nível decide **o rigor**, não só a ordem: alto → técnicas sistemáticas, limites de 3 valores, todas as transições; baixo → caminho feliz ou checklist.
 - Ligação com os casos: quem cobre um risco ganha a tag `risco-alto` / `risco-medio` / `risco-baixo` e a prioridade coerente (Alto → Crítica/Alta) — `qa_editar_em_massa { casos, tags_por }` (prévia, depois `aplicar: true` com o OK) — e entra como `[[TC-…]]` na coluna *Casos que cobrem*. Risco alto sem caso = lacuna: diga.
 - Regressão com pouco tempo: `qa_rodada_criar { consulta: "tags: risco-alto\napp: <App>" }`. O que ficar de fora vai para *Riscos aceitos* — só com quem aceitou.
 
@@ -245,6 +214,28 @@ Modelos padrão do TestFlow (desde a 1.80.0; o tipo é `documentacao`, e o resum
 - Ações com dono e prazo só com o usuário.
 
 **Estratégia de teste** (`estrategia-de-teste`, EST-) — uma por time, em `processos/` (`qa_criar { tipo: "estrategia-de-teste", titulo, pasta: "processos" }`). O modelo vem com um ponto de partida; ajuste com o usuário. Quando ela existir, **leia antes** de gerar casos, montar regressão ou analisar rodadas: os níveis, critérios e regras dela valem sobre os padrões desta skill.
+
+## 6.6 Sugerir o testware certo
+
+Ao terminar um pedido, ofereça (uma linha, sem criar sozinho) o próximo testware que a situação pede:
+
+| Situação percebida | Sugira |
+| --- | --- |
+| História nova, regra ambígua, critério sem número | Revisão de requisito (`revisao-de-requisito`) antes dos casos |
+| Regra com 3+ condições combinadas | Tabela de decisão no caso (ou na história, para o PO validar) |
+| Entidade com status | Modelo de estados (diagrama + tabela) |
+| Épico ou release com várias áreas | Plano com mapa mental de cobertura (`mindmap`) |
+| Correção de bug ou ticket que mexe em área compartilhada | Análise de impacto → rodada só do que pode ter sido afetado + confirmação do bug |
+| Área com pouca especificação ou bugs recorrentes | Sessão exploratória com missão ligada ao risco |
+| Bug que escapou para HML/PROD | Ataque novo na lista da aplicação (uma regra em `configuracao/regras-de-geracao.md`, com o OK do QA) + retrospectiva |
+| Casos que passam há muitas rodadas sem achar nada | Renovar dados/variações ou mover para a automação (`qa_tendencia`) |
+
+Lembretes que mudam decisões:
+- **Testar tudo não dá:** risco e técnica decidem onde aprofundar; diga o que ficou de fora e por quê.
+- **Defeitos se concentram:** onde `qa_tendencia` mostra mais falhas e bugs, aprofunde (mais técnicas, limites de 3 valores, exploratório).
+- **Teste repetido perde força:** caso que nunca falha não prova que a área está boa; varie a massa.
+- **Passar nos casos não basta:** o critério de aceite atende a necessidade do usuário? Na dúvida, pergunte ao PO (validação, não só verificação).
+- **Contexto manda:** a estratégia do time (`estrategia-de-teste`) vale sobre os padrões desta skill.
 
 ## 7. Modelos por tipo
 

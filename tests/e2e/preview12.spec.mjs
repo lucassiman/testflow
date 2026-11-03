@@ -121,3 +121,20 @@ test('"/" Mapa mental desenha o mindmap; ampliado abre ajustado à tela e arrast
   await page.keyboard.press('f');
   expect(await body.evaluate((b) => b.scrollWidth <= b.clientWidth + 1)).toBe(true);
 });
+
+test('C6: "/" Partições e limites, Tabela de decisão e Modelo de estados (diagrama desenhado, tabelas)', async ({ page }) => {
+  await openEditor(page, { doc: 'Caso.\n' });
+  for (const [name, expectRaw] of [['Partições e limites', '## Partições e limites\n\n| Campo | Grupo | Válido? |'], ['Tabela de decisão', '## Tabela de decisão\n\n| | R1 | R2 | R3 | R4 |'], ['Modelo de estados', 'stateDiagram-v2\n  [*] --> Aberto']]) {
+    await page.locator('#preview p', { hasText: 'Caso.' }).click();
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Control+Shift+P');
+    await page.keyboard.type(name);
+    await page.keyboard.press('Enter');
+    await expect.poll(() => raw(page)).toContain(expectRaw);
+  }
+  await expect(page.locator('#preview h2', { hasText: 'Modelo de estados' })).toBeVisible();
+  await expect(page.locator('#preview .mermaid-svg svg')).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('#preview .mermaid-error')).toHaveCount(0);
+  await expect(page.locator('#preview table')).toHaveCount(3);
+  await expect(page.locator('#preview th', { hasText: 'Estado \\ evento' })).toBeVisible();
+});

@@ -377,6 +377,8 @@ Todo documento **abre no Preview** — o novo (já com um bloco em edição para
 
 Botão **Diagrama** ou `/mermaid`. Fluxogramas, sequência, pizza, Gantt, **mapa mental** (`/mapa` → **Mapa mental (Mermaid)**, com um esqueleto de plano: escopo, riscos, técnicas, ambientes)… Duplo clique amplia; no canto: **⤢** ampliar, **SVG** exportar, **Copiar** código.
 
+**Seções de técnica no caso** (desde a 1.81.0), pelo `/`: **📏 Partições e limites** (grupos válidos e inválidos de cada campo e os limites com o vizinho), **🔀 Tabela de decisão** (condições e ações nas linhas, uma regra por coluna) e **🔁 Modelo de estados** (diagrama `stateDiagram-v2` + a tabela de estados — célula vazia = transição que não pode acontecer). Ficam entre *Massa de dados* e *Passos*; cada linha que vira execução entra na `## Iterações` do caso, em vez de um caso por valor. O passo a passo de cada técnica está no `GUIA-DE-TESTE.md`.
+
 **Diagrama grande:** ampliado, ele abre **ajustado à tela**. **Arraste** para mover, `Ctrl`+roda amplia no ponto do mouse, **+**/**−** (ou as teclas `+` `-`), **1:1** (`0`) tamanho real e **Ajustar** (`F`) volta a caber inteiro. `Esc` fecha. Exemplos em `exemplos/planos/PT-001…` e `exemplos/recursos/tour-do-markdown.md`.
 
 ### 5.7 Raw (Markdown puro)
@@ -1372,6 +1374,8 @@ São **39 ferramentas** `qa_*`, em grupos:
 | **Automação** | `qa_anexar_automacao` · `qa_exportar_feature` | Resultado de automação (JUnit XML, Playwright JSON, Newman JSON) direto na execução em andamento, numa nova ou numa específica; cenários BDD como arquivos `.feature` (9) |
 | **Qualidade e acompanhamento** | `qa_validar` · `qa_rastreabilidade` · `qa_varredura` · `qa_tendencia` · `qa_release` · `qa_compartilhados` · `qa_preparar_ambientes` | Avisos de QA, links quebrados e evidências faltando; matriz ticket/épico → casos → resultado → bugs; documentos sem vínculos (cada achado com ✅ certo / 🟡 provável / ❓ confirmar; `aplicar` preenche só campos vazios); tendência entre rodadas; progresso de uma release; dados e passos compartilhados (sem senhas) e a massa por ambiente |
 | **Ensinar o Claude** | `qa_revisao_criar` · `qa_revisao_ler` · `qa_regras` | Revisão dos casos que ele gerou (você marca ✓ / ✗ / ~ no TestFlow) e as **regras de geração** da pasta, gravadas só com o seu OK (ver abaixo) |
+
+**Técnicas e resumo da geração (CTFL 4.0).** O Claude escolhe a técnica pela forma da regra — faixas e formatos → partição e valor-limite; combinação de condições → tabela de decisão; status → transição de estados; fluxo → ramos; muitas opções → pairwise —, marca o caso com a tag `tec-*` (`tec-limite`, `tec-decisao`, `tec-estados`…, para filtrar nas visões e rodadas) e põe as seções de técnica no caso quando cabem. No fim de cada geração vem o **resumo da geração**: condição de teste → casos → técnica → tipo, a cobertura de cada técnica ("limites 6/6, transições válidas 7/8"), as técnicas que ele **não** usou e por quê, e as premissas. A cadeia vai do critério de aceite à condição, ao cenário BDD e ao caso (com o risco), e ele confere as lacunas antes de entregar. Para o passo a passo, ele lê o **guia de teste** (`qa_convencoes { parte: "guia" }`, ou o arquivo ao lado da skill) quando o pedido é completo ou cita uma técnica. Peça, por exemplo: *"casos completos da PORTAL-130, com tabela de decisão"* ou *"monte o modelo de estados do pedido"*.
 
 **Escopo dos casos — diga o nível, o tipo e a profundidade.** A skill lê três coisas no pedido:
 - **nível**: E2E/UI, API/integração, unitário ou negócio/aceite;

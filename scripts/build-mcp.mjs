@@ -28,6 +28,7 @@ await build({
   define: {
     __QA_TEMPLATES__: JSON.stringify(templates),
     __QA_CONVENCOES__: JSON.stringify(read('CONVENCOES-QA.md')),
+    __QA_GUIA__: JSON.stringify(read('GUIA-DE-TESTE.md')),
     __QA_VERSION__: JSON.stringify(pkg.version),
   },
   logLevel: 'warning',
