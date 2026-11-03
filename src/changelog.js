@@ -8,6 +8,12 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.77.0', date: '02/11/2026',
+    items: [
+      { icon: '🧩', text: '**Quando ligar a extensão de console e rede**: a barra Execução mostra o estado da captura (capturando, desligada, pausada, sem extensão) e o clique explica o roteiro; ao criar uma rodada, o aviso lembra de recarregar a aba do sistema testado antes do 1º caso.', manual: '8.3 Extensão do navegador' },
+    ],
+  },
+  {
     version: '1.76.0', date: '02/11/2026',
     items: [
       { icon: '🗃', text: '**Central de execuções**: em andamento, ciclos salvos e finalizadas numa janela só, com o ID, o ciclo e o ambiente de cada uma. Dá para retomar, finalizar com pendentes (SKIP), retestar as falhas e **descartar** (vai para a lixeira com os relatórios, com confirmação, e some dos relatórios e da tendência).', manual: '7.8 Ciclo de regressão e execuções' },

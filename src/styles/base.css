@@ -1907,3 +1907,8 @@ body.home-open .sh-panel { display: none; }
 .rh-acts .primary { background: var(--brand, #b91c47); border-color: var(--brand, #b91c47); color: #fff; font-weight: 600; }
 .rh-acts .danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, var(--border)); }
 .rh-empty { color: var(--muted); padding: 24px 0; text-align: center; }
+
+/* E5: estado da extensão de console e rede na barra Execução */
+.exec-ext { font: inherit; font-size: 12px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel); color: var(--muted); cursor: pointer; white-space: nowrap; }
+.exec-ext-ok { color: #1a7f37; border-color: color-mix(in srgb, #1a7f37 35%, var(--border)); }
+.exec-ext-warn { color: #9a6700; border-color: color-mix(in srgb, #d4a72c 50%, var(--border)); background: color-mix(in srgb, #d4a72c 10%, var(--panel)); }

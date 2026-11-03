@@ -127,3 +127,42 @@ test('E4: central de execuções — retomar, finalizar com pendentes e descarta
   await fin.locator('button', { hasText: 'Finalizar e marcar SKIP' }).click();
   await expect.poll(() => page.evaluate(() => window.__read('aplicacoes/Portal/execucoes/exec-2.md'))).toMatch(/^fim: /m);
 });
+
+/** Faz o papel da extensão: anuncia-se ao carregar (como o conteudo.js) e responde ao "ola" (pausada com window.__extPausado). */
+const fakeExt = () => {
+  window.__extPedidos = [];
+  window.addEventListener('load', () => setTimeout(() => window.postMessage({ testflow: 'ext', dir: 'presente', versao: '1.56.0' }, location.origin), 50));
+  window.addEventListener('message', (ev) => {
+    const d = ev.data;
+    if (ev.source !== window || !d || d.testflow !== 'ext' || d.dir !== 'pedido') return;
+    window.__extPedidos.push(d.tipo);
+    if (d.tipo !== 'ola') return;
+    setTimeout(() => window.postMessage({ testflow: 'ext', dir: 'resposta', id: d.id, ok: true, dados: { versao: '1.56.0', protocolo: 1, pausado: !!window.__extPausado } }, location.origin), 20);
+  });
+};
+
+test('E5: com a extensão instalada, a rodada nova diz quando ligar e a barra Execução mostra o estado da captura', async ({ page }) => {
+  await page.addInitScript(fakeExt);
+  await workspace(page, 'ws-e5', [['aplicacoes/Portal/casos/TC-1.md', tc('TC-1')]]);
+  await page.click('button[data-menu="mod-execucao"]');
+  await page.click('#mod-execucao [data-cmd="startRun"]');
+  await page.click('.app-dialog button:has-text("Continuar")');
+  const picker = page.locator('.cpk-dialog');
+  await picker.locator('button', { hasText: 'Selecionar visíveis' }).click();
+  await picker.locator('button', { hasText: 'Criar e começar' }).click();
+  // captura desligada no TestFlow, extensão instalada: o aviso da rodada sugere ligar
+  await expect(page.locator('#toast')).toContainText('Quer console e rede nos bugs?');
+  await page.locator('#cyclePanel .cp-item[data-key="TC-1"]').click();
+  const chip = page.locator('.exec-bar .exec-ext');
+  await expect(chip).toHaveAttribute('data-ext', 'off');
+  await expect(chip).toContainText('captura desligada');
+  expect(await page.evaluate(() => window.__extPedidos)).toEqual([]); // desligada: nada é pedido à extensão
+  // clique liga; ligada, mostra "console e rede" e o clique explica quando ligar
+  await chip.click();
+  await expect(chip).toHaveAttribute('data-ext', 'on');
+  await chip.click();
+  const help = page.locator('.app-dialog', { hasText: 'Console e rede no bug (extensão)' });
+  await expect(help).toContainText('antes do 1º caso da execução');
+  await expect(help).toContainText('recarregue');
+  await help.locator('button', { hasText: 'Entendi' }).click();
+});

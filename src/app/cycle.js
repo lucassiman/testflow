@@ -949,7 +949,9 @@ async function createExecution(cases, appName, origem, titulo, link, links = {},
   if (extra.quiet) return path;
   setActive(path);
   if (!cases.length && !bugs.length) { app.toast(`🤖 Execução automatizada criada em ${path}. Para somar casos manuais, edite a tabela "Casos do ciclo".`, 'info', { duration: 8000 }); return; }
-  app.toast(`▶ ${link ? `Execução #${link.numero}` : 'Rodada'} ${headerOf(text).id} criada em ${path}${bugs.length ? ` (${bugs.length} confirmação(ões) de bug primeiro)` : ''} — ▶ Próximo caso abre o primeiro e já começa a execução.`, 'info', { duration: 8000, action: { label: '▶ Começar', run: () => nextCycleCase() } });
+  // E5: quando ligar a extensão de console e rede — antes do 1º caso
+  const tip = await (await import('./bugCapture.js')).captureStartTip().catch(() => '');
+  app.toast(`▶ ${link ? `Execução #${link.numero}` : 'Rodada'} ${headerOf(text).id} criada em ${path}${bugs.length ? ` (${bugs.length} confirmação(ões) de bug primeiro)` : ''} — ▶ Próximo caso abre o primeiro e já começa a execução.${tip}`, 'info', { duration: tip ? 11000 : 8000, action: { label: '▶ Começar', run: () => nextCycleCase() } });
   return path;
 }
 

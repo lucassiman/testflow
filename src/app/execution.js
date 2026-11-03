@@ -5,6 +5,7 @@ import { createExecutionBar, createStatusPopover } from '../editor/execution.js'
 import { newRound } from '../markdown/runs.ts';
 import { applyCellStatus, countStatuses, deriveOverall, findSummaryBlocks, frontMatterStatus, insertSummary, syncExecution } from '../markdown/status.ts';
 import { els } from './shared.js';
+import './extension.js'; // ouve o anúncio da extensão desde o carregamento (E5)
 
 export const statusPop = createStatusPopover({ onPick: pickStatus });
 
@@ -21,7 +22,12 @@ export const execBar = createExecutionBar({
   onCycleFinish: () => import('./cycle.js').then((m) => m.finishCycle()),
   nextCase: () => nextMod?.nextCaseLabel() ?? null,
   onCaseNext: () => import('./nextCase.js').then((m) => m.goNextCase({ run: true })),
+  extChip: () => capMod?.captureChip(() => execBar.update(app.store.source)) ?? null,
+  onExt: () => import('./bugCapture.js').then((m) => m.captureChipClick()).then(() => execBar.update(app.store.source)),
 });
+/** Captura pela extensão (carregada depois). @type {typeof import('./bugCapture.js') | null} */
+let capMod = null;
+import('./bugCapture.js').then((m) => { capMod = m; });
 import('./nextCase.js').then((m) => { nextMod = m; });
 
 /** @param {{ revisit?: boolean, base?: string }} [opts] */

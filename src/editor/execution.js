@@ -219,9 +219,9 @@ export function neighbor(td, dir) {
 
 /**
  * @param {{ pane: HTMLElement, root: HTMLElement, onSummary?: () => void, onRun?: () => void, onSession?: () => void, onNewRound?: () => void, onCycleNext?: () => void, onCycleFinish?: () => void,
- *   nextCase?: () => string | null, onCaseNext?: () => void }} deps nextCase: rótulo do próximo caso (ou null)
+ *   nextCase?: () => string | null, onCaseNext?: () => void, extChip?: () => ({ key: string, icon: string, label: string, tone: string, title: string } | null), onExt?: () => void }} deps nextCase: rótulo do próximo caso (ou null); extChip: estado da extensão de console e rede (E5)
  */
-export function createExecutionBar({ pane, root, onSummary, onRun, onSession, onNewRound, onCycleNext, onCycleFinish, nextCase, onCaseNext }) {
+export function createExecutionBar({ pane, root, onSummary, onRun, onSession, onNewRound, onCycleNext, onCycleFinish, nextCase, onCaseNext, extChip, onExt }) {
   const bar = document.createElement('div');
   bar.className = 'exec-bar ui-only';
   bar.hidden = true;
@@ -246,6 +246,7 @@ export function createExecutionBar({ pane, root, onSummary, onRun, onSession, on
     if (/** @type {HTMLElement} */ (e.target).closest('[data-act="cycleNext"]')) onCycleNext?.();
     if (/** @type {HTMLElement} */ (e.target).closest('[data-act="cycleFinish"]')) onCycleFinish?.();
     if (/** @type {HTMLElement} */ (e.target).closest('[data-act="caseNext"]')) onCaseNext?.();
+    if (/** @type {HTMLElement} */ (e.target).closest('[data-act="ext"]')) onExt?.();
   });
 
   /** @param {string} next */
@@ -269,7 +270,9 @@ export function createExecutionBar({ pane, root, onSummary, onRun, onSession, on
     // caso terminado (todos os passos com status): ⏭ Próximo caso da pasta (ou do ciclo)
     const isCase = /^tipo[ \t]*:[ \t]*(caso-de-teste|cenario-bdd|checklist)\b/m.test(source.slice(0, 2000));
     const next = isCase && counts.total && !counts.pending ? nextCase?.() || '' : '';
-    const sig = JSON.stringify([counts, tasks, hasSummary, stale, charter, cycle, next, tables.length, /^tags[ \t]*:.*\bautomacao\b/m.test(source.slice(0, 2000))]);
+    // E5: num caso ou numa execução, o estado da extensão de console e rede
+    const ext = (isCase || cycle) ? extChip?.() || null : null;
+    const sig = JSON.stringify([counts, tasks, hasSummary, stale, charter, cycle, next, tables.length, /^tags[ \t]*:.*\bautomacao\b/m.test(source.slice(0, 2000)), ext?.key || '']);
     if (sig === lastSig) return;
     lastSig = sig;
     if (!counts.total && !tasks.total && !charter) {
@@ -310,6 +313,7 @@ export function createExecutionBar({ pane, root, onSummary, onRun, onSession, on
     if (counts.total && counts.pending < counts.total && !automated && !cycle) actions.push('<button type="button" class="exec-action" data-act="round" title="Guarda esta rodada no Histórico e limpa obtido/status para executar de novo">🔁 Nova rodada</button>');
     if (next && !automated) actions.push(`<button type="button" class="exec-action exec-next" data-act="caseNext" title="Salva e abre o próximo caso (${esc(next)}) já em execução — Alt+Shift+→">⏭ Próximo caso: ${esc(next)}</button>`);
     if (charter) actions.push('<button type="button" class="exec-action" data-act="session" title="Cronômetro e notas rápidas da sessão exploratória">⏱ Sessão</button>');
+    if (ext) actions.push(`<button type="button" class="exec-ext exec-ext-${esc(ext.tone)}" data-act="ext" data-ext="${esc(ext.key)}" title="${esc(ext.title)}">${esc(ext.icon)} ${esc(ext.label)}</button>`);
     parts.push(`<span class="exec-actions">${actions.join('')}`);
     parts.push(`<button type="button" class="exec-summary${stale ? ' stale' : ''}" data-act="summary" title="${hasSummary ? (stale ? 'Resumo desatualizado — clique para recalcular' : 'Recalcular resumo e status geral') : 'Inserir resumo automático (tabela + gráfico)'}">📊 ${hasSummary ? (stale ? 'Atualizar resumo' : 'Resumo ✓') : 'Resumo'}</button>`);
     // o resto, agrupado pelos módulos do topo: evidências, dados e Claude num caso; relatórios, reteste e time numa execução

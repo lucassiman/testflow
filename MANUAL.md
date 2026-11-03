@@ -962,6 +962,14 @@ Clique em **📁 …/evidencias** no rodapé (ou `Ctrl+Shift+P` → *Evidências
 5. **Recarregue as abas** que já estavam abertas (o sistema testado e o TestFlow) — a extensão só começa a observar as páginas abertas depois dela.
 6. No TestFlow: **Evidências ▾ → Captura pela extensão: ligar/desligar** (ou `Ctrl+Shift+P` → **Captura de bug pela extensão do navegador**). O aviso confirma a versão da extensão instalada.
 
+**Quando ligar (no fluxo da execução):** uma vez, **antes do 1º caso**. Depois disso não há nada a ligar por caso — a extensão guarda sozinha.
+
+1. **Captura ligada no TestFlow** e a extensão **sem pausa**. Num caso ou numa execução, a **barra Execução** mostra o estado: **🧩 console e rede** (capturando), **🧩 captura desligada** (extensão instalada, captura desligada no TestFlow — clique para ligar), **⏸ extensão pausada** ou **🧩 sem extensão** (ligada, mas a extensão não respondeu). Sem a extensão e com a captura desligada, o chip não aparece. Clicar no chip ligado mostra este roteiro.
+2. **Abra ou recarregue a aba do sistema testado** depois disso — a extensão só vê as páginas abertas depois dela.
+3. Achou um defeito? Crie o bug **em até 30 min** (é o que ela guarda) e escolha a aba testada.
+
+Ao criar uma rodada, o aviso lembra do passo 2 (ou avisa que a extensão está pausada, ou sugere ligar a captura quando a extensão está instalada).
+
 Para mandar a um colega sem o repositório: `npm run extensao` gera `extensao-dist/testflow-extensao.zip` (descompactar e carregar a pasta). **Atualizar:** `git pull` e o ↻ da extensão em `chrome://extensions` (e recarregue as abas testadas).
 
 | No dia a dia | Como |

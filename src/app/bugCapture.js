@@ -7,7 +7,7 @@
  */
 import { app } from './context.js';
 import { loadPrefs, savePrefs } from '../io/drafts.js';
-import { extension } from './extension.js';
+import { extension, extensionPresent } from './extension.js';
 import { applyCaptureToBug, captureSummary, consoleLog, harText, tabLabel } from '../markdown/bugCapture.ts';
 import { evidenceBaseName, evidenceStamp } from '../markdown/evidenceName.ts';
 import { showDialog } from '../ui/dialog.js';
@@ -125,4 +125,89 @@ export async function attachCaptureHere() {
     placeEvidence(captureSummary(taken.cap, paths).join('\n'), ctx);
   }
   app.toast(`🧩 Console${taken.har ? ', rede' : ''} e contexto de "${taken.cap.contexto.titulo || taken.cap.aba.titulo}" anexados${paths.log ? ` — arquivos em ${paths.log.replace(/\/[^/]*$/, '/')}` : ' (os arquivos foram baixados)'}.`);
+}
+
+// ---------------------------------------------------------------- E5: quando ligar (estado na barra e dica ao começar)
+/** @typedef {'on' | 'paused' | 'missing' | 'off' | 'absent'} CaptureState */
+/** @type {{ state: CaptureState, at: number, versao: string }} */
+let ext = { state: 'absent', at: 0, versao: '' };
+/** @type {Promise<CaptureState> | null} */
+let checking = null;
+
+/**
+ * Pergunta à extensão como ela está (no máximo a cada 20 s). Desligada no TestFlow: não pergunta nada — só sabe se
+ * ela se anunciou ao carregar a página.
+ * @param {(state: CaptureState) => void} [onChange] @returns {Promise<CaptureState>}
+ */
+export function checkCapture(onChange) {
+  if (!captureEnabled()) return Promise.resolve(knownState());
+  if (checking) return checking;
+  if (Date.now() - ext.at < 20_000) return Promise.resolve(ext.state);
+  checking = (async () => {
+    const before = ext.state;
+    const hi = await getBridge().hello();
+    /** @type {CaptureState} */
+    const state = hi ? (hi.pausado ? 'paused' : 'on') : 'missing';
+    ext = { state, at: Date.now(), versao: hi?.versao || '' };
+    checking = null;
+    if (state !== before) onChange?.(state);
+    return state;
+  })();
+  return checking;
+}
+
+/** O estado guardado (sem perguntar), já com a preferência de agora. @returns {CaptureState} */
+function knownState() {
+  if (!captureEnabled()) return extensionPresent() || (ext.at && ext.state !== 'missing') ? 'off' : 'absent';
+  return ext.at ? ext.state : extensionPresent() ? 'on' : 'missing';
+}
+
+const CHIP = {
+  on: { icon: '🧩', label: 'console e rede', tone: 'ok', title: 'A extensão está guardando o console e as requisições com falha das abas (últimos 30 min). Ao criar um bug, escolha a aba testada. Se a aba do sistema já estava aberta antes da extensão, recarregue-a.' },
+  paused: { icon: '⏸', label: 'extensão pausada', tone: 'warn', title: 'A extensão está pausada: nada é guardado e o bug sai sem console e rede. Retome no ícone dela na barra do navegador.' },
+  missing: { icon: '🧩', label: 'sem extensão', tone: 'warn', title: 'A captura está ligada no TestFlow, mas a extensão não respondeu: instale-a (Manual 8.3) e recarregue esta página.' },
+  off: { icon: '🧩', label: 'captura desligada', tone: 'off', title: 'A extensão está instalada, mas a captura está desligada no TestFlow: o bug não leva console e rede. Clique para ligar.' },
+};
+
+/**
+ * Chip da barra Execução (num caso ou numa execução). null = sem extensão e sem a preferência (não incomoda quem não usa).
+ * @param {() => void} [onChange] re-desenhar a barra quando o estado mudar
+ * @returns {{ key: string, icon: string, label: string, tone: string, title: string } | null}
+ */
+export function captureChip(onChange) {
+  checkCapture(() => onChange?.());
+  const s = knownState();
+  return s === 'absent' ? null : { key: s, ...CHIP[s] };
+}
+
+/** Clique no chip: desligada → liga; senão, a orientação de quando ligar. */
+export async function captureChipClick() {
+  const s = knownState();
+  if (s === 'off') { await toggleCapture(); ext.at = 0; return; }
+  const res = await showDialog({
+    title: 'Console e rede no bug (extensão)', icon: '🧩',
+    message: s === 'on'
+      ? `Está ligada${ext.versao ? ` (extensão ${ext.versao})` : ''}. A extensão guarda sozinha o console e as requisições com falha das abas abertas — não precisa ligar nada a cada caso.`
+      : CHIP[s === 'absent' ? 'missing' : s].title,
+    detail: [
+      'Quando ligar: antes do 1º caso da execução.',
+      '1. Captura ligada no TestFlow (este chip) e a extensão sem pausa.',
+      '2. Abra (ou recarregue) a aba do sistema testado depois disso — a extensão só vê as páginas abertas depois dela.',
+      '3. Achou um defeito: crie o bug em até 30 min (é o que ela guarda) e escolha a aba testada — vão URL, navegador, tela, erros do console e requisições com falha (.log e .har em evidencias/), com tokens e dados pessoais mascarados.',
+    ].join('\n'),
+    buttons: [...(captureEnabled() ? [{ id: 'off', label: 'Desligar a captura' }] : []), { id: 'ok', label: 'Entendi', kind: /** @type {const} */ ('primary') }],
+    defaultId: 'ok', cancelId: 'ok',
+  });
+  if (res?.id === 'off') { await toggleCapture(); ext.at = 0; }
+}
+
+/** Dica para o aviso de "rodada criada" ('' quando não há o que dizer). @returns {Promise<string>} */
+export async function captureStartTip() {
+  // desligada: não pergunta nada à extensão (só o anúncio dela conta)
+  const s = await checkCapture();
+  if (s === 'on') return ' 🧩 Console e rede: recarregue a aba do sistema testado antes do 1º caso (a extensão guarda os últimos 30 min).';
+  if (s === 'paused') return ' ⏸ A extensão está pausada — retome no ícone dela para o bug levar console e rede.';
+  if (s === 'missing') return ' 🧩 A captura está ligada, mas a extensão não respondeu.';
+  if (s === 'off') return ' 🧩 Quer console e rede nos bugs? Ligue em Evidências ▾ → Captura pela extensão (ou no 🧩 da barra Execução).';
+  return '';
 }
