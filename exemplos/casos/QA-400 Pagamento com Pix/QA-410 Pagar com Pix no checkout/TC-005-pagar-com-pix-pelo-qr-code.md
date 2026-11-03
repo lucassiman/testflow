@@ -14,11 +14,7 @@ epico: QA-400
 sprint: Sprint 43
 tags: [pix, checkout, regressao]
 automacao: tests/e2e/pix.spec.ts
-aprovacao: aprovado
 qa-md: 1
-aprovado_por: Ana
-aprovado_em: 2026-09-30 09:10
-aprovado_hash: a7fe970a
 ---
 
 # TC-005 — Pagar com Pix pelo QR Code

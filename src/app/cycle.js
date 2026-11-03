@@ -8,7 +8,6 @@ import { app } from './context.js';
 import { me } from './assign.js';
 import { assignees, workload, samePerson } from '../markdown/assign.ts';
 import { forecast, caseAvgMs } from '../markdown/forecast.ts';
-import { filterApproved, onlyApproved } from './approval.js';
 import {
   CYCLE_TYPE, cycleDoc, cycleStart, cycleClosed, cycleProgress, nextCase, syncCycle, closeCycle, caseResult, lastResultBefore, needsFreshRound, cycleTable, isCycle, unexecuted, skipPending, cycleSummary,
   EXEC_TYPE, configOf, configFromLabel, parseConfigs, isCycleDef, cycleDefDoc, defCases, retestCases, retestBugs, execInfo, nextExecNumber, syncDefExecutions, applySkipped, applyWhole, cicloOf, execNumber, attachAutomation as attachAutoToText,
@@ -836,7 +835,7 @@ function pickCases({ title, confirmLabel, defaultName, onPick, matrix = false })
   if (!docIndex.ready) { app.toast('Ainda lendo os documentos da pasta… tente de novo em instantes.'); return; }
   const cases = docIndex.all().filter(isCase);
   if (!cases.length) { app.toast('Nenhum caso de teste na pasta ainda (tipo: caso-de-teste, cenario-bdd ou checklist).', 'error'); return; }
-  openCasePicker({ cases, shortcuts: pickerShortcuts(cases), title, confirmLabel, defaultName, matrix, approved: { on: onlyApproved(), toggle: (on) => savePrefs({ onlyApproved: on }) } }).then((res) => {
+  openCasePicker({ cases, shortcuts: pickerShortcuts(cases), title, confirmLabel, defaultName, matrix }).then((res) => {
     if (!res) return;
     const appNames = [...new Set(res.picked.map((e) => e.app).filter(Boolean))];
     return onPick(res.picked, res.name, res.origem, appNames.length === 1 ? appNames[0] : '', res.links, res.configs);
@@ -932,13 +931,6 @@ async function createDefinition(pick, appName, origem, titulo, links = {}, tags 
  */
 async function createExecution(cases, appName, origem, titulo, link, links = {}, transform = (/** @type {string} */ t) => t, tags = /** @type {string[]} */ ([]), extra = /** @type {{ config?: import('../markdown/cycle.ts').RunConfig, matriz?: string, seq?: number, quiet?: boolean, bugs?: import('../markdown/cycle.ts').CycleCase[] }} */ ({})) {
   const bugs = extra.bugs || [];
-  // preferência "só casos aprovados entram na rodada" (aprovação do caso) — não vale para os bugs
-  if (cases.length) {
-    const { keep, left } = filterApproved(cases);
-    if (left.length && !keep.length && !bugs.length) { app.toast(`Nenhum caso aprovado — com "só aprovados" ligado a rodada não foi criada. Fora: ${left.join(', ')}.`, 'error', { duration: 12000 }); return; }
-    if (left.length) app.toast(`Só aprovados: ${left.length} caso(s) ficaram fora da rodada — ${left.join(', ')}.`, 'info', { duration: 12000 });
-    cases = keep;
-  }
   let d = new Date();
   // nova execução de um ciclo que já rodou: começa no minuto seguinte, para as rodadas das execuções anteriores (gravadas só com hora e minuto) não contarem nela
   if (link && link.numero > 1) d = new Date(Math.ceil((d.getTime() + 1) / 60000) * 60000);
@@ -1039,22 +1031,19 @@ export async function runCycle(defPath = '') {
  * @param {import('../markdown/cycle.ts').RunConfig[]} configs
  */
 async function createMatrix(cases, appName, origem, titulo, link, links, tags, configs) {
-  const { filterApproved } = await import('./approval.js');
-  const { keep, left } = filterApproved(cases);
-  if (!keep.length) { app.toast('Nenhum caso aprovado — com "só aprovados" ligado a rodada não foi criada.', 'error'); return; }
   const matriz = link ? `${link.ciclo} #${link.numero}` : `MAT-${new Date().toISOString().replace(/\D/g, '').slice(0, 12)}`;
   /** @type {string[]} */
   const paths = [];
   let seq = 0;
   for (const config of configs) {
     seq++;
-    const p = await createExecution(keep, appName, origem, `${titulo} — ${config.label}`, link, links, undefined, tags, { config, matriz, seq, quiet: true });
+    const p = await createExecution(cases, appName, origem, `${titulo} — ${config.label}`, link, links, undefined, tags, { config, matriz, seq, quiet: true });
     if (p) paths.push(p);
   }
   if (!paths.length) return;
   setActive(paths[0]);
   await openWikiTarget(paths[0], { entry: docIndex.get(paths[0]) || undefined });
-  app.toast(`🧮 ${paths.length} execução(ões) — uma por configuração: ${configs.map((c) => c.label).join(' · ')}${left.length ? ` (${left.length} não aprovado(s) fora)` : ''}. Começando pela ${configs[0].label}: ▶ Próximo caso.`, 'info', { duration: 10000, action: { label: '▶ Começar', run: () => nextCycleCase() } });
+  app.toast(`🧮 ${paths.length} execução(ões) — uma por configuração: ${configs.map((c) => c.label).join(' · ')}. Começando pela ${configs[0].label}: ▶ Próximo caso.`, 'info', { duration: 10000, action: { label: '▶ Começar', run: () => nextCycleCase() } });
 }
 
 /**

@@ -22,7 +22,7 @@ import { suggestedFileName } from '../templates/index.js';
 
 /** @param {unknown} s */
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => /** @type {Record<string, string>} */ ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-const FIELD_LABEL = /** @type {Record<string, string>} */ ({ origem: 'ID de origem', titulo: 'Título', secao: 'Seção / pasta', prioridade: 'Prioridade', pre: 'Pré-condições', objetivo: 'Objetivo', passo: 'Passo', dados: 'Dados', esperado: 'Resultado esperado', tags: 'Tags', jira: 'Jira', responsavel: 'Responsável', tipo: 'Tipo (vira tag)', estado: 'Situação (vira aprovação)' });
+const FIELD_LABEL = /** @type {Record<string, string>} */ ({ origem: 'ID de origem', titulo: 'Título', secao: 'Seção / pasta', prioridade: 'Prioridade', pre: 'Pré-condições', objetivo: 'Objetivo', passo: 'Passo', dados: 'Dados', esperado: 'Resultado esperado', tags: 'Tags', jira: 'Jira', responsavel: 'Responsável', tipo: 'Tipo (vira tag)' });
 
 /** Escolhe o arquivo. @returns {Promise<File | null>} */
 function pickFile() {
@@ -71,7 +71,7 @@ function askOptions(plan, fileName, dupes) {
             <label class="bulk-wide">Tags em todos <input type="text" data-i="tags" value="importado" spellcheck="false"></label>
             ${dupes ? '<label class="imp-chk"><input type="checkbox" data-i="skip" checked> pular os já importados</label>' : ''}
           </div>
-          <p class="review-help">Cada caso vira um documento <code>TC-…</code> (próximo ID livre) em <code>aplicacoes/&lt;App&gt;/casos/</code>, com <code>aprovacao: rascunho</code> (ou a situação da origem) e <code>importado-de:</code>.</p>
+          <p class="review-help">Cada caso vira um documento <code>TC-…</code> (próximo ID livre) em <code>aplicacoes/&lt;App&gt;/casos/</code>, com <code>importado-de:</code>.</p>
         </div>
         <div class="review-foot">
           <span class="review-grow"></span>
@@ -147,7 +147,7 @@ export async function importCases(given) {
   }
   await app.loadWorkspaceFiles();
   app.sidebar.expandFolder(casos);
-  app.toast(`📥 ${created.length} caso(s) importado(s) em ${casos}/${skipped ? ` · ${skipped} já importado(s) pulado(s)` : ''}${failed.length ? ` · ${failed.length} com erro` : ''} — aprovação: rascunho.`, failed.length ? 'error' : 'info', {
+  app.toast(`📥 ${created.length} caso(s) importado(s) em ${casos}/${skipped ? ` · ${skipped} já importado(s) pulado(s)` : ''}${failed.length ? ` · ${failed.length} com erro` : ''}.`, failed.length ? 'error' : 'info', {
     duration: 15000,
     ...(created.length ? { action: { label: 'Desfazer', run: () => undoImport(created) } } : {}),
   });

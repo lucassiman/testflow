@@ -23,7 +23,7 @@ test('paleta: cada ação uma vez só, com categoria = módulo', () => {
   assert.ok(acts.length >= 110, `só ${acts.length} ações na paleta`);
   for (const a of acts) assert.equal(a.group, moduleOf(a.cmd, a.value)?.label);
   // as que antes só existiam na paleta continuam lá
-  for (const c of ['trend', 'customStatus', 'teamsPref', 'roundPage', 'reporterSetup', 'featureAll', 'jiraCreate', 'approval', 'envMenu', 'bulkEdit', 'focusMode']) {
+  for (const c of ['trend', 'customStatus', 'teamsPref', 'roundPage', 'reporterSetup', 'featureAll', 'jiraCreate', 'envMenu', 'bulkEdit', 'focusMode']) {
     assert.ok(acts.some((a) => a.cmd === c), c);
   }
   // atalho no lugar certo (antes o do modo foco estava no campo do valor)

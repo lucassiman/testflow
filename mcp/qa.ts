@@ -45,7 +45,6 @@ import {
 } from '../src/markdown/cycle.ts';
 import type { CaseLookup } from '../src/markdown/cycle.ts';
 import { planSharedSweep, sharedDocText, applyCasePlan, sharedSweepReport } from '../src/markdown/sharedSweep.ts';
-import { approvalOf, approvalText, approvalKey, setApproval, normalizeApproval, isApprovable } from '../src/markdown/approval.ts';
 import { parseShared, scopeFor, parseInclude, expandInclude, resolveText, sharedWarnings, maskSecretColumns, iterationsOf, iterBinding, iterLabel, parseIterLabel, normEnv, envLabel, envCoverage, prepareEnvSections, ENVS, SHARED_TYPE, type SharedDoc, type SharedScopeResult, type Segment, type SharedVar } from '../src/markdown/shared.ts';
 import { buildReports, linkReports, REPORT_TYPES } from '../src/markdown/reports.ts';
 import { ensureConfirmSteps, logConfirmation } from '../src/markdown/confirm.ts';
@@ -339,7 +338,6 @@ export class QaWorkspace {
       `Cabeçalho: ${JSON.stringify(data)}`,
       c.total ? `Passos: ${c.total - c.pending}/${c.total} executados · PASS ${c.pass} · FAIL ${c.fail} · BLOCKED ${c.blocked} · SKIP ${c.skip} · PENDING ${c.pending} · status geral ${deriveOverall(c) || '—'}` : '',
       last ? `Última rodada arquivada: ${last.round} — ${last.date}${last.overall ? ` — ${last.overall}` : ''}` : '',
-      approvalOf(text).state ? `Aprovação: ${approvalText(approvalOf(text))}` : '',
       pub.revisao ? `Publicado: revisão ${pub.revisao} (${pub.publicado_por || '?'} em ${pub.publicado_em || '?'})` : '',
       info.jira ? `Jira: ${jiraValues(info.jira).map((k) => (this.opts.jiraBase ? jiraUrl(k, this.opts.jiraBase) || k : k)).join(', ')}` : '',
       comments.length ? `Comentários pendentes: ${comments.map((x) => `linha ${x.start + 1} ${x.head}: ${x.summary}`).join(' | ')}` : '',
@@ -624,25 +622,6 @@ export class QaWorkspace {
     await this.writeDoc(e.path, text, doc);
     const c = countStatuses(text);
     return `${e.path}: passos ${done.join(', ')}. Agora ${c.total - c.pending}/${c.total} executados · status geral ${deriveOverall(c) || '—'}.${extra}`;
-  }
-
-  /**
-   * Aprovação do caso: rascunho → em revisão → aprovado. Aprovar grava quem/quando e a impressão digital da definição
-   * (mudar os passos depois volta a pedir aprovação).
-   */
-  approve(o: { doc: string; estado: string; revisor?: string; por?: string }): Promise<string> {
-    return this.exclusive(async () => {
-      const e = await this.find(o.doc);
-      const doc = await this.readDoc(e.path);
-      const state = normalizeApproval(o.estado);
-      if (!state) throw new Error(`estado "${o.estado}" inválido — use rascunho, em-revisao ou aprovado`);
-      if (!isApprovable(doc.text) && !approvalOf(doc.text).state) throw new Error(`${e.path} não é caso de teste, cenário BDD nem checklist`);
-      const next = setApproval(doc.text, state, { who: o.por || this.opts.who || '', revisor: o.revisor });
-      await this.writeDoc(e.path, next, doc);
-      // a versão aprovada fica guardada (marcada) para "o que mudou desde a aprovação"
-      if (state === 'aprovado') await saveVersion(this.h, e.path, denormalize(next, doc), { aprovada: true }).catch(() => {});
-      return `${e.path}: ${approvalText(approvalOf(next))}.`;
-    });
   }
 
   /**
@@ -936,11 +915,11 @@ export class QaWorkspace {
    * Nova rodada: os casos vêm da lista, de um segmento (épico, ticket, #tag, execução…), de uma consulta (sintaxe das
    * visões) ou de um ciclo salvo (vira a execução #N dele). A execução herda o que os casos têm em comum.
    */
-  roundCreate(o: { nome?: string; casos?: string[]; segmento?: string; consulta?: string; ciclo?: string; app?: string; vinculos?: Record<string, string>; reteste?: string; reteste_skip?: boolean; reteste_bugs?: boolean; bugs?: string[]; so_aprovados?: boolean; ambientes?: string[]; navegadores?: string[]; dispositivos?: string[] }): Promise<string> {
+  roundCreate(o: { nome?: string; casos?: string[]; segmento?: string; consulta?: string; ciclo?: string; app?: string; vinculos?: Record<string, string>; reteste?: string; reteste_skip?: boolean; reteste_bugs?: boolean; bugs?: string[]; ambientes?: string[]; navegadores?: string[]; dispositivos?: string[] }): Promise<string> {
     return this.exclusive(() => this.roundCreateNow(o));
   }
 
-  private async roundCreateNow(o: { nome?: string; casos?: string[]; segmento?: string; consulta?: string; ciclo?: string; app?: string; vinculos?: Record<string, string>; reteste?: string; reteste_skip?: boolean; reteste_bugs?: boolean; bugs?: string[]; so_aprovados?: boolean; ambientes?: string[]; navegadores?: string[]; dispositivos?: string[] }): Promise<string> {
+  private async roundCreateNow(o: { nome?: string; casos?: string[]; segmento?: string; consulta?: string; ciclo?: string; app?: string; vinculos?: Record<string, string>; reteste?: string; reteste_skip?: boolean; reteste_bugs?: boolean; bugs?: string[]; ambientes?: string[]; navegadores?: string[]; dispositivos?: string[] }): Promise<string> {
     await this.refresh(true);
     const all = this.index.all();
     const isCaseDoc = (e: DocEntry) => CASE_TYPES.includes(e.tipo);
@@ -1018,14 +997,6 @@ export class QaWorkspace {
       const r = ensureConfirmSteps(doc.text);
       if (r.added) await this.writeDoc(e.path, r.text, doc);
     }
-    // só casos aprovados (aprovação do caso)
-    let leftOut = '';
-    if (o.so_aprovados && picked.length) {
-      const out = picked.filter((e) => approvalKey(e.text || '') !== 'aprovado');
-      if (out.length === picked.length && !bugs.length) throw new Error(`nenhum caso aprovado entre os ${picked.length} escolhidos (${picked.map((e) => `${e.id || e.name}: ${approvalKey(e.text || '') || 'sem aprovação'}`).join(', ')})`);
-      picked = picked.filter((e) => !out.includes(e));
-      leftOut = ` Ficaram fora (não aprovados): ${out.map((e) => `${e.id || e.name} (${approvalKey(e.text || '') || 'sem aprovação'})`).join(', ')}.`;
-    }
     const apps = [...new Set([...picked, ...bugs.map((b) => this.index.resolve(b.key)).filter((x): x is DocEntry => !!x)].map((e) => e.app).filter(Boolean))];
     const appName = o.app || (apps.length === 1 ? apps[0] : '');
     // herança: do ciclo (vínculos, tags) ou o que todos os casos têm em comum; vínculos informados valem mais
@@ -1055,7 +1026,7 @@ export class QaWorkspace {
         const p = await this.createDoc(runDestination({ tipo: 'execucao', app: appName }, this.dirs, sibs2).dir, `${slug2}.md`, t);
         created.push(`${p} (${String(meta(t).id || '')}) — ${config.label}`);
       }
-      return `Matriz ${matriz}: ${created.length} execução(ões) com ${picked.length} caso(s) cada:\n${created.map((x) => `- ${x}`).join('\n')}\n${leftOut} Registre cada caso em cada execução com qa_rodada_registrar { execucao } (a configuração vai para o histórico do caso); no fim, qa_rodada_finalizar em cada uma.`;
+      return `Matriz ${matriz}: ${created.length} execução(ões) com ${picked.length} caso(s) cada:\n${created.map((x) => `- ${x}`).join('\n')}\nRegistre cada caso em cada execução com qa_rodada_registrar { execucao } (a configuração vai para o histórico do caso); no fim, qa_rodada_finalizar em cada uma.`;
     }
     const retestCfg = retestText ? configOf(retestText) : '';
     let text = cycleDoc({
@@ -1070,7 +1041,7 @@ export class QaWorkspace {
     const slug = titulo.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'rodada';
     const path = await this.createDoc(dir, `${slug}.md`, text);
     const id = String(meta(text).id || '');
-    return `Criada: ${path} (${id}) com ${picked.length} caso(s)${picked.length ? `: ${picked.map((e) => e.id || e.name).join(', ')}` : ''}${bugs.length ? ` e ${bugs.length} teste(s) de confirmação de bug (antes dos casos): ${bugs.map((b) => b.key).join(', ')}` : ''}.${Object.keys(links).length ? ` Vínculos: ${Object.entries(links).map(([k, v]) => `${k}: ${v.join(', ')}`).join(' · ')}.` : ''} ${leftOut} Registre cada caso com qa_rodada_registrar; no fim, qa_rodada_finalizar.`;
+    return `Criada: ${path} (${id}) com ${picked.length} caso(s)${picked.length ? `: ${picked.map((e) => e.id || e.name).join(', ')}` : ''}${bugs.length ? ` e ${bugs.length} teste(s) de confirmação de bug (antes dos casos): ${bugs.map((b) => b.key).join(', ')}` : ''}.${Object.keys(links).length ? ` Vínculos: ${Object.entries(links).map(([k, v]) => `${k}: ${v.join(', ')}`).join(' · ')}.` : ''} Registre cada caso com qa_rodada_registrar; no fim, qa_rodada_finalizar.`;
   }
 
   /**
@@ -1290,7 +1261,7 @@ export class QaWorkspace {
       if (level) {
         applied = 0;
         for (const f of found) {
-          if (!f.fixes.some((x) => x.field)) continue;
+          if (!f.fixes.some((x) => x.field || x.drop)) continue;
           const doc = await this.readDoc(f.path);
           const r = applySweep(doc.text, f.fixes, level as 'certo' | 'provavel');
           if (r.applied.length && await this.writeDoc(f.path, r.text, doc)) applied += r.applied.length;
@@ -1592,7 +1563,7 @@ export class QaWorkspace {
    * Edição em massa: muda campos do cabeçalho de vários casos (escolhidos como na rodada: IDs, segmento, consulta —
    * combinados, a interseção). Sem `aplicar`: só mostra o que mudaria.
    */
-  bulkEdit(o: { casos?: string[]; segmento?: string; consulta?: string; prioridade?: string; responsavel?: string; epico?: string; sprint?: string; versao?: string; tags_por?: string; tags_tirar?: string; aprovacao?: string; limpar?: string[]; aplicar?: boolean }): Promise<string> {
+  bulkEdit(o: { casos?: string[]; segmento?: string; consulta?: string; prioridade?: string; responsavel?: string; epico?: string; sprint?: string; versao?: string; tags_por?: string; tags_tirar?: string; limpar?: string[]; aplicar?: boolean }): Promise<string> {
     return this.exclusive(async () => {
       await this.refresh(true);
       const all = this.index.all();
@@ -1609,11 +1580,9 @@ export class QaWorkspace {
       }
       if (!sets.length) throw new Error('informe os casos: casos (IDs), segmento ou consulta');
       const picked = sets.reduce((acc, s) => acc.filter((x) => s.some((y) => y.path === x.path)));
-      const ap = o.aprovacao ? normalizeApproval(o.aprovacao) : undefined;
-      if (o.aprovacao && !ap) throw new Error(`aprovacao "${o.aprovacao}" inválida — rascunho, em-revisao ou aprovado`);
       const clear = (o.limpar || []).filter((x): x is 'responsavel' | 'epico' | 'sprint' | 'versao' => ['responsavel', 'epico', 'sprint', 'versao'].includes(x));
-      const change: BulkChange = { prioridade: o.prioridade, responsavel: o.responsavel, epico: o.epico, sprint: o.sprint, versao: o.versao, addTags: splitTags(o.tags_por || ''), removeTags: splitTags(o.tags_tirar || ''), aprovacao: ap || undefined, clear };
-      if (emptyBulk(change)) throw new Error('nada a mudar: informe prioridade, responsavel, epico, sprint, versao, tags_por, tags_tirar, aprovacao ou limpar');
+      const change: BulkChange = { prioridade: o.prioridade, responsavel: o.responsavel, epico: o.epico, sprint: o.sprint, versao: o.versao, addTags: splitTags(o.tags_por || ''), removeTags: splitTags(o.tags_tirar || ''), clear };
+      if (emptyBulk(change)) throw new Error('nada a mudar: informe prioridade, responsavel, epico, sprint, versao, tags_por, tags_tirar ou limpar');
       const changes: Array<{ e: DocEntry; doc: DocText; next: string }> = [];
       for (const e of picked) {
         const doc = await this.readDoc(e.path);
@@ -1666,7 +1635,7 @@ export class QaWorkspace {
         created.push(await this.createDoc(where(c), suggestedFileName(text, c.titulo), text));
       }
       await this.refresh(true);
-      return `${head}\nCriados ${created.length} caso(s) (aprovação: rascunho ou a situação da origem):\n${created.slice(0, 40).map((p) => `- ${p}`).join('\n')}${created.length > 40 ? `\n… e mais ${created.length - 40}` : ''}`;
+      return `${head}\nCriados ${created.length} caso(s):\n${created.slice(0, 40).map((p) => `- ${p}`).join('\n')}${created.length > 40 ? `\n… e mais ${created.length - 40}` : ''}`;
     });
   }
 

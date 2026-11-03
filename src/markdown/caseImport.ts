@@ -24,12 +24,10 @@ export interface ImportedCase {
   tags: string[];
   jira: string[];
   responsavel: string;
-  /** aprovação vinda da origem (Approved → aprovado, Draft → rascunho, In review → em-revisao); vazio = rascunho */
-  aprovacao: '' | 'rascunho' | 'em-revisao' | 'aprovado';
   /** linha da planilha onde o caso começa (1 = cabeçalho) */
   linha: number;
 }
-export type ImportField = 'origem' | 'titulo' | 'secao' | 'prioridade' | 'pre' | 'objetivo' | 'passo' | 'dados' | 'esperado' | 'tags' | 'jira' | 'responsavel' | 'tipo' | 'estado';
+export type ImportField = 'origem' | 'titulo' | 'secao' | 'prioridade' | 'pre' | 'objetivo' | 'passo' | 'dados' | 'esperado' | 'tags' | 'jira' | 'responsavel' | 'tipo';
 export interface ImportPlan {
   /** de onde parece vir */
   fonte: 'TestRail' | 'Zephyr' | 'Xray' | 'qTest' | 'planilha';
@@ -58,8 +56,6 @@ const SYNONYMS: Array<[ImportField, RegExp]> = [
   ['jira', /^(references?|coverage issues|coverage|requirements?|requisitos?|jira|ticket|tickets|issue links?|linked issues|story|historia)$/],
   ['responsavel', /^(owner|created by|author|autor|assigned to|assignee|responsavel|criado por)$/],
   ['tipo', /^(type|test type|tipo|tipo de teste)$/],
-  // situação do caso na origem (Zephyr: Draft / Approved) → aprovação
-  ['estado', /^(status|test case status|estado|situacao)$/],
 ];
 
 /** Reconhece as colunas do cabeçalho. */
@@ -99,15 +95,6 @@ export function mapPriority(v: string): string {
   const text = raw.replace(/^\d+\s*[-–.:)]\s*/, '').normalize('NFD').replace(/[̀-ͯ]/g, '');
   for (const [re, p] of PRIOS) if (re.test(text)) return p;
   return raw;
-}
-
-/** Situação do caso na origem → aprovação ("" quando não é uma situação de aprovação). */
-export function mapState(v: string): ImportedCase['aprovacao'] {
-  const t = norm(v);
-  if (/^(approved|aprovado|aprovada|ready|pronto)$/.test(t)) return 'aprovado';
-  if (/^(in review|review|under review|em revisao|revisao|para revisar)$/.test(t)) return 'em-revisao';
-  if (/^(draft|rascunho|new|novo|em elaboracao)$/.test(t)) return 'rascunho';
-  return '';
 }
 
 /** Divide uma célula com vários itens: "1. a\n2. b" / "1) a 2) b" / linhas. */
@@ -173,7 +160,7 @@ export function planImport(rows: string[][]): ImportPlan {
       origem, titulo: titulo || origem, secao: cell(r, 'secao').replace(/\s*[>/\\]\s*/g, ' > ').replace(/^\s*>\s*|\s*>\s*$/g, '').trim(),
       prioridade: mapPriority(cell(r, 'prioridade')), objetivo: cell(r, 'objetivo'), pre: splitNumbered(cell(r, 'pre')),
       steps: [], tags: [...listOf(cell(r, 'tags')), ...(cell(r, 'tipo') ? [cell(r, 'tipo').toLowerCase().replace(/\s+/g, '-')] : [])],
-      jira: [...new Set(cell(r, 'jira').match(JIRA_RE) || [])], responsavel: cell(r, 'responsavel'), aprovacao: mapState(cell(r, 'estado')), linha: k + 2,
+      jira: [...new Set(cell(r, 'jira').match(JIRA_RE) || [])], responsavel: cell(r, 'responsavel'), linha: k + 2,
     };
     addSteps(cur, r);
     cases.push(cur);
@@ -197,7 +184,7 @@ export function caseDocText(c: ImportedCase, o: { id: string; app?: string; font
     `jira: ${c.jira.length ? formatValue(c.jira.length === 1 ? c.jira[0] : c.jira) : ''}`.trimEnd(),
     `tags: ${formatValue(tags)}`,
     `importado-de: ${formatValue(`${o.fonte}${c.origem ? ` ${c.origem}` : ''}`)}`,
-    `aprovacao: ${c.aprovacao || 'rascunho'}`, 'qa-md: 1', '---',
+    'qa-md: 1', '---',
   ];
   const withData = c.steps.some((s) => s.dados);
   const head = withData ? '| # | Ação | Dados | Resultado esperado | Resultado obtido | Status |' : '| # | Ação | Resultado esperado | Resultado obtido | Status |';

@@ -10,6 +10,7 @@
  */
 import { detectFrontMatter, parseFrontMatter } from './frontmatter.ts';
 import { jiraValues, jiraLabel } from './jiraLink.ts';
+import { approvalLeftovers, dropApprovalFields } from './definition.ts';
 import { APPS_DIR, CASE_TYPES, segmentOfDir, epicKey, ticketKey, ticketMoves, execMoves } from './structure.ts';
 import { inheritHeader, commonHeader } from './segment.ts';
 import { cycleTable, isCycle } from './cycle.ts';
@@ -24,6 +25,8 @@ export interface SweepFix {
   value?: string[];
   /** pasta sugerida (mover: feito no app, que leva links e prints junto) */
   move?: string;
+  /** campos a tirar do cabeçalho (os da aprovação do caso, que saiu na 1.78.0) */
+  drop?: string[];
   confidence: Confidence;
   why: string;
 }
@@ -146,6 +149,10 @@ export function sweepLinks(input: Array<{ path: string; text: string }>, dirs: s
       }
     }
 
+    // C1: a aprovação do caso saiu do TestFlow — os campos dela (aprovacao, revisor, aprovado_por…) saem do cabeçalho
+    const left = approvalLeftovers(d.text);
+    if (left.length) fixes.push({ drop: left, confidence: 'certo', why: 'a aprovação do caso saiu do TestFlow (1.78.0): esses campos não são mais usados' });
+
     const mv = moves.get(d.path);
     if (mv) fixes.push({ move: mv, confidence: 'certo', why: `pela regra de pastas (épico/ticket) o lugar é ${mv}/ — mova pelo app (🎫 Organizar por épico e ticket), que leva links e prints` });
     const rm = !mv && runMoves.get(d.path);
@@ -166,7 +173,7 @@ function epicKeyFromCase(c: Doc, storyByTicket: Map<string, Doc>, dirs: string[]
 
 /** Aplica as correções de campo (só preenche o que está vazio e soma tags). `level`: até que confiança aplicar. */
 export function applySweep(text: string, fixes: SweepFix[], level: 'certo' | 'provavel' = 'certo'): { text: string; applied: SweepFix[] } {
-  const ok = (f: SweepFix) => !!f.field && !!f.value?.length && (f.confidence === 'certo' || (level === 'provavel' && f.confidence === 'provavel'));
+  const ok = (f: SweepFix) => ((!!f.field && !!f.value?.length) || !!f.drop?.length) && (f.confidence === 'certo' || (level === 'provavel' && f.confidence === 'provavel'));
   const applied = fixes.filter(ok);
   const fields: Record<string, string | string[]> = {};
   const tags: string[] = [];
@@ -175,7 +182,9 @@ export function applySweep(text: string, fixes: SweepFix[], level: 'certo' | 'pr
     else if (f.field === 'jira' || f.field === 'epico') fields[f.field] = f.value || [];
     else if (f.field) fields[f.field] = (f.value || [])[0];
   }
-  return { text: applied.length ? inheritHeader(text, { tags, fields }) : text, applied };
+  let out = applied.some((f) => f.field) ? inheritHeader(text, { tags, fields }) : text;
+  if (applied.some((f) => f.drop?.length)) out = dropApprovalFields(out);
+  return { text: out, applied };
 }
 
 /** Relatório da varredura em Markdown (para o Claude mostrar). */
@@ -189,7 +198,7 @@ export function sweepReport(found: SweepFinding[], o: { total: number; applied?:
   ];
   for (const f of found) {
     lines.push(`**${f.id}** (${f.tipo}) — ${f.path}`);
-    for (const x of f.fixes) lines.push(`- ${label[x.confidence]}: ${x.field ? `${x.field}: ${x.field === 'tags' ? `+ ${x.value?.join(', ')}` : x.value?.join(', ')}` : x.move ? `mover para ${x.move}/` : ''}${x.field || x.move ? ' — ' : ''}${x.why}`);
+    for (const x of f.fixes) lines.push(`- ${label[x.confidence]}: ${x.field ? `${x.field}: ${x.field === 'tags' ? `+ ${x.value?.join(', ')}` : x.value?.join(', ')}` : x.move ? `mover para ${x.move}/` : x.drop ? `tirar ${x.drop.join(', ')}` : ''}${x.field || x.move || x.drop ? ' — ' : ''}${x.why}`);
   }
   return lines.join('\n');
 }

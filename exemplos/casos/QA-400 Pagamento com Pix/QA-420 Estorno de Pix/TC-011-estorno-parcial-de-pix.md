@@ -13,9 +13,7 @@ jira: QA-420
 epico: QA-400
 sprint: Sprint 43
 tags: [pix, backoffice, regressao]
-aprovacao: em-revisao
 qa-md: 1
-revisor: Ana
 ---
 
 # TC-011 — Estorno parcial de um pedido pago com Pix

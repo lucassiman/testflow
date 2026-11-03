@@ -8,6 +8,12 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.78.0', date: '03/11/2026',
+    items: [
+      { icon: '🧹', text: '**A aprovação do caso saiu**: sem pílula de rascunho/em revisão/aprovado, sem *só aprovados* nas rodadas, sem o filtro e sem `qa_aprovacao` — o time não usava. Os campos antigos (`aprovacao:`, `aprovado_por:`…) são ignorados; a varredura do Claude tira dos documentos.', manual: '6.10 Aprovação do caso' },
+    ],
+  },
+  {
     version: '1.77.0', date: '02/11/2026',
     items: [
       { icon: '🧩', text: '**Quando ligar a extensão de console e rede**: a barra Execução mostra o estado da captura (capturando, desligada, pausada, sem extensão) e o clique explica o roteiro; ao criar uma rodada, o aviso lembra de recarregar a aba do sistema testado antes do 1º caso.', manual: '8.3 Extensão do navegador' },

@@ -17,7 +17,6 @@ import { listComments } from './comments.js';
 import { countComments } from '../markdown/comments.ts';
 import { lockMessage } from '../markdown/lock.ts';
 import { personalDoc } from '../markdown/officialSync.ts';
-import { approvalMenu } from './approval.js';
 
 /** @typedef {import('../markdown/docState.ts').StateMark} StateMark */
 
@@ -60,7 +59,6 @@ box.addEventListener('click', (event) => {
   else if (key === 'comments') listComments();
   else if (key === 'cycle') cycleMenu();
   else if (key === 'cycledef') runCycle();
-  else if (key === 'approval') approvalMenu();
   else if (key === 'editing') { const l = editingOthers()[0]; if (l) app.toast(`👤 ${lockMessage(l)} (aviso pela pasta oficial — ninguém fica bloqueado; compare antes de publicar).`, 'info', { duration: 7000 }); }
   else if (key === 'session' || key === 'prints') { app.preview.commit(); app.runner?.startSession(); }
   else openVersionHistory();

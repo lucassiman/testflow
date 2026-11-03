@@ -1,9 +1,8 @@
 /**
  * Edição em massa (11.2) — funções puras, para o app e o MCP: muda campos do cabeçalho de vários documentos de uma vez
- * (prioridade, responsável, épico, sprint, versão, tags a pôr/tirar, aprovação), sem mexer no resto do arquivo.
+ * (prioridade, responsável, épico, sprint, versão, tags a pôr/tirar), sem mexer no resto do arquivo.
  */
 import { detectFrontMatter, parseFrontMatter, formatValue } from './frontmatter.ts';
-import { setApproval, normalizeApproval, type ApprovalState } from './approval.ts';
 
 export interface BulkChange {
   prioridade?: string;
@@ -14,7 +13,6 @@ export interface BulkChange {
   /** tags a acrescentar / tirar (sem #) */
   addTags?: string[];
   removeTags?: string[];
-  aprovacao?: ApprovalState;
   /** limpar o campo (ex.: responsavel) — vale mais que o valor */
   clear?: Array<'responsavel' | 'epico' | 'sprint' | 'versao'>;
 }
@@ -70,7 +68,6 @@ export function applyBulk(text: string, c: BulkChange, o: { who?: string; now?: 
     for (const t of (c.addTags || []).map((x) => x.replace(/^#/, '').trim()).filter(Boolean)) if (!next.some((x) => key(x) === key(t))) next.push(t);
     if (next.join('\u0000') !== cur.join('\u0000')) out = setRaw(out, 'tags', formatValue(next));
   }
-  if (c.aprovacao && normalizeApproval(m.aprovacao) !== c.aprovacao) out = setApproval(out, c.aprovacao, { who: o.who, now: o.now });
   return out;
 }
 
@@ -84,7 +81,6 @@ export function describeBulk(c: BulkChange): string[] {
   }
   if (c.addTags?.length) out.push(`+ tags ${c.addTags.map((t) => `#${t.replace(/^#/, '')}`).join(' ')}`);
   if (c.removeTags?.length) out.push(`− tags ${c.removeTags.map((t) => `#${t.replace(/^#/, '')}`).join(' ')}`);
-  if (c.aprovacao) out.push(`aprovação → ${c.aprovacao}`);
   return out;
 }
 

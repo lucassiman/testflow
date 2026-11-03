@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * Edição em massa (11.2): escolher vários casos (a mesma janela da rodada — filtro, atalhos por aplicação, épico,
- * regressão, visão) e mudar de uma vez prioridade, responsável, épico, sprint, versão, tags (pôr/tirar) e aprovação.
+ * regressão, visão) e mudar de uma vez prioridade, responsável, épico, sprint, versão e tags (pôr/tirar).
  * Só o cabeçalho muda; a versão anterior de cada arquivo vai para o histórico e "Desfazer" volta tudo.
  * As regras ficam em src/markdown/bulkEdit.ts.
  */
@@ -49,7 +49,6 @@ function askChange(picked) {
             <label>Épico <input type="text" data-b="epico" placeholder="— manter — (ex.: PORTAL-10)" spellcheck="false"></label>
             <label>Sprint <input type="text" data-b="sprint" placeholder="— manter —" spellcheck="false"></label>
             <label>Versão <input type="text" data-b="versao" placeholder="— manter —" spellcheck="false"></label>
-            <label>Aprovação <select data-b="aprovacao"><option value="">— manter —</option><option value="rascunho">✍ Rascunho</option><option value="em-revisao">👀 Em revisão</option><option value="aprovado">✅ Aprovado</option></select></label>
             <label class="bulk-wide">Pôr tags <input type="text" data-b="addTags" placeholder="ex.: regressao, smoke" spellcheck="false"></label>
             <label class="bulk-wide">Tirar tags <input type="text" data-b="removeTags" placeholder="ex.: obsoleto" spellcheck="false"></label>
           </div>
@@ -72,7 +71,6 @@ function askChange(picked) {
       epico: q('[data-b="epico"]').value.trim() || undefined,
       sprint: q('[data-b="sprint"]').value.trim() || undefined,
       versao: q('[data-b="versao"]').value.trim() || undefined,
-      aprovacao: /** @type {import('../markdown/approval.ts').ApprovalState | undefined} */ (q('[data-b="aprovacao"]').value || undefined),
       addTags: splitTags(q('[data-b="addTags"]').value),
       removeTags: splitTags(q('[data-b="removeTags"]').value),
     });

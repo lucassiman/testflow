@@ -50,7 +50,6 @@ const TOOLS = [
   ['qa_bug_do_caso', 'Criar bug ligado a partir do passo que falhou'],
   ['qa_marcar_passos', 'Marcar status/obtido dos passos'],
   ['qa_nova_rodada', 'Arquivar a rodada e limpar os passos'],
-  ['qa_aprovacao', 'Aprovação do caso: rascunho, em revisão, aprovado'],
   ['qa_release', 'Progresso de uma release (versão)'],
   ['qa_rodada_atribuir', 'Atribuir/distribuir os casos da rodada entre testadores'],
   ['qa_pendencias', 'Casos pendentes atribuídos a uma pessoa'],

@@ -11,7 +11,6 @@ responsavel: Lucas
 data: 2026-10-06
 iterar: [cliente, atendente, gestor]
 tags: [conta, perfis]
-aprovacao: rascunho
 qa-md: 1
 ---
 

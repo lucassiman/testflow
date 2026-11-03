@@ -5,7 +5,6 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { applyBulk, describeBulk, normalizePriority, splitTags } from '../../src/markdown/bulkEdit.ts';
-import { approvalOf } from '../../src/markdown/approval.ts';
 
 const TC = `---\ntipo: caso-de-teste\nid: TC-1\ntitulo: Login\nprioridade: Média\ntags:\n  - pix\n  - obsoleto\nresponsavel: Ana\naprovacao: rascunho\n---\n\n# TC-1\n\n| # | Ação | Resultado esperado | Status |\n| --- | --- | --- | --- |\n| 1 | a | b | \`PASS\` |\n`;
 
@@ -19,8 +18,6 @@ test('aplica só o pedido e mantém o corpo', () => {
   assert.equal(out.split('---\n').slice(2).join('---\n'), TC.split('---\n').slice(2).join('---\n'));
   // já igual: texto idêntico
   assert.equal(applyBulk(TC, { prioridade: 'Média', addTags: ['pix'] }), TC);
-  const ap = applyBulk(TC, { aprovacao: 'aprovado' }, { who: 'Lucas' });
-  assert.equal(approvalOf(ap).por, 'Lucas');
   assert.equal(normalizePriority('critica'), 'Crítica');
   assert.deepEqual(splitTags('#a, b;c'), ['a', 'b', 'c']);
   assert.deepEqual(describeBulk({ prioridade: 'alta', addTags: ['x'], clear: ['sprint'] }), ['prioridade → Alta', 'sprint → (vazio)', '+ tags #x']);

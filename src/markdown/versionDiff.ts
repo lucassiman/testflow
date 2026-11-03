@@ -8,7 +8,7 @@
  */
 import { detectFrontMatter, parseFrontMatter } from './frontmatter.ts';
 import { HISTORY_TITLE } from './status.ts';
-import { definitionText } from './approval.ts';
+import { definitionText } from './definition.ts';
 import { stepTable, headings } from './runs.ts';
 
 export type RowKind = 'eq' | 'del' | 'ins' | 'mod' | 'skip';

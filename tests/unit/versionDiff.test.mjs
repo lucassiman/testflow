@@ -55,23 +55,21 @@ test('nome da versão aprovada; aprovadas não saem na limpeza', () => {
   assert.ok(!pruneVersions(names, 2).includes(n));
 });
 
-test('MCP: aprovar guarda a versão aprovada; comparar com ela e restaurar', async () => {
+test('MCP: gravar guarda a versão anterior; comparar com ela e restaurar', async () => {
   const { QaWorkspace } = await import('../../mcp/qa.ts');
   const tpl = Object.fromEntries(readdirSync('src/templates').filter((f) => f.endsWith('.md')).map((f) => [f.replace(/\.md$/, ''), readFileSync(join('src/templates', f), 'utf8')]));
   const dir = mkdtempSync(join(tmpdir(), 'qa-ver-'));
   mkdirSync(join(dir, 'casos'), { recursive: true });
-  writeFileSync(join(dir, 'casos/TC-1.md'), V1.replace('status: PENDING', 'status: PENDING\naprovacao: em-revisao'));
+  writeFileSync(join(dir, 'casos/TC-1.md'), V1);
   const ws = new QaWorkspace({ root: dir, templates: tpl, who: 'Claude' });
-  await ws.approve({ doc: 'TC-1', estado: 'aprovado', por: 'Ana' });
-  assert.match(await ws.versions('TC-1'), /\(aprovada\)/);
+  await ws.setFields({ doc: 'TC-1', campos: { prioridade: 'Alta' } });
+  assert.match(await ws.versions('TC-1'), /1 versão/);
   const path = join(dir, 'casos/TC-1.md');
   writeFileSync(path, readFileSync(path, 'utf8').replace('| 2 | Entrar | Painel |', '| 2 | Entrar com SSO | Painel |'));
-  const cmp = await ws.compareVersions({ doc: 'TC-1', versao: 'aprovada' });
+  const cmp = await ws.compareVersions({ doc: 'TC-1', versao: 'anterior' });
   assert.match(cmp, /Passo 2 · ação: Entrar → Entrar com SSO/);
-  assert.match(cmp, /- \| 2 \| Entrar \| Painel/);
-  assert.match(await ws.read('TC-1', '', false), /alterado depois/);
-  const back = await ws.restoreVersion({ doc: 'TC-1', versao: 'aprovada' });
-  assert.match(back, /voltou para .*_aprovada\.md/);
+  const back = await ws.restoreVersion({ doc: 'TC-1', versao: 'anterior' });
+  assert.match(back, /voltou para /);
   assert.match(readFileSync(path, 'utf8'), /\| 2 \| Entrar \| Painel \|/);
   await assert.rejects(ws.compareVersions({ doc: 'TC-1', versao: 'nao-existe' }), /não existe/);
 });

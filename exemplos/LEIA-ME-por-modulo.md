@@ -17,7 +17,7 @@ A mesma Loja Demo do [LEIA-ME](LEIA-ME.md) (Sprint 42, versão 2.14.0) continua 
 | 01/10 | Execução #2: o [[TC-006]] e o [[TC-008]] falham → [[BUG-002]] e [[BUG-003]]; relatórios com a decisão *Não liberar* | [[EXEC-20261001-083000]], `relatorios/`, `acompanhamento/` |
 | 07 a 09/10 | Automação toda noite: o teste do TC-005 alterna PASS e FAIL — **instável** | `execucoes/execucao-automatizada-…`, `automacao/noturno/` |
 | 08/10 | Execução #3 em andamento, dividida entre Ana, Bruno e Lucas | [[EXEC-20261008-084500]] |
-| 09/10 | Smoke com matriz, pronto para executar; o [[TC-010]] (copia e cola) aprovado | [[CICLO-20261009-1400]] |
+| 09/10 | Smoke com matriz, pronto para executar; o [[TC-010]] (copia e cola) criado | [[CICLO-20261009-1400]] |
 | 10/10 | O [[TC-010]] falha → [[BUG-004]] com print, vídeo do replay, console e rede; o [[TC-011]] em revisão, com comentários | [[BUG-004]], [[TC-011]] |
 | 11/10 | Build rc3: o BUG-004 corrigido e fechado | [[BUG-004]] → *Andamento* |
 | 12/10 | Com cupom no pedido, o defeito volta → **reincidência**, BUG-004 reaberto | [[BUG-004]] → *Reincidências* |
@@ -44,14 +44,14 @@ A mesma Loja Demo do [LEIA-ME](LEIA-ME.md) (Sprint 42, versão 2.14.0) continua 
 | [[COMP-001]] | Logins geral / HML / PROD, endereços e o bloco `↪ Fazer login`; o gestor só tem conta no HML (**falta PROD**) |
 | `casos/QA-400 Pagamento com Pix/` | O épico na pasta dele, uma pasta por ticket ([[QA-410]], [[QA-420]]) com a história e os casos. História sem ticket: [[HU-001]] |
 | [[TC-008]] · [[TC-007]] · [[TC-009]] | Dois logins no mesmo caso; caso com dados pela tabela *Iterações* (3 valores) e pelo `iterar:` dos logins |
-| [[TC-005]] · [[TC-006]] · [[TC-009]] · [[TC-008]] · [[TC-010]] | Aprovação: aprovado · em revisão · rascunho · **⚠ aprovado · alterado** · aprovado (o TC-010 nasceu do pedido da Ana na revisão do TC-006) |
+| [[TC-008]] · [[TC-010]] | O TC-008 mudou o passo 5 depois de 30/09 (veja no 🕘 Histórico de versões); o TC-010 nasceu do pedido da Ana na revisão do TC-006. *A aprovação do caso saiu na 1.78.0.* |
 | `importar/casos-testrail.csv` | Exportação do TestRail para importar (4 casos, passos separados) |
 
 **Roteiro:**
 
 - [ ] Abra o `TC-008` e aperte `Alt+K`: os logins do HML. Troque o 🌐 no topo para **PROD** — os dados mudam e o gestor aparece com *falta PROD*
 - [ ] No `TC-007`, clique em **▶ Executar**: uma execução por linha da tabela *Iterações* (1/3)
-- [ ] No `TC-008`, clique na pílula **⚠ aprovado · alterado** → *Ver o que mudou desde a aprovação*
+- [ ] No `TC-008`, **Publicar ▾ → 🕘 Histórico de versões…**: o que mudou desde 30/09 (o passo 5)
 - [ ] **Casos ▾ → 📥 Importar casos de uma planilha…** e escolha `importar/casos-testrail.csv` (veja a prévia; pode cancelar)
 
 ## ▶ Execução
@@ -113,14 +113,14 @@ A mesma Loja Demo do [LEIA-ME](LEIA-ME.md) (Sprint 42, versão 2.14.0) continua 
 | Onde olhar | O que mostra |
 | --- | --- |
 | [[TC-011]] | Caso **em revisão** com dois comentários: o do Claude (respondido e **resolvido**) e o da Ana (**pendente**) |
-| [[TC-008]] | O histórico de versões com a versão aprovada de 30/09 |
+| [[TC-008]] | O histórico de versões com a versão de 30/09 |
 
 **Roteiro:**
 
 - [ ] Abra o `TC-011`: a pílula **💬 1** no topo; o comentário resolvido fica apagadinho
 - [ ] Passe o mouse no comentário da Ana: **↩** responde, **✓** resolve. Para deixar o seu: **Publicar ▾ → 💬 Comentar** (`Alt+M`)
 - [ ] **📊 Painel → 💬 Comentários**: só os documentos com comentário pendente
-- [ ] No `TC-008`, **Publicar ▾ → 🕘 Histórico de versões…**: a versão aprovada, para comparar ou restaurar
+- [ ] No `TC-008`, **Publicar ▾ → 🕘 Histórico de versões…**: a versão de 30/09, para comparar ou restaurar
 
 > [!NOTE]
 > **Publicar na pasta oficial** precisa de uma pasta compartilhada configurada (`☰` → 🏛 Oficial). É lá que a página da rodada fica para o time.

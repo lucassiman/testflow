@@ -62,7 +62,6 @@ Como trabalhar:
 - Rodou os testes automatizados (Playwright, Jest, Cypress…)? qa_anexar_automacao { arquivo } põe o resultado na execução em andamento (ou numa nova).
 - Status personalizados: um documento tipo status (configuracao/status.md, tabela Palavra | Conta como | Cor) cria palavras a mais (ex.: RETESTE, FALHA CONHECIDA) que valem nos passos e contam como um dos 5 — use só as que existem (qa_marcar_passos avisa).
 - Teste de confirmação do bug (refazer o bug na versão corrigida: PASS = corrigido): qa_rodada_criar { bugs: ["BUG-…"] } (só os bugs = execução só de confirmação; com casos, os bugs vêm antes, na seção "Confirmação de bugs", e contam à parte). O bug ganha a seção "## Teste de confirmação" (passos tirados dos "Passos para reproduzir"); registre com qa_rodada_registrar { caso: "BUG-…", passos }. O resultado vai para o "## Andamento" do bug; FAIL reabre o bug fechado; PASS não fecha sozinho — pergunte ao usuário e, com o OK, qa_atualizar_cabecalho { status: PASS }.
-- Aprovação do caso (rascunho → em-revisao → aprovado): casos novos nascem "rascunho"; qa_aprovacao muda (aprovar só quando o usuário pedir); consulta "aprovacao: em-revisao, alterado" lista o que falta revisar; qa_rodada_criar so_aprovados=true deixa de fora os não aprovados.
 - Massa por ambiente: no compartilhado, "## Dados: Logins (hml)" / "(prod)"… com as mesmas chaves (sem ambiente = vale para todos); o caso continua {{admin.e-mail}} e o app troca pelo ambiente ativo. qa_preparar_ambientes cria as seções com as chaves e os valores em branco para o QA preencher; qa_compartilhados { ambiente } mostra o que falta em cada ambiente.
 - Caso com dados (o mesmo caso para vários perfis/massas): seção "## Iterações" no caso (tabela Chave | campos…, uma linha por execução) ou "iterar: <grupo de Dados compartilhado>" no cabeçalho; nos passos {{dado}} / {{dado.campo}} e "↪ Bloco (dado)". qa_compartilhados { documento } lista as iterações; registre uma a uma (iteracao: nome ou número) em qa_marcar_passos concluir=true / qa_rodada_registrar.
 - Login, URLs e preparação repetidos em vários casos: veja qa_compartilhados (pasta ou documento) antes de escrever casos — use "↪ Bloco (param)" como um passo e {{dado}} / {{dado.senha}} em vez de repetir passos ou escrever senhas; se não houver, sugira criar um compartilhado (qa_criar tipo compartilhado, escopo pasta | app | global). Casos antigos com login repetido ou senha escrita: qa_varredura { modo: "compartilhados" } relata e, com o OK, converte.
@@ -149,12 +148,11 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
   }, async (a) => run(() => ws.versions(a.doc), text));
 
   server.registerTool('qa_editar_em_massa', {
-    title: 'Edição em massa', description: 'Muda campos do cabeçalho de vários casos de uma vez — prioridade, responsavel, epico, sprint, versao, tags (por/tirar), aprovacao; limpar esvazia campos. Casos por IDs, segmento ou consulta (interseção). Sem aplicar: só a prévia; aplicar=true grava (confirme com o usuário).',
+    title: 'Edição em massa', description: 'Muda campos do cabeçalho de vários casos de uma vez — prioridade, responsavel, epico, sprint, versao, tags (por/tirar); limpar esvazia campos. Casos por IDs, segmento ou consulta (interseção). Sem aplicar: só a prévia; aplicar=true grava (confirme com o usuário).',
     inputSchema: {
       casos: z.array(z.string()).optional(), segmento: z.string().optional(), consulta: z.string().optional(),
       prioridade: z.string().optional().describe('Crítica, Alta, Média, Baixa'), responsavel: z.string().optional(), epico: z.string().optional(), sprint: z.string().optional(), versao: z.string().optional(),
       tags_por: z.string().optional().describe('tags a acrescentar, separadas por vírgula'), tags_tirar: z.string().optional(),
-      aprovacao: z.string().optional().describe('rascunho, em-revisao ou aprovado (aprovar só com o pedido do usuário)'),
       limpar: z.array(z.enum(['responsavel', 'epico', 'sprint', 'versao'])).optional(),
       aplicar: z.boolean().optional(),
     }, annotations: RW,
@@ -170,12 +168,12 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
   }, async (a) => run(() => ws.importCases(a), text));
 
   server.registerTool('qa_comparar_versoes', {
-    title: 'Comparar versões', description: 'O que mudou entre uma versão guardada e o documento atual (ou outra versão): resumo do caso (cabeçalho, passos novos/removidos/alterados, seções) e o diff. versao: nome de qa_versoes, "anterior" (padrão) ou "aprovada" (a última aprovação).',
+    title: 'Comparar versões', description: 'O que mudou entre uma versão guardada e o documento atual (ou outra versão): resumo do caso (cabeçalho, passos novos/removidos/alterados, seções) e o diff. versao: nome de qa_versoes ou "anterior" (padrão).',
     inputSchema: { doc: docArg, versao: z.string().optional(), com: z.string().optional().describe('outra versão (sem ela: o documento atual)') }, annotations: RO,
   }, async (a) => run(() => ws.compareVersions(a), text));
 
   server.registerTool('qa_restaurar_versao', {
-    title: 'Restaurar versão', description: 'Volta o documento a uma versão guardada (nome de qa_versoes, "anterior" ou "aprovada"); a atual fica em .versoes/. Confirme com o usuário antes.',
+    title: 'Restaurar versão', description: 'Volta o documento a uma versão guardada (nome de qa_versoes ou "anterior"); a atual fica em .versoes/. Confirme com o usuário antes.',
     inputSchema: { doc: docArg, versao: z.string() }, annotations: { ...RW, destructiveHint: true },
   }, async (a) => run(() => ws.restoreVersion(a), text));
 
@@ -211,16 +209,6 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
       ambiente: z.string().optional().describe('ambiente em que rodou (local, dev, hml, prod) — vai para o histórico e escolhe a massa do compartilhado'),
     }, annotations: RW,
   }, async (a) => run(() => ws.markSteps(a), text));
-
-  server.registerTool('qa_aprovacao', {
-    title: 'Aprovação do caso', description: 'Muda a aprovação de um caso/cenário/checklist: rascunho → em-revisao (com revisor) → aprovado (grava quem e quando; mudar a definição depois pede nova aprovação). Aprove só quando o usuário pedir — quem aprova é uma pessoa (por).',
-    inputSchema: {
-      doc: docArg,
-      estado: z.enum(['rascunho', 'em-revisao', 'aprovado']),
-      revisor: z.string().optional().describe('quem vai revisar (em-revisao)'),
-      por: z.string().optional().describe('quem aprovou (padrão: o usuário do MCP)'),
-    }, annotations: RW,
-  }, async (a) => run(() => ws.approve(a), text));
 
   server.registerTool('qa_nova_rodada', {
     title: 'Nova rodada', description: 'Arquiva a tabela de passos como está no Histórico de execuções e limpa obtido/status (para reexecutar).',
@@ -278,7 +266,6 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
       reteste_bugs: z.boolean().optional().describe('com reteste: false deixa de fora a confirmação dos bugs (só a regressão dos casos)'),
       bugs: z.array(z.string()).optional().describe('IDs de bugs para o teste de confirmação (refazer o bug na versão corrigida; PASS = corrigido). Sozinhos = execução só de confirmação; com casos, vêm antes e contam à parte'),
       reteste_skip: z.boolean().optional().describe('com reteste: inclui também os SKIP'),
-      so_aprovados: z.boolean().optional().describe('só os casos aprovados (aprovacao: aprovado, sem mudança depois); os outros ficam de fora e são listados'),
       ambientes: z.array(z.string()).optional().describe('matriz: uma execução por combinação de ambientes × navegadores × dispositivos (ex.: ["HML", "PROD"])'),
       navegadores: z.array(z.string()).optional(), dispositivos: z.array(z.string()).optional(),
     }, annotations: RW,

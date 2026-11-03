@@ -13,12 +13,7 @@ jira: QA-410
 epico: QA-400
 sprint: Sprint 43
 tags: [pix, checkout, regressao]
-aprovacao: aprovado
 qa-md: 1
-revisor: Ana
-aprovado_por: Ana
-aprovado_em: 2026-10-09 17:30
-aprovado_hash: 8304c84d
 ---
 
 # TC-010 — Pagar com Pix pelo copia e cola

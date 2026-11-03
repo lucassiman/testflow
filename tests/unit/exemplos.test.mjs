@@ -17,7 +17,6 @@ import { countComments, findComments } from '../../src/markdown/comments.ts';
 import { parseResults } from '../../src/io/automation.js';
 import { detectFrontMatter, parseFrontMatter } from '../../src/markdown/frontmatter.ts';
 import { findBrokenLinks } from '../../src/markdown/brokenLinks.ts';
-import { approvalKey } from '../../src/markdown/approval.ts';
 import { caseChanges } from '../../src/markdown/versionDiff.ts';
 import { parseShared, scopeFor, envCoverage, iterationsOf, parseInclude } from '../../src/markdown/shared.ts';
 import { parseStatusDoc } from '../../src/markdown/statusConfig.ts';
@@ -59,16 +58,8 @@ test('épico e tickets em pastas: casos/QA-400 …/QA-410 …/ com a história e
   assert.equal(doc('HU-001').path, 'requisitos/HU-001-menu-da-conta-por-perfil.md');
 });
 
-test('aprovação: rascunho, em revisão, aprovado e aprovado · alterado (com a versão aprovada em .versoes/)', () => {
-  assert.deepEqual(['TC-005', 'TC-006', 'TC-007', 'TC-008', 'TC-009'].map((k) => approvalKey(doc(k).text)), ['aprovado', 'em-revisao', 'aprovado', 'alterado', 'rascunho']);
-  const tc8 = doc('TC-008');
-  const vdir = join(root, '.versoes', tc8.path);
-  assert.ok(existsSync(vdir), 'a versão aprovada do TC-008 precisa ir junto');
-  const names = readdirSync(vdir);
-  assert.deepEqual(names, ['2026-09-30_09-30-00_aprovada.md']);
-  const approved = readFileSync(join(vdir, names[0]), 'utf8');
-  assert.equal(approvalKey(approved), 'aprovado'); // na época da aprovação, a impressão digital batia
-  assert.ok(caseChanges(approved, tc8.text).some((c) => /passo 5/i.test(c)), 'o que mudou desde a aprovação: o passo 5');
+test('C1 (1.78.0): os casos de exemplo não têm mais os campos da aprovação', () => {
+  for (const k of ['TC-005', 'TC-006', 'TC-007', 'TC-008', 'TC-009', 'TC-010', 'TC-011']) assert.doesNotMatch(doc(k).text, /^(aprovacao|revisor|aprovado_por|aprovado_em|aprovado_hash):/m, k);
 });
 
 test('compartilhado: logins geral/HML/PROD, falta PROD do gestor, bloco Fazer login e dois logins no mesmo caso', () => {
@@ -229,7 +220,6 @@ test('Evidências e bugs: BUG-004 com print, replay, console e rede da extensão
   const tc10 = doc('TC-010');
   assert.deepEqual(runsOf(tc10.text).map((r) => r.status), ['FAIL', 'PASS', 'FAIL']);
   assert.match(tc10.text, /^🐞 Bug: \[\[BUG-004\]\]/m);
-  assert.equal(approvalKey(tc10.text), 'aprovado');
 });
 
 test('Automação: 3 noites do reporter, um teste alternando PASS/FAIL e um que passou só no retry; .feature e playwright.config', () => {
@@ -271,17 +261,16 @@ test('Publicar: página da rodada (#2 encerrada, #3 em andamento) e índice, car
   assert.equal(card('teams-caso-critico.json').body[0].text, '❌ Caso crítico falhou: TC-010 — Pagar com Pix pelo copia e cola');
   // comentários de revisão: o do Claude respondido e resolvido; o da Ana pendente
   const tc11 = doc('TC-011');
-  assert.equal(approvalKey(tc11.text), 'em-revisao');
   assert.deepEqual(countComments(tc11.text), { open: 1, resolved: 1 });
   assert.deepEqual(findComments(tc11.text).map((c) => [c.author, c.resolved, c.replies]), [['Claude', true, 1], ['Ana', false, 0]]);
 });
 
-test('Claude: recursos/pedidos-ao-claude.md tem um pedido para cada ferramenta qa_* do MCP (as 39 da 1.60.0), uma vez só', () => {
+test('Claude: recursos/pedidos-ao-claude.md tem um pedido para cada ferramenta qa_* do MCP (as 39 da 1.60.0, menos o qa_aprovacao, que saiu na 1.78.0), uma vez só', () => {
   const server = readFileSync(new URL('../../mcp/server.ts', import.meta.url), 'utf8');
   const tools = new Set([...server.matchAll(/registerTool\('(qa_\w+)'/g)].map((m) => m[1]));
   const rows = [...file('recursos/pedidos-ao-claude.md').matchAll(/^\| `(qa_\w+)` \|/gm)].map((m) => m[1]);
   assert.equal(rows.length, new Set(rows).size, 'ferramenta repetida');
   // nenhuma ferramenta citada sumiu ou mudou de nome; as de versões futuras não cobram (exemplos/ só ganha arquivos novos)
   assert.deepEqual(rows.filter((r) => !tools.has(r)), []);
-  assert.equal(rows.length, 39);
+  assert.equal(rows.length, 38);
 });

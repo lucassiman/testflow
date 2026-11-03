@@ -13,11 +13,7 @@ jira: QA-420
 epico: QA-400
 sprint: Sprint 43
 tags: [pix, backoffice, regressao]
-aprovacao: aprovado
 qa-md: 1
-aprovado_por: Ana
-aprovado_em: 2026-09-30 09:30
-aprovado_hash: 7173f908
 ---
 
 # TC-008 — Atendente estorna um pedido pago com Pix

@@ -64,8 +64,6 @@ export interface ViewDoc {
   tags: string[];
   origem?: string[];
   automacao?: string;
-  /** rascunho · em-revisao · aprovado · alterado · "" */
-  aprovacao?: string;
   ambiente?: string;
   comments?: { open: number; resolved: number };
   counts: StatusCounts;
@@ -81,12 +79,12 @@ export interface ViewDoc {
   data?: string;
 }
 
-const FILTER_KEYS = ['segmento', 'tipo', 'app', 'status', 'tags', 'jira', 'epico', 'sprint', 'dispositivo', 'versao', 'pasta', 'responsavel', 'prioridade', 'execucao', 'automacao', 'comentarios', 'aprovacao'];
+const FILTER_KEYS = ['segmento', 'tipo', 'app', 'status', 'tags', 'jira', 'epico', 'sprint', 'dispositivo', 'versao', 'pasta', 'responsavel', 'prioridade', 'execucao', 'automacao', 'comentarios'];
 const FORMATS: ViewFormat[] = ['lista', 'quadro', 'cobertura', 'jira', 'rastreabilidade', 'tendencia', 'release', 'semana'];
 export const VIEW_COLUMNS: Record<string, string> = {
   id: 'ID', titulo: 'Título', tipo: 'Tipo', status: 'Status', app: 'App', prioridade: 'Prioridade', responsavel: 'Responsável',
   jira: 'Jira', tags: 'Tags', progresso: 'Progresso', rodada: 'Última rodada', automacao: 'Automação', pasta: 'Pasta', versao: 'Versão',
-  bugs: 'Bugs abertos', comentarios: 'Comentários', aprovacao: 'Aprovação',
+  bugs: 'Bugs abertos', comentarios: 'Comentários',
 };
 const DEFAULT_COLUMNS = ['id', 'titulo', 'status', 'app', 'progresso'];
 
@@ -202,8 +200,6 @@ function fieldValues(d: ViewDoc, key: string): string[] {
     case 'prioridade': return [d.prioridade];
     case 'execucao': return [execState(d), ...(hasFailure(d) ? ['com-falha', 'falha'] : [])];
     case 'automacao': return [(d.automacao || '').trim() ? 'sim' : 'nao'];
-    // aprovacao: rascunho · em-revisao (revisao) · aprovado · alterado · nenhuma; "pendente" = tudo o que não está aprovado
-    case 'aprovacao': { const a = d.aprovacao || ''; return a === 'aprovado' ? ['aprovado'] : a ? [a, ...(a === 'em-revisao' ? ['revisao'] : []), 'pendente'] : ['nenhuma', 'sem', 'pendente']; }
     // comentarios: pendentes · resolvidos · nenhum
     case 'comentarios': return [...(d.comments?.open ? ['pendentes', 'pendente', 'sim'] : []), ...(d.comments?.resolved ? ['resolvidos', 'resolvido'] : []), ...(!d.comments?.open && !d.comments?.resolved ? ['nenhum', 'nao'] : [])];
     default: return [];
@@ -251,7 +247,7 @@ const SEARCH_ALIASES: Record<string, string> = {
   seg: 'segmento', segmento: 'segmento', tag: 'tags', tags: 'tags', status: 'status', tipo: 'tipo', type: 'tipo', app: 'app', aplicacao: 'app', jira: 'jira', ticket: 'jira',
   epico: 'epico', sprint: 'sprint', dispositivo: 'dispositivo', device: 'dispositivo', versao: 'versao', pasta: 'pasta',
   responsavel: 'responsavel', resp: 'responsavel', prioridade: 'prioridade', prio: 'prioridade', execucao: 'execucao',
-  automacao: 'automacao', comentarios: 'comentarios', comentario: 'comentarios', aprovacao: 'aprovacao', aprovado: 'aprovacao',
+  automacao: 'automacao', comentarios: 'comentarios', comentario: 'comentarios',
 };
 
 export interface SearchQuery {
@@ -296,7 +292,6 @@ export const SEARCH_PRESETS: Array<{ label: string; query: string; hint: string 
   { label: '🐞 Bugs', query: 'tipo:bug', hint: 'Todos os bugs (combine com status: ou app:)' },
   { label: '🔁 Regressão', query: 'tag:regressao', hint: 'Documentos com a tag regressao' },
   { label: '💬 Comentários pendentes', query: 'comentarios:pendentes', hint: 'Documentos com comentário de revisão em aberto' },
-  { label: '👀 Para revisar', query: 'aprovacao:em-revisao,alterado', hint: 'Casos em revisão ou alterados depois de aprovados' },
 ];
 
 const PRIORITY = ['critica', 'alta', 'media', 'baixa'];
@@ -370,7 +365,6 @@ function cell(d: ViewDoc, col: string, docs: ViewDoc[]): ViewCell {
     case 'progresso': return { text: progress(d) };
     case 'rodada': return d.last ? { text: `${d.last.round}${d.last.date ? ` — ${d.last.date}` : ''}${d.last.overall ? ` — ${d.last.overall}` : ''}`, badge: statusKind(d.last.overall) || undefined } : { text: '—' };
     case 'automacao': return { text: (d.automacao || '').trim() ? '✓' : '—' };
-    case 'aprovacao': return { text: APPROVAL_CELL[d.aprovacao || ''] || '—' };
     case 'comentarios': return { text: d.comments?.open ? `💬 ${d.comments.open} pendente(s)` : d.comments?.resolved ? `✓ ${d.comments.resolved}` : '—' };
     case 'pasta': return { text: dirOf(d.path) };
     case 'versao': return { text: d.versao };
@@ -383,13 +377,11 @@ function groupKey(d: ViewDoc, by: string): string[] {
   if (!by) return [''];
   const v = fieldValues(d, by === 'status' ? 'status' : by);
   if (by === 'execucao') return [execState(d)];
-  if (by === 'aprovacao') return [d.aprovacao || 'nenhuma'];
   return v.length ? v.map((x) => (x && x !== SEM_STATUS ? x : '(sem)')) : ['(sem)'];
 }
 
 const EXEC_LABEL: Record<string, string> = { nunca: 'Nunca executado', andamento: 'Em andamento', executado: 'Executado' };
-const groupLabel = (by: string, k: string): string => (by === 'execucao' ? EXEC_LABEL[k] || k : by === 'tipo' ? TYPE_LABELS[k] || k : by === 'aprovacao' ? APPROVAL_CELL[k] || k : k);
-const APPROVAL_CELL: Record<string, string> = { rascunho: '✍ Rascunho', 'em-revisao': '👀 Em revisão', aprovado: '✅ Aprovado', alterado: '⚠ Alterado depois de aprovado', nenhuma: 'Sem aprovação' };
+const groupLabel = (by: string, k: string): string => (by === 'execucao' ? EXEC_LABEL[k] || k : by === 'tipo' ? TYPE_LABELS[k] || k : k);
 
 /** Roda a visão sobre os documentos da pasta. */
 export function runView(spec: ViewSpec, all: ViewDoc[], errors: string[] = [], today = isoDate(new Date())): ViewResult {

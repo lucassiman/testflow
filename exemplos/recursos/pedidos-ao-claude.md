@@ -32,7 +32,6 @@ Abaixo, um pedido pronto para **cada uma** das ferramentas, com os documentos de
 | `qa_compartilhados` | *"Quais logins e passos compartilhados valem para o TC-011?"* | Os logins do [[COMP-001]] (sem as senhas), o bloco `↪ Fazer login` e o *antes de cada caso* |
 | `qa_criar` | *"Crie o caso 'Pagar com Pix pelo app do banco no celular' para a QA-410, épico QA-400, tags pix e mobile."* | `TC-012` novo, do modelo, com os avisos da validação |
 | `qa_preparar_ambientes` | *"Prepare no COMP-001 a massa do ambiente DEV — sem inventar valores."* | As tabelas `(dev)` com as chaves prontas e os valores em branco, para você preencher |
-| `qa_aprovacao` | *"Coloque o TC-009 em revisão com a Ana."* | O [[TC-009]] passa de rascunho para *em revisão* ⚠ (aprovar, só com o seu pedido) |
 | `qa_editar_em_massa` | *"Mude a prioridade dos casos da QA-420 para Alta — me mostre a prévia antes."* | A prévia; com o seu OK, grava ⚠ |
 | `qa_importar_casos` | *"Importe os casos de C:\dev\markdown qa editor\exemplos\importar\casos-testrail.csv na aplicação Loja Demo — primeiro só a prévia."* | 4 casos reconhecidos (C201–C204), as colunas que ficam de fora; com o seu OK, cria ⚠ |
 | `qa_atualizar_cabecalho` | *"Mude o responsável do TC-011 para a Ana."* | O campo trocado (a versão anterior fica em `.versoes/`) |
@@ -74,9 +73,9 @@ Abaixo, um pedido pronto para **cada uma** das ferramentas, com os documentos de
 | Ferramenta | Peça assim | O que volta |
 | --- | --- | --- |
 | `qa_comentar` | *"Revise os casos da QA-420 com o checklist de qualidade e deixe as sugestões como comentário."* | Um `[!COMMENT] @Claude` em cada caso — foi assim que nasceu o comentário (já resolvido) do [[TC-011]] |
-| `qa_versoes` | *"Quais versões do TC-008 estão guardadas?"* | A lista de `.versoes/`, com a aprovada |
-| `qa_comparar_versoes` | *"O que mudou no TC-008 desde a aprovação?"* | O passo 5 alterado e o diff (é o ⚠ *aprovado · alterado* da pílula) |
-| `qa_restaurar_versao` | *"Volte o TC-008 para a versão aprovada."* | O documento como foi aprovado; o atual fica em `.versoes/` ⚠ |
+| `qa_versoes` | *"Quais versões do TC-008 estão guardadas?"* | A lista de `.versoes/` (a de 30/09 também) |
+| `qa_comparar_versoes` | *"O que mudou no TC-008 desde 30/09?"* | O passo 5 alterado e o diff |
+| `qa_restaurar_versao` | *"Volte o TC-008 para a versão de 30/09."* | O documento como estava; o atual fica em `.versoes/` ⚠ |
 
 ## 📤 Compartilhar — Jira
 

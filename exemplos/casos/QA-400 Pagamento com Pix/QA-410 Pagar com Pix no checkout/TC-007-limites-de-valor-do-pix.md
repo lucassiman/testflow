@@ -13,11 +13,7 @@ jira: QA-410
 epico: QA-400
 sprint: Sprint 43
 tags: [pix, checkout, regressao]
-aprovacao: aprovado
 qa-md: 1
-aprovado_por: Ana
-aprovado_em: 2026-09-30 09:20
-aprovado_hash: 66fa7191
 ---
 
 # TC-007 — Limites de valor do Pix

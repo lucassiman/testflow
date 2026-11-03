@@ -50,7 +50,7 @@ test('Zephyr: chave, pasta, labels, dados do passo', () => {
   const text = caseDocText(c, { id: 'TC-010', app: 'Portal', fonte: plan.fonte });
   assert.match(text, /\| # \| Ação \| Dados \| Resultado esperado \| Resultado obtido \| Status \|/);
   assert.match(text, /^importado-de: Zephyr PIX-T1$/m);
-  assert.match(text, /^aprovacao: aprovado$/m); // Status: Approved
+  assert.doesNotMatch(text, /^aprovacao:/m); // a aprovação saiu na 1.78.0 (o Status da origem não vira campo)
   assert.equal(stepTable(text).rows.length, 2);
 });
 
@@ -62,7 +62,7 @@ test('planilha com um caso por linha: passos numerados numa célula, alinhados c
   assert.deepEqual(b.steps, [{ acao: 'Abrir o produto e excluir', dados: '', esperado: 'Produto excluído' }]);
   const text = caseDocText(a, { id: 'TC-001', app: 'Loja', fonte: 'planilha', tags: ['importado'] });
   assert.match(text, /^tags: \[importado, cadastro\]$/m);
-  assert.match(text, /^aprovacao: rascunho$/m);
+  assert.doesNotMatch(text, /^aprovacao:/m);
   assert.match(text, /^# TC-001 — Cadastro de produto$/m);
   assert.match(text, /## Pré-condições\n\n- Logado como admin/);
   const warns = lintMarkdown({ blocks: [], lines: text.split('\n') }).map((w) => w.message);

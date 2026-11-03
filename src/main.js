@@ -50,7 +50,6 @@ import { formatCommand, insertBlockAfterActive } from './app/editing.js';
 import { backupWorkspace, backupSetting, checkBackupReminder } from './app/backup.js';
 import { addEvidence, annotateExisting, bigPrintSetting, cleanOrphanPrints, openImageViewer, clipboardImages, pastePrintFromClipboard, requestFolder, reuseEvidence, saveEvidenceFiles, updateFolderStatus } from './app/evidence.js';
 import { bindStatusKeys, execBar, refreshSummary, statusPop } from './app/execution.js';
-import { approvalMenu, toggleOnlyApproved } from './app/approval.js';
 import { decorateShared, renderSharedPanel, sharedLintWarnings, showSharedPanel, includeMenu, stepShared, iterationsFor, scopeVars, scopeOf, copyShared, showSecrets, renderEnvChip, envMenu, activeEnvLabel } from './app/sharedData.js';
 import { brokenLinkWarnings, currentWorkspacePath, linkCardFor, markMissingLinks, openDocLink, openDocOverrides, openWikiTarget, updateLinks } from './app/links.js';
 import { createLinkPreview } from './ui/linkPreview.js';
@@ -1645,8 +1644,6 @@ function run(cmd, value, event) {
     case 'sharedPanel': showSharedPanel(); return true;
     case 'envMenu': envMenu(); return true;
     case 'customStatus': editStatuses(); return true;
-    case 'approval': approvalMenu(); return true;
-    case 'onlyApproved': toggleOnlyApproved(); return true;
     case 'includeShared': includeMenu(); return true;
     case 'newCycle': newCycle(); return true;
     case 'startRun': import('./app/startRun.js').then((m) => m.startRun()); return true;

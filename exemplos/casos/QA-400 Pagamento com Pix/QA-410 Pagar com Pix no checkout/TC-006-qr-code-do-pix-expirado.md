@@ -13,9 +13,7 @@ jira: QA-410
 epico: QA-400
 sprint: Sprint 43
 tags: [pix, checkout, regressao]
-aprovacao: em-revisao
 qa-md: 1
-revisor: Ana
 ---
 
 # TC-006 — QR Code do Pix expirado não aceita pagamento

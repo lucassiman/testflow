@@ -22,12 +22,12 @@ async function open(page, name) {
   await expect(page.locator('#fileName')).toContainText(name);
 }
 
-test('Casos: dois logins compartilhados, massa por ambiente, iterações e os estados da aprovação', async ({ page }) => {
+test('Casos: dois logins compartilhados, massa por ambiente, iterações e sem a pílula da aprovação (saiu na 1.78.0)', async ({ page }) => {
   await openExamples(page, 'ws-exemplos-casos');
   await open(page, 'TC-008-atendente-estorna-um-pix');
   const prev = page.locator('#preview');
   await expect(prev.locator('table:has(.sh-inc)').first().locator('.sh-inc')).toHaveCount(2); // ↪ Fazer login (cliente) e (atendente)
-  await expect(page.locator('#docState [data-state="approval"]')).toContainText('alterado');
+  await expect(page.locator('#docState [data-state="approval"]')).toHaveCount(0);
 
   // 🔑: os logins do HML (o ambiente do caso); o gestor ainda sem conta em produção
   await page.keyboard.press('Alt+k');
@@ -50,12 +50,6 @@ test('Casos: dois logins compartilhados, massa por ambiente, iterações e os es
   await page.locator('.exec-bar [data-act="run"]').click();
   await expect(page.locator('.runner .run-iter')).toContainText('/3');
 
-  // aprovação: rascunho · em revisão · aprovado
-  for (const [name, state] of [['TC-009-menu-da-conta-por-perfil', 'elaboração'], ['TC-006-qr-code-do-pix-expirado', 'revisão'], ['TC-005-pagar-com-pix-pelo-qr-code', 'aprovado']]) {
-    await open(page, name);
-    await expect(page.locator('#docState [data-state="approval"]')).toContainText(state);
-  }
-  await expect(page.locator('#docState [data-state="approval"]')).not.toContainText('alterado');
 });
 
 test('Execução: rodada em andamento com testadores, previsão e status personalizados; ciclo, relatórios, release e tendência', async ({ page }) => {
@@ -89,7 +83,7 @@ test('Execução: rodada em andamento com testadores, previsão e status persona
   await expect(page.locator('#preview .qa-view')).toContainText('EXEC-20260924-140000');
 });
 
-test('Evidências, Automação e Publicar: bug com captura e reincidência, caso aprovado com bug, testes instáveis e comentários de revisão', async ({ page }) => {
+test('Evidências, Automação e Publicar: bug com captura e reincidência, testes instáveis e comentários de revisão', async ({ page }) => {
   await openExamples(page, 'ws-exemplos-160');
   const prev = page.locator('#preview');
   // o bug com o que veio da extensão: Ambiente, replay, console e rede; a reincidência que reabriu
@@ -98,10 +92,6 @@ test('Evidências, Automação e Publicar: bug com captura e reincidência, caso
   await expect(prev.locator('a', { hasText: '🎬' })).toHaveCount(1);
   await expect(prev.locator('h3', { hasText: 'Console e rede' })).toHaveCount(1);
   await expect(prev).toContainText('Bug reaberto (estava PASS)');
-  // o caso aprovado continua aprovado depois do 🐞 Novo bug (1.60.0)
-  await open(page, 'TC-010-pagar-com-pix-pelo-copia-e-cola');
-  await expect(page.locator('#docState [data-state="approval"]')).toContainText('aprovado');
-  await expect(page.locator('#docState [data-state="approval"]')).not.toContainText('alterado');
   // comentários de revisão: o do Claude resolvido, o da Ana pendente (💬 1)
   await open(page, 'TC-011-estorno-parcial-de-pix');
   await expect(page.locator('#docState [data-state="comments"]')).toContainText('1');

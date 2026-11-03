@@ -100,7 +100,7 @@ export const MODULES = [
   },
   {
     id: 'casos', label: 'Casos', icon: '📋', top: true,
-    title: 'Casos de teste: dados compartilhados, ambiente, aprovação, edição e importação em massa',
+    title: 'Casos de teste: dados compartilhados, ambiente, edição e importação em massa',
     svg: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 13l2 2 4-4"/>',
     sections: [
       {
@@ -117,8 +117,6 @@ export const MODULES = [
       {
         title: 'Revisar',
         items: [
-          { cmd: 'approval', label: '✅ Aprovação do caso…', hint: 'enviar para revisão, aprovar, voltar a rascunho', palette: 'Aprovação do caso: enviar para revisão, aprovar, voltar a rascunho…' },
-          { cmd: 'onlyApproved', label: 'Rodadas: só casos aprovados', hint: 'liga/desliga', palette: 'Rodadas: só casos aprovados entram (liga/desliga)' },
         ],
       },
       {
