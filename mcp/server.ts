@@ -96,7 +96,7 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
   }, text));
 
   server.registerTool('qa_revisao_criar', {
-    title: 'Revisão dos casos gerados', description: 'Depois de gerar casos, cria a revisão para o QA (configuracao/revisoes/REV-…): um caso por linha para marcar "Faz sentido?" (✓ / ✗ / ~ ajustar) com a observação, e "O que faltou". Ofereça sempre ao terminar um lote de casos gerados.',
+    title: 'Revisão dos casos gerados', description: 'Depois de gerar casos, cria a revisão para o QA (configuracao/revisoes/RG-…): um caso por linha para marcar "Faz sentido?" (✓ / ✗ / ~ ajustar) com a observação, e "O que faltou". Ofereça sempre ao terminar um lote de casos gerados.',
     inputSchema: {
       casos: z.array(z.string()).describe('IDs dos casos gerados (TC-…)'),
       origem: z.string().optional().describe('de onde vieram: ticket/história (PORTAL-120), épico ou o pedido resumido'),
@@ -115,7 +115,7 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
     title: 'Regras de geração', description: 'As regras que o QA ensinou (configuracao/regras-de-geracao.md), que valem mais que o padrão da skill. Sem argumentos: lista. adicionar (com origem: a revisão) ou remover (nº): SÓ com o OK explícito do usuário para aquela regra.',
     inputSchema: {
       adicionar: z.string().optional().describe('a regra, curta e geral (ex.: "Pedido de e2e de UI: não gerar casos de backend")'),
-      origem: z.string().optional().describe('ID da revisão de onde veio (REV-…)'),
+      origem: z.string().optional().describe('ID da revisão de onde veio (RG-…)'),
       remover: z.number().int().optional().describe('número da regra a tirar'),
     }, annotations: RW,
   }, async (a) => run(() => ws.rules(a), text));
@@ -211,7 +211,7 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
   server.registerTool('qa_criar', {
     title: 'Criar documento', description: 'Cria um documento QA-MD a partir do modelo do tipo (ou do texto completo em "conteudo"), com o próximo ID livre e no lugar certo pelo app: (aplicacoes/<App>/<casos|bugs|planos…>/; casos com chave no jira: vão para casos/<TICKET>/; sem app: _entrada/). Nunca sobrescreve. Devolve o caminho e os avisos da validação.',
     inputSchema: {
-      tipo: z.string().describe('caso-de-teste, bug, relatorio-execucao, cenario-bdd, plano-de-teste, charter-exploratorio, teste-em-dupla, checklist, resumo-testes, epico, historia — ou o nome de um modelo da pasta modelos/'),
+      tipo: z.string().describe('caso-de-teste, bug, relatorio-execucao, cenario-bdd, plano-de-teste, charter-exploratorio, teste-em-dupla, checklist, resumo-testes, epico, historia, revisao-de-requisito, registro-de-riscos, resumo-do-periodo, retrospectiva, estrategia-de-teste — ou o nome de um modelo da pasta modelos/'),
       titulo: z.string(), app: z.string().optional(),
       campos: z.record(z.string(), z.string()).optional().describe('outros campos do cabeçalho: prioridade, severidade, ambiente, versao, responsavel, jira, tags ("[a, b]")…'),
       conteudo: z.string().optional().describe('documento completo em QA-MD (com cabeçalho ---), quando você já escreveu tudo'),

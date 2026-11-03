@@ -31,6 +31,7 @@ Uma frase: o que acontece, onde e quando.
 | Browser / dispositivo | |
 | Versão | |
 | Usuário / perfil | |
+| Fase · técnica | |
 
 ## Passos para reproduzir
 

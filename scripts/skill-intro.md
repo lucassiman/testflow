@@ -1,6 +1,6 @@
 ---
 name: qa-markdown
-description: Gera e revisa testware em Markdown no formato QA-MD do TestFlow (caso de teste, bug, relatório de execução, cenários BDD, plano, sessão exploratória, teste em dupla com o dev, checklist, resumo) — inclusive casos a partir de uma história/critérios de aceite, revisão de casos com checklist de qualidade e análise de uma rodada de regressão. Use sempre que o usuário pedir testware, casos de teste, bug report, relatório de testes ou análise de execução.
+description: Gera e revisa testware em Markdown no formato QA-MD do TestFlow (caso de teste, bug, relatório de execução, cenários BDD, plano, sessão exploratória, teste em dupla com o dev, checklist, resumo, registro de riscos, revisão de requisito, resumo do período, retrospectiva, estratégia de teste) — inclusive casos a partir de uma história/critérios de aceite, revisão de casos com checklist de qualidade e análise de uma rodada de regressão. Use sempre que o usuário pedir testware, casos de teste, bug report, relatório de testes, riscos, revisão de requisito, retrospectiva ou análise de execução.
 ---
 
 # QA Markdown (convenção QA-MD)
@@ -11,18 +11,18 @@ O usuário é QA Senior e revisa/executa os documentos no **TestFlow** — um ed
 
 1. **Sempre em arquivo `.md`** (um artefato por arquivo), salvo na pasta de trabalho indicada pelo usuário. Só gere `.docx`/`.pdf`/`.xlsx` se ele pedir esse formato.
 2. Nome do arquivo: `<id>-<titulo-em-kebab-case>.md` — ex.: `TC-042-login-usuario-bloqueado.md`.
-3. Suíte com vários casos: um arquivo por caso + (se útil) um `relatorio-execucao` ou `checklist` que liste os IDs.
+3. Suíte com vários casos: um arquivo por caso + (se útil) um `checklist` que liste os IDs. Para executar, uma rodada (`qa_rodada_criar`), não um `relatorio-execucao` (ver seção 7).
 4. Português do Brasil. Termos técnicos consagrados podem ficar em inglês.
 5. **Nunca invente** resultado obtido, status de execução, IDs do Jira, versões, URLs ou evidências. Deixe em branco ou use `PENDING`.
-6. **Lugar certo:** se a pasta de trabalho tiver `aplicacoes/` e `_entrada/` (estrutura do editor), salve em `aplicacoes/<app>/<subpasta>/` — `casos` (caso-de-teste, cenario-bdd, checklist — com chave do Jira em `jira:`, em `casos/<CHAVE>/`, ou na pasta que já existe começando com a chave; com `epico:`, em `casos/<ÉPICO>/<CHAVE>/`, onde também ficam o documento do épico e a história do ticket), `bugs`, `planos`, `execucoes` (ciclo-regressao e execucao — o MCP já cria lá; os 4 relatórios de cada execução ficam em `relatorios/<ID>/`), `sessoes` (charter-exploratorio; `teste-em-dupla` com ticket vai para a pasta do ticket, junto dos casos), `relatorios` (relatorio-execucao, resumo-testes), `requisitos` (épico/história ainda sem chave ou sem épico), `docs` (outros) — usando a pasta da aplicação que já existe (mesmo nome). Sem saber a aplicação, salve em `_entrada/`. **Nunca solto na raiz.** Preencha `app:` no cabeçalho sempre que souber a aplicação.
+6. **Lugar certo:** se a pasta de trabalho tiver `aplicacoes/` e `_entrada/` (estrutura do editor), salve em `aplicacoes/<app>/<subpasta>/` — `casos` (caso-de-teste, cenario-bdd, checklist — com chave do Jira em `jira:`, em `casos/<CHAVE>/`, ou na pasta que já existe começando com a chave; com `epico:`, em `casos/<ÉPICO>/<CHAVE>/`, onde também ficam o documento do épico e a história do ticket), `bugs`, `planos`, `execucoes` (ciclo-regressao e execucao — o MCP já cria lá; os 4 relatórios de cada execução ficam em `relatorios/<ID>/`), `sessoes` (charter-exploratorio; `teste-em-dupla` com ticket vai para a pasta do ticket, junto dos casos), `relatorios` (relatorio-execucao, resumo-testes, resumo do período), `requisitos` (épico/história ainda sem chave ou sem épico), `docs` (outros — `documentacao`: registro de riscos, revisão de requisito, retrospectiva); a estratégia de teste do time fica em `processos/` — usando a pasta da aplicação que já existe (mesmo nome). Sem saber a aplicação, salve em `_entrada/`. **Nunca solto na raiz.** Preencha `app:` no cabeçalho sempre que souber a aplicação.
 7. **Herança do pai:** o filho repete o que o liga ao pai — o caso leva `jira:` (o ticket), `epico:`, as tags e a sprint do ticket/épico; o bug leva tags, `epico:` e `sprint:` do caso (o `jira:` do bug é a chave **dele** no Jira, nunca a do caso). Assim tudo o que nasceu de um épico, ticket ou rodada é achado junto (o *segmento*).
-8. **Modelos próprios:** se a pasta de trabalho tiver `modelos/` (ou `templates/`) — modelos do usuário, criados no editor com *Salvar como modelo* —, e um deles corresponder ao pedido, siga esse modelo em vez do padrão da seção 7 (mesmas seções, ordem e colunas; `{{data}}` = data de hoje).
+8. **Modelos próprios:** se a pasta de trabalho tiver `modelos/` (ou `templates/`) — modelos do usuário, criados no editor com *Salvar como modelo* —, e um deles corresponder ao pedido, siga esse modelo em vez do padrão da seção 7 (mesmas seções, ordem e colunas; `{{data}}` = data de hoje). Os modelos do time para riscos, revisão de requisito, resumo do período, retrospectiva e estratégia estão na seção 6.5.
 
 ## Com o servidor MCP `markdown-qa` (ferramentas `qa_*`)
 
 Se as ferramentas `qa_*` estiverem disponíveis, a pasta de trabalho do usuário está ligada: **use-as em vez de escrever os arquivos à mão**.
 - Orientar-se e achar: `qa_visao_geral`, `qa_listar`, `qa_buscar`, `qa_consultar` (sintaxe das visões: `tipo: caso-de-teste` / `app: Portal` / `execucao: com-falha` / `formato: jira`…), `qa_ler` (pelo ID).
-- Criar: `qa_criar` (tipo + título + app; ou `conteudo` com o documento QA-MD completo) — dá o próximo ID e salva no lugar certo. Bug de um caso que falhou: `qa_bug_do_caso` (leva passos, esperado, obtido e prints).
+- Criar: `qa_criar` (tipo + título + app; ou `conteudo` com o documento QA-MD completo) — dá o próximo ID e salva no lugar certo. Bug de um caso que falhou: `qa_bug_do_caso` (leva passos, esperado, obtido e prints). Modelos do time: `tipo` = nome do modelo (`revisao-de-requisito`, `registro-de-riscos`, `resumo-do-periodo`, `retrospectiva`, `estrategia-de-teste` — ver 6.5); o ID sai do prefixo do modelo (REV-, RSK-, RES-, RET-, EST-).
 - Executar: `qa_marcar_passos` (status/obtido por passo; `concluir: true` registra a rodada), `qa_nova_rodada`, `qa_anexar_evidencia` (arquivo do computador → `evidencias/`).
 - Revisar: `qa_comentar` (comentário de revisão). Ajustar o cabeçalho: `qa_atualizar_cabecalho`.
 - **Regras de geração da pasta** (o que o QA já ensinou): vêm no fim de `qa_convencoes` (ou `qa_convencoes { parte: "regras" }`) e **valem mais que o padrão desta skill** — leia antes de gerar e diga quando uma delas mudou o que você gerou. Sem MCP: se o usuário tiver um `configuracao/regras-de-geracao.md`, siga-o.
@@ -172,12 +172,12 @@ Quando o usuário trouxer uma história, critérios de aceite, um ticket do Jira
 0. **Escopo primeiro** (6.0): nível, tipo e profundidade pedidos — ou a premissa declarada.
 1. **Entenda antes de escrever.** Liste os critérios de aceite numerados (se vierem em texto corrido, extraia-os) e as regras de negócio implícitas. Pergunte o que faltar e for decisivo (perfis de usuário, limites, mensagens exatas); o resto vira **Observações**/premissas no caso, não invenção.
 2. **Cubra cada critério** com pelo menos um caso **positivo**; acrescente **negativos** (dado inválido, permissão, estado errado), **limites** (mínimo, máximo, vazio, um a mais/menos), e quando couber **alternativos** (outro caminho que leva ao mesmo resultado) e **regressão** do que o ticket pode quebrar. Um comportamento verificável por caso; prefira vários casos curtos a um longo.
-3. **Rastreabilidade no cabeçalho:** `jira:` com a chave do ticket da história, `epico:` com o épico, `app:`, tags do domínio (as do ticket/épico se houver) e `prioridade` pelo risco (crítico para o negócio = Alta). Cite a história no corpo: `Origem: [[PORTAL-120]] — critério 2`.
+3. **Rastreabilidade no cabeçalho:** `jira:` com a chave do ticket da história, `epico:` com o épico, `app:`, tags do domínio (as do ticket/épico se houver), `prioridade` e a tag de risco (`risco-alto`, `risco-medio`, `risco-baixo`) pelo **registro de riscos** da aplicação (6.5); sem registro, classifique probabilidade × impacto e diga a premissa na resposta. Cite a história no corpo: `Origem: [[PORTAL-120]] — critério 2`.
 4. **Massa de dados** concreta na seção dela (usuários, valores, cupons), sem dados reais de clientes — e o que já existir no compartilhado do escopo entra como `{{dado}}` / `↪ Bloco (dado)` (`qa_compartilhados { pasta }`).
 5. **Entregue uma matriz** no fim da resposta: critério → casos que o cobrem → tipo (positivo/negativo/limite). Critério sem caso = lacuna declarada.
 6. Com o MCP: `qa_criar` um caso por arquivo (com `campos: { jira, epico, tags }`), depois `qa_rastreabilidade { segmento: "<ticket ou épico>" }` para conferir.
-7. **Ofereça a revisão** dos casos gerados: `qa_revisao_criar { casos, origem, pedido, tecnicas }` grava `configuracao/revisoes/REV-…` com um caso por linha para o QA marcar **Faz sentido?** (✓ / ✗ / ~) com o porquê e contar o que faltou — no TestFlow.
-8. Quando ele disser que revisou: `qa_revisao_ler { doc: "REV-…" }`, resuma o que ele disse e **proponha regras** curtas e gerais (o que fazer diferente da próxima vez, não um conserto daquele caso). **Grave só com o OK explícito dele para cada regra**: `qa_regras { adicionar, origem: "REV-…" }`. Nunca mude, junte ou apague uma regra sem pedir (`qa_regras { remover: n }` também só com o OK).
+7. **Ofereça a revisão** dos casos gerados: `qa_revisao_criar { casos, origem, pedido, tecnicas }` grava `configuracao/revisoes/RG-…` com um caso por linha para o QA marcar **Faz sentido?** (✓ / ✗ / ~) com o porquê e contar o que faltou — no TestFlow.
+8. Quando ele disser que revisou: `qa_revisao_ler { doc: "RG-…" }`, resuma o que ele disse e **proponha regras** curtas e gerais (o que fazer diferente da próxima vez, não um conserto daquele caso). **Grave só com o OK explícito dele para cada regra**: `qa_regras { adicionar, origem: "RG-…" }`. Nunca mude, junte ou apague uma regra sem pedir (`qa_regras { remover: n }` também só com o OK).
 
 ## 6.2 Revisar casos existentes (checklist de qualidade)
 
@@ -190,7 +190,7 @@ Para "revise estes casos", "estão bons?" ou antes de uma regressão, avalie cad
 - [ ] **Massa de dados** separada e reutilizável; sem dado sensível real
 - [ ] **Independência**: roda sozinho (não depende de outro caso deixar o sistema num estado)
 - [ ] **Rastreabilidade**: `jira:`/`epico:` preenchidos; o critério de aceite que cobre
-- [ ] **Prioridade** coerente com o risco; `automacao:` se já existe teste automatizado
+- [ ] **Prioridade** coerente com o risco (tag `risco-*` presente e igual à do registro de riscos); `automacao:` se já existe teste automatizado
 - [ ] **Sem duplicidade** com outro caso do mesmo ticket (sugira juntar ou diferenciar)
 - [ ] **Sem repetir o compartilhado**: login/preparação copiados passo a passo → sugira `↪ Bloco (dado)`; senha/e-mail escritos no caso → `{{dado}}` / `{{dado.senha}}`; o mesmo setup em 3+ casos sem compartilhado → sugira criar um com escopo
 - [ ] **No nível certo** (6.0): caso de regra interna/backend que já tem teste unitário ou de API → sugira remover ou mover para o dev; tags de nível/tipo presentes
@@ -205,7 +205,7 @@ Para "como foi a regressão?", "o que falhou?" ou "posso liberar?":
 3. **Falhas agrupadas por causa provável** (mesma tela/serviço/mensagem de erro, mesmo dado, ambiente instável): para cada grupo, os casos, o passo e o obtido, e a evidência que sustenta a hipótese. Diga quando for só hipótese.
 4. **Bugs**: falha sem bug ligado → sugira o bug (`qa_bug_do_caso`, informando `execucao`); se o caso já tinha bug, verifique se é **reincidência** antes de criar outro. Destaque bugs reabertos e os Críticos/Altos ainda abertos.
 5. **Comparativo** com a execução anterior (log/comparativo): regressões (passou a falhar) primeiro, depois os corrigidos e os que continuam falhando. Para a tendência de várias rodadas (sprint a sprint, casos que falham sempre), `qa_tendencia`.
-6. **Próximos passos**: o que retestar (casos dos bugs corrigidos — ofereça `qa_rodada_criar { reteste: "<EXEC>" }`), o que ficou sem executar (SKIP/BLOCKED com o motivo) e, se houver os tickets da sprint, sugestões de casos de regressão para eles (`qa_rodada_criar { segmento: "<épico ou #tag>" }`).
+6. **Próximos passos**: o que retestar (casos dos bugs corrigidos — ofereça `qa_rodada_criar { reteste: "<EXEC>" }`), o que ficou sem executar (SKIP/BLOCKED com o motivo) e, se houver os tickets da sprint (ou da entrega, no Kanban), sugestões de casos de regressão para eles (`qa_rodada_criar { segmento: "<épico ou #tag>" }`). Bug que escapou para HML/PROD ou falha sem caso que a cobrisse → ofereça levar para a **retrospectiva** (6.5).
 
 ## 6.4 Roteiro do teste em dupla
 
@@ -218,6 +218,33 @@ Para "como foi a regressão?", "o que falhou?" ou "posso liberar?":
 5. Crie com `qa_criar { tipo: "teste-em-dupla", app, titulo: "Teste em dupla — <título do ticket>", conteudo }` (modelo da seção 7, `id: DUP-PORTAL-120`, `jira:` e `epico:`). No editor, **Execução ▾ → 🤝 Teste em dupla do ticket…** faz a mesma montagem sem o Claude.
 **Vários tickets na mesma chamada** ("o dev vai mostrar o PORTAL-120 e o PORTAL-121"): **um documento só** — `id: DUP-<primeiro ticket>`, `titulo: Teste em dupla — PORTAL-120 + PORTAL-121`, `jira: [PORTAL-120, PORTAL-121]` (e `epico:` em lista, se forem épicos diferentes), salvo na pasta do primeiro ticket. Em *Critérios de aceite*, *Roteiro* (uma tabela por ticket) e *Ficou para DEV/HML*, um `### PORTAL-120 — título` por ticket; menos linhas por ticket (até 3 principais + 1 menos trivial) e 15 min de duração planejada por ticket.
 6. Depois da chamada, o mesmo documento é o relatório: com as notas do usuário, preencha **Bugs e ajustes** e **Resumo e resultado** (*Pode subir* / *Sobe com ajustes* / *Volta para o dev*).
+
+## 6.5 Riscos, revisão de requisito, resumo do período, retrospectiva e estratégia
+
+Modelos padrão do TestFlow (desde a 1.80.0; o tipo é `documentacao`, e o resumo do período é `resumo-testes`). Crie com `qa_criar { tipo: "<nome do modelo>", app, titulo, campos }` — `revisao-de-requisito`, `registro-de-riscos`, `resumo-do-periodo`, `retrospectiva`, `estrategia-de-teste` (os modelos estão no fim desta skill). Nada aqui troca a decisão do time:
+
+**Registro de riscos** (`registro-de-riscos`, RSK-) — um por aplicação, vivo (não por sprint).
+- "Monta o registro de riscos do <app>": leia épicos, histórias e bugs (`qa_listar { app, tipo: "bug" }`; `qa_tendencia { app }` mostra os casos que mais falham) e proponha riscos de **produto** (o que dá errado para o usuário/negócio) com probabilidade e impacto **justificados** pelo que leu; riscos de **projeto** (do trabalho de teste) com o usuário.
+- Ligação com os casos: quem cobre um risco ganha a tag `risco-alto` / `risco-medio` / `risco-baixo` e a prioridade coerente (Alto → Crítica/Alta) — `qa_editar_em_massa { casos, tags_por }` (prévia, depois `aplicar: true` com o OK) — e entra como `[[TC-…]]` na coluna *Casos que cobrem*. Risco alto sem caso = lacuna: diga.
+- Regressão com pouco tempo: `qa_rodada_criar { consulta: "tags: risco-alto\napp: <App>" }`. O que ficar de fora vai para *Riscos aceitos* — só com quem aceitou.
+
+**Revisão de requisito** (`revisao-de-requisito`, REV-) — teste estático da história/épico **antes** do desenvolvimento (no Kanban, antes de o ticket ser puxado).
+- "Revisa a história PORTAL-130", "o que está ambíguo nesse ticket?": um REV por ticket (`campos: { jira, epico }`); se a história existir na pasta, `qa_ligar { doc: "REV-…", alvo: "<história>" }`.
+- Passe o checklist do modelo. Cada achado: tipo (ambiguidade · lacuna · contradição · não testável · risco), gravidade, o critério ou trecho citado e uma sugestão concreta. **Resposta do time** e **Estado** ficam vazios — não responda pelo PO.
+- Resultado (*Pronto para desenvolver* / *Pronto com ressalvas* / *Volta para refinamento*) como sugestão. Escreva os casos a partir da versão revisada; achado do tipo risco → registro de riscos.
+
+**Resumo do período** (`resumo-do-periodo`, RES-) — progresso do QA quando o time não trabalha com sprint (Kanban) ou para qualquer período.
+- Pergunte o período e a aplicação se não vierem; `periodo: AAAA-MM-DD a AAAA-MM-DD` na cadência do time (semanal, quinzenal, mensal). Não invente `sprint:`: no Kanban a unidade é o **ticket** (`jira:`).
+- De onde vem cada número (só o que existe; o resto fica vazio): rodadas encerradas e % de sucesso — `qa_tendencia { app }`, só as rodadas com início no período; bugs — `qa_listar { app, tipo: "bug" }` + `qa_ler { doc, so_resumo: true }` (`data:`, `ambiente:` = a fase, severidade, reincidência); teste em dupla — `qa_listar { tipo: "teste-em-dupla" }` (linhas de *Bugs e ajustes* e o *Resumo e resultado*: *Volta para o dev* conta como retorno); achados de revisão — `qa_listar { tags: "revisao-requisito" }`; risco alto executado — `qa_consultar` com `tags: risco-alto` e a coluna `rodada`. Documentos de um mês: `qa_buscar { texto: "data: 2026-10-" }`.
+- **Fluxo** (tempo em teste, fila esperando QA, ticket parado há mais tempo, tickets que voltaram) vem do quadro do Jira: use o conector do Jira se houver; senão, peça os números ao usuário — **nunca estime**.
+- *No anterior*: do RES anterior da mesma aplicação, se houver. Feche com riscos, pedidos ao time e o próximo período.
+
+**Retrospectiva** (`retrospectiva`, RET-) — no fim do período, depois de uma release ou de um bug em produção.
+- Base: o último RES e/ou os `01-encerramento` do período e a retrospectiva anterior — comece pelas **ações** dela.
+- Bugs que escaparam (`ambiente:` HML/PROD em tickets que passaram pelo QA): para cada um, proponha a **hipótese** de por que escapou (critério ambíguo, caso que não existia, caso que não rodou, massa/ambiente diferente) com a evidência; o usuário confirma.
+- Ações com dono e prazo só com o usuário.
+
+**Estratégia de teste** (`estrategia-de-teste`, EST-) — uma por time, em `processos/` (`qa_criar { tipo: "estrategia-de-teste", titulo, pasta: "processos" }`). O modelo vem com um ponto de partida; ajuste com o usuário. Quando ela existir, **leia antes** de gerar casos, montar regressão ou analisar rodadas: os níveis, critérios e regras dela valem sobre os padrões desta skill.
 
 ## 7. Modelos por tipo
 

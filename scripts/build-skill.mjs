@@ -19,13 +19,20 @@ const ORDER = [
   ['resumo-testes', 'Resumo de testes'],
   ['epico', 'Épico'],
   ['historia', 'História de usuário'],
+  // 1.80.0: os modelos do time (o tipo vem do cabeçalho; o nome do modelo é o que o qa_criar recebe)
+  ['revisao-de-requisito', 'Revisão de requisito (REV-)'],
+  ['registro-de-riscos', 'Registro de riscos (RSK-)'],
+  ['resumo-do-periodo', 'Resumo do período (RES-)'],
+  ['retrospectiva', 'Retrospectiva (RET-)'],
+  ['estrategia-de-teste', 'Estratégia de teste (EST-, em `processos/`)'],
 ];
 
 let skill = read('scripts/skill-intro.md').trimEnd();
 for (const [key, label] of ORDER) {
   const tpl = read(`src/templates/${key}.md`).trimEnd(); // resumo automático fica vazio: o editor calcula
   const fence = tpl.includes('```') ? '````' : '```';
-  skill += `\n\n### ${label} (\`tipo: ${key}\`)\n\n${fence}markdown\n${tpl}\n${fence}`;
+  const tipo = /^tipo:\s*(.+)$/m.exec(tpl)?.[1]?.trim() || key;
+  skill += `\n\n### ${label} (\`tipo: ${tipo}\`${tipo === key ? '' : `, modelo \`${key}\``})\n\n${fence}markdown\n${tpl}\n${fence}`;
 }
 skill += '\n';
 

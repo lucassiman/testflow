@@ -18,7 +18,7 @@ qa-md: 1
 
 ## Missão
 
-Explorar **[área]** usando **[recursos/técnicas]** para descobrir **[tipo de problema]**.
+Explorar **[área]** usando **[recursos/técnicas]** para descobrir **[tipo de problema]** — risco: **[R…]**.
 
 ## Áreas
 
@@ -44,3 +44,10 @@ Explorar **[área]** usando **[recursos/técnicas]** para descobrir **[tipo de p
 | | | |
 
 ## Resumo
+
+## Debriefing
+
+- Coberto:
+- Ficou de fora:
+- Riscos novos:
+- Próximas sessões:

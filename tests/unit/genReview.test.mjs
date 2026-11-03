@@ -7,7 +7,7 @@ const now = new Date(2026, 10, 3, 9, 30);
 
 test('revisão: documento com um caso por linha, lido de volta com o que o QA preencheu', () => {
   const doc = reviewDoc({ cases: [{ key: 'TC-1', titulo: 'Login | válido', tecnica: 'partição' }, { key: 'TC-2', titulo: 'Senha vazia' }, { key: 'TC-3', titulo: 'Backend 500' }], origem: 'PORTAL-120', app: 'Portal', pedido: 'casos e2e da\nhistória', now });
-  assert.match(doc, /^id: REV-20261103-0930$/m);
+  assert.match(doc, /^id: RG-20261103-0930$/m);
   assert.match(doc, /^tipo: revisao-geracao$/m);
   assert.match(doc, /\| 1 \| \[\[TC-1\]\] \| Login \\\| válido \| partição \|  \|  \|/);
   const filled = doc
@@ -20,7 +20,7 @@ test('revisão: documento com um caso por linha, lido de volta com o que o QA pr
   assert.deepEqual(r.rows.map((x) => [x.key, x.verdict]), [['TC-1', 'sim'], ['TC-2', 'ajustar'], ['TC-3', 'nao']]);
   assert.equal(r.faltou, 'Faltou o caso do usuário bloqueado.');
   const s = reviewSummary(r);
-  assert.match(s, /REV-20261103-0930 \(PORTAL-120\): 3 caso\(s\) — ✓ 1 · ✗ 1 · ~ 1\./);
+  assert.match(s, /RG-20261103-0930 \(PORTAL-120\): 3 caso\(s\) — ✓ 1 · ✗ 1 · ~ 1\./);
   assert.match(s, /- ✗ TC-3 — Backend 500: pedi só e2e de UI/);
   assert.match(s, /- ~ TC-2 — Senha vazia: juntar com o TC-1 como limite/);
   assert.match(s, /Faltou o caso do usuário bloqueado\./);
@@ -32,9 +32,9 @@ test('veredito: ✓/✗/~ e as palavras', () => {
 });
 
 test('regras: somar com data e origem, tirar renumerando, texto para o Claude', () => {
-  let t = addRule('', 'Pedido de e2e de UI: não gerar casos de backend', { origem: 'REV-20261103-0930', now });
+  let t = addRule('', 'Pedido de e2e de UI: não gerar casos de backend', { origem: 'RG-20261103-0930', now });
   t = addRule(t, 'Valor-limite: um caso por limite, com o valor no título', { now });
-  assert.deepEqual(parseRules(t).map((r) => [r.n, r.desde, r.origem]), [[1, '03/11/2026', '[[REV-20261103-0930]]'], [2, '03/11/2026', '']]);
+  assert.deepEqual(parseRules(t).map((r) => [r.n, r.desde, r.origem]), [[1, '03/11/2026', '[[RG-20261103-0930]]'], [2, '03/11/2026', '']]);
   assert.match(t, /^tipo: regras-geracao$/m);
   t = removeRule(t, 1);
   assert.deepEqual(parseRules(t).map((r) => [r.n, r.regra]), [[1, 'Valor-limite: um caso por limite, com o valor no título']]);
@@ -56,7 +56,7 @@ test('MCP: criar a revisão, ler o que o QA marcou e gravar a regra só quando p
   writeFileSync(join(dir, 'aplicacoes/Portal/casos/TC-2.md'), tc('TC-2', 'API devolve 500'));
   const ws = new QaWorkspace({ root: dir, templates: tpl, who: 'Claude' });
   const out = await ws.reviewCreate({ casos: ['TC-1', 'TC-2'], origem: 'PORTAL-120', pedido: 'e2e de UI', tecnicas: { 'TC-1': 'partição' } });
-  const id = /\((REV-\d{8}-\d{4})\)/.exec(out)?.[1];
+  const id = /\((RG-\d{8}-\d{4})\)/.exec(out)?.[1];
   assert.ok(id, out);
   const files = readdirSync(join(dir, 'configuracao/revisoes'));
   assert.equal(files.length, 1);

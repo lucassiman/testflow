@@ -9,7 +9,17 @@ import { TYPE_LABELS, detectFrontMatter, parseFrontMatter } from '../markdown/fr
  * Variáveis: {{data}} (AAAA-MM-DD), {{data_br}} (DD/MM/AAAA), {{hora}} (HH:MM)
  */
 
-const ORDER = ['caso-de-teste', 'bug', 'relatorio-execucao', 'cenario-bdd', 'plano-de-teste', 'charter-exploratorio', 'teste-em-dupla', 'checklist', 'resumo-testes', 'epico', 'historia', 'compartilhado', 'release'];
+const ORDER = ['caso-de-teste', 'bug', 'relatorio-execucao', 'cenario-bdd', 'plano-de-teste', 'charter-exploratorio', 'teste-em-dupla', 'checklist', 'resumo-testes', 'epico', 'historia', 'compartilhado', 'release',
+  // 1.80.0: os modelos do time (proposta de 27/10 + CTFL)
+  'revisao-de-requisito', 'registro-de-riscos', 'resumo-do-periodo', 'retrospectiva', 'estrategia-de-teste'];
+/** Rótulo dos modelos cujo nome não é um tipo (eles usam tipo: documentacao ou resumo-testes). @type {Record<string, string>} */
+const LABELS = {
+  'revisao-de-requisito': 'Revisão de requisito',
+  'registro-de-riscos': 'Registro de riscos',
+  'resumo-do-periodo': 'Resumo do período',
+  retrospectiva: 'Retrospectiva',
+  'estrategia-de-teste': 'Estratégia de teste',
+};
 /** @type {Record<string, string>} */
 const HINTS = {
   'caso-de-teste': 'passos com esperado/obtido/status',
@@ -25,6 +35,11 @@ const HINTS = {
   historia: 'como/quero/para, critérios de aceite, casos que cobrem',
   compartilhado: 'logins, URLs e passos usados por vários casos, com escopo (como beforeEach)',
   release: 'versão do produto: rodadas, casos e bugs dela, progresso e critérios de saída',
+  'revisao-de-requisito': 'teste estático da história antes do dev: checklist, achados, resultado',
+  'registro-de-riscos': 'riscos de produto e de projeto da aplicação, nível e resposta',
+  'resumo-do-periodo': 'progresso do QA num período (Kanban): fluxo, qualidade, riscos',
+  retrospectiva: 'o que funcionou, o que escapou e ações com dono',
+  'estrategia-de-teste': 'como o QA trabalha no time: o que testa, até onde, quando para',
 };
 
 /** @typedef {{ id: string, key: string, label: string, hint: string, text: string, custom?: boolean }} Template */
@@ -35,7 +50,7 @@ const HINTS = {
  * @returns {Template[]}
  */
 export function makeBuiltins(texts) {
-  return ORDER.filter((key) => texts[key]).map((key) => ({ id: `tpl:${key}`, key, label: TYPE_LABELS[key] || key, hint: HINTS[key] || '', text: texts[key] }));
+  return ORDER.filter((key) => texts[key]).map((key) => ({ id: `tpl:${key}`, key, label: LABELS[key] || TYPE_LABELS[key] || key, hint: HINTS[key] || '', text: texts[key] }));
 }
 
 export const TEMPLATE_ORDER = ORDER;

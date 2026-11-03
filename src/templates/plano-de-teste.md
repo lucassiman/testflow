@@ -24,13 +24,27 @@ qa-md: 1
 
 - 
 
+## Mapa de cobertura
+
+```mermaid
+mindmap
+  root((Escopo))
+    Funcionalidade A
+      Regra 1 - limites
+      Regra 2 - decisão
+    Funcionalidade B
+      Estados do pedido
+    Riscos
+      Exploratório - área nova
+```
+
 ## Estratégia
 
-| Tipo de teste | Abordagem | Ferramenta |
-| --- | --- | --- |
-| Funcional manual | Casos de teste + exploratório | TestFlow |
-| Regressão automatizada | E2E | Playwright |
-| API | Contratos e cenários negativos | Postman/Newman |
+| Tipo de teste | Abordagem | Técnicas | Ferramenta |
+| --- | --- | --- | --- |
+| Funcional manual | Casos de teste + exploratório | partição, limites, tabela de decisão, estados | TestFlow |
+| Regressão automatizada | E2E | — | Playwright |
+| API | Contratos e cenários negativos | partição, suposição de erro | Postman/Newman |
 
 ## Ambientes
 
@@ -50,14 +64,23 @@ qa-md: 1
 
 ## Riscos
 
-| Risco | Probabilidade | Impacto | Mitigação |
-| --- | --- | --- | --- |
-| | | | |
+| Risco | Probabilidade | Impacto | Resposta | Mitigação |
+| --- | --- | --- | --- | --- |
+| | | | mitigar · aceitar · transferir · contingência | |
 
 ## Cronograma
 
 | Atividade | Início | Fim | Responsável |
 | --- | --- | --- | --- |
 | | | | |
+
+## Estimativa
+
+| Tarefa de teste | Otimista (o) | Mais provável (m) | Pessimista (p) | Estimativa (o + 4m + p) ÷ 6 |
+| --- | --- | --- | --- | --- |
+| | | | | |
+
+> [!NOTE]
+> Estimativa de três pontos: some as tarefas; margem ± (p − o) ÷ 6. Com histórico, compare com a média das últimas rodadas parecidas.
 
 ## Responsáveis

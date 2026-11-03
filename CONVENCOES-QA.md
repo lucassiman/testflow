@@ -183,17 +183,18 @@ Uma nota por item, com horário e etiqueta opcional: `- 14:32 — **BUG:** botã
 |---|---|
 | `caso-de-teste` | Objetivo · Pré-condições · Massa de dados · Passos · Evidências · Observações |
 | `cenario-bdd` | Contexto · Cenários (bloco ```` ```gherkin ````) · Massa de dados · Observações |
-| `plano-de-teste` | Objetivo · Escopo · Fora de escopo · Estratégia · Ambientes · Critérios de entrada · Critérios de saída · Riscos · Cronograma · Responsáveis |
+| `plano-de-teste` | Objetivo · Escopo · Fora de escopo · Mapa de cobertura (```` ```mermaid ```` com `mindmap`) · Estratégia (com a coluna Técnicas) · Ambientes · Critérios de entrada · Critérios de saída · Riscos (com a Resposta: mitigar · aceitar · transferir · contingência) · Cronograma · Estimativa (três pontos) · Responsáveis |
 | `bug` | Resumo · Ambiente · Passos para reproduzir · Resultado esperado · Resultado obtido · Teste de confirmação (opcional) · Evidências · Impacto · Observações · Andamento (opcional) — *Teste de confirmação*: tabela de passos `\| # \| Ação \| Resultado esperado \| Resultado obtido \| Status \|` tirada dos passos para reproduzir (o último leva o resultado esperado), executada como num caso (`PASS` = corrigido; rodadas no *Histórico de execuções*). *Andamento*: uma linha por confirmação (`- DD/MM/AAAA HH:MM — ✅ Teste de confirmação \`PASS\` em [[EXEC-…]] …`). Os passos não mudam o `status:` do bug |
 | `relatorio-execucao` | Resumo · Resultados (tabela com Status) · Defeitos encontrados · Bloqueios · Observações |
-| `charter-exploratorio` | Missão · Áreas · Duração · Notas da sessão (`BUG:`, `DÚVIDA:`, `IDEIA:`) · Bugs · Resumo |
+| `charter-exploratorio` | Missão (área · técnica · tipo de problema · risco) · Áreas · Duração · Notas da sessão (`BUG:`, `DÚVIDA:`, `IDEIA:`) · Bugs · Resumo · Debriefing (coberto · ficou de fora · riscos novos · próximas sessões) |
 | `teste-em-dupla` | Antes da chamada · Critérios de aceite · Roteiro (tabela de passos: os pontos principais do ticket e 1–2 casos menos triviais marcados com ⚠, cada um com `[[TC-…]]`) · Duração · Notas da sessão · Bugs e ajustes · Ficou para DEV/HML · Resumo e resultado — campos `dev:`, `branch:` e `ambiente: Local`. Um por ticket, na pasta do ticket; não é caso (não entra em rodadas nem na cobertura) |
-| `checklist` | itens `- [ ]` agrupados por `##` |
+| `checklist` | itens `- [ ]` agrupados por `##`, cada um uma pergunta verificável sozinha |
 | `dia` | Foco do dia · Tarefas · Reuniões (`### HH:MM — assunto` com `**Com:**`, `**Decisões:**` e `**Ações:**`) · Notas · Agendadas (se houver) · Fechamento — tarefa `- [ ] texto`, prazo `📅 AAAA-MM-DD`, `↪ desde DD/MM` (há quanto tempo roda); tarefa que passou para outro dia vira `- ↪ texto _(passou para DD/MM)_`. Campo `data:` |
-| `resumo-testes` | Visão geral · Métricas · Qualidade por funcionalidade · Riscos · Recomendação |
+| `resumo-testes` | Visão geral · Métricas (com a % de detecção) · Qualidade por funcionalidade · Desvios e impedimentos · Riscos (inclui os residuais) · Lições aprendidas · Recomendação. O modelo `resumo-do-periodo` é um `resumo-testes` com `periodo:` (Kanban) |
 | `epico` | Objetivo · Escopo · Fora de escopo · Histórias (cada uma `### HU-001 — título`, com Como/quero/para e critérios de aceite `- [ ]`) · Critérios de aceite do épico · Dúvidas e riscos para o QA · Referências |
 | `compartilhado` | Dados (tabela Nome · Valor · Senha · Observação) · Antes da rodada · Antes de cada caso · `Passos: <nome>` (com `Parâmetros:`) — campos `escopo:` (pasta · app · global) e `aplica-a:` |
-| `historia` | História (Como/quero/para) · Critérios de aceite (`- [ ] Dado… quando… então…`) · Regras de negócio · Casos de teste (tabela Caso · Critério coberto) · Dúvidas para o time — campo `epico:` com o ID/chave do épico |
+| `historia` | História (Como/quero/para) · Critérios de aceite (`- [ ] Dado… quando… então…`) · Regras de negócio · Exemplos (opcional: por regra, `### Regra: …` com `- ✓`, `- ✗` e `- ?`) · Casos de teste (tabela Caso · Critério coberto) · Dúvidas para o time — campo `epico:` com o ID/chave do épico |
+| modelos do time (`documentacao`) | `revisao-de-requisito` (REV-: checklist · achados · resultado), `registro-de-riscos` (RSK-: riscos de produto e de projeto com nível e resposta · casos de risco alto), `retrospectiva` (RET-), `estrategia-de-teste` (EST-, em `processos/`) — `qa_criar { tipo: "<modelo>" }`; os casos que cobrem um risco levam a tag `risco-alto` / `risco-medio` / `risco-baixo` |
 
 Título do documento: `# <id> — <titulo>` logo após o front-matter.
 

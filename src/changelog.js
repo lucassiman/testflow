@@ -8,6 +8,13 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.80.0', date: '03/11/2026',
+    items: [
+      { icon: '🗂', text: '**Modelos do time no app**: *Revisão de requisito*, *Registro de riscos*, *Resumo do período*, *Retrospectiva* e *Estratégia de teste* agora estão em **Novo ▾ → A partir de modelo…** e o Claude cria todos (`qa_criar`).', manual: '6.1 Modelos' },
+      { icon: '🧭', text: '**Modelos mais completos**: o plano ganhou mapa de cobertura, técnicas, resposta aos riscos e estimativa de três pontos; a sessão exploratória, o debriefing; o resumo, desvios, lições aprendidas e riscos residuais; a história, exemplos por regra; o bug, a fase e a técnica que o revelou.', manual: '6.1 Modelos' },
+    ],
+  },
+  {
     version: '1.79.0', date: '03/11/2026',
     items: [
       { icon: '🎓', text: '**Ensinar o Claude a gerar casos melhores**: depois de gerar, ele oferece uma revisão (um caso por linha) para você marcar ✓ / ✗ / ~ com o porquê, no TestFlow. Ele lê, propõe regras e grava em `configuracao/regras-de-geracao.md` só as que você aprovar; nas próximas gerações, as regras valem mais que o padrão.', manual: '12.6 Claude direto na pasta' },

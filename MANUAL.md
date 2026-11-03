@@ -432,6 +432,15 @@ Clique na **seta** ao lado de um título (fica mais visível ao passar o mouse; 
 | Resumo de testes | `resumo-testes` | — |
 | Épico | `epico` | `EP-001` ou chave do Jira |
 | História de usuário | `historia` | `HU-001` ou chave do Jira |
+| Revisão de requisito | `documentacao` | `REV-001` |
+| Registro de riscos | `documentacao` | `RSK-001` |
+| Resumo do período | `resumo-testes` (com `periodo:`) | `RES-001` |
+| Retrospectiva | `documentacao` | `RET-001` |
+| Estratégia de teste | `documentacao` | `EST-001` (guarde em `processos/`) |
+
+**Os modelos do time** (desde a 1.80.0): *Revisão de requisito* (teste estático da história **antes** do dev — checklist com INVEST, achados com tipo e gravidade, resultado), *Registro de riscos* (um por aplicação, vivo: probabilidade × impacto, **resposta** a cada risco e o nível decidindo o rigor dos testes; os casos que cobrem um risco ganham a tag `risco-alto`/`risco-medio`/`risco-baixo`), *Resumo do período* (progresso do QA no Kanban, por período em vez de sprint), *Retrospectiva* (começa pelas ações da anterior; bugs que escaparam com a hipótese do porquê) e *Estratégia de teste* (como o QA trabalha no time, com pirâmide e quadrantes). O Claude cria todos com `qa_criar { tipo: "<modelo>" }` e sabe quando sugerir cada um.
+
+Também mudaram: o **plano** ganhou *Mapa de cobertura* (mapa mental), a coluna *Técnicas* na estratégia, a *Resposta* nos riscos e a *Estimativa* de três pontos; a **sessão exploratória**, o risco na missão e o *Debriefing*; o **resumo de testes**, *Desvios e impedimentos*, *Lições aprendidas*, riscos residuais e a % de detecção; a **história**, *Exemplos* por regra (✓ / ✗ / ?); o **bug**, a linha *Fase · técnica* no Ambiente; o **checklist**, itens em forma de pergunta.
 
 O nome de arquivo sugerido segue a convenção: `TC-042-login-bloqueado.md`.
 
@@ -1383,9 +1392,9 @@ São **39 ferramentas** `qa_*`, em grupos:
 - *"monte a regressão do épico PORTAL-10"* → *"TC-3 passou, TC-4 falhou no passo 2 com erro 500"* → *"finalize"*.
 - *"analise a rodada"*. Vem um resumo executivo, as falhas agrupadas por causa provável, os bugs a abrir ou reincidências e o comparativo com a anterior.
 
-**Ensinar o Claude a gerar casos melhores (revisão e regras).** Depois de gerar um lote de casos, o Claude oferece a **revisão**: um documento em `configuracao/revisoes/REV-…` com um caso por linha.
+**Ensinar o Claude a gerar casos melhores (revisão e regras).** Depois de gerar um lote de casos, o Claude oferece a **revisão**: um documento em `configuracao/revisoes/RG-…` com um caso por linha.
 1. Abra a revisão no TestFlow e, em cada linha, preencha **Faz sentido?** com **✓** (sim), **✗** (não devia existir) ou **~** (ajustar) — também valem *sim*, *não*, *ajustar* — e o porquê em **Observação**. Em **O que faltou**, escreva os casos que você esperava e não vieram.
-2. Diga ao Claude *"revisei a REV-…"*. Ele lê (`qa_revisao_ler`), resume o que você disse e **propõe regras** curtas para as próximas gerações (ex.: *"pedido de e2e de UI: não gerar casos de API"*).
+2. Diga ao Claude *"revisei a RG-…"*. Ele lê (`qa_revisao_ler`), resume o que você disse e **propõe regras** curtas para as próximas gerações (ex.: *"pedido de e2e de UI: não gerar casos de API"*).
 3. Só as regras que você aprovar, uma a uma, vão para **`configuracao/regras-de-geracao.md`**, com a data e a revisão de onde vieram. Nada muda sozinho: o Claude não grava, não junta e não apaga regra sem o seu OK — e você pode editar o arquivo à mão.
 
 As regras valem para a pasta inteira e **mais que o padrão da skill**: o Claude as recebe no fim de `qa_convencoes`, antes de gerar, e diz quando uma delas mudou o que ele gerou. Para ver: *"quais são as regras de geração?"* (`qa_regras`).

@@ -750,7 +750,7 @@ export class QaWorkspace {
   }
 
   /**
-   * Revisão dos casos que o Claude acabou de gerar: um documento (configuracao/revisoes/REV-…) com um caso por linha
+   * Revisão dos casos que o Claude acabou de gerar: um documento (configuracao/revisoes/RG-…) com um caso por linha
    * para o QA marcar ✓ / ✗ / ~ e a observação no TestFlow.
    */
   reviewCreate(o: { casos: string[]; origem?: string; app?: string; pedido?: string; tecnicas?: Record<string, string> }): Promise<string> {

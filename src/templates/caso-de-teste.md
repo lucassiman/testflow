@@ -47,3 +47,5 @@ Descreva o que este caso valida.
 Cole prints aqui com `Ctrl+V`.
 
 ## Observações
+
+Origem: `[[HU-…]]` — critério N · técnica:

@@ -26,6 +26,7 @@ qa-md: 1
 | `FAIL` | |
 | `BLOCKED` | |
 | Bugs abertos (críticos/altos) | |
+| % de detecção (achados antes de PROD ÷ total) | |
 
 ## Qualidade por funcionalidade
 
@@ -33,10 +34,18 @@ qa-md: 1
 | --- | --- | --- |
 | | `PENDING` | |
 
+## Desvios e impedimentos
+
+- 
+
 ## Riscos
 
 > [!WARNING]
-> Liste riscos conhecidos para a liberação.
+> Liste riscos conhecidos para a liberação — inclusive os **residuais** (riscos altos cujos casos falharam ou não rodaram).
+
+## Lições aprendidas
+
+- 
 
 ## Recomendação
 

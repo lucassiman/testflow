@@ -23,8 +23,8 @@ const cell = (s: string): string => String(s || '').replace(/\|/g, '\\|').replac
 
 export interface ReviewCase { key: string; titulo: string; tecnica?: string; criterio?: string }
 
-/** ID da revisão: REV-AAAAMMDD-HHMM. */
-export const reviewId = (d = new Date()): string => `REV-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+/** ID da revisão: RG-AAAAMMDD-HHMM. */
+export const reviewId = (d = new Date()): string => `RG-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
 
 /** O documento de revisão, para o QA preencher no TestFlow. */
 export function reviewDoc(o: { cases: ReviewCase[]; origem?: string; app?: string; pedido?: string; now?: Date; id?: string }): string {

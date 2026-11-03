@@ -21,10 +21,19 @@ qa-md: 1
 ## Critérios de aceite
 
 - [ ] Dado … quando … então …
+- [ ] Regra: valor entre … e … → …; acima → …
 
 ## Regras de negócio
 
 - 
+
+## Exemplos
+
+### Regra: …
+
+- ✓ 
+- ✗ 
+- ? 
 
 ## Casos de teste
 
