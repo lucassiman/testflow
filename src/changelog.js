@@ -8,6 +8,12 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.81.1', date: '04/11/2026',
+    items: [
+      { icon: '🎯', text: '**Status sempre no mesmo lugar**: no painel de execução, *Ação* e *Esperado* têm altura fixa (o texto longo rola) e o espaço do 🐞 *Abrir bug deste passo* fica reservado — passo curto ou com muitos dados, o PASS não muda de posição e dá para marcar vários passos seguidos sem mirar de novo.', manual: '7.3 Executar passo a passo' },
+    ],
+  },
+  {
     version: '1.81.0', date: '03/11/2026',
     items: [
       { icon: '🎯', text: '**Técnicas de teste no Claude (CTFL 4.0)**: ele escolhe a técnica pela regra (limites, tabela de decisão, estados…), marca o caso com a tag `tec-*` e fecha com o **resumo da geração** — de qual critério veio cada caso, a cobertura de cada técnica e o que ficou de fora e por quê. O passo a passo fica no novo guia de teste.', manual: '12.6 Claude direto na pasta' },
