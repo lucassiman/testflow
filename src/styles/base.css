@@ -716,7 +716,9 @@ button { font: inherit; color: inherit; }
 .run-body { padding: 10px 12px; display: grid; gap: 8px; }
 .run-field { display: grid; grid-template-columns: 74px 1fr; gap: 8px; align-items: start; }
 .run-field > span { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .03em; padding-top: 2px; }
-.run-field > div { max-height: 7.5em; overflow: auto; white-space: pre-wrap; }
+/* altura fixa: passo curto ou longo, os botões de status ficam no mesmo lugar (o texto longo rola) */
+.run-field > div { height: 6em; overflow: auto; white-space: pre-wrap; }
+.run-actual { height: 3.9em; }
 .run-field em { color: var(--muted); }
 .run-actual, .run-note {
   width: 100%; box-sizing: border-box; font: inherit; font-size: 13px; padding: 6px 8px; border-radius: 7px;

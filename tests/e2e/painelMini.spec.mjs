@@ -124,3 +124,22 @@ test('flutuante minimizado: os numerais aplicam status na janelinha em foco', as
   expect(rows).toMatch(/PASS/);
   expect(rows).toMatch(/FAIL/);
 });
+
+test('botões de status no mesmo lugar: passo curto, passo longo e o 🐞 do FAIL não empurram o painel', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 800 });
+  const longo = Array.from({ length: 14 }, (_, i) => `linha ${i + 1} do passo com muitos dados`).join('<br>');
+  const doc = CASE.replace('| 2 | Informar senha errada | Mensagem de erro | | |', `| 2 | ${longo} | ${longo} | | |`);
+  await openEditor(page, { mode: 'preview', doc });
+  await page.locator('.exec-bar [data-act="run"]').click();
+  const runner = page.locator('.runner');
+  const pass = () => runner.locator('.run-status button[data-word="PASS"]').boundingBox();
+  const p1 = await pass();
+  await page.keyboard.press('2'); // FAIL no passo 1 (o 🐞 aparece ao voltar)
+  await expect(runner.locator('.run-step')).toContainText('(2 de');
+  const p2 = await pass();
+  await page.keyboard.press('ArrowLeft');
+  await expect(runner.locator('.run-bug')).toBeVisible();
+  const p3 = await pass();
+  expect(p2).toEqual(p1);
+  expect(p3).toEqual(p1);
+});
