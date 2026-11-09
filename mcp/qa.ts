@@ -28,7 +28,6 @@ import { detectFrontMatter, parseFrontMatter, TYPE_LABELS } from '../src/markdow
 import { parseView, runView, viewMarkdown, VIEW_PRESETS, findViewBlocks, viewMatches, bugsFor, bugOpen } from '../src/markdown/views.ts';
 import type { ViewDoc } from '../src/markdown/views.ts';
 import { lastRound } from '../src/markdown/linkInfo.ts';
-import { featureFiles } from '../src/markdown/gherkin.ts';
 import { automationRuns, flakyNotes, flakyTests, runFromTests } from '../src/markdown/flaky.ts';
 import { buildAutomationBlock } from '../src/markdown/automationReport.js';
 import { parseResults } from '../src/io/automation.js';
@@ -1509,25 +1508,6 @@ export class QaWorkspace {
     for (const k of ['app', 'sprint', 'segmento', 'tags'] as const) if (o[k]) lines.push(`${k}: ${o[k]}`);
     if (o.limite) lines.push(`limite: ${o.limite}`);
     return this.query(lines.join('\n'));
-  }
-
-  /**
-   * Cenários BDD como arquivos `.feature` (Gherkin) para o repositório da automação: de um documento, ou de todos
-   * os que têm bloco ```gherkin (opcional: de uma aplicação). Só devolve o conteúdo — quem grava é quem pediu.
-   */
-  async features(ref = '', appName = ''): Promise<string> {
-    await this.refresh();
-    const fence = '```';
-    const docs = ref
-      ? [await this.find(ref)]
-      : this.index.all().filter((e) => e.text && /```\s*(gherkin|feature|cucumber)\b/i.test(e.text) && (!appName || (e.app || '').toLowerCase() === appName.toLowerCase()));
-    const out: string[] = [];
-    for (const e of docs) {
-      const { text } = await this.readDoc(e.path);
-      for (const f of featureFiles(text, { source: e.path })) out.push(`### ${f.name}\n\nDe ${e.path} — ${f.feature}\n\n${fence}gherkin\n${f.content}${fence}`);
-    }
-    if (!out.length) return ref ? `${docs[0].path}: nenhum bloco ${fence}gherkin para exportar.` : `Nenhum documento com bloco ${fence}gherkin${appName ? ` em ${appName}` : ''}.`;
-    return [`${out.length} arquivo(s) .feature (nome sugerido no título; o comentário do topo diz de onde veio — reexportar substitui o mesmo arquivo):`, ...out].join('\n\n');
   }
 
   /**

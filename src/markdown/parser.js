@@ -37,7 +37,7 @@ hljs.registerAliases(['sh', 'zsh', 'console'], { languageName: 'bash' });
 hljs.registerAliases(['py'], { languageName: 'python' });
 hljs.registerAliases(['cs', 'c#'], { languageName: 'csharp' });
 hljs.registerAliases(['yml'], { languageName: 'yaml' });
-hljs.registerAliases(['feature', 'cucumber'], { languageName: 'gherkin' });
+hljs.registerAliases(['feature'], { languageName: 'gherkin' });
 hljs.registerAliases(['md'], { languageName: 'markdown' });
 hljs.registerAliases(['text', 'txt', 'log'], { languageName: 'plaintext' });
 
@@ -74,7 +74,7 @@ const renderFence = (tokens, idx, options, env, self) => {
     return `<div class="qa-view" data-view-src="${md.utils.escapeHtml(encodeURIComponent(token.content))}"><div class="qa-view-body">Visão: lendo os documentos…</div></div>`;
   }
   // Gherkin (português e inglês): palavras-chave, tabelas alinhadas e uma separação entre os cenários
-  const html = ['gherkin', 'feature', 'cucumber'].includes(lang)
+  const html = ['gherkin', 'feature'].includes(lang)
     ? `<pre class="gherkin"><code class="language-gherkin">${gherkinHtml(token.content)}</code></pre>
 `
     : defaultFence(tokens, idx, options, env, self);

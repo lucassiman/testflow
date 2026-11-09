@@ -134,7 +134,7 @@ Resumo do roteiro:
 | **Evidências e bugs** | `bugs/BUG-004…` | Bug criado no passo que falhou com a **extensão** e o **replay** ligados (8.1, 8.3): print do passo, 🎬 vídeo, a tabela *Ambiente* com URL, sistema e tela, o resumo *Console e rede* e os arquivos `.log` e `.har` em `bugs/evidencias/` — token, CPF e e-mail mascarados. Chave e status do Jira (12.7) e uma **reincidência** que reabriu o bug. |
 | | `TC-010` | O caso das 3 rodadas (FAIL, PASS, FAIL), com o 🐞 Novo bug ligado no passo que falhou. |
 | **Automação** | `execucoes/execucao-automatizada-loja-demo-e2e-…` | Três noites do reporter do Playwright (9): o teste do TC-005 alterna PASS → FAIL → PASS e o do comprovante só passou no retry — **⚠ instável** na coluna Obs e na tendência. Os mesmos resultados em `automacao/noturno/*.json` (arraste um no editor). |
-| | `automacao/playwright.config.ts` · `automacao/features/` | O projeto de automação com o reporter do TestFlow e o `.feature` exportado do `CEN-001`. |
+| | `automacao/playwright.config.ts` | O projeto de automação com o reporter do TestFlow. |
 | **Publicar** | `TC-011` | Caso **em revisão** com dois comentários (6.7): o do Claude, respondido e resolvido, e o da Ana, pendente (💬 1). |
 | **Compartilhar** | `recursos/pedidos-ao-claude.md` | Um pedido pronto para **cada** ferramenta `qa_*` do Claude (12.6), com os documentos da Loja Demo. |
 
@@ -163,7 +163,7 @@ Cada ação mora num **módulo**. Os menus do topo e as categorias da paleta (`C
 | **📋 Casos ▾** | **Escrever:** novo caso, 🔑 dados compartilhados, ↪ incluir passos compartilhados, 🌐 ambiente ativo, vínculos, dispositivo · **Vários casos:** edição em massa, importar de planilha, organizar por épico e ticket, nova visão |
 | **▶ Execução ▾** | **Começar:** nova execução (avulsa, de um ciclo salvo ou só automatizada), ciclo de regressão, reteste das falhas, teste de confirmação do bug · **Durante:** próximo caso (da rodada / da pasta), voltar à execução, como está, atribuir os casos, abrir o ciclo de origem, finalizar · **Resultados:** relatórios da execução, tendência entre rodadas · **Acompanhar com o time:** página da rodada, avisos no Teams · **Configurar:** status personalizados |
 | **📸 Evidências ▾** (evidências e bugs) | **Capturar:** print, outra janela, parar, gravar vídeo, ⏪ replay · **Bug:** novo bug ligado, console e rede da aba testada (extensão) · **Arquivos:** evidências do documento, reaproveitar print, limpar · **Preferências:** duração do replay, captura pela extensão, prints grandes |
-| **🤖 Automação ▾** | Anexar relatório à execução, relatório como documento, reporter ao vivo · exportar `.feature` (deste documento / de todos) |
+| **🤖 Automação ▾** | Anexar relatório à execução, relatório como documento, reporter ao vivo |
 | **🏛 Publicar ▾** | Publicar na pasta oficial, sincronizar, pasta oficial · histórico de versões · comentar, comentários do documento |
 | **📤 Compartilhar ▾** | **Copiar** (Markdown, Jira, outro editor) · **Exportar…** (PDF, HTML, .zip, pacote do hub) · **Jira** (abrir o ticket, criar a issue pela API, trazer status) · **Claude** (documento + instruções, revisar texto, colar resposta) · **Proteção** (dados sensíveis) |
 | Só na paleta | **Pasta de trabalho** (início, painel, buscar, estrutura, nova aplicação/pasta, mover, desfazer organização, backup, diagnóstico) · **Editar e exibir** (modos, foco, barra de formatação, árvore, abas, zoom, tema) · **Ajuda e preferências** (manual, o que mudou, dicas). A pasta de trabalho também fica na barra lateral (aba **Arquivos**). |
@@ -260,7 +260,6 @@ Organizado pelos mesmos módulos dos menus do topo e da paleta. Um teste confere
 | Relatório de automação como documento | Arraste o XML/JSON, ou **Automação ▾ → 📄 Relatório como documento…** |
 | Resultado dos testes automatizados direto na execução (sem importar arquivo) | `npm run reporter` + **Automação ▾ → ⚡ Reporter ao vivo — como ligar…** (ver 9) |
 | Juntar o relatório a uma rodada manual | **Automação ▾ → 📎 Anexar relatório à execução…** (ou, no painel da rodada, **⋯**) |
-| Mandar os cenários BDD para o repositório da automação | **Automação ▾ → Exportar .feature deste documento…** ou **Automação ▾ → Exportar .feature de todos os cenários…** (ver 9) |
 
 **🏛 Publicar**
 
@@ -1048,18 +1047,6 @@ Exemplos para testar: `exemplos/automacao/junit.xml`, `playwright.json`, `newman
 
 Igual à importação: os casos citados no título do teste (`TC-042`, `@TC-042`) ficam ligados, os instáveis ganham ⚠ e os specs abrem no VS Code na linha. Se a execução estiver aberta no editor, ele avisa que o arquivo mudou e oferece recarregar. O resultado vai **no fim** da rodada de testes (não teste a teste). Num **CI na nuvem** (GitHub Actions…), o servidor não enxerga a sua pasta: baixe o relatório e importe (ou use o comando na sua máquina). O Claude faz o mesmo com `qa_anexar_automacao { arquivo }`.
 
-**Exportar `.feature` (Gherkin).** Os cenários BDD (blocos ```` ```gherkin ````) viram arquivos para o repositório da automação:
-
-| Como | O que acontece |
-| --- | --- |
-| `Ctrl+Shift+P` → **Exportar .feature (Gherkin) deste documento…** | Um arquivo por `Funcionalidade:` do documento (blocos só com cenários entram na funcionalidade anterior; sem nenhuma, usa o título). |
-| `Ctrl+Shift+P` → **Exportar .feature de todos os cenários BDD da pasta…** | Todos os documentos com bloco Gherkin (escolha a aplicação, se houver mais de uma). |
-| **Onde grava** | Na **pasta de features** do projeto de automação — escolhida na primeira vez (**Escolher a pasta…**) e lembrada (**Gravar em features/**). Ou **Baixar** (um `.zip` se forem vários). |
-| **O que vai no arquivo** | `# language: pt` (quando as palavras-chave são em português), um comentário com o documento de origem e a data, e as tags de rastreio na funcionalidade: `@CEN-004 @LOJA-12 @checkout` (ID, chave do Jira e tags do documento). Nome: `cen-004-carrinho-de-compras.feature`. |
-| **Reexportar** | Substitui o arquivo que o TestFlow gerou para o mesmo documento e funcionalidade (pelo comentário do topo — mesmo que você o tenha renomeado ou mudado de nome a funcionalidade). **Arquivo escrito à mão nunca é sobrescrito**: o novo vai como `…-testflow.feature`. Nada é apagado. |
-
-O Claude também exporta: `qa_exportar_feature` devolve os arquivos para ele gravar no repositório.
-
 ## 10. Arquivos, pastas e abas
 
 | Recurso | Como funciona |
@@ -1371,7 +1358,7 @@ São **39 ferramentas** `qa_*`, em grupos:
 | **Escrever** | `qa_criar` · `qa_atualizar_cabecalho` · `qa_comentar` · `qa_editar_em_massa` · `qa_importar_casos` | Documento novo do modelo (ou texto completo) com o **próximo ID** e na **pasta certa** pelo `app:`; campos do cabeçalho (trocar o `id` atualiza o documento e os `[[links]]` da pasta, como no editor); comentário de revisão (6.7); edição em massa e importação de planilha, com prévia e gravação só com o seu OK |
 | **Bugs e evidências** | `qa_bug_do_caso` · `qa_ligar` · `qa_anexar_evidencia` · `qa_para_jira` | Bug ligado a partir do passo que falhou, com passos, esperado, obtido e prints (se o caso **já tem bug**, ele não duplica: pergunta se é **reincidência** — registra no bug e reabre, como o app — ou bug novo); ligar um bug órfão ao caso; copiar um arquivo (print, vídeo, HAR, log) para `evidencias/`; o bug pronto para o ticket (resumo `[BUG-12] título`, prioridade, descrição, anexos) |
 | **Execução** | `qa_marcar_passos` · `qa_nova_rodada` · `qa_rodada_criar` · `qa_rodada_registrar` · `qa_rodada_status` · `qa_rodada_atribuir` · `qa_pendencias` · `qa_rodada_finalizar` · `qa_relatorios` | Status/obtido por passo; a rodada inteira pelo Claude — criar pelos casos de um **segmento**, de uma consulta, de uma lista ou de um **ciclo salvo** (com `bugs:`, o **teste de confirmação** dos bugs; só eles, uma execução de confirmação), registrar cada caso (ou o bug), atribuir, ver como está e o que falta para você, finalizar (SKIP nos pendentes + os 4 relatórios); gerar de novo os relatórios (7.8) mantendo o que você escreveu |
-| **Automação** | `qa_anexar_automacao` · `qa_exportar_feature` | Resultado de automação (JUnit XML, Playwright JSON, Newman JSON) direto na execução em andamento, numa nova ou numa específica; cenários BDD como arquivos `.feature` (9) |
+| **Automação** | `qa_anexar_automacao` | Resultado de automação (JUnit XML, Playwright JSON, Newman JSON) direto na execução em andamento, numa nova ou numa específica |
 | **Qualidade e acompanhamento** | `qa_validar` · `qa_rastreabilidade` · `qa_varredura` · `qa_tendencia` · `qa_release` · `qa_compartilhados` · `qa_preparar_ambientes` | Avisos de QA, links quebrados e evidências faltando; matriz ticket/épico → casos → resultado → bugs; documentos sem vínculos (cada achado com ✅ certo / 🟡 provável / ❓ confirmar; `aplicar` preenche só campos vazios); tendência entre rodadas; progresso de uma release; dados e passos compartilhados (sem senhas) e a massa por ambiente |
 | **Ensinar o Claude** | `qa_revisao_criar` · `qa_revisao_ler` · `qa_regras` | Revisão dos casos que ele gerou (você marca ✓ / ✗ / ~ no TestFlow) e as **regras de geração** da pasta, gravadas só com o seu OK (ver abaixo) |
 

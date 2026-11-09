@@ -233,7 +233,7 @@ export const MODULES = [
   },
   {
     id: 'automacao', label: 'Automação', icon: '🤖', top: true,
-    title: 'Automação: relatórios do Playwright, JUnit e Newman, reporter ao vivo e .feature',
+    title: 'Automação: relatórios do Playwright, JUnit e Newman, reporter ao vivo',
     svg: '<rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16.5h5"/>',
     sections: [
       {
@@ -243,13 +243,6 @@ export const MODULES = [
           { cmd: 'attachAutomation', label: '📎 Anexar relatório à execução…', hint: 'entra como Testes automatizados, separado dos manuais', palette: 'Execução: anexar relatório de testes automatizados (Playwright, JUnit, Newman)…' },
           { cmd: 'importAutomation', label: '📄 Relatório como documento…', hint: 'JUnit / Playwright / Newman (ou arraste o arquivo)', palette: 'Relatório de automação como documento (JUnit, Playwright, Newman)…' },
           { cmd: 'reporterSetup', label: '⚡ Reporter ao vivo — como ligar…', hint: 'Playwright, Jest, Cypress gravam direto na execução', palette: 'Reporter da automação: resultado direto na execução (Playwright, Jest, Cypress) — como ligar…' },
-        ],
-      },
-      {
-        title: 'BDD',
-        items: [
-          { cmd: 'featureHere', label: 'Exportar .feature deste documento…', palette: 'Exportar .feature (Gherkin) deste documento para o projeto de automação…' },
-          { cmd: 'featureAll', label: 'Exportar .feature de todos os cenários…', palette: 'Exportar .feature de todos os cenários BDD da pasta…' },
         ],
       },
     ],

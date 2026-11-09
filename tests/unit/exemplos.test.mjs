@@ -11,7 +11,6 @@ import { QaWorkspace } from '../../mcp/qa.ts';
 import { findSensitive } from '../../src/markdown/sensitive.ts';
 import { findRefs, isRelativeHref, resolveHref } from '../../src/markdown/relink.ts';
 import { automationRuns, flakyTests } from '../../src/markdown/flaky.ts';
-import { featureFiles } from '../../src/markdown/gherkin.ts';
 import { readRoundPageMeta } from '../../src/markdown/roundPage.ts';
 import { countComments, findComments } from '../../src/markdown/comments.ts';
 import { parseResults } from '../../src/io/automation.js';
@@ -222,7 +221,7 @@ test('Evidências e bugs: BUG-004 com print, replay, console e rede da extensão
   assert.match(tc10.text, /^🐞 Bug: \[\[BUG-004\]\]/m);
 });
 
-test('Automação: 3 noites do reporter, um teste alternando PASS/FAIL e um que passou só no retry; .feature e playwright.config', () => {
+test('Automação: 3 noites do reporter, um teste alternando PASS/FAIL e um que passou só no retry; playwright.config', () => {
   const nights = docs.filter((d) => d.path.startsWith('execucoes/execucao-automatizada-loja-demo-e2e-')).sort((a, b) => a.path.localeCompare(b.path));
   assert.equal(nights.length, 3);
   for (const n of nights) assert.ok(meta(n.text).fim, `${n.path}: finalizada (não fica como rodada em andamento)`);
@@ -234,10 +233,6 @@ test('Automação: 3 noites do reporter, um teste alternando PASS/FAIL e um que 
   // os mesmos resultados no JSON do Playwright (para arrastar no editor)
   const jsons = allFiles().filter((f) => f.startsWith('automacao/noturno/')).sort();
   assert.deepEqual(jsons.map((f) => parseResults(file(f), f).tests.find((t) => /TC-005/.test(t.title)).status), ['pass', 'fail', 'pass']);
-  // .feature: o export do CEN-001 (o mesmo que o app gera no dia do export)
-  const cen = doc('CEN-001');
-  const [feat] = featureFiles(cen.text, { source: cen.path, today: new Date(2026, 9, 9) });
-  assert.equal(file(`automacao/features/${feat.name}`), feat.content);
   // o projeto de automação liga o reporter do TestFlow: uma execução nova por noite
   assert.match(file('automacao/playwright.config.ts'), /\['[^']*reporter-dist\/testflow\.mjs', \{ pasta: '[^']+', execucao: 'nova' \}\]/);
 });
@@ -265,12 +260,12 @@ test('Publicar: página da rodada (#2 encerrada, #3 em andamento) e índice, car
   assert.deepEqual(findComments(tc11.text).map((c) => [c.author, c.resolved, c.replies]), [['Claude', true, 1], ['Ana', false, 0]]);
 });
 
-test('Claude: recursos/pedidos-ao-claude.md tem um pedido para cada ferramenta qa_* do MCP (as 39 da 1.60.0, menos o qa_aprovacao, que saiu na 1.78.0), uma vez só', () => {
+test('Claude: recursos/pedidos-ao-claude.md tem um pedido para cada ferramenta qa_* do MCP (as 39 da 1.60.0, menos o qa_aprovacao, que saiu na 1.78.0, e o qa_exportar_feature, que saiu na 1.82.0), uma vez só', () => {
   const server = readFileSync(new URL('../../mcp/server.ts', import.meta.url), 'utf8');
   const tools = new Set([...server.matchAll(/registerTool\('(qa_\w+)'/g)].map((m) => m[1]));
   const rows = [...file('recursos/pedidos-ao-claude.md').matchAll(/^\| `(qa_\w+)` \|/gm)].map((m) => m[1]);
   assert.equal(rows.length, new Set(rows).size, 'ferramenta repetida');
   // nenhuma ferramenta citada sumiu ou mudou de nome; as de versões futuras não cobram (exemplos/ só ganha arquivos novos)
   assert.deepEqual(rows.filter((r) => !tools.has(r)), []);
-  assert.equal(rows.length, 38);
+  assert.equal(rows.length, 37);
 });

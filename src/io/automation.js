@@ -86,7 +86,7 @@ export function parseJUnit(xml, fileName = '') {
       title: tc.getAttribute('name') || '(sem nome)',
       suite: suiteEl?.getAttribute('name') || tc.getAttribute('classname') || '',
       // sem atributo file: o classname do Playwright/Jest/Cypress costuma ser o próprio arquivo
-      file: tc.getAttribute('file') || suiteEl?.getAttribute('file') || (/\.(spec|test|cy)\.[cm]?[jt]sx?$|\.[cm]?[jt]sx?$|\.py$|\.feature$/.test(tc.getAttribute('classname') || '') ? tc.getAttribute('classname') || '' : ''),
+      file: tc.getAttribute('file') || suiteEl?.getAttribute('file') || (/\.(spec|test|cy)\.[cm]?[jt]sx?$|\.[cm]?[jt]sx?$|\.py$/.test(tc.getAttribute('classname') || '') ? tc.getAttribute('classname') || '' : ''),
       line: num(tc.getAttribute('line')),
       project: '',
       duration: num(tc.getAttribute('time')) !== null ? Math.round(Number(tc.getAttribute('time')) * 1000) : null,

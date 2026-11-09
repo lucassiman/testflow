@@ -6,7 +6,7 @@ A mesma Loja Demo do [LEIA-ME](LEIA-ME.md) (Sprint 42, versão 2.14.0) continua 
 > **Antes de começar:** abra esta pasta `exemplos` como pasta de trabalho (`☰` → aba **Arquivos** → **Abrir…**). Nas preferências, use **Lucas** como o seu nome: a Ana, o Bruno e o Lucas dividem a execução #3, e o filtro **Minhas** mostra os casos do Lucas.
 
 > [!NOTE]
-> Alguns exemplos não são `.md` e não aparecem na árvore do app: a pasta `acompanhamento/` (páginas da rodada e cartões do Teams), `automacao/` (relatórios, `.feature`, `playwright.config.ts`) e os vídeos, logs e HAR de `bugs/evidencias/`. Abra-os pelo Explorer do Windows (ou pelo Finder): as páginas `.html` abrem no navegador, os `.json` e o `.feature` em qualquer editor de texto.
+> Alguns exemplos não são `.md` e não aparecem na árvore do app: a pasta `acompanhamento/` (páginas da rodada e cartões do Teams), `automacao/` (relatórios e `playwright.config.ts`) e os vídeos, logs e HAR de `bugs/evidencias/`. Abra-os pelo Explorer do Windows (ou pelo Finder): as páginas `.html` abrem no navegador, os `.json` em qualquer editor de texto.
 
 ## A história, em ordem
 
@@ -99,13 +99,11 @@ A mesma Loja Demo do [LEIA-ME](LEIA-ME.md) (Sprint 42, versão 2.14.0) continua 
 | `execucoes/execucao-automatizada-loja-demo-e2e-…` (07, 08 e 09/10) | Uma execução por noite, gravada pelo reporter: os testes, os casos manuais ligados (TC-005 a TC-008) e o **⚠ instável** |
 | `automacao/noturno/*.json` | Os mesmos 3 resultados do Playwright — o do TC-005 alterna PASS → FAIL → PASS; o do comprovante passou só no retry |
 | `automacao/playwright.config.ts` | O projeto de automação com o **reporter do TestFlow** (o resultado vai direto para a execução) |
-| `automacao/features/cen-001-carrinho-de-compras.feature` | Os cenários do [[CEN-001]] exportados como `.feature` |
 
 **Roteiro:**
 
 - [ ] Abra a `execucao-automatizada-loja-demo-e2e-09-10-2026`: o teste do TC-005 com **⚠ instável: 2 trocas PASS↔FAIL em 3 execuções** e o do comprovante, *passou só com retry*
 - [ ] Arraste `automacao/noturno/2026-10-08-pix-noturno.json` para o editor: relatório pronto, com as falhas e os anexos
-- [ ] Abra o `CEN-001` e use **Automação ▾ → Exportar .feature deste documento…** — compare com `automacao/features/`
 - [ ] **Automação ▾ → ⚡ Reporter ao vivo — como ligar…**: o mesmo trecho do `playwright.config.ts`, já com o caminho da sua pasta
 
 ## 🏛 Publicar — revisão e versões

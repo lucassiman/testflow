@@ -1660,8 +1660,6 @@ function run(cmd, value, event) {
     case 'newAutoRun': newAutoRun(); return true;
     case 'attachAutomation': attachAutomation(); return true;
     case 'reporterSetup': import('./app/reporterSetup.js').then((m) => m.reporterSetup()); return true;
-    case 'featureHere': import('./app/featureExport.js').then((m) => m.exportFeatureHere()); return true;
-    case 'featureAll': import('./app/featureExport.js').then((m) => m.exportAllFeatures()); return true;
     case 'editLinks': editLinks(); return true;
     case 'editDevice': editDevice(); return true;
     case 'bigPrint': bigPrintSetting(); return true;

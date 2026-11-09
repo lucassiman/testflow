@@ -24,7 +24,7 @@ A base está pronta e em uso diário. Em linhas gerais:
 | **Executar** | Status clicável, execução passo a passo com cronômetro, painel flutuante, rodadas e ciclos de regressão, atribuição entre testadores, previsão de término, reteste das falhas com o teste de confirmação dos bugs, matriz de configurações, status personalizados. |
 | **Relatórios e acompanhamento** | Quatro relatórios de fim de execução (Go/No-Go, defeitos, rastreabilidade, log comparativo), tendência entre rodadas, visões salvas, painel da pasta, página da rodada para o time, avisos no Teams. |
 | **Evidências e bugs** | Prints com anotação, captura de tela, vídeo, replay instantâneo, bug ligado ao passo que falhou com reincidência, console e rede da aba testada (extensão). |
-| **Automação** | Importação de JUnit, Playwright e Newman, reporter ao vivo, testes instáveis, exportação de `.feature`. |
+| **Automação** | Importação de JUnit, Playwright e Newman, reporter ao vivo, testes instáveis. |
 | **Equipe** | Pasta oficial compartilhada com revisões, sincronização, histórico com comparação, comentários de revisão e aviso de edição simultânea. |
 | **Claude** | Skills `qa-markdown` e `qa-varredura`, servidor MCP com 39 ferramentas, cópia para o Claude e revisão de texto com conferência. |
 | **Rotina do QA** | Diário (começar e fechar o dia, tarefas que passam de um dia para o outro, reuniões com decisões e ações, a semana), teste em dupla com o dev por ticket e um comparador de JSON local. |

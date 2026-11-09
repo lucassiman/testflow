@@ -45,7 +45,6 @@ const TOOLS = [
   ['qa_resumo_execucao', 'Falhas e resumo da execução'],
   ['qa_ver_evidencia', 'Ver um print do documento'],
   ['qa_versoes', 'Histórico de versões de um documento'],
-  ['qa_exportar_feature', 'Cenários BDD como arquivos .feature (Gherkin)'],
   ['qa_anexar_automacao', 'Resultado de automação direto na execução'],
   ['qa_criar', 'Criar documento a partir do modelo'],
   ['qa_bug_do_caso', 'Criar bug ligado a partir do passo que falhou'],

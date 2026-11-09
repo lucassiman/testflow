@@ -66,7 +66,6 @@ Abaixo, um pedido pronto para **cada uma** das ferramentas, com os documentos de
 | Ferramenta | Peça assim | O que volta |
 | --- | --- | --- |
 | `qa_anexar_automacao` | *"Anexe o resultado C:\dev\markdown qa editor\exemplos\automacao\noturno\2026-10-09-pix-noturno.json numa execução nova."* | Uma execução automatizada com os testes, os casos ligados (TC-005…TC-008) e os ⚠ instáveis |
-| `qa_exportar_feature` | *"Exporte o CEN-001 como .feature para o repositório da automação."* | O conteúdo e o nome sugerido (`cen-001-carrinho-de-compras.feature`) — o mesmo de `automacao/features/` |
 
 ## 🏛 Publicar — revisão e versões
 

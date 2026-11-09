@@ -1,4 +1,4 @@
-// 11.5 — integrações e acompanhamento: testes instáveis (1.52.0) e exportar .feature (1.52.0).
+// 11.5 — integrações e acompanhamento: testes instáveis (1.52.0) (1.52.0).
 import { test, expect } from '@playwright/test';
 import { openEditor, raw, wsInit } from './helpers.mjs';
 
@@ -55,56 +55,6 @@ test('instáveis: o relatório novo marca o teste que alterna PASS/FAIL; a tend�
   await expect(page.locator('#fileName')).toContainText('tendencia');
   await expect(page.locator('#preview')).toContainText('Testes automatizados instáveis');
   await expect(page.locator('#preview')).toContainText('✓✗✓✗');
-});
-
-const BDD = '---\ntipo: cenario-bdd\nid: CEN-004\ntitulo: Carrinho\napp: Loja\njira: LOJA-12\ntags: [checkout]\n---\n\n# CEN-004 — Carrinho\n\n## Cenários\n\n```gherkin\nFuncionalidade: Carrinho de compras\n\n  Cenário: Adicionar item\n    Dado que estou na vitrine\n    Então o carrinho mostra 1 item\n```\n\n```gherkin\nFeature: Coupons\n  Scenario: Apply coupon\n    Given a cart\n```\n';
-
-test('.feature: grava na pasta da automação, substitui o arquivo antigo do TestFlow e não toca no escrito à mão', async ({ page }) => {
-  await page.addInitScript(wsInit, 'ws-feature');
-  // a "pasta de features" da automação: outra pasta (OPFS) no seletor de pastas
-  await page.addInitScript(() => {
-    const ws = window.showDirectoryPicker;
-    window.__features = async () => (await navigator.storage.getDirectory()).getDirectoryHandle('repo-features', { create: true });
-    window.showDirectoryPicker = async (opts) => (opts?.id === 'mdqa-features' ? window.__features() : ws(opts));
-    window.__feat = async (name) => { try { return await (await (await (await window.__features()).getFileHandle(name)).getFile()).text(); } catch { return null; } };
-    window.__featLs = async () => { const out = []; for await (const k of (await window.__features()).keys()) out.push(k); return out.sort(); };
-  });
-  await openEditor(page, { mode: 'split' });
-  await page.evaluate(async (t) => {
-    await window.__write('aplicacoes/Loja/casos/CEN-004.md', t);
-    const dir = await window.__features();
-    const put = async (n, c) => { const w = await (await dir.getFileHandle(n, { create: true })).createWritable(); await w.write(c); await w.close(); };
-    await put('carrinho-antigo.feature', '# language: pt\n# Gerado pelo TestFlow a partir de CEN-004 (x) em 01/10/2026.\nFuncionalidade: velha\n');
-    await put('cen-004-coupons-2.feature', 'Feature: escrito à mão\n');
-  }, BDD);
-  await openWorkspace(page);
-  await page.locator('[data-side="wsList"] .side-file', { hasText: 'CEN-004' }).click();
-  await expect(page.locator('#fileName')).toContainText('CEN-004');
-
-  await palette(page, 'Exportar .feature (Gherkin) deste documento');
-  const dlg = page.locator('.app-dialog');
-  await expect(dlg).toContainText('Exportar 2 arquivos .feature');
-  await expect(dlg).toContainText('cen-004-carrinho-de-compras.feature — Carrinho de compras');
-  await dlg.locator('button', { hasText: 'Escolher a pasta…' }).click();
-  await expect(page.locator('#toast')).toContainText('2 .feature em repo-features/: 1 novo(s), 1 atualizado(s)');
-  expect(await page.evaluate(() => window.__featLs())).toEqual(['carrinho-antigo.feature', 'cen-004-coupons-2-testflow.feature', 'cen-004-coupons-2.feature']);
-  const pt = await page.evaluate(() => window.__feat('carrinho-antigo.feature'));
-  expect(pt).toMatch(/^# language: pt\n# Gerado pelo TestFlow a partir de CEN-004 \(aplicacoes\/Loja\/casos\/CEN-004\.md\)/);
-  expect(pt).toContain('@CEN-004 @LOJA-12 @checkout\nFuncionalidade: Carrinho de compras');
-  expect(await page.evaluate(() => window.__feat('cen-004-coupons-2.feature'))).toBe('Feature: escrito à mão\n');
-  expect(await page.evaluate(() => window.__feat('cen-004-coupons-2-testflow.feature'))).toContain('Feature: Coupons');
-
-  // de novo: a pasta foi lembrada e nada novo é criado
-  await palette(page, 'Exportar .feature (Gherkin) deste documento');
-  await dlg.locator('button', { hasText: 'Gravar em repo-features/' }).click();
-  await expect(page.locator('#toast')).toContainText('0 novo(s), 2 atualizado(s)');
-  expect(await page.evaluate(() => window.__featLs())).toHaveLength(3);
-
-  // todos os cenários da pasta
-  await palette(page, 'Exportar .feature de todos os cenários BDD');
-  await expect(dlg).toContainText('1 documento(s) com cenários BDD');
-  await dlg.locator('button', { hasText: 'Gravar em repo-features/' }).click();
-  await expect(page.locator('#toast')).toContainText('0 novo(s), 2 atualizado(s)');
 });
 
 test('reporter da automação (1.53.0): a paleta mostra e copia o trecho do Playwright com o caminho da pasta de trabalho', async ({ page, context }) => {

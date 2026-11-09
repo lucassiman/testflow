@@ -60,7 +60,6 @@ Como trabalhar:
 - Rodada de regressão: qa_rodada_criar (por segmento — épico, ticket, #tag —, consulta, lista de casos, ciclo salvo, ou reteste: EXEC-… com as falhas e a confirmação dos bugs delas) → qa_rodada_registrar por caso → qa_rodada_status para ver como está → qa_rodada_finalizar (SKIP nos pendentes e os 4 relatórios: encerramento/Go-No-Go, defeitos, rastreabilidade, log + comparativo). qa_relatorios regera.
 - Bug de um caso que já tem bug ligado: qa_bug_do_caso devolve os bugs; pergunte ao usuário se é reincidência (reincidencia: "BUG-…") ou bug novo (novo: true).
 - Evolução da qualidade (sprint, % de sucesso no tempo, casos que mais falham, testes automatizados instáveis): qa_tendencia.
-- Cenários BDD como .feature para o repositório da automação: qa_exportar_feature (devolve os arquivos; grave com as suas ferramentas).
 - Rodou os testes automatizados (Playwright, Jest, Cypress…)? qa_anexar_automacao { arquivo } põe o resultado na execução em andamento (ou numa nova).
 - Status personalizados: um documento tipo status (configuracao/status.md, tabela Palavra | Conta como | Cor) cria palavras a mais (ex.: RETESTE, FALHA CONHECIDA) que valem nos passos e contam como um dos 5 — use só as que existem (qa_marcar_passos avisa).
 - Teste de confirmação do bug (refazer o bug na versão corrigida: PASS = corrigido): qa_rodada_criar { bugs: ["BUG-…"] } (só os bugs = execução só de confirmação; com casos, os bugs vêm antes, na seção "Confirmação de bugs", e contam à parte). O bug ganha a seção "## Teste de confirmação" (passos tirados dos "Passos para reproduzir"); registre com qa_rodada_registrar { caso: "BUG-…", passos }. O resultado vai para o "## Andamento" do bug; FAIL reabre o bug fechado; PASS não fecha sozinho — pergunte ao usuário e, com o OK, qa_atualizar_cabecalho { status: PASS }.
@@ -171,11 +170,6 @@ export async function createServer(ws: QaWorkspace, convencoes: string, version:
       return text(`Arquivo ${f.path} (${f.mimeType}) — não é imagem nem texto.`);
     } catch (err) { return fail(err); }
   });
-
-  server.registerTool('qa_exportar_feature', {
-    title: 'Exportar .feature (Gherkin)', description: 'Cenários BDD (blocos ```gherkin) como arquivos .feature para o repositório da automação, com # language: pt, tags de rastreio (@CEN-001, chave do Jira, tags) e o comentário de origem. De um documento (doc) ou de todos (opcional: app). Só devolve o conteúdo e o nome sugerido — grave no repositório com as suas ferramentas, substituindo o arquivo de mesma origem.',
-    inputSchema: { doc: z.string().optional().describe('ID ou caminho; sem ele, todos os cenários BDD'), app: z.string().optional() }, annotations: RO,
-  }, async (a) => run(() => ws.features(a.doc || '', a.app || ''), text));
 
   server.registerTool('qa_versoes', {
     title: 'Histórico de versões', description: 'Versões guardadas de um documento em .versoes/ (antes de cada gravação do editor ou do Claude).',

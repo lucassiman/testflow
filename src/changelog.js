@@ -8,6 +8,12 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.82.0', date: '09/11/2026',
+    items: [
+      { icon: '✂️', text: '**Sem Cucumber**: saiu a exportação de `.feature` (menu *Automação ▾*, paleta e a ferramenta `qa_exportar_feature` do Claude). O **Gherkin** continua como linguagem do time: bloco ```` ```gherkin ````, modelo de cenário BDD e cores no Preview.', manual: '9. Resultados de automação' },
+    ],
+  },
+  {
     version: '1.81.1', date: '04/11/2026',
     items: [
       { icon: '🎯', text: '**Status sempre no mesmo lugar**: no painel de execução, *Ação* e *Esperado* têm altura fixa (o texto longo rola) e o espaço do 🐞 *Abrir bug deste passo* fica reservado — passo curto ou com muitos dados, o PASS não muda de posição e dá para marcar vários passos seguidos sem mirar de novo.', manual: '7.3 Executar passo a passo' },
