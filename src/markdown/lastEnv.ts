@@ -1,6 +1,6 @@
 /**
- * Ambiente da última execução: ao executar outro caso (ou uma rodada nova) com ambiente, browser ou versão
- * em branco no cabeçalho, oferece repetir o que foi usado por último. Só preenche campos que existem no
+ * Ambiente da última execução: ao executar de novo o MESMO caso (já concluído antes) com ambiente, browser ou versão
+ * em branco no cabeçalho, oferece repetir o que foi usado na execução anterior dele. Outro caso não recebe a oferta. Só preenche campos que existem no
  * cabeçalho e estão vazios — nunca troca um valor já escrito. Lógica pura (sem tela), testada em `tests/unit`.
  */
 import { detectFrontMatter, parseFrontMatter, serializeFrontMatter } from './frontmatter.ts';
@@ -19,6 +19,12 @@ function header(source: string): { end: number; entries: ReturnType<typeof parse
   return { end: fm.end, entries, data };
 }
 
+/** Identificador do documento (`id:` do cabeçalho) — ou '' sem id. */
+export function docKey(source: string): string {
+  const v = header(source)?.data.id;
+  return typeof v === 'string' ? v.trim() : '';
+}
+
 /** Valores preenchidos de ambiente/browser/versão no cabeçalho do documento. */
 export function readEnv(source: string): RunEnv {
   const h = header(source);
@@ -32,10 +38,12 @@ export function readEnv(source: string): RunEnv {
 }
 
 /** O que dá para repetir: campos que o cabeçalho tem em branco e o `last` conhece. */
-export function missingEnv(source: string, last: RunEnv | null | undefined): RunEnv {
+export function missingEnv(source: string, last: RunEnv | null | undefined, lastDoc?: string | null): RunEnv {
   const h = header(source);
   const out: RunEnv = {};
   if (!h || !last) return out;
+  // só se a última execução concluída foi deste mesmo caso
+  if (lastDoc !== undefined && (!lastDoc || lastDoc !== docKey(source))) return out;
   for (const k of ENV_KEYS) {
     const v = h.data[k];
     if (typeof v === 'string' && !v.trim() && last[k]?.trim()) out[k] = last[k]!.trim();

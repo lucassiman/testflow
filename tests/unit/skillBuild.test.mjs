@@ -18,6 +18,17 @@ test('npm run skill: seção 8 copiada das convenções, guia ao lado, sem a mar
   assert.equal(skill.split('Técnicas — escolha pelo formato da regra').length, 2, 'uma vez só');
   assert.match(skill, /^## 6\.6 Sugerir o testware certo$/m);
   assert.ok(skill.length <= MAX_SKILL_CHARS, `SKILL.md com ${skill.length} caracteres passou do teto de ${MAX_SKILL_CHARS} — enxugue antes de subir o teto`);
+  assert.equal(readFileSync('claude-skill/qa-markdown/guia-gherkin.md', 'utf8'), readFileSync('GUIA-GHERKIN.md', 'utf8').replace(/\r\n?/g, '\n'));
+  assert.match(skill, /Gherkin é a linguagem universal do negócio/);
+  for (const nome of ['qa-gherkin-da-historia', 'qa-lacunas-da-historia']) assert.ok(existsSync(`claude-skill/agentes/${nome}.md`), `agente ${nome} gerado`);
+  assert.ok(existsSync('claude-skill/qa-agentes.zip'));
+  for (const nome of ['qa-gherkin-da-historia', 'qa-lacunas-da-historia']) {
+    assert.ok(existsSync(`claude-skill/${nome}.zip`), `skill avulsa ${nome} gerada`);
+    const sk = readFileSync(`claude-skill/${nome}/SKILL.md`, 'utf8');
+    assert.match(sk, new RegExp(`^---\nname: ${nome}\ndescription: .+\n---\n`));
+    assert.match(sk, /## Sem o MCP do TestFlow/);
+    assert.equal(readFileSync(`claude-skill/${nome}/guia-gherkin.md`, 'utf8'), readFileSync('GUIA-GHERKIN.md', 'utf8').replace(/\r\n?/g, '\n'));
+  }
   assert.ok(existsSync('claude-skill/qa-markdown/guia-de-teste.md'));
   assert.equal(readFileSync('claude-skill/qa-markdown/guia-de-teste.md', 'utf8'), readFileSync('GUIA-DE-TESTE.md', 'utf8').replace(/\r\n?/g, '\n'));
 });

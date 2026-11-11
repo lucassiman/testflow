@@ -68,7 +68,7 @@ test('executar um caso que já tem passos com status retoma no primeiro passo em
 });
 
 test('ambiente da última execução: oferece preencher o que está em branco; ao concluir, guarda o do documento', async ({ page }) => {
-  await openEditor(page, { doc: CASE('ambiente:\nbrowser:\nversao: 1.0\n'), prefs: { lastEnv: { ambiente: 'HML', browser: 'Chrome 130', versao: '2.14.0' } } });
+  await openEditor(page, { doc: CASE('ambiente:\nbrowser:\nversao: 1.0\n'), prefs: { lastEnv: { ambiente: 'HML', browser: 'Chrome 130', versao: '2.14.0' }, lastEnvDoc: 'TC-042' } });
   await page.click('.exec-action[data-act="run"]');
   const action = page.locator('#toast .toast-action');
   await expect(action).toBeVisible({ timeout: 6000 });
@@ -82,6 +82,13 @@ test('ambiente da última execução: oferece preencher o que está em branco; a
   await expect.poll(() => raw(page)).toMatch(/\nambiente:\nbrowser:\nversao: 1\.0\n/);
 });
 
+test('ambiente: a última execução foi de outro caso — não oferece nada', async ({ page }) => {
+  await openEditor(page, { doc: CASE('ambiente:\nbrowser:\nversao:\n'), prefs: { lastEnv: { ambiente: 'HML', browser: 'Chrome 130' }, lastEnvDoc: 'TC-999' } });
+  await page.click('.exec-action[data-act="run"]');
+  await page.waitForTimeout(3200);
+  await expect(page.locator('#toast .toast-action')).toHaveCount(0);
+});
+
 test('ambiente: sem nada em branco não oferece; concluir guarda ambiente/browser/versão para a próxima', async ({ page }) => {
   await openEditor(page, { doc: CASE('ambiente: PRD\nbrowser: Firefox 131\nversao: 3.0\n') });
   await page.click('.exec-action[data-act="run"]');
@@ -91,6 +98,7 @@ test('ambiente: sem nada em branco não oferece; concluir guarda ambiente/browse
   await page.click('.runner [data-act="finish"]');
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('mdqa:prefs') || '{}').lastEnv);
   expect(saved).toEqual({ ambiente: 'PRD', browser: 'Firefox 131', versao: '3.0' });
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('mdqa:prefs') || '{}').lastEnvDoc)).toBe('TC-042');
 });
 
 test('editor de anotação: a caixa de texto cresce com o que se digita, sem barra de rolagem', async ({ page }) => {

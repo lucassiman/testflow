@@ -1,7 +1,7 @@
 // @ts-check
 import { STATUS_ORDER, KIND_OF, cellStatus, collectStatusTables } from '../markdown/status.ts';
 import { customStatuses } from '../markdown/qa.ts';
-import { applyEnv, describeEnv, mergeEnv, missingEnv, readEnv } from '../markdown/lastEnv.ts';
+import { applyEnv, describeEnv, docKey as headerId, mergeEnv, missingEnv, readEnv } from '../markdown/lastEnv.ts';
 import {
   stepTable, setActual, setStepStatus, cellToText, logRun, reviseRun, newRound, fmtDuration, NOTE_TAGS, parseNote,
   addSessionNote, sessionStarted, sessionEnded, countNotes, countStepPrints,
@@ -236,19 +236,22 @@ export function createRunner({ store, preview, toast: appToast, root, onPastePri
     setTimeout(offerLastEnv, 2500); // depois da dica de início, que fica na tela
   }
 
-  /** Guarda ambiente/browser/versão preenchidos neste documento para repetir na próxima execução. */
+  /** Ao concluir: guarda ambiente/browser/versão deste caso para quando ele for executado de novo. */
   function rememberEnv() {
     const now = readEnv(store.source);
-    if (Object.keys(now).length) prefs.save({ lastEnv: mergeEnv(prefs.load().lastEnv, now) });
+    const key = headerId(store.source);
+    if (!key || !Object.keys(now).length) return;
+    const p = prefs.load();
+    prefs.save({ lastEnv: mergeEnv(p.lastEnvDoc === key ? p.lastEnv : null, now), lastEnvDoc: key });
   }
 
-  /** Cabeçalho com ambiente/browser/versão em branco: oferece repetir os da última execução (um clique; Ctrl+Z desfaz). */
+  /** Execução repetida do mesmo caso com ambiente/browser/versão em branco: oferece repetir os da anterior (um clique; Ctrl+Z desfaz). */
   function offerLastEnv() {
     if (mode !== 'exec') return;
-    const missing = missingEnv(store.source, prefs.load().lastEnv);
-    rememberEnv();
+    const p = prefs.load();
+    const missing = missingEnv(store.source, p.lastEnv, p.lastEnvDoc || '');
     if (!Object.keys(missing).length) return;
-    toast?.(`Repetir o da última execução? ${describeEnv(missing)} (preenche só o que está em branco no cabeçalho)`, 'info', {
+    toast?.(`Repetir o da execução anterior deste caso? ${describeEnv(missing)} (preenche só o que está em branco no cabeçalho)`, 'info', {
       duration: 15000,
       action: { label: 'Preencher', run: () => write(applyEnv(store.source, missing), `Cabeçalho preenchido: ${describeEnv(missing)} — Ctrl+Z desfaz`) },
     });

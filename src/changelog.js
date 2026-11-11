@@ -8,6 +8,19 @@
 /** @type {import('./ui/whatsNew.js').ChangeEntry[]} */
 export const CHANGELOG = [
   {
+    version: '1.83.0', date: '10/11/2026',
+    items: [
+      { icon: '🥒', text: '**Gherkin como linguagem universal do negócio**: ao analisar uma história ou gerar casos, o Claude traduz os critérios e regras **principais** em cenários Dado/Quando/Então **declarativos** (sem imperativo nem tela; não descrevem teste) num cenário BDD ligado ao ticket, com as tags `@criterio-N`, `@risco-…` e `@rascunho` — a validação (`@validado`) é do QA. Novo guia (`guia-gherkin.md`, `qa_convencoes { parte: "gherkin" }`) e a ferramenta **`qa_gherkin`**, para os agentes de QA entenderem o negócio pelos cenários da pasta.', manual: '12.6 Claude direto na pasta' },
+      { icon: '🤖', text: '**Dois agentes de QA** (`npm run skill` → `claude-skill/agentes/`): `qa-gherkin-da-historia` (história do Jira → cenários Gherkin) e `qa-lacunas-da-historia` (incoerências e gaps da história, com a revisão de requisito e as perguntas prontas para o PO).', manual: '12.6 Claude direto na pasta' },
+    ],
+  },
+  {
+    version: '1.82.1', date: '09/11/2026',
+    items: [
+      { icon: '🎯', text: '**Aviso "Repetir o da execução anterior?" só quando faz sentido**: aparece apenas ao executar de novo o **mesmo caso** já concluído (com ambiente, browser ou versão em branco). Ao passar para outro caso, não pergunta mais.', manual: '7. Executar testes' },
+    ],
+  },
+  {
     version: '1.82.0', date: '09/11/2026',
     items: [
       { icon: '✂️', text: '**Sem Cucumber**: saiu a exportação de `.feature` (menu *Automação ▾*, paleta e a ferramenta `qa_exportar_feature` do Claude). O **Gherkin** continua como linguagem do time: bloco ```` ```gherkin ````, modelo de cenário BDD e cores no Preview.', manual: '9. Resultados de automação' },

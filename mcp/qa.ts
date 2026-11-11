@@ -60,6 +60,7 @@ import { findComments, commentBlock } from '../src/markdown/comments.ts';
 import { findRefs, isRelativeHref, resolveHref, uniqueName, dirOf, baseOf, relativePath, encodePath, joinPath, TRASH_DIR } from '../src/markdown/relink.ts';
 import { ensureUid, headerIds, syncHeaderToBody, relinkRenamedId } from '../src/markdown/idRename.ts';
 import { parseBlocks } from '../src/markdown/parser.js';
+import { featuresOf, featureSummary } from '../src/markdown/gherkinDoc.ts';
 import { lintMarkdown } from '../src/markdown/lint.js';
 import { makeBuiltins, fillTemplate, suggestedFileName, loadCustomTemplates } from '../src/templates/lib.js';
 import type { AutomationResult, DocEntry } from '../src/types';
@@ -135,6 +136,8 @@ function insertBlock(lines: string[], at: number, block: string[]): void {
   lines.splice(at, 0, ...before, ...block, ...after);
 }
 
+/** Minúsculas e sem acentos, para comparar texto. */
+const norm = (s: string): string => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const meta = (text: string): Record<string, unknown> => {
   const fm = detectFrontMatter(text);
   return fm ? parseFrontMatter(text.split('\n').slice(0, fm.end).join('\n')).data : {};
@@ -319,6 +322,46 @@ export class QaWorkspace {
       for (const h of r.hits.slice(0, 8)) out.push(`  linha ${h.line + 1}: ${h.text.trim()}`);
     }
     return out.join('\n');
+  }
+
+  /**
+   * O negócio em Gherkin: funcionalidades, regras e cenários de todos os documentos com bloco ```gherkin
+   * (cenário BDD, história, épico, caso). É por aqui que o agente de QA entende o que o produto deve fazer.
+   */
+  async gherkin(o: { app?: string; segmento?: string; doc?: string; texto?: string; tags?: string; completo?: boolean; limite?: number }): Promise<string> {
+    await this.refresh();
+    let list: DocEntry[];
+    if (o.doc) list = [await this.find(o.doc)];
+    else {
+      list = this.index.all().filter((e) => e.tipo && e.tipo !== 'visao' && !REPORT_TYPES.includes(e.tipo) && /```|~~~/.test(e.text || ''));
+      if (o.segmento) { const seg = new Set(segmentMembers(o.segmento, list).map((e) => e.path)); list = list.filter((e) => seg.has(e.path)); }
+      if (o.app) list = list.filter((e) => String(meta(e.text || '').app ?? '').toLowerCase() === o.app!.toLowerCase());
+    }
+    const want = splitTags(o.tags || '').map((t) => t.replace(/^[#@]/, '').toLowerCase());
+    const q = norm(o.texto || '');
+    const out: string[] = [];
+    let docs = 0;
+    let cenarios = 0;
+    for (const e of list) {
+      let feats = featuresOf(e.text || '');
+      if (!feats.length) continue;
+      if (want.length || q) {
+        feats = feats.map((f) => ({ ...f, cenarios: f.cenarios.filter((s) => {
+          const tags = [...f.tags, ...s.tags].map((t) => t.replace(/^@/, '').toLowerCase());
+          return (!want.length || want.every((w) => tags.includes(w))) && (!q || norm(`${f.nome} ${s.regra} ${s.nome} ${s.passos.join(' ')}`).includes(q));
+        }) })).filter((f) => f.cenarios.length);
+        if (!feats.length) continue;
+      }
+      docs += 1;
+      cenarios += feats.reduce((n, f) => n + f.cenarios.length, 0);
+      if (docs > (o.limite || 40)) continue;
+      const d = meta(e.text || '');
+      const origem = [d.app && `app ${d.app}`, d.jira && `jira ${[d.jira].flat().join(', ')}`, d.epico && `épico ${[d.epico].flat().join(', ')}`, d.status && `status ${d.status}`].filter(Boolean).join(' · ');
+      out.push(`## ${e.id || e.name} — ${e.titulo || e.name}  [${e.tipo}]`, `Arquivo: ${e.path}${origem ? ` · ${origem}` : ''}`, '', ...feats.map((f) => featureSummary(f, !!o.completo)), '');
+    }
+    if (!docs) return 'Nenhum cenário Gherkin encontrado para esse filtro. Se a história ainda não foi traduzida, peça ao agente qa-gherkin-da-historia (ou veja qa_convencoes { parte: "gherkin" }).';
+    const head = `${cenarios} cenário(s) em ${docs} documento(s)${docs > (o.limite || 40) ? ` (mostrando ${o.limite || 40})` : ''}. Para os passos completos: completo: true; para um documento inteiro: qa_ler.`;
+    return [head, '', ...out].join('\n').trimEnd();
   }
 
   /** Um documento: cabeçalho interpretado, execução, comentários, ligações e o texto (ou uma seção). */

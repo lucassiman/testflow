@@ -29,6 +29,7 @@ await build({
     __QA_TEMPLATES__: JSON.stringify(templates),
     __QA_CONVENCOES__: JSON.stringify(read('CONVENCOES-QA.md')),
     __QA_GUIA__: JSON.stringify(read('GUIA-DE-TESTE.md')),
+    __QA_GHERKIN__: JSON.stringify(read('GUIA-GHERKIN.md')),
     __QA_VERSION__: JSON.stringify(pkg.version),
   },
   logLevel: 'warning',
@@ -74,6 +75,7 @@ const TOOLS = [
   ['qa_rastreabilidade', 'Ticket/épico → casos → resultado → bugs'],
   ['qa_tendencia', '% de sucesso por rodada e sprint, casos que mais falham, bugs no tempo'],
   ['qa_compartilhados', 'Passos e dados compartilhados do escopo (logins, URLs, ↪ blocos, antes de cada caso)'],
+  ['qa_gherkin', 'O negócio em Gherkin: funcionalidades, regras e cenários da pasta'],
   ['qa_ligar', 'Ligar dois documentos ([[link]], ex.: bug órfão ao caso)'],
   ['qa_varredura', 'Documentos antigos sem os vínculos (app, ticket, épico, tags, caso do bug)'],
 ];

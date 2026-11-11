@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { applyEnv, describeEnv, mergeEnv, missingEnv, readEnv } from '../../src/markdown/lastEnv.ts';
+import { applyEnv, describeEnv, docKey, mergeEnv, missingEnv, readEnv } from '../../src/markdown/lastEnv.ts';
 
 const doc = (extra = '') => `---\ntipo: caso-de-teste\nid: TC-001\ntitulo: Login\nambiente:\nbrowser:\nversao:\nresponsavel: Lucas\ntags: []\n${extra}---\n\n# TC-001 — Login\n\nTexto com ambiente: HML no corpo.\n`;
 
@@ -20,6 +20,16 @@ test('oferece repetir só os campos em branco que existem no cabeçalho', () => 
   // nada guardado ainda
   assert.deepEqual(missingEnv(doc(), null), {});
   assert.deepEqual(missingEnv(doc(), { ambiente: '  ' }), {});
+});
+
+test('só oferece quando a última execução concluída foi do mesmo caso', () => {
+  const last = { ambiente: 'HML', browser: 'Chrome' };
+  assert.equal(docKey(doc()), 'TC-001');
+  assert.deepEqual(missingEnv(doc(), last, 'TC-001'), last);
+  // última execução foi de outro caso: não oferece
+  assert.deepEqual(missingEnv(doc(), last, 'TC-002'), {});
+  assert.deepEqual(missingEnv(doc(), last, ''), {});
+  assert.equal(docKey('# sem cabeçalho'), '');
 });
 
 test('aplicar escreve só os campos pedidos e não mexe no resto do documento', () => {
